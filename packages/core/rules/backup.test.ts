@@ -4,11 +4,13 @@ import { readFileSync } from "node:fs";
 import { DEFAULT_ACCESS } from "./access";
 import {
   backupContents,
+  backupContentsFrom,
   backupFileName,
   backupProblem,
   backupSummary,
   encodeBackup,
   parseBackup,
+  storedBackupFrom,
   type SeptemberBackup,
 } from "./backup.ts";
 
@@ -542,6 +544,52 @@ describe("the portable September backup", () => {
     expect(JSON.parse(encoded)).toMatchObject({
       formatVersion: 2,
       agentMessages: [],
+    });
+  });
+});
+
+describe("the rows of a store", () => {
+  const contents = () => backupContents(validBackup());
+
+  it("keep every portable setting by its stored key, and give it back", () => {
+    const stored = storedBackupFrom(contents());
+    expect(stored.settings).toEqual({
+      setup: contents().settings.setup,
+      speech: contents().settings.speech,
+      "dismissed-ideas": ["idea-1"],
+      "space-modes": { family: "notes" },
+      "panel-open": { open: true, tab: "voice" },
+      present: { tone: "cream", spoken: false },
+    });
+    expect(backupContentsFrom(stored, "someone-else")).toEqual(contents());
+  });
+
+  it("store no setup and no speech that the backup does not hold", () => {
+    const empty = contents();
+    empty.settings.setup = null;
+    empty.settings.speech = null;
+    const stored = storedBackupFrom(empty);
+    expect(Object.keys(stored.settings)).not.toContain("setup");
+    expect(Object.keys(stored.settings)).not.toContain("speech");
+    expect(backupContentsFrom(stored, "ravi").settings).toMatchObject({
+      setup: null,
+      speech: null,
+    });
+  });
+
+  it("give a setup with no owner the user of the device", () => {
+    const { id: _id, ...setup } = contents().settings.setup!;
+    const read = backupContentsFrom({ ...storedBackupFrom(contents()), settings: { setup } }, "ravi");
+    expect(read.settings.setup?.id).toBe("ravi");
+  });
+
+  it("fill the settings that a store never wrote with their defaults", () => {
+    const read = backupContentsFrom({ ...storedBackupFrom(contents()), settings: {} }, "ravi");
+    expect(read.settings).toMatchObject({
+      setup: null,
+      speech: null,
+      dismissedIdeas: [],
+      spaceModes: {},
     });
   });
 });

@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({ word: null as null | { id: string; word: number } }));
-vi.mock('@platform/services/speech', () => ({ useSpokenWord: () => state.word }));
+vi.mock('@september/app-ui/services/speech', () => ({ useSpokenWord: () => state.word }));
 
 import { SpokenText } from '@september/app-ui/blocks/suggestions';
 

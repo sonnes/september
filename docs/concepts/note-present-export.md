@@ -22,7 +22,7 @@ Indigo, Ink, Paper, Cream, Sage, Blush, and Sky.
 Present is an overlay, not a route, so the address of the app stays on the note
 the user is holding and the frozen route sets do not move.
 
-`presentChunks` in `packages/core/rules/present.ts` cuts the note:
+`presentChunks` in `packages/core/rules/present/chunks.ts` cuts the note:
 
 1. A line of only dashes or stars ends a section, as it did in the old slides.
 2. A heading and each row of a list stand alone; a paragraph splits into
@@ -104,13 +104,18 @@ between them and a copy of it.
 **Audio** reuses the speech cache, so a note read aloud a moment earlier saves
 without asking the service again.
 
-**Video** is rendered in the browser app. `synthesizeTimed` asks ElevenLabs for
+`packages/app-ui/services/export.ts` saves each row through
+`platform.device.save`.
+
+**Video** is rendered in the browser app, through `platform.device.renderVideo`.
+`synthesizeTimed` in `apps/web/src/services/voice.ts` asks ElevenLabs for
 the sound and the character alignment together; `alignmentToWords` and
 `wordsToCaptions` cut that into captions of up to six words, and
 `apps/web/src/services/video.ts` draws one 1080×1920 frame for each word and
 joins them to the voice with `ffmpeg.wasm`. Nothing leaves the machine.
 
-The Mac app names the browser instead of hiding the row: `ffmpeg.wasm` reaches
+The Mac platform has no `renderVideo`, so the row names the browser instead of
+hiding: `ffmpeg.wasm` reaches
 its core through a blob URL, and the script policy of that window allows
 `'self'` only.
 

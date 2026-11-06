@@ -21,8 +21,8 @@ import {
   useMessages,
   usePhrases,
   usePutPhrase,
-} from "@platform/services/data";
-import { dismissedIdeas, rememberDismissed } from "@platform/services/os";
+} from "@september/app-ui/services/data";
+import { dismissedIdeas } from "@september/app-ui/services/settings";
 import { TaggedText } from "@september/app-ui/blocks/suggestions";
 import { CODE_MAX_LENGTH, validateCode } from "@september/core/rules/phrases/codes";
 import { mineShortcuts, normalizeMinedText } from "@september/core/rules/phrases/mining";
@@ -49,7 +49,7 @@ export function Phrases({
   const putPhrase = usePutPhrase();
   const deletePhrase = useDeletePhrase();
 
-  const [dismissed, setDismissed] = useState<string[]>(dismissedIdeas);
+  const [dismissed, setDismissed] = useState<string[]>(dismissedIdeas.get);
   const [draft, setDraft] = useState("");
   const [draftCode, setDraftCode] = useState("");
   const phraseId = useId();
@@ -108,7 +108,7 @@ export function Phrases({
   const dismiss = (text: string) => {
     const next = [...dismissed, normalizeMinedText(text)];
     setDismissed(next);
-    void rememberDismissed(next);
+    void dismissedIdeas.set(next);
   };
 
   const kept = rows.filter((row) => row.pinned);

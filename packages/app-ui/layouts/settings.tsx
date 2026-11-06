@@ -1,26 +1,9 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import {
-  Accessibility,
-  DatabaseBackup,
-  Gauge,
-  Lightbulb,
-  PanelTop,
-  SlidersHorizontal,
-} from "lucide-react";
-
-import { SETTINGS_NAV, sectionFor, type SettingsPath } from "@platform/rules/settings-nav";
 import { ScreenHeader } from "@september/app-ui/blocks/screen";
+import { sectionFor } from "@september/core/rules/navigation";
 import { documentTitle } from "@september/core/rules/titles";
 
-// The panel section is on the desktop only.
-const ICONS: Record<SettingsPath | "/settings/panel", typeof SlidersHorizontal> = {
-  "/settings": SlidersHorizontal,
-  "/settings/access": Accessibility,
-  "/settings/writing": Lightbulb,
-  "/settings/usage": Gauge,
-  "/settings/panel": PanelTop,
-  "/settings/data": DatabaseBackup,
-};
+import { SETTINGS_NAV } from "@september/app-ui/navigation";
 
 export function SettingsLayout() {
   const pathname = useRouterState({
@@ -42,7 +25,7 @@ export function SettingsLayout() {
             aria-label="Settings sections"
             className="flex shrink-0 flex-wrap gap-1 md:w-60 md:flex-col md:flex-nowrap md:self-start">
             {SETTINGS_NAV.map((item) => {
-              const Icon = ICONS[item.path];
+              const Icon = item.icon;
               const active = item.path === open.path;
 
               return (

@@ -33,7 +33,8 @@ needs no account and no network. A broken key can never stop speech.
 OpenRouter authorization and key exchange happen in Rust through PKCE and a
 temporary loopback callback. Its key never enters the WebView. An ElevenLabs
 key crosses from its input field to Rust once and never comes back. Rust also sends the ElevenLabs request of Speak, and the Text to Dialogue stream of the Dialogue voice, with this key. See [streaming voice](streaming-voice.md). `src-tauri/src/providers.rs` owns the Keychain and the
-network. `src/services/os.ts` owns the only calls from React.
+network. `apps/desktop/src/platform.ts` owns the only provider calls from React, through
+`call` in `src/commands.ts`.
 
 The WebView writes with a typed model client, and a typed model client wants
 an address and a key. September gives it the address of a loopback proxy and a
@@ -107,10 +108,10 @@ lists Flash v2.5, Multilingual v2, and Eleven v3, and it writes the `speech`
 setting. The voice list appears once, on `/voice`, beside the service:
 a hundred rows, each with a sample to hear, do not fit a 320px card.
 
-**Automatic** is the first row of the picker, and the default. It names no
-model. The request then carries the free list of the app, and OpenRouter uses
-the first model that answers. One busy model is therefore not one lost
-sentence. A named model replaces that list, and the request asks for it alone.
+**Automatic** is the first row of the picker, and the default. The request
+names `openrouter/free`, and OpenRouter picks a free model that answers. One
+busy model is therefore not one lost sentence. A named model replaces
+`openrouter/free`, and the request asks for it alone.
 
 The Agent and phrases list writes the default model settings. The Suggestions
 list writes separate Suggestions settings. If the separate value is not null,
@@ -127,8 +128,8 @@ app asks the same way, so the two apps show one list.
 | `voice_type` | `non-default` | The stock voices are not the voices of this user. |
 | `page_size`  | `100`         | A page gives 10 without it.                       |
 
-Rust sorts the list by category: `cloned`, `professional`, `premade`,
-`similar`. The category and `is_owner` reach the screen. `voiceRows` puts a voice
+Rust gives the list in the order of ElevenLabs. The category and `is_owner`
+reach the screen, and `voiceRows` in core sorts the rows. `voiceRows` puts a voice
 with `is_owner: true` in **Yours**, a `premade` voice in **ElevenLabs voices**,
 and every other voice in **From the library**. A professional voice from the
 library has `is_owner: false`, so the category alone cannot say whose it is.

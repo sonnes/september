@@ -8,22 +8,10 @@ import { DEFAULT_ACCESS } from '@september/core/rules/access';
 import type { MoodKey } from '@september/core/rules/moods';
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => () => {} }));
-vi.mock('@platform/services/os', () => ({
-  chooseOutput: async () => undefined,
-  currentOutput: async () => '',
-  currentSetup: () => null,
-  subscribeSetup: () => () => {},
-  listOutputs: async () => [],
-  rememberModes: async () => undefined,
-  spaceModes: {},
-  startVirtualMicrophone: async () => ({}),
-  stopVirtualMicrophone: async () => ({}),
-  virtualMicrophoneStatus: async () => ({ uid: 'unavailable-in-browser', active: false }),
-}));
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useCreateSpace: () => ({}), useSpaces: () => ({ data: [] }), useUpdateSpace: () => ({}),
 }));
-vi.mock('@platform/services/ai', () => ({ hasWritingService: () => false }));
+vi.mock('@september/app-ui/services/ai', () => ({ hasWritingService: () => false }));
 vi.mock('@september/app-ui/blocks/suggestions', () => ({ Suggestions: () => null }));
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

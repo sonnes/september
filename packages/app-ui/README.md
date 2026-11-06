@@ -4,17 +4,85 @@ This package owns the layouts, blocks, and application screens rendered by
 both the browser and Tauri apps. It imports generic controls from
 `@september/ui` and pure behavior from `@september/core`.
 
-The package must not import an app through `apps/*`. Platform work crosses the
-compile-time `@platform/*` facade instead:
+The package must not import an app through `apps/*`.
+
+## The Platform
+
+`platform.ts` holds the `Platform` interface. It holds only the work that is
+different on the browser and on the Mac:
+
+| Member         | What it does                                                                         |
+| -------------- | ------------------------------------------------------------------------------------ |
+| `app`          | The source and the version that a backup records.                                    |
+| `store`        | The rows and the settings. Every write rejects when it fails.                        |
+| `voice`        | The system voice, the cloud voice stream, stop, and a sound file of a sentence.      |
+| `providers`    | The status, the keys, the OpenRouter sign-in, the voices, the quota, and the clones. |
+| `writing`      | The endpoint and the key of OpenRouter, and of Apple Intelligence where it runs.     |
+| `device`       | The identity, the browser, the close guard, file saves, and the sound outputs.       |
+| `capabilities` | The flags `dashboard`, `eyeTracker`, and `floatingPanel`.                            |
+
+An optional member is a capability. It is absent on a platform that cannot do
+the work: `writing.apple`, `device.fullScreen`, `device.virtualMicrophone`, and
+`device.renderVideo`.
+
+Each app exports one `platform` from its `src/platform.ts`, typed as
+`Platform`. Shared code imports it from `@platform/adapter`:
 
 ```ts
-import { useSpaces } from "@platform/services/data";
-import { speak } from "@platform/services/speech";
+import { platform } from "@platform/adapter";
 ```
 
-Each app maps `@platform/*` to its own `src/*` in TypeScript, Vite, and its test
-runner. The browser implementation uses IndexedDB and browser APIs. Desktop
-uses Tauri, SQLite, Keychain, and native media services.
+Each app maps `@platform/adapter` to its `src/platform.ts` in TypeScript and
+Vite. The web tests map it to the in-memory platform in
+`apps/web/src/test/platform.ts`. `adapter.d.ts` declares the module for the
+type check of this package. The browser platform uses IndexedDB and browser
+APIs. The desktop platform uses Tauri, SQLite, the Keychain, and native media
+services.
+
+## Services
+
+`services/` holds the work that both apps share, written once over the
+platform:
+
+| Module             | What it holds                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| `settings.ts`      | The held settings, `loadSettings`, the setup, the owner of the rows, and the Talk draft and mood. |
+| `speech.ts`        | The speech settings and `updateSpeech`, `speak`, `stopSpeaking`, and the fallback to the system voice. |
+| `data.ts`          | The React Query hooks of the spaces, messages, notes, phrases, and Agent rows.         |
+| `ai.ts`            | `generate` and the Agent writer, through `@earendil-works/pi-ai`.                      |
+| `agent.ts`         | `askAgent` and `resolveAgentProposal`.                                                 |
+| `usage.ts`         | The usage records and the usage report.                                                |
+| `connections.ts`   | The state of every service, in one read.                                               |
+| `backup.ts`        | The download and the restore of a backup.                                              |
+| `export.ts`        | A note saved as text, audio, or video.                                                 |
+| `cloning.ts`       | The checks, the recorder, and the clone of a voice.                                    |
+| `phrase-sync.ts`   | The phrases that AI Assistance writes for a space.                                     |
+| `suggest.ts`       | The autocomplete engine over the messages.                                             |
+| `player.ts`        | The preview player of the voice list.                                                  |
+
+`loadSettings` reads every held setting and the identity of the device. Each
+app awaits it once before the first render. A screen then reads a setting at
+once. A change goes to the store first, and to the memory after the write
+succeeds. `setting(key, from)` gives one held setting, and `useSetting` gives
+its value to a screen.
+
+When the store holds no setup, the owner of the rows is the login name of the
+system. If the system knows no login name, the owner is `local-user`. Setup
+freezes the owner in the saved setup.
+
+## Navigation
+
+`navigation.ts` gives `APP_NAV` and `SETTINGS_NAV`. Both are the lists of
+`@september/core/rules/navigation` for the capabilities of the platform, with a
+Lucide icon for each path. The icon records are typed by path, so a missing
+icon fails the build. Setup ends on the first page of `APP_NAV`.
+
+## Checks
+
+`pnpm --filter @september/app-ui build` type-checks the package with
+`tsconfig.json`.
+
+## Screens
 
 Apps import screens through explicit subpaths:
 
@@ -89,11 +157,10 @@ is announced twice. Each step link is named by the words that it shows. Below
 `md`, only a screen reader reads the label. The current step has
 `aria-current="step"`.
 
-`layouts/app.tsx` draws each platform's `APP_NAV` destinations. Every path has
-a matching Lucide icon in the layout, including desktop-only destinations.
+`layouts/app.tsx` draws the pages of `APP_NAV` from `navigation.ts`.
 
 `pages/settings.tsx` owns the shared Data screen at `/settings/data`. It calls
-`@platform/services/backup` to download or restore a backup. The screen parses
+`services/backup.ts` to download or restore a backup. The screen parses
 the file with `@september/core`, shows its date and row counts, and asks for a
 second confirmation before it replaces data.
 
@@ -210,10 +277,10 @@ presses nothing.
 The stage keeps Tab and Shift-Tab inside it. When it closes, the focus goes
 back to the key that opened it.
 
-`PresentOverlay` calls `fullScreen(true)` from `@platform/services/os` when it
-opens, and `fullScreen(false)` when it closes. In the desktop app, the panel
-fills the screen while the overlay shows, then goes back to its size. The web
-version of `fullScreen` does nothing.
+`PresentOverlay` calls `platform.device.fullScreen(true)` when it opens, and
+`fullScreen(false)` when it closes. In the desktop app, the panel fills the
+screen while the overlay shows, then goes back to its size. The browser
+platform has no `fullScreen`, and a failed resize goes to the console.
 
 `blocks/chrome.tsx` exports `ChromeContext`, with the value `"shell"` or
 `"panel"`. The default is `"shell"`, and the web app always uses it. In
@@ -269,7 +336,7 @@ the sheet is a 48-point key. A row with a shortcut shows its keys and has
 On a space-mode path, the More sheet holds Phrases, Voice controls, Rename
 space, and Delete space. Sound output shows when the composer speaks. Clear the
 draft shows in the compact tier only. Below these rows, the sheet lists each
-page of `@platform/rules/app-nav` `APP_NAV` with its title. Phrases, Voice
+page of `APP_NAV` from `navigation.ts` with its title. Phrases, Voice
 controls, and Rename space open as sheets below the header. The Voice controls
 sheet has this name so that it is different from the Voice page.
 Delete space uses `DeleteSpaceDialog` from `pages/spaces.tsx`. After a delete,

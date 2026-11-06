@@ -5,12 +5,11 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { axeViolations } from './axe';
 
-const state = vi.hoisted(() => ({
-  heard: [] as string[],
-  rememberHeard: vi.fn(),
-  save: vi.fn(),
-  play: vi.fn(),
-}));
+import { heardVoices, savedSpeech } from '@september/app-ui/services/settings';
+
+import { platform } from './test/platform';
+
+const state = vi.hoisted(() => ({ play: vi.fn() }));
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
@@ -19,49 +18,38 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('@september/app-ui/blocks/screen', () => ({
   Screen: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }));
-vi.mock('@platform/services/player', () => ({ play: state.play }));
-vi.mock('@platform/services/os', async original => {
-  const actual = await original<typeof import('./services/os')>();
-  return {
-    ...actual,
-    heardVoiceIds: state.heard,
-    rememberHeardVoices: state.rememberHeard,
-    saveSpeech: state.save,
-    readConnections: async () => ({
-      ...actual.BLANK_CONNECTIONS,
-      elevenlabs: { provider: 'elevenlabs', connected: true, label: 'Key', detail: null },
-    }),
-    listVoices: async () => [
-      { id: 'roger', name: 'Roger - Laid-Back, Casual', preview_url: 'https://x/roger.mp3', category: 'premade' },
-      { id: 'mine', name: 'My voice', preview_url: null, category: 'cloned' },
-      { id: 'alice', name: 'Alice - Clear, Engaging', preview_url: 'https://x/alice.mp3', category: 'premade' },
-    ],
-  };
-});
-vi.mock('@platform/services/speech', async original => ({
-  ...(await original<typeof import('./services/speech')>()),
-  speechSettings: () => ({
-    provider: 'elevenlabs',
-    voiceId: 'alice',
-    modelId: 'eleven_flash_v2_5',
-    stability: 0.5,
-    similarity: 0.75,
-    speed: 1,
-  }),
+vi.mock('@september/app-ui/services/player', () => ({ play: state.play }));
+vi.mock('@september/app-ui/services/speech', async original => ({
+  ...(await original<typeof import('@september/app-ui/services/speech')>()),
   speak: vi.fn(),
 }));
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
-beforeEach(() => {
+beforeEach(async () => {
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
-  state.heard.splice(0);
-  state.rememberHeard.mockReset().mockResolvedValue(undefined);
-  state.save.mockReset().mockResolvedValue(undefined);
   state.play.mockReset().mockResolvedValue(undefined);
+  await heardVoices.set([]);
+  await savedSpeech.set({
+    provider: 'elevenlabs',
+    voiceId: 'alice',
+    modelId: 'eleven_flash_v2_5',
+    stability: 0.5,
+    similarity: 0.75,
+    speed: 1,
+  });
+  vi.mocked(platform.providers.status).mockResolvedValue([
+    { provider: 'openrouter', connected: false, label: null, detail: null },
+    { provider: 'elevenlabs', connected: true, label: 'Key', detail: null },
+  ]);
+  vi.mocked(platform.providers.voices).mockResolvedValue([
+    { id: 'roger', name: 'Roger - Laid-Back, Casual', preview_url: 'https://x/roger.mp3', category: 'premade' },
+    { id: 'mine', name: 'My voice', preview_url: null, category: 'cloned' },
+    { id: 'alice', name: 'Alice - Clear, Engaging', preview_url: 'https://x/alice.mp3', category: 'premade' },
+  ]);
 });
 afterEach(() => {
   act(() => root.unmount());
@@ -95,12 +83,12 @@ it('saves a voice the user hears without moving the row under them', async () =>
   const hear = container.querySelector<HTMLButtonElement>('[aria-label="Hear Roger - Laid-Back, Casual"]');
   await act(async () => hear!.click());
   expect(state.play).toHaveBeenCalledWith('https://x/roger.mp3');
-  expect(state.rememberHeard).toHaveBeenCalledWith(['roger']);
+  expect(heardVoices.get()).toEqual(['roger']);
   expect(listed()).toEqual(['Yours', 'My voice', 'ElevenLabs voices', 'Alice', 'Roger']);
 });
 
 it('lists the voices heard on an earlier visit under Heard lately', async () => {
-  state.heard.push('roger');
+  await heardVoices.set(['roger']);
   await render();
   expect(listed()).toEqual(['Yours', 'My voice', 'Heard lately', 'Roger', 'ElevenLabs voices', 'Alice']);
 });
@@ -113,7 +101,7 @@ it('marks the voice in use and saves a new choice', async () => {
     name => name.textContent === 'Roger',
   );
   await act(async () => roger!.closest('button')!.click());
-  expect(state.save).toHaveBeenLastCalledWith(expect.objectContaining({ voiceId: 'roger' }));
+  expect(savedSpeech.get()).toEqual(expect.objectContaining({ voiceId: 'roger' }));
 });
 
 it('shows who speaks as choices, with the one in use checked', async () => {
@@ -128,7 +116,7 @@ it('offers the Dialogue voice and keeps the voice list for it', async () => {
   const choice = container.querySelector<HTMLButtonElement>('button[value="dialogue"]');
   expect(choice).not.toBeNull();
   await act(async () => choice!.click());
-  expect(state.save).toHaveBeenLastCalledWith(expect.objectContaining({ provider: 'dialogue' }));
+  expect(savedSpeech.get()).toEqual(expect.objectContaining({ provider: 'dialogue' }));
   expect(listed().length).toBeGreaterThan(0);
 });
 

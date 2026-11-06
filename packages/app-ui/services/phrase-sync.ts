@@ -1,0 +1,152 @@
+import { useEffect, useRef } from "react";
+
+import { tagsSpoken } from "@september/core/rules/audio-tags";
+import { generateCode } from "@september/core/rules/phrases/codes";
+import { dedupeAgainstPinned } from "@september/core/rules/phrases/rows";
+import { decidePhraseSync, sanitizeStarters } from "@september/core/rules/phrases/sync";
+import { buildPhrasesPrompt, formatPhraseHistory } from "@september/core/rules/prompts/phrases";
+import type { Message, PhraseKind, SavedPhrase, Space } from "@september/core/rules/records";
+
+import { generate, hasWritingService, itemsFrom } from "./ai";
+import { useReplaceAiPhrases, useUpdateSpace } from "./data";
+import { currentSetup, useSetup } from "./settings";
+import { speechSettings } from "./speech";
+
+/**
+ * Keeps the phrases of a space near the conversation.
+ *
+ * A model writes them the first time the space holds a message, and again
+ * after six more. It rewrites only the rows that are not pinned, so a phrase
+ * the user keeps is never lost.
+ *
+ * A user with no writing service reaches none of this. The stripe still holds
+ * the pinned phrases, the codes, and the rows from past messages.
+ */
+export function useSyncPhrases({
+  space,
+  phrases,
+  messages,
+}: {
+  space: Space | undefined;
+  phrases: SavedPhrase[] | undefined;
+  messages: Message[] | undefined;
+}): void {
+  const setup = useSetup();
+  const enabled = setup?.autoPhrases !== false;
+  const modelKey = JSON.stringify(setup?.defaultModel);
+  const replace = useReplaceAiPhrases();
+  const updateSpace = useUpdateSpace();
+  // One run at a time for one space, so a slow model cannot start a second.
+  const running = useRef<AbortController | null>(null);
+
+  useEffect(() => () => {
+    running.current?.abort();
+    running.current = null;
+  }, [space?.id, enabled, modelKey]);
+
+  useEffect(() => {
+    if (!enabled || !space || !phrases || !messages || !hasWritingService()) return;
+
+    const action = decidePhraseSync({
+      syncedCount: space.phrases_synced_count ?? undefined,
+      messageCount: messages.length,
+      hasContext: Boolean(space.context?.trim()),
+    });
+    if (action === "none" || running.current) return;
+
+    const controller = new AbortController();
+    running.current = controller;
+    void writePhrases({ space, phrases, messages, signal: controller.signal })
+      .then(async (rows) => {
+        // A model that wrote nothing leaves the count alone, so the next
+        // message tries again instead of waiting for six.
+        if (rows.length === 0 || controller.signal.aborted || currentSetup()?.autoPhrases === false) return;
+
+        await replace.mutateAsync({ spaceId: space.id, phrases: rows });
+        if (controller.signal.aborted || currentSetup()?.autoPhrases === false) return;
+        await updateSpace.mutateAsync({
+          id: space.id,
+          phrases_synced_count: messages.length,
+        });
+      })
+      // A service that fails leaves the phrases that are there, and the next
+      // message tries again.
+      .catch((reason: unknown) => console.warn("September did not write phrases.", reason))
+      .finally(() => {
+        if (running.current === controller) running.current = null;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [space?.id, space?.context, space?.phrases_synced_count, phrases?.length, messages?.length, enabled, modelKey]);
+}
+
+async function writePhrases({
+  space,
+  phrases,
+  messages,
+  signal,
+}: {
+  space: Space;
+  phrases: SavedPhrase[];
+  messages: Message[];
+  /** The screen that waits for the first phrases can give this up. */
+  signal?: AbortSignal;
+}): Promise<SavedPhrase[]> {
+  const rowsOf = (kind: PhraseKind) =>
+    phrases
+      .filter((row) => row.kind === kind)
+      .map((row) => ({ text: row.text, pinned: row.pinned }));
+
+  const { system, prompt } = buildPhrasesPrompt({
+    existing: rowsOf("phrase"),
+    existingStarters: rowsOf("starter"),
+    history: formatPhraseHistory(messages.slice(-30)),
+    context: space.context,
+    tags: tagsSpoken(speechSettings()),
+  });
+
+  const answer = await generate(
+    {
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+      response_format: { type: "json_object" },
+    },
+    { feature: "phrases", signal },
+  );
+
+  const pinnedTexts = phrases.filter((row) => row.pinned).map((row) => row.text);
+  const fresh = dedupeAgainstPinned(pinnedTexts, itemsFrom(answer, "phrases"));
+  const starters = dedupeAgainstPinned(
+    pinnedTexts,
+    sanitizeStarters(itemsFrom(answer, "starters")),
+  );
+
+  // The codes of the new rows are made here, never by the model, so the rules
+  // that keep a code away from a real word hold for every row.
+  const existingCodes = phrases
+    .map((row) => row.code)
+    .filter((code): code is string => Boolean(code));
+  const at = Date.now();
+
+  const build = (text: string, kind: PhraseKind): SavedPhrase => {
+    const code = generateCode(text, { existingCodes });
+    if (code) existingCodes.push(code);
+    return {
+      id: crypto.randomUUID(),
+      space_id: space.id,
+      text,
+      kind,
+      code,
+      pinned: false,
+      created_at: at,
+      updated_at: at,
+    };
+  };
+
+  return [
+    ...fresh.map((text) => build(text, "phrase")),
+    ...starters.map((text) => build(text, "starter")),
+  ];
+}

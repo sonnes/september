@@ -1,7 +1,7 @@
 import { parseAccess, type AccessProfile } from "./access.ts";
 import { AGENT_TOOLS, isAgentWriteTool, parseAgentCall } from "./agent/tools.ts";
-import { CLOSED_PANEL, PANEL_TABS, type PanelState } from "./panel.ts";
-import type { PresentSettings } from "./present/settings.ts";
+import { CLOSED_PANEL, PANEL_TABS, panelStateFrom, type PanelState } from "./panel.ts";
+import { presentSettings, type PresentSettings } from "./present/settings.ts";
 import { DEFAULT_TONE, PRESENT_TONES, type PresentToneKey } from "./present/stage.ts";
 import {
   PHRASE_KINDS,
@@ -13,6 +13,7 @@ import {
   type Space,
   type SpaceMode,
 } from "./records.ts";
+import { PORTABLE_SETTINGS } from "./settings.ts";
 import { spaceSlug } from "./spaces.ts";
 import {
   USAGE_EVENT_TYPES,
@@ -92,6 +93,49 @@ export type BackupContents = Pick<
   | "savedPhrases"
   | "usageEvents"
 >;
+
+/**
+ * The portable rows as a store holds them: the settings by their stored key,
+ * and the rows of each table.
+ */
+export type StoredBackup = Omit<BackupContents, "settings"> & {
+  settings: Partial<Record<(typeof PORTABLE_SETTINGS)[keyof typeof PORTABLE_SETTINGS], unknown>>;
+};
+
+/** The contents of a backup, from the rows that a store holds. */
+export function backupContentsFrom(stored: StoredBackup, userId: string): BackupContents {
+  const setup = stored.settings[PORTABLE_SETTINGS.setup] as BackupSetup | null | undefined;
+  return {
+    ...stored,
+    settings: {
+      setup: setup ? { ...setup, id: setup.id ?? userId } : null,
+      speech: (stored.settings[PORTABLE_SETTINGS.speech] as BackupSpeech | undefined) ?? null,
+      dismissedIdeas:
+        (stored.settings[PORTABLE_SETTINGS.dismissedIdeas] as string[] | undefined) ?? [],
+      spaceModes:
+        (stored.settings[PORTABLE_SETTINGS.spaceModes] as BackupSettings["spaceModes"] | undefined) ??
+        {},
+      panel: panelStateFrom(stored.settings[PORTABLE_SETTINGS.panel]),
+      present: presentSettings(stored.settings[PORTABLE_SETTINGS.present]),
+    },
+  };
+}
+
+/** The rows that a store keeps for the contents of a backup. */
+export function storedBackupFrom(contents: BackupContents): StoredBackup {
+  const { settings } = contents;
+  return {
+    ...contents,
+    settings: {
+      ...(settings.setup ? { [PORTABLE_SETTINGS.setup]: settings.setup } : {}),
+      ...(settings.speech ? { [PORTABLE_SETTINGS.speech]: settings.speech } : {}),
+      [PORTABLE_SETTINGS.dismissedIdeas]: settings.dismissedIdeas,
+      [PORTABLE_SETTINGS.spaceModes]: settings.spaceModes,
+      [PORTABLE_SETTINGS.panel]: settings.panel,
+      [PORTABLE_SETTINGS.present]: settings.present,
+    },
+  };
+}
 
 export interface ParsedBackup {
   backup: SeptemberBackup;

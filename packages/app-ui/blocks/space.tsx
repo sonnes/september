@@ -39,19 +39,10 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@september/ui/components/dropdown-menu";
-import { useCreateSpace, useSpaces, useUpdateSpace } from "@platform/services/data";
-import { hasWritingService } from "@platform/services/ai";
-import {
-  chooseOutput,
-  currentOutput,
-  currentSetup,
-  listOutputs,
-  rememberModes,
-  spaceModes,
-  startVirtualMicrophone,
-  stopVirtualMicrophone,
-  virtualMicrophoneStatus,
-} from "@platform/services/os";
+import { useCreateSpace, useSpaces, useUpdateSpace } from "@september/app-ui/services/data";
+import { hasWritingService } from "@september/app-ui/services/ai";
+import { platform } from "@platform/adapter";
+import { currentSetup, spaceModes } from "@september/app-ui/services/settings";
 import { Suggestions } from "@september/app-ui/blocks/suggestions";
 import { useChrome, usePanel } from "@september/app-ui/blocks/chrome";
 import { draftParts, tagBefore } from "@september/core/rules/audio-tags";
@@ -94,10 +85,6 @@ export const spaceParams = (space: Pick<Space, "title">, mode: SpaceMode) =>
       ? agentParams(space)
       : talkParams(space);
 
-// The modes as they stand. The setting holds the same answers, and the two
-// only differ while a write is in flight.
-let modes = spaceModes;
-
 /** Whether AI Assistance shows the agent. It is on unless the user turned it off. */
 export const agentEnabled = (): boolean => currentSetup()?.agentEnabled !== false;
 
@@ -105,7 +92,7 @@ export const agentEnabled = (): boolean => currentSetup()?.agentEnabled !== fals
 export const openParams = (space: Pick<Space, "title">) =>
   spaceParams(
     space,
-    spaceModeFrom(modes, spaceSlug(space.title), agentEnabled()),
+    spaceModeFrom(spaceModes.get(), spaceSlug(space.title), agentEnabled()),
   );
 
 /**
@@ -117,10 +104,8 @@ export const openParams = (space: Pick<Space, "title">) =>
 export function useRememberMode(space: Space, mode: SpaceMode) {
   useEffect(() => {
     const slug = spaceSlug(space.title);
-    if (spaceModeFrom(modes, slug) === mode) return;
-
-    modes = rememberSpaceMode(modes, slug, mode);
-    void rememberModes(modes);
+    if (spaceModeFrom(spaceModes.get(), slug) === mode) return;
+    void spaceModes.set(rememberSpaceMode(spaceModes.get(), slug, mode));
   }, [space.title, mode]);
 }
 
@@ -726,19 +711,21 @@ export function SpaceTitle({
 function AudioSelector() {
   const panel = usePanel();
   const client = useQueryClient();
-  const outputs = useQuery({ queryKey: ["outputs"], queryFn: listOutputs });
-  const chosen = useQuery({ queryKey: ["output"], queryFn: currentOutput });
+  const { outputs: sound, virtualMicrophone } = platform.device;
+  const outputs = useQuery({ queryKey: ["outputs"], queryFn: () => sound.list() });
+  const chosen = useQuery({ queryKey: ["output"], queryFn: () => sound.current() });
   const microphone = useQuery({
     queryKey: ["virtual-microphone"],
-    queryFn: virtualMicrophoneStatus,
+    queryFn: () => virtualMicrophone!.status(),
+    enabled: Boolean(virtualMicrophone),
   });
   const move = useMutation({
-    mutationFn: chooseOutput,
+    mutationFn: (uid: string) => sound.choose(uid),
     onSuccess: () => client.invalidateQueries({ queryKey: ["output"] }),
   });
   const changeMicrophone = useMutation({
     mutationFn: (enabled: boolean) =>
-      enabled ? startVirtualMicrophone() : stopVirtualMicrophone(),
+      enabled ? virtualMicrophone!.start() : virtualMicrophone!.stop(),
     onSuccess: (status) =>
       client.setQueryData(["virtual-microphone"], status),
   });
@@ -746,9 +733,7 @@ function AudioSelector() {
   const devices = outputs.data ?? [];
   const selected = devices.find((device) => device.uid === chosen.data);
   const microphoneOn = microphone.data?.active ?? false;
-  const microphoneAvailable = Boolean(
-    microphone.data && microphone.data.uid !== "unavailable-in-browser",
-  );
+  const microphoneAvailable = Boolean(virtualMicrophone && microphone.data);
 
   return (
     <DropdownMenu
@@ -760,7 +745,7 @@ function AudioSelector() {
         // A device plugged in while the app runs appears when the menu opens.
         void outputs.refetch();
         void chosen.refetch();
-        void microphone.refetch();
+        if (virtualMicrophone) void microphone.refetch();
       }}
     >
       <DropdownMenuTrigger asChild>

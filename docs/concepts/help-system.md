@@ -29,7 +29,7 @@ shows its Mac app requirement before the reader opens it.
 
 ## Shared guide catalog
 
-`packages/core/rules/help.ts` owns the platform-independent catalog. Each guide
+`packages/core/rules/help/catalog.ts` owns the platform-independent catalog. Each guide
 has a stable slug, category, action title, outcome, search keywords, platform
 labels, prerequisites, numbered steps, expected result, recovery guidance,
 related guide slugs, optional alternative tasks, and optional media metadata.

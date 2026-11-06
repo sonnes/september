@@ -4,31 +4,26 @@ import React, { act } from 'react';
 import { PresentOverlay } from '@september/app-ui/blocks/present';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { present } from '@september/app-ui/services/settings';
+import { SETTINGS } from '@september/core/rules/settings';
 import { axeViolations } from './axe';
+import { platform } from './test/platform';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-/** The platform seam the shared block reaches through. */
-const platform = vi.hoisted(() => ({
+/** The services the shared block reaches through. */
+const services = vi.hoisted(() => ({
   speak: vi.fn<(text: string, id?: string) => Promise<boolean>>(),
   stopSpeaking: vi.fn(),
-  currentPresent: vi.fn(() => ({ tone: 'indigo' as const, spoken: false })),
-  rememberPresent: vi.fn(async () => undefined),
-  fullScreen: vi.fn(async () => undefined),
   recordPresentUsage: vi.fn(async () => undefined),
 }));
 
-vi.mock('@platform/services/speech', () => ({
-  speak: platform.speak,
-  stopSpeaking: platform.stopSpeaking,
+vi.mock('@september/app-ui/services/speech', () => ({
+  speak: services.speak,
+  stopSpeaking: services.stopSpeaking,
 }));
-vi.mock('@platform/services/os', () => ({
-  currentPresent: platform.currentPresent,
-  rememberPresent: platform.rememberPresent,
-  fullScreen: platform.fullScreen,
-}));
-vi.mock('@platform/services/usage', () => ({
-  recordPresentUsage: platform.recordPresentUsage,
+vi.mock('@september/app-ui/services/usage', () => ({
+  recordPresentUsage: services.recordPresentUsage,
 }));
 
 const NOTE = '# Maya\n\nWe met in June. She still laughs at my jokes.';
@@ -36,10 +31,10 @@ const NOTE = '# Maya\n\nWe met in June. She still laughs at my jokes.';
 let container: HTMLDivElement;
 let root: Root;
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
-  platform.speak.mockResolvedValue(true);
-  platform.currentPresent.mockReturnValue({ tone: 'indigo', spoken: false });
+  services.speak.mockResolvedValue(true);
+  await present.set({ tone: 'indigo', spoken: false });
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -113,31 +108,31 @@ describe('the present overlay', () => {
   it('says nothing at all in silent mode', () => {
     render(<PresentOverlay content={NOTE} onClose={() => {}} />);
 
-    expect(platform.speak).not.toHaveBeenCalled();
+    expect(services.speak).not.toHaveBeenCalled();
     expect(labelled('Stop the voice').getAttribute('aria-disabled')).toBe('true');
     expect(container.querySelectorAll('[disabled]')).toHaveLength(0);
   });
 
   it('speaks each chunk and follows the voice to the next one', async () => {
-    platform.currentPresent.mockReturnValue({ tone: 'indigo', spoken: true });
+    await present.set({ tone: 'indigo', spoken: true });
     await act(async () => {
       root.render(<PresentOverlay content={NOTE} onClose={() => {}} />);
     });
 
     // `speak()` resolves when the sound stops, which is the whole of the
     // timing: the next chunk rises as the last word ends.
-    expect(platform.speak.mock.calls[0]![0]).toBe('Maya');
+    expect(services.speak.mock.calls[0]![0]).toBe('Maya');
     await act(async () => undefined);
-    expect(platform.speak.mock.calls[1]![0]).toBe('We met in June.');
+    expect(services.speak.mock.calls[1]![0]).toBe('We met in June.');
   });
 
   it('pauses on failed speech without advancing the unread chunk', async () => {
-    platform.currentPresent.mockReturnValue({ tone: 'indigo', spoken: true });
-    platform.speak.mockResolvedValue(false);
+    await present.set({ tone: 'indigo', spoken: true });
+    services.speak.mockResolvedValue(false);
     await act(async () => {
       root.render(<PresentOverlay content={NOTE} onClose={() => {}} />);
     });
-    expect(platform.speak).toHaveBeenCalledTimes(1);
+    expect(services.speak).toHaveBeenCalledTimes(1);
     expect(container.querySelector('[role="alert"]')).toBeTruthy();
     expect(labelled('Start the voice again')).toBeTruthy();
   });
@@ -172,7 +167,7 @@ describe('the present overlay', () => {
     click(labelled('Colours'));
     click(labelled('Cream'));
 
-    expect(platform.rememberPresent).toHaveBeenCalledWith({
+    expect(platform.store.putSetting).toHaveBeenLastCalledWith(SETTINGS.present, {
       tone: 'cream',
       spoken: false,
     });
@@ -183,8 +178,8 @@ describe('the present overlay', () => {
     press('ArrowRight');
     press('ArrowRight');
 
-    expect(platform.recordPresentUsage).toHaveBeenCalledTimes(1);
-    expect(platform.recordPresentUsage).toHaveBeenCalledWith(3, false);
+    expect(services.recordPresentUsage).toHaveBeenCalledTimes(1);
+    expect(services.recordPresentUsage).toHaveBeenCalledWith(3, false);
   });
 
   it('keeps Tab inside the stage while it is open', () => {

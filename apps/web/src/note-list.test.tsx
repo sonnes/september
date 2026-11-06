@@ -25,16 +25,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => state.navigate }));
-vi.mock('@platform/services/os', () => ({
-  fullScreen: async () => undefined,
-  currentPresent: () => ({ tone: 'indigo', spoken: false }),
-  rememberPresent: async () => undefined,
-  guardUnsavedChanges: () => () => {},
-  currentSetup: () => null,
-  spaceModes: {},
-  rememberModes: async () => undefined,
-}));
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useSpaces: () => ({
     data: [{ id: 'space', title: 'Family', context: 'Home and school' }],
     isPending: false,
@@ -49,20 +40,20 @@ vi.mock('@platform/services/data', () => ({
   usePhrases: () => ({ data: [] }),
   usePutPhrase: () => ({ mutate: vi.fn() }),
 }));
-vi.mock('@platform/services/ai', () => ({ hasWritingService: () => false }));
-vi.mock('@platform/services/export', () => ({
+vi.mock('@september/app-ui/services/ai', () => ({ hasWritingService: () => false }));
+vi.mock('@september/app-ui/services/export', () => ({
   exportUnavailable: () => null,
   saveNoteAudio: vi.fn(),
   saveNoteText: vi.fn(),
   saveNoteVideo: vi.fn(),
 }));
-vi.mock('@platform/services/speech', () => ({
+vi.mock('@september/app-ui/services/speech', () => ({
   speak: async () => true,
   stopSpeaking: () => {},
   useSpeaking: () => null,
   useVoiceFallback: () => null,
 }));
-vi.mock('@platform/services/usage', () => ({ recordPresentUsage: async () => undefined }));
+vi.mock('@september/app-ui/services/usage', () => ({ recordPresentUsage: async () => undefined }));
 vi.mock('@september/app-ui/blocks/space-panel', () => ({ PanelRail: () => null }));
 vi.mock('@september/app-ui/blocks/suggestions', () => ({ Suggestions: () => null }));
 

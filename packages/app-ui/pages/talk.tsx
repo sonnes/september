@@ -1,24 +1,24 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { platform } from "@platform/adapter";
 import {
-  guardUnsavedChanges,
   readTalkDraft,
   readTalkMood,
   saveTalkDraft,
   saveTalkMood,
-} from "@platform/services/os";
+} from "@september/app-ui/services/settings";
 import type { MoodKey } from "@september/core/rules/moods";
 import { useNavigate } from "@tanstack/react-router";
 import { MessagesSquare, Square, Volume2 } from "lucide-react";
 import { cn } from "@september/ui";
 import { Button } from "@september/ui/components/button";
-import { recordMessageUsage } from "@platform/services/usage";
+import { recordMessageUsage } from "@september/app-ui/services/usage";
 import {
   useMessages,
   usePhrases,
   usePutPhrase,
   useSendMessage,
-} from "@platform/services/data";
+} from "@september/app-ui/services/data";
 import type { Message, Space } from "@september/core/rules/records";
 import {
   RightPanel,
@@ -28,13 +28,13 @@ import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import { SpokenText } from "@september/app-ui/blocks/suggestions";
 import { pinnedPhrase } from "@september/core/rules/phrases/rows";
 import { documentTitle } from "@september/core/rules/titles";
-import { useSyncPhrases } from "@platform/services/phrase-sync";
+import { useSyncPhrases } from "@september/app-ui/services/phrase-sync";
 import {
   speak,
   stopSpeaking,
   useSpeaking,
   useVoiceFallback,
-} from "@platform/services/speech";
+} from "@september/app-ui/services/speech";
 import { useChrome } from "@september/app-ui/blocks/chrome";
 import {
   messageTime,
@@ -96,7 +96,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   });
   useEffect(() => {
     if (!draftSave.isPending && !draftSave.isError) return;
-    return guardUnsavedChanges();
+    return platform.device.guardUnsavedChanges();
   }, [draftSave.isPending, draftSave.isError]);
   // The mood stays with the space until the user presses its key again.
   const savedMood = useQuery({

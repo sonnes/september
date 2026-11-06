@@ -11,7 +11,7 @@ import { createPortal } from "react-dom";
 import { Separator } from "@september/ui/components/separator";
 import { SidebarTrigger } from "@september/ui/components/sidebar";
 
-import { navFor, type AppPath } from "@platform/rules/app-nav";
+import { navFor, type AppPath } from "@september/core/rules/navigation";
 import { documentTitle } from "@september/core/rules/titles";
 import { useChrome } from "@september/app-ui/blocks/chrome";
 

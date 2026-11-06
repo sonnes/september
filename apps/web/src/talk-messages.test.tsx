@@ -10,19 +10,20 @@ const state = vi.hoisted(() => ({
   messages: [] as { id: string; type: string; text: string; created_at: string }[],
 }));
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => () => {} }));
-vi.mock('@platform/services/os', () => ({
-  readTalkDraft: async () => '', saveTalkDraft: async () => undefined, guardUnsavedChanges: () => () => {},
+vi.mock('@september/app-ui/services/settings', async original => ({
+  ...(await original<typeof import('@september/app-ui/services/settings')>()),
+  readTalkDraft: async () => '', saveTalkDraft: async () => undefined,
   readTalkMood: async () => null, saveTalkMood: async () => undefined,
 }));
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useSpaces: () => ({ data: [{ id: 'space', title: 'Family', context: 'Home' }], isPending: false }),
   useMessages: () => ({ data: state.messages }), usePhrases: () => ({ data: [] }),
   usePutPhrase: () => ({ mutate: () => {} }),
   useSendMessage: () => ({ mutate: () => {}, isPending: false }),
 }));
-vi.mock('@platform/services/phrase-sync', () => ({ useSyncPhrases: () => {} }));
-vi.mock('@platform/services/usage', () => ({ recordMessageUsage: async () => {} }));
-vi.mock('@platform/services/speech', () => ({
+vi.mock('@september/app-ui/services/phrase-sync', () => ({ useSyncPhrases: () => {} }));
+vi.mock('@september/app-ui/services/usage', () => ({ recordMessageUsage: async () => {} }));
+vi.mock('@september/app-ui/services/speech', () => ({
   speak: async () => true, stopSpeaking: () => {}, useSpeaking: () => state.speaking, useVoiceFallback: () => null,
   useSpokenWord: () => null,
 }));

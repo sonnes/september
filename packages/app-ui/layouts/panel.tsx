@@ -4,10 +4,10 @@ import { MessagesSquare, Plus } from "lucide-react";
 
 import { Button } from "@september/ui/components/button";
 
-import { APP_NAV } from "@platform/rules/app-nav";
+import { APP_NAV } from "@september/app-ui/navigation";
 
-import { useSpaces } from "@platform/services/data";
-import { stopSpeaking, useSpeaking } from "@platform/services/speech";
+import { useSpaces } from "@september/app-ui/services/data";
+import { stopSpeaking, useSpeaking } from "@september/app-ui/services/speech";
 import {
   ChromeContext,
   PanelContext,

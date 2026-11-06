@@ -19,22 +19,17 @@ import "@fontsource/noto-sans/600.css";
 import "@fontsource/noto-sans/700.css";
 
 import { OnboardingLayout } from "@september/app-ui/layouts/onboarding";
-import { openingPath, windowTitle } from "@/rules/app-nav";
+import { openingPath, windowTitle } from "@september/core/rules/navigation";
 import { HelpScreen } from "@september/app-ui/pages/help";
 import { helpGuide } from "@september/core/rules/help/search";
 import { NotesScreen } from "@september/app-ui/pages/notes";
-import { isSetupDone } from "@/rules/onboarding";
+import { isSetupDone } from "@september/core/rules/onboarding";
 import {
-  currentPath,
   currentSetup,
-  hidePanel,
-  panelSetup,
-  savePath,
-  setWindowTitle,
-  showPanel,
+  currentUserId,
+  loadSettings,
   subscribeSetup,
-} from "@/services/os";
-import { listSpaces } from "@/services/data";
+} from "@september/app-ui/services/settings";
 import { PanelShell } from "@september/app-ui/layouts/panel";
 import { SettingsLayout } from "@september/app-ui/layouts/settings";
 import { AgentScreen } from "@september/app-ui/pages/agent";
@@ -46,7 +41,7 @@ import {
   WritingSettings,
 } from "@september/app-ui/pages/settings";
 import { UsageSettings } from "@september/app-ui/pages/usage";
-import { isConnectionId } from "@/rules/settings-nav";
+import { isConnectionId } from "@september/core/rules/navigation";
 import { EyeTracker } from "@/eye-tracker";
 import { PanelSettings } from "@/panel-settings";
 import { SpacesScreen } from "@september/app-ui/pages/spaces";
@@ -59,7 +54,20 @@ import {
   ChooseStep,
   WelcomeStep,
 } from "@september/app-ui/pages/steps";
+import { platform } from "./platform";
+import {
+  hidePanel,
+  panelSetup,
+  readLastPath,
+  saveLastPath,
+  setWindowTitle,
+  showPanel,
+} from "./window";
 import "./styles.css";
+
+/** A window call that fails leaves the app usable, so it goes to the console. */
+const report = (what: string) => (reason: unknown) =>
+  console.error(`September could not ${what}.`, reason);
 
 // SQLite is next to the app, so a read is cheap and a stale row is not worth
 // a background refetch.
@@ -84,7 +92,7 @@ const panelRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "panel",
   component: function Panel() {
-    return <PanelShell onHide={() => void hidePanel()} />;
+    return <PanelShell onHide={() => void hidePanel().catch(report("hide the panel"))} />;
   },
 });
 
@@ -242,9 +250,16 @@ const routeTree = rootRoute.addChildren([
     beforeLoad: async () => {
       if (!isSetupDone(currentSetup())) throw redirect({ to: "/welcome" });
       const spaces = await queryClient
-        .fetchQuery({ queryKey: ["spaces"], queryFn: listSpaces })
-        .catch(() => []);
-      throw redirect({ to: openingPath(currentPath(), spaces) });
+        .fetchQuery({
+          queryKey: ["spaces"],
+          queryFn: () => platform.store.listSpaces(currentUserId()),
+        })
+        .catch((reason: unknown) => {
+          // The app still opens, on its first page.
+          report("read the spaces")(reason);
+          return [];
+        });
+      throw redirect({ to: openingPath(lastPath, spaces, platform.capabilities) });
     },
   }),
   setupRoute.addChildren([
@@ -265,6 +280,8 @@ const routeTree = rootRoute.addChildren([
   }),
 ]);
 
+let lastPath: string | null = null;
+
 // ponytail: hash history keeps deep routes working from the Tauri asset
 // protocol without a dev-server rewrite rule.
 const router = createRouter({ routeTree, history: createHashHistory() });
@@ -273,16 +290,21 @@ const router = createRouter({ routeTree, history: createHashHistory() });
 // `onResolved` runs after the route settles, so a redirect keeps only where it
 // landed.
 router.subscribe("onResolved", ({ toLocation }) => {
-  void savePath(toLocation.pathname);
-  void setWindowTitle(windowTitle(toLocation.pathname));
+  const path = toLocation.pathname;
+  // One screen can resolve twice, and a write that changes nothing is skipped.
+  if (path !== lastPath) {
+    lastPath = path;
+    saveLastPath(path).catch(report("keep the screen"));
+  }
+  setWindowTitle(windowTitle(path)).catch(report("set the window title"));
 });
 
 // Setup runs in a normal window with a Dock icon. When it ends, the panel
 // takes the saved float choice and opens on `/`.
-let setupDone = isSetupDone(currentSetup());
+let setupDone = false;
 subscribeSetup(() => {
   const done = isSetupDone(currentSetup());
-  if (done !== setupDone) void panelSetup(!done);
+  if (done !== setupDone) panelSetup(!done).catch(report("change the window"));
   if (done && !setupDone) void router.navigate({ to: "/" });
   setupDone = done;
 });
@@ -299,14 +321,22 @@ if (!root) {
   throw new Error("Missing root element");
 }
 
-createRoot(root).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
-);
+/** Reads the settings once, mounts the app, then shows the panel. */
+async function start(element: HTMLElement): Promise<void> {
+  [lastPath] = await Promise.all([readLastPath(), loadSettings()]);
+  setupDone = isSetupDone(currentSetup());
 
-// The panel starts hidden. Before setup ends, it is a normal window.
-if (!setupDone) await panelSetup(true);
-void showPanel();
+  createRoot(element).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </StrictMode>,
+  );
+
+  // The panel starts hidden. Before setup ends, it is a normal window.
+  if (!setupDone) await panelSetup(true);
+  await showPanel();
+}
+
+start(root).catch(report("start"));

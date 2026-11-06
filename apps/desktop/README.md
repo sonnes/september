@@ -19,14 +19,18 @@ and the services that connect that UI to macOS.
 | `packages/app-ui/layouts/` | `onboarding.tsx`, `app.tsx`, `panel.tsx`, `settings.tsx`                                                                                                   | The component renders an `<Outlet/>`.                |
 | `packages/app-ui/pages/`   | Route screens: `steps` `spaces` `talk` `agent` `notes` `voice` `settings` `usage`                                                                          | A `createRoute` call in `src/main.tsx` names it.     |
 | `packages/app-ui/blocks/`  | `screen` `space` `chrome` `panel-header` `present` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it.                 |
-| `src/services/`            | `os` `data` `backup` `ai` `agent` `speech` `cloning` `player` `phrase-sync` `suggest` `usage`                                                              | It speaks to Rust, the platform, or a cloud service. |
+| `packages/app-ui/services/` | `settings` `data` `speech` `ai` `agent` `usage` `connections` `backup` `export` `cloning` `phrase-sync` `suggest` `player`                               | Both apps share it, over the platform.               |
+| `src/platform.ts`          | The Mac platform: `store`, `voice`, `providers`, `writing`, `device`, `capabilities`                                                                       | It speaks to Rust.                                   |
+| `src/commands.ts`          | Every Tauri command, with its arguments and its answer, and `call`                                                                                         | Every call to Rust goes through `call`.              |
+| `src/window.ts`            | The panel window and the saved path                                                                                                                        | Only the desktop has it.                             |
 | `packages/core/`           | autocomplete and platform-independent rules                                                                                                                | Both web and desktop import the same implementation. |
 | `packages/ui/`             | Tailwind theme and shadcn primitives                                                                                                                       | A token or primitive has one source.                 |
-| `src/rules/`               | `app-nav` `panel-nav` `settings-nav` `onboarding` and core compatibility exports                                                                           | Platform route rules stay local.                     |
+| `src/rules/`               | `eye-tracker`                                                                                                                                              | A rule of a desktop-only screen.                     |
 
-Shared UI imports `@platform/*`; the desktop build maps that alias to `src/`.
-This keeps SQLite, Keychain, speech, and native-media calls outside the shared
-screen package.
+Shared UI imports the platform from `@platform/adapter`. TypeScript and Vite
+map that alias to `src/platform.ts`. This keeps SQLite, Keychain, speech, and
+native-media calls outside the shared screen package. See
+`packages/app-ui/README.md`.
 
 ## Move through the app
 
@@ -52,8 +56,8 @@ never wears the panel chrome, and an app screen never wears the setup sidebar.
 no screen redirect to `/`. The bootstrap gives `PanelShell` one callback,
 `onHide`, which calls `panel_hide`.
 
-`src/rules/app-nav.ts` lists the pages of `APP_NAV` and their descriptions:
-Spaces, Voice, Eye tracker, Help, and Settings. The More menu of the panel
+`APP_NAV` in `packages/app-ui/navigation.ts` lists the pages for the
+capabilities of the Mac: Spaces, Voice, Eye tracker, Help, and Settings. The More menu of the panel
 header lists them. All of them except Eye tracker use the same screens as the
 browser app.
 
@@ -63,22 +67,22 @@ finished-setup guard. The setup sidebar can open the setup guide inline without
 leaving the current step or changing its answers. An unknown guide slug returns
 to `/help`.
 
-Setup runs one time. Before setup is done, `src/main.tsx` calls
-`panel_setup(true)`, then shows the panel. The panel is then a normal window,
-and September has a Dock icon. The last step keeps its answers in the `setup`
-setting, then opens `/dashboard`, which redirects to `/`.
+Before the first render, `src/main.tsx` awaits `loadSettings` and reads the
+`lastPath` setting. Setup runs one time. Before setup is done, `src/main.tsx`
+calls `panel_setup(true)`, then shows the panel. The panel is then a normal
+window, and September has a Dock icon. The last step keeps its answers in the
+`setup` setting, then opens the first page of `APP_NAV`, `/spaces`.
 
 When setup becomes done, the bootstrap calls `panel_setup(false)` and goes to
 `/`. `panel_setup(false)` applies the saved float choice. If setup goes back to
 not done, the bootstrap calls `panel_setup(true)` again.
 
 The app comes back where it was. The router keeps each arrival in the
-`lastPath` setting, and `/` reads it. `openingPath(saved, spaces)` in
-`src/rules/app-nav.ts` owns the rule. It gives the saved path only when the path
+`lastPath` setting, and `/` reads it. `openingPath(saved, spaces, capabilities)`
+in `packages/core/rules/navigation.ts` owns the rule. It gives the saved path only when the path
 is exactly one of these pages:
 
-- A space-mode path whose space exists. `SPACE_MODE_PATH` in
-  `src/rules/panel-nav.ts` matches the Talk, Notes, note, and Agent paths.
+- A Talk, Notes, note, or Agent path whose space exists.
 - A page of `APP_NAV`, or `/voice/clone`.
 - A settings section.
 - A connection page of a known provider.
@@ -90,10 +94,10 @@ never decide where the app opens.
 
 The macOS app and the panel are named `September`. After each route settles,
 the window adds the page name, such as `September — Talk`. The `windowTitle`
-rule in `src/rules/app-nav.ts` names setup steps, space and note screens, voice
+rule in `packages/core/rules/navigation.ts` names setup steps, space and note screens, voice
 cloning, settings sections, and connection pages.
 
-`isSetupDone` in `src/rules/onboarding.ts` owns that rule: setup is done when it
+`isSetupDone` in `packages/core/rules/onboarding.ts` owns that rule: setup is done when it
 holds a name and a mode. The app layout reads the same rule, so an app screen
 opened before setup turns back to `/welcome`.
 
@@ -276,8 +280,8 @@ In the compact tier, the composer folds. See [The panel header](#the-panel-heade
 `packages/core/rules/spaces.ts` owns the rules that a test can read: the slug, the page, the
 unique title, and the word that delete removes.
 
-`src/services/data.ts` holds every read and every write of a space or a message. It uses
-TanStack Query over the Rust commands. The owner of each row is the login name
+`packages/app-ui/services/data.ts` holds every read and every write of a space or a message. It uses
+TanStack Query over the store of `src/platform.ts`, which calls the Rust commands. The owner of each row is the login name
 of the operating system, which setup keeps in the `setup` setting.
 
 The composer keeps its text until SQLite accepts the message, so a failed write
@@ -367,7 +371,7 @@ Delete asks first, in a dialog with a red button.
 `packages/core/rules/notes.ts` owns the rules that a test can read: the name from the words,
 the slug, and the text a voice says. `packages/app-ui/pages/notes.tsx` holds the screen.
 
-`src/services/data.ts` reads and writes a note through `note_list`, `note_get`,
+The store of `src/platform.ts` reads and writes a note through `note_list`, `note_get`,
 `note_put`, and `note_delete`. `note_put` writes one complete row, so
 `useUpdateNote` reads the row first and changes only the fields it carries.
 Deleting a space deletes its notes, in the same transaction as its messages.
@@ -396,15 +400,15 @@ Thirds of the stage move back, hold, and on. The keys are `←` `→` `Space`
 `present` setting.
 
 Export saves the note as `.md` always, and as `.mp3` with an ElevenLabs voice.
-`src/services/export.ts` writes both through the WebView download support, so
+`packages/app-ui/services/export.ts` writes both through the WebView download support, so
 the file is made on the Mac and goes nowhere else. Audio reuses the speech file
 that a voice-over already made.
 
 Video is made in the browser app for now, and the row says so instead of
-hiding: `ffmpeg.wasm` reaches its core through a blob URL, and the script
-policy of this window allows `'self'` only.
+hiding. The Mac platform has no `renderVideo`: `ffmpeg.wasm` reaches its core
+through a blob URL, and the script policy of this window allows `'self'` only.
 
-`packages/core/rules/present.ts` owns the chunking, the tones, the font fit,
+`packages/core/rules/present/` owns the chunking, the tones, the font fit,
 and the caption timing. See `docs/concepts/note-present-export.md`.
 
 ### The note of the space
@@ -446,8 +450,8 @@ taken. Both stay on `/voice`, which has the room.
 A press on the open tab closes the card. A press on the other tab moves the
 card to it. Escape closes the card and leaves the rail. September keeps the
 answer — the tab and whether the card was open — in the `panel-open` setting,
-so the card comes back the way it was left. `src/services/os.ts` holds the same
-answer while the app runs, because Talk and Notes each draw their own rail and
+so the card comes back the way it was left. The `panel` setting in
+`packages/app-ui/services/settings.ts` holds the same answer while the app runs, because Talk and Notes each draw their own rail and
 a mode switch must not undo a press. The setting held a plain `true` or `false`
 while Phrases was the only tab, and `panelStateFrom` still reads that answer.
 
@@ -509,7 +513,7 @@ layer still learns every word that the user writes.
 - `applySuggestion(text, word)` gives the text after the user takes a word. A
   word always ends with a space, which saves one more keystroke.
 
-`src/services/suggest.ts` holds the engine and gives it the messages. A screen calls
+`packages/app-ui/services/suggest.ts` holds the engine and gives it the messages. A screen calls
 `useSuggestions(spaceId, draft)`.
 
 The engine learns again at each start. This costs about 6 ms for the seed words
@@ -541,9 +545,8 @@ A one-word phrase draws as a chip, and not as a row. `stripePhrases` caps the
 rows after it drops those phrases, so a one-word phrase never takes the place
 of a row.
 
-`packages/core/rules/stripes.ts` and `packages/core/rules/phrases.ts` hold the rules. Both are ports of
-`apps/web/src/packages/{suggestions,spaces}/lib`. Change them in both apps, or
-in neither.
+`packages/core/rules/stripes.ts` and `packages/core/rules/phrases/` hold the rules. Both apps
+use them.
 
 A code is a short name for a phrase: `ty` gives "Thank you". Type it and the
 phrase comes to the top of the rows. A code is 2 to 5 letters, it is never a
@@ -601,7 +604,7 @@ of the model join them when the answer comes.
 
 A pin is solid when the user keeps the phrase, and it is an outline when a
 model wrote it. The panel uses the same two shapes, so one phrase reads the
-same in both places. `isKept` in `packages/core/rules/phrases.ts` answers the question,
+same in both places. `isKept` in `packages/core/rules/phrases/rows.ts` answers the question,
 because a stripe carries text only and not the row it came from.
 
 The sizes come from `TILE` in `packages/core/rules/stripes.ts`, the same numbers the web app
@@ -619,7 +622,7 @@ codes, the rows from past messages, and the word row.
 
 ## Hear a voice
 
-`src/services/speech.ts` gives every voice one interface. A screen calls `speak(text)`
+`packages/app-ui/services/speech.ts` gives every voice one interface. A screen calls `speak(text)`
 and does not know which service answers.
 
 | Voice        | How it speaks                                                    |
@@ -629,7 +632,7 @@ and does not know which service answers.
 | `dialogue`   | Rust streams Eleven v3 from the Text to Dialogue stream, or Eleven v3 Conversational from the Text to Dialogue socket. The native process plays each chunk. |
 
 Spoken messages now leave the native process. This path lets the Core Audio
-process tap receive both voices. Voice-list previews still use `src/services/player.ts`
+process tap receive both voices. Voice-list previews still use `packages/app-ui/services/player.ts`
 and do not enter a call.
 
 A cloud voice that fails falls back to the voice of this Mac, and the composer
@@ -691,8 +694,9 @@ upload one or more audio files, record any of 10 guided samples with the
 microphone, or combine both sources. Each file can be at most 25 MB. A name
 and one sample are required. The encoded request can be at most 100 MB.
 
-`src/services/cloning.ts` builds the ElevenLabs multipart form and sends its
-bytes through raw Tauri IPC. Rust adds the cached ElevenLabs key and forwards
+`packages/app-ui/services/cloning.ts` builds the ElevenLabs multipart form.
+`providers.cloneVoice` in `src/platform.ts` sends its bytes through raw Tauri
+IPC. Rust adds the cached ElevenLabs key and forwards
 the form to the fixed `/v1/voices/add` endpoint. Audio does not become JSON or
 base64, and the key never reaches the WebView.
 
@@ -761,8 +765,9 @@ deletes events older than 90 days at startup and whenever it reads or writes
 usage. An event exactly 90 days old remains until it crosses the boundary.
 Recording is best-effort and never stops speaking or writing.
 
-`src/usage-summary.ts` holds the key-count, range, aggregation, and CSV rules.
-`src/usage.ts` records and reads events through `call()` in `src/services/data.ts`.
+`packages/core/rules/usage-summary.ts` holds the key-count, range, aggregation, and CSV rules.
+`packages/app-ui/services/usage.ts` records and reads events through the store of the platform.
+A failed record goes to the console.
 `packages/app-ui/pages/usage.tsx` draws the report.
 
 ## Walk through setup
@@ -770,7 +775,7 @@ Recording is best-effort and never stops speaking or writing.
 Each step is a route: `/welcome`, `/profile`, `/connect`, and
 `/finish`.
 Everyone follows the same four steps. Connecting cloud services is optional.
-`stepsFor` in `src/rules/onboarding.ts` owns the sequence, and the sidebar, the
+`STEPS` in `packages/core/rules/onboarding.ts` owns the sequence, and the sidebar, the
 guards, and both navigation directions all read it. The router uses hash history,
 because Tauri serves the built files from the asset protocol. A step opens only
 after the answers it needs exist. The answers stay in memory until account
@@ -800,7 +805,7 @@ so a user on a supported Mac continues without an action.
 
 An API key goes to the macOS Keychain, through Rust. The React code sends a key
 one time and reads back a status. No key enters the draft, SQLite, an event, or
-the browser storage. `src/services/os.ts` holds the only calls to Rust.
+the browser storage. Every call to Rust goes through `call` in `src/commands.ts`.
 
 Rust reads both Keychain entries when the app starts and keeps the values in
 memory. Provider commands use that cache. Connecting or forgetting a service
@@ -817,9 +822,9 @@ The voice list comes from `GET /v2/voices`, with `voice_type=non-default` and
 ElevenLabs voices, so the list holds the voices of this account only. A page
 gives 10 voices without `page_size`.
 
-Rust sorts the list by category: a cloned voice first, then a professional
-voice, then a stock voice, then a similar voice. The category and `is_owner` also
-reach the screen.
+Rust gives the list in the order of ElevenLabs, with the category and
+`is_owner` of each voice. `voiceRows` in `packages/core/rules/voice.ts` groups
+and sorts the rows.
 
 The Voice screen shows the voices in four groups, each in two columns.
 **Yours** holds the voices the user made: ElevenLabs sets `is_owner` on a
@@ -858,7 +863,7 @@ Listening still needs a transcription backend, and Account needs an account.
 The service and the voices keep their own screen, `/voice`, in both apps. The
 model and the sound moved to the rail of a space.
 
-`src/rules/settings-nav.ts` holds the rules that a test can read: the sections, the
+`packages/core/rules/navigation.ts` holds the rules that a test can read: the sections, the
 open section, and the guide for each cloud service. `packages/app-ui/layouts/settings.tsx`
 holds the section list, and `packages/app-ui/pages/settings.tsx` holds the screens.
 
@@ -886,7 +891,7 @@ this tab to Phrases. Other unsupported panel tabs remain invalid.
 A press on **Set up** opens `/settings/connections/openrouter` or
 `/settings/connections/elevenlabs`. The page gives the steps, takes the key,
 and opens the address of the service in the browser of the Mac. The key goes
-straight to the Keychain, through `src/services/os.ts`.
+straight to the Keychain, through `providers.connect` in `src/platform.ts`.
 
 The key pages hold no model list. The OpenRouter page links to AI Assistance,
 where the user chooses the models.
@@ -901,12 +906,12 @@ and phrases section has two switches and one model list. Each list is a
 A Frontier group and an Open models group follow. A saved model that is not on
 a list shows as the first row, "Current: <id>".
 
-**Automatic** is the first row, and the default. It asks for no model, so the
-app sends its own free list and OpenRouter uses the first model that answers.
+**Automatic** is the first row, and the default. The app sends
+`openrouter/free`, and OpenRouter picks a free model that answers.
 The agent and phrases model goes into `setup.defaultModel`. The suggestions
 model goes into `setup.suggestionsModel`. If `suggestionsModel` is null,
 Suggestions use `defaultModel`. A provider change writes the new service into
-both values. `src/services/ai.ts` sends the model with each request.
+both values. `packages/app-ui/services/ai.ts` sends the model with each request.
 
 AI Assistance settings have independent switches for automatic suggestions,
 phrase generation, and the agent. All three default to on. If the agent is off,
@@ -916,7 +921,8 @@ SQLite settings and portable backups preserve all three switches. Failed setting
 writes report an error and keep the saved value.
 
 The default writing selection powers the Agent. The desktop backend forwards a
-fixed tool-calling request to OpenRouter or the bundled apfel endpoint. The
+fixed tool-calling request to OpenRouter, or to the bundled apfel sidecar
+through the `appleUrl` of the proxy. The
 Automatic choice uses OpenRouter's `openrouter/free` router, which selects a
 current free model that supports the request's tools. The core runtime applies read
 tools and changes automatically, and stops only on a delete, until the user
@@ -955,7 +961,7 @@ The setup steps ask how September runs. Settings does not ask again, because
 one answer in two places lets the two disagree.
 
 The speaking style and the personal words go to the writing service as its
-user context. `userContext()` in `src/services/ai.ts` assembles them.
+user context. `userContext()` in `packages/app-ui/services/ai.ts` assembles them.
 
 Buttons, inputs, and labels come from shadcn/ui. The primitives are in
 `packages/ui/components/`. Run shadcn from that package to add one more:

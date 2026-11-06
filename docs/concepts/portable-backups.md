@@ -40,9 +40,13 @@ Each repository reads a consistent snapshot. Core writes each collection in
 identifier order and checks nothing. The downloaded file is named
 `september-backup-YYYY-MM-DD.json`.
 
-Some older Mac profiles have no owner ID in the setup value. Desktop export
-uses the current Mac login name in the backup without changing the stored
-value.
+Each store gives and takes the portable settings as a map by setting key.
+`backupContentsFrom` in `packages/core/rules/backup.ts` makes the map into the
+settings of the file, with the same defaults in both apps. `storedBackupFrom`
+makes the settings of a file into the map for an import.
+
+Some older profiles have no owner ID in the setup value. Export uses the
+current owner of the rows in the backup without changing the stored value.
 
 Older desktop profiles can also name the retired Camera panel tab. An import
 changes this tab to Phrases. An export writes the value the app holds.

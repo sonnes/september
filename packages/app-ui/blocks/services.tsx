@@ -13,13 +13,8 @@ import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
 import { Label } from "@september/ui/components/label";
 
-import {
-  connectProvider,
-  connectOpenRouter,
-  openInBrowser,
-  type Provider,
-  type ProviderStatus,
-} from "@platform/services/os";
+import { platform } from "@platform/adapter";
+import type { Provider, ProviderStatus } from "@september/app-ui/platform";
 
 /**
  * The mark beside a service name.
@@ -131,7 +126,7 @@ export function KeyPanel({
     setBusy(true);
     setProblem("");
     try {
-      onConnected(await connectProvider(provider, key.trim()));
+      onConnected(await platform.providers.connect(provider, key.trim()));
       setKey("");
     } catch (reason) {
       setProblem(reason instanceof Error ? reason.message : String(reason));
@@ -206,7 +201,7 @@ function OpenRouterConnect({ onConnected }: { onConnected: (status: ProviderStat
     setBusy(true);
     setProblem("");
     try {
-      const status = await connectOpenRouter(attempt.signal);
+      const status = await platform.providers.connectOpenRouter(attempt.signal);
       if (!attempt.signal.aborted) onConnected(status);
     } catch (reason) {
       if (!attempt.signal.aborted) setProblem(reason instanceof Error ? reason.message : String(reason));
@@ -235,7 +230,7 @@ function OpenRouterConnect({ onConnected }: { onConnected: (status: ProviderStat
 export function ElevenLabsImpactLink() {
   return (
     <Button type="button" variant="link" className="h-auto min-h-11 justify-start whitespace-normal px-0 text-left"
-      onClick={() => void openInBrowser("https://elevenlabs.io/impact")}>
+      onClick={() => void platform.device.openInBrowser("https://elevenlabs.io/impact")}>
       ElevenLabs Impact Program
     </Button>
   );

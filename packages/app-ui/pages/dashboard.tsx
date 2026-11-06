@@ -11,7 +11,7 @@ import {
   TimeRangeSelect,
   UsageCard,
 } from "@september/app-ui/blocks/usage";
-import { useElevenLabsQuota, useUsage } from "@platform/services/usage";
+import { useElevenLabsQuota, useUsage } from "@september/app-ui/services/usage";
 import type { TimeRange } from "@september/core/rules/usage-summary";
 
 export function DashboardScreen() {

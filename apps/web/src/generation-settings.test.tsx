@@ -5,13 +5,11 @@ import { AGENT_MODELS, SUGGESTIONS_MODELS } from '@september/core/rules/model-co
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { DEFAULT_DRAFT } from './rules/onboarding';
+import { setup } from '@september/app-ui/services/settings';
+import { DEFAULT_DRAFT, type SavedSetup } from '@september/core/rules/onboarding';
 
-const state = vi.hoisted(() => ({
-  setup: {} as Record<string, unknown>,
-  listeners: new Set<() => void>(),
-  update: vi.fn(),
-}));
+import { platform } from './test/platform';
+
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, params: _params, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
     to: string;
@@ -22,42 +20,28 @@ vi.mock('@tanstack/react-router', () => ({
     </a>
   ),
 }));
-vi.mock('@platform/services/os', async original => {
-  const actual = await original<typeof import('./services/os')>();
-  return {
-    ...actual,
-    currentSetup: () => state.setup,
-    subscribeSetup: (listener: () => void) => {
-      state.listeners.add(listener);
-      return () => state.listeners.delete(listener);
-    },
-    updateSetup: state.update,
-    readConnections: async () => ({
-      ...actual.BLANK_CONNECTIONS,
-      openrouter: { provider: 'openrouter', connected: true, label: 'Key', detail: null },
-    }),
-  };
-});
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
-beforeEach(() => {
+const saved = (): SavedSetup => setup.get()!;
+
+beforeEach(async () => {
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
-  state.setup = {
+  await setup.set({
     ...DEFAULT_DRAFT,
+    id: 'person',
     defaultModel: { service: 'openrouter', model: '' },
     suggestionsModel: null,
     autoSuggestions: true,
     autoPhrases: true,
     agentEnabled: true,
-  };
-  state.update.mockReset().mockImplementation(async patch => {
-    state.setup = { ...state.setup, ...patch };
-    state.listeners.forEach(listener => listener());
-    return state.setup;
   });
+  vi.mocked(platform.providers.status).mockResolvedValue([
+    { provider: 'openrouter', connected: true, label: 'Key', detail: null },
+    { provider: 'elevenlabs', connected: false, label: null, detail: null },
+  ]);
 });
 afterEach(() => {
   act(() => root.unmount());
@@ -93,12 +77,12 @@ it('saves the suggestions, phrases, and agent switches independently and retains
   expect(switches()).toHaveLength(3);
   switches()[0].focus();
   await act(async () => switches()[0].click());
-  expect(state.update).toHaveBeenLastCalledWith({ autoSuggestions: false });
+  expect(saved()).toMatchObject({ autoSuggestions: false, autoPhrases: true, agentEnabled: true });
   expect(document.activeElement).toBe(switches()[0]);
   await act(async () => switches()[1].click());
-  expect(state.update).toHaveBeenLastCalledWith({ autoPhrases: false });
+  expect(saved()).toMatchObject({ autoSuggestions: false, autoPhrases: false, agentEnabled: true });
   await act(async () => switches()[2].click());
-  expect(state.update).toHaveBeenLastCalledWith({ agentEnabled: false });
+  expect(saved()).toMatchObject({ autoSuggestions: false, autoPhrases: false, agentEnabled: false });
   expect(switches().map(button => button.getAttribute('aria-checked'))).toEqual([
     'false',
     'false',
@@ -107,8 +91,8 @@ it('saves the suggestions, phrases, and agent switches independently and retains
 });
 
 it('keeps the saved switch value and reports a failed save', async () => {
-  state.update.mockRejectedValue(new Error('Storage unavailable'));
   await render();
+  vi.mocked(platform.store.putSetting).mockRejectedValue(new Error('Storage unavailable'));
   await act(async () => switches()[0].click());
   expect(switches()[0].getAttribute('aria-checked')).toBe('true');
   expect(container.querySelector('[role="alert"]')?.textContent).toBeTruthy();
@@ -118,45 +102,42 @@ it('saves the suggestions model without changing the agent model', async () => {
   await render();
   const model = SUGGESTIONS_MODELS[0];
   await act(async () => row(section('Suggestions'), model.name).click());
-  expect(state.update).toHaveBeenLastCalledWith({
-    suggestionsModel: { service: 'openrouter', model: model.id },
-  });
-  expect(state.setup.defaultModel).toEqual({ service: 'openrouter', model: '' });
+  expect(saved().suggestionsModel).toEqual({ service: 'openrouter', model: model.id });
+  expect(saved().defaultModel).toEqual({ service: 'openrouter', model: '' });
 });
 
 it('saves the agent and phrases model as the default model', async () => {
   await render();
   const model = AGENT_MODELS[0];
   await act(async () => row(section('Agent and phrases'), model.name).click());
-  expect(state.update).toHaveBeenLastCalledWith({
-    defaultModel: { service: 'openrouter', model: model.id },
-  });
+  expect(saved().defaultModel).toEqual({ service: 'openrouter', model: model.id });
 });
 
 it('saves Automatic as an empty model', async () => {
-  state.setup.defaultModel = { service: 'openrouter', model: AGENT_MODELS[0].id };
+  await setup.set({ ...saved(), defaultModel: { service: 'openrouter', model: AGENT_MODELS[0].id } });
   await render();
   await act(async () => row(section('Agent and phrases'), 'Automatic').click());
-  expect(state.update).toHaveBeenLastCalledWith({
-    defaultModel: { service: 'openrouter', model: '' },
-  });
+  expect(saved().defaultModel).toEqual({ service: 'openrouter', model: '' });
 });
 
 it('shows a saved model that is not on the list as the chosen first row', async () => {
-  state.setup.defaultModel = { service: 'openrouter', model: 'vendor/old-model' };
+  await setup.set({ ...saved(), defaultModel: { service: 'openrouter', model: 'vendor/old-model' } });
   await render();
   const chosen = section('Agent and phrases').querySelector('[role="radio"][aria-checked="true"]');
   expect(chosen?.textContent).toContain('vendor/old-model');
 });
 
 it('moves both models to a new provider', async () => {
-  state.setup.suggestionsModel = { service: 'openrouter', model: SUGGESTIONS_MODELS[0].id };
+  await setup.set({
+    ...saved(),
+    suggestionsModel: { service: 'openrouter', model: SUGGESTIONS_MODELS[0].id },
+  });
   await render();
   const none = [...section('Provider').querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(
     radio => radio.closest('label')?.textContent?.includes('No AI Assistance'),
   );
   await act(async () => none!.click());
-  expect(state.update).toHaveBeenLastCalledWith({
+  expect(saved()).toMatchObject({
     defaultModel: { service: 'none', model: '' },
     suggestionsModel: { service: 'none', model: SUGGESTIONS_MODELS[0].id },
   });

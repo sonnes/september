@@ -17,19 +17,19 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => state.navigate }));
 
-vi.mock('@platform/services/ai', () => ({
+vi.mock('@september/app-ui/services/ai', () => ({
   hasWritingService: () => true,
   generate: vi.fn(),
   itemsFrom: () => [],
   userContext: () => '',
 }));
 
-vi.mock('@platform/services/agent', () => ({
+vi.mock('@september/app-ui/services/agent', () => ({
   askAgent: state.ask,
   resolveAgentProposal: vi.fn(),
 }));
 
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useSpaces: () => ({ data: [state.space], isPending: false, isFetching: false }),
   useAgentMessages: () => ({ data: state.rows, error: null }),
   useAllMessages: () => ({ data: [] }),
@@ -40,21 +40,7 @@ vi.mock('@platform/services/data', () => ({
   usePutPhrase: () => ({ mutate: vi.fn() }),
 }));
 
-vi.mock('@platform/services/os', () => ({
-  currentSetup: () => null,
-  currentSpeech: () => null,
-  subscribeSetup: () => () => {},
-  spaceModes: {},
-  rememberModes: vi.fn(),
-  listOutputs: vi.fn(async () => []),
-  currentOutput: vi.fn(async () => ''),
-  chooseOutput: vi.fn(),
-  startVirtualMicrophone: vi.fn(),
-  stopVirtualMicrophone: vi.fn(),
-  virtualMicrophoneStatus: vi.fn(async () => ({ active: false, uid: '' })),
-}));
-
-vi.mock('@platform/services/suggest', () => ({
+vi.mock('@september/app-ui/services/suggest', () => ({
   useSuggestions: () => [],
   applySuggestion: (text: string) => text,
 }));

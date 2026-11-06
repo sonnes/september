@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PanelShell } from '@september/app-ui/layouts/panel';
-import { APP_NAV } from '@platform/rules/app-nav';
+import { APP_NAV } from '@september/app-ui/navigation';
 import { axeViolations } from './axe';
 
 const state = vi.hoisted(() => ({
@@ -22,20 +22,19 @@ vi.mock('@tanstack/react-router', () => ({
     select({ location: { pathname: state.path } }),
   Outlet: () => <p>The screen</p>,
 }));
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useSpaces: () => ({ data: state.spaces, isPending: false, isFetching: false }),
   useCreateSpace: () => ({ mutateAsync: state.create, isPending: false }),
   useUpdateSpace: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
   useDeleteSpace: () => ({ mutate: vi.fn(), isPending: false }),
 }));
-vi.mock('@platform/services/os', () => ({
+vi.mock('@september/app-ui/services/settings', async (original) => ({
+  ...(await original<object>()),
   currentSetup: () => state.setup,
-  subscribeSetup: () => () => {},
-  spaceModes: {},
-  rememberModes: vi.fn(),
+  useSetup: () => state.setup,
 }));
-vi.mock('@platform/services/ai', () => ({ hasWritingService: () => false }));
-vi.mock('@platform/services/speech', () => ({ useSpeaking: () => null, stopSpeaking: vi.fn() }));
+vi.mock('@september/app-ui/services/ai', () => ({ hasWritingService: () => false }));
+vi.mock('@september/app-ui/services/speech', () => ({ useSpeaking: () => null, stopSpeaking: vi.fn() }));
 vi.mock('@september/app-ui/blocks/phrase-panel', () => ({ Phrases: () => <p>Phrases list</p> }));
 vi.mock('@september/app-ui/blocks/speech-settings', () => ({ SpeechSettings: () => <p>Voice settings</p> }));
 

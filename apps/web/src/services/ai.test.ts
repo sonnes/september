@@ -1,31 +1,28 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { generate, openAgentWriter } from './ai';
+import { generate, openAgentWriter } from '@september/app-ui/services/ai';
+import { setup } from '@september/app-ui/services/settings';
+import { DEFAULT_DRAFT, type SavedSetup } from '@september/core/rules/onboarding';
 
-const state = vi.hoisted(() => ({
-  setup: {
+import { platform } from '../test/platform';
+
+async function chooseModels(
+  models: Partial<Pick<SavedSetup, 'defaultModel' | 'suggestionsModel'>>
+) {
+  await setup.set({
+    ...DEFAULT_DRAFT,
+    id: 'ravi',
+    name: 'Ravi',
     defaultModel: { service: 'openrouter', model: '' },
-    suggestionsModel: null as { service: 'openrouter'; model: string } | null,
-  },
-  usage: [] as Array<Record<string, unknown>>,
-}));
+    suggestionsModel: null,
+    ...models,
+  });
+}
 
-vi.mock('./os', () => ({
-  currentSetup: () => state.setup,
-  providerKey: () => 'test-openrouter-key',
-}));
+/** The data of the last usage event. */
+const lastUsage = () => vi.mocked(platform.store.putUsageEvent).mock.calls.at(-1)?.[0].data;
 
-vi.mock('./usage', () => ({
-  recordAiUsage: (event: Record<string, unknown>) => {
-    state.usage.push(event);
-  },
-}));
-
-beforeEach(() => {
-  state.setup.defaultModel = { service: 'openrouter', model: '' };
-  state.setup.suggestionsModel = null;
-  state.usage.length = 0;
-});
+beforeEach(() => chooseModels({}));
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -61,7 +58,7 @@ const text = (content: string) => answer([{ role: 'assistant', content }]);
 const bodyOf = (request: ReturnType<typeof vi.fn>, call = 0) =>
   JSON.parse(String(request.mock.calls[call]?.[1]?.body)) as Record<string, unknown>;
 
-describe('the browser writing service', () => {
+describe('the writing service', () => {
   it('routes an automatic Agent request through OpenRouter’s current free tool models', async () => {
     const request = vi.fn(async () => text('Hello.'));
     vi.stubGlobal('fetch', request);
@@ -79,8 +76,10 @@ describe('the browser writing service', () => {
   });
 
   it('uses the Suggestions model override only for suggestion calls', async () => {
-    state.setup.defaultModel = { service: 'openrouter', model: 'default/model' };
-    state.setup.suggestionsModel = { service: 'openrouter', model: 'suggestions/model' };
+    await chooseModels({
+      defaultModel: { service: 'openrouter', model: 'default/model' },
+      suggestionsModel: { service: 'openrouter', model: 'suggestions/model' },
+    });
     const request = vi.fn(async () => text('Hello.'));
     vi.stubGlobal('fetch', request);
 
@@ -98,7 +97,7 @@ describe('the browser writing service', () => {
   });
 
   it('uses the default model for Suggestions when no override is set', async () => {
-    state.setup.defaultModel = { service: 'openrouter', model: 'default/model' };
+    await chooseModels({ defaultModel: { service: 'openrouter', model: 'default/model' } });
     const request = vi.fn(async () => text('Hello.'));
     vi.stubGlobal('fetch', request);
 
@@ -110,32 +109,37 @@ describe('the browser writing service', () => {
     expect(bodyOf(request, 0).model).toBe('default/model');
   });
 
-  it.each(['', '   '])('routes an automatic model (%j) through the free router and keeps JSON mode', async model => {
-    state.setup.defaultModel.model = model;
-    const request = vi.fn(async () => text('{"items":[]}'));
-    vi.stubGlobal('fetch', request);
+  it.each(['', '   '])(
+    'routes an automatic model (%j) through the free router and keeps JSON mode',
+    async model => {
+      await chooseModels({ defaultModel: { service: 'openrouter', model } });
+      const request = vi.fn(async () => text('{"items":[]}'));
+      vi.stubGlobal('fetch', request);
 
-    await generate(
-      {
-        messages: [
-          { role: 'system', content: 'Be brief.' },
-          { role: 'user', content: 'Suggest something' },
-        ],
-        response_format: { type: 'json_object' },
-      },
-      { feature: 'suggestions' }
-    );
+      await generate(
+        {
+          messages: [
+            { role: 'system', content: 'Be brief.' },
+            { role: 'user', content: 'Suggest something' },
+          ],
+          response_format: { type: 'json_object' },
+        },
+        { feature: 'suggestions' }
+      );
 
-    const body = bodyOf(request);
-    expect(body.model).toBe('openrouter/free');
-    expect(body.response_format).toEqual({ type: 'json_object' });
-    const messages = body.messages as Array<Record<string, unknown>>;
-    expect(messages[0]).toEqual({ role: 'system', content: 'Be brief.' });
-  });
+      const body = bodyOf(request);
+      expect(body.model).toBe('openrouter/free');
+      expect(body.response_format).toEqual({ type: 'json_object' });
+      const messages = body.messages as Array<Record<string, unknown>>;
+      expect(messages[0]).toEqual({ role: 'system', content: 'Be brief.' });
+    }
+  );
 
   it('uses the free router for an automatic Suggestions override and other automatic requests', async () => {
-    state.setup.defaultModel.model = 'default/model';
-    state.setup.suggestionsModel = { service: 'openrouter', model: '' };
+    await chooseModels({
+      defaultModel: { service: 'openrouter', model: 'default/model' },
+      suggestionsModel: { service: 'openrouter', model: '' },
+    });
     const request = vi.fn(async () => text('Hello.'));
     vi.stubGlobal('fetch', request);
 
@@ -145,7 +149,7 @@ describe('the browser writing service', () => {
     );
     expect(bodyOf(request).model).toBe('openrouter/free');
 
-    state.setup.defaultModel.model = '';
+    await chooseModels({});
     await generate(
       { messages: [{ role: 'user', content: 'Describe this space' }] },
       { feature: 'context' }
@@ -165,7 +169,7 @@ describe('the browser writing service', () => {
     writer.spent?.(answer);
 
     // The model that answered is free, so the turn cost nothing and says so.
-    expect(state.usage.at(-1)).toMatchObject({
+    expect(lastUsage()).toMatchObject({
       generation_type: 'agent',
       provider: 'openrouter',
       success: true,
@@ -180,30 +184,30 @@ describe('the browser writing service', () => {
       stopReason: 'error',
       errorMessage: 'That key did not work.',
     });
-    expect(state.usage.at(-1)).toMatchObject({
+    expect(lastUsage()).toMatchObject({
       success: false,
       error_message: 'That key did not work.',
     });
   });
 
   it('prices a call from the catalog, and knows when it cannot', async () => {
-    state.setup.defaultModel = { service: 'openrouter', model: 'openai/gpt-4o-mini' };
+    await chooseModels({ defaultModel: { service: 'openrouter', model: 'openai/gpt-4o-mini' } });
     const priced = vi.fn(async () =>
       answer([{ role: 'assistant', content: 'Hello.' }], { model: 'openai/gpt-4o-mini' })
     );
     vi.stubGlobal('fetch', priced);
     await generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'suggestions' });
-    expect(state.usage.at(-1)).toMatchObject({ cost_source: 'estimated' });
+    expect(lastUsage()).toMatchObject({ cost_source: 'estimated' });
 
-    state.setup.defaultModel = { service: 'openrouter', model: 'nobody/prices-this' };
+    await chooseModels({ defaultModel: { service: 'openrouter', model: 'nobody/prices-this' } });
     const unlisted = vi.fn(async () =>
       answer([{ role: 'assistant', content: 'Hello.' }], { model: 'nobody/prices-this' })
     );
     vi.stubGlobal('fetch', unlisted);
     await generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'suggestions' });
     // Nobody publishes a rate for it, so September records no number at all.
-    expect(state.usage.at(-1)).toMatchObject({ cost_source: 'unknown' });
-    expect(state.usage.at(-1)).not.toHaveProperty('cost_usd');
+    expect(lastUsage()).toMatchObject({ cost_source: 'unknown' });
+    expect(lastUsage()).not.toHaveProperty('cost_usd');
   });
 
   it('raises the reason the service gave, and records the failure', async () => {
@@ -221,6 +225,52 @@ describe('the browser writing service', () => {
     await expect(
       generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'suggestions' })
     ).rejects.toThrow('That key did not work.');
-    expect(state.usage.at(-1)).toMatchObject({ success: false });
+    expect(lastUsage()).toMatchObject({ success: false });
+  });
+
+  it('calls the endpoint of the platform with its key', async () => {
+    const request = vi.fn(async () => text('Hello.'));
+    vi.stubGlobal('fetch', request);
+
+    await generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'suggestions' });
+
+    const [url, init] = request.mock.calls[0] as unknown as [string, RequestInit];
+    expect(String(url)).toBe('https://openrouter.test/api/v1/chat/completions');
+    expect(new Headers(init.headers).get('authorization')).toBe('Bearer test-key');
+  });
+
+  it('asks Apple Intelligence for its one model at the address of the platform', async () => {
+    platform.writing.apple = {
+      status: async () => ({ supported: true, available: true, reason: null }),
+      endpoint: async () => ({ baseUrl: 'http://127.0.0.1:9/apple/v1', key: 'run-token' }),
+    };
+    await chooseModels({ defaultModel: { service: 'apple', model: '' } });
+    const request = vi.fn(async () => text('Hello.'));
+    vi.stubGlobal('fetch', request);
+
+    await generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' });
+
+    expect(String(request.mock.calls[0][0])).toBe('http://127.0.0.1:9/apple/v1/chat/completions');
+    expect(bodyOf(request).model).toBe('apple-foundationmodel');
+    expect(lastUsage()).toMatchObject({ provider: 'apple', cost_source: 'free', success: true });
+  });
+
+  it('refuses Apple Intelligence on a platform without it, and records the failure', async () => {
+    await chooseModels({ defaultModel: { service: 'apple', model: '' } });
+    const request = vi.fn(async () => text('Hello.'));
+    vi.stubGlobal('fetch', request);
+
+    await expect(
+      generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' })
+    ).rejects.toThrow('Apple Intelligence is not available on this device.');
+    expect(request).not.toHaveBeenCalled();
+    expect(lastUsage()).toMatchObject({ provider: 'apple', success: false });
+  });
+
+  it('refuses to write before a service is chosen', async () => {
+    await chooseModels({ defaultModel: { service: 'none', model: '' } });
+    await expect(
+      generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' })
+    ).rejects.toThrow('AI Assistance is not set up.');
   });
 });

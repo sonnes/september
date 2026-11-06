@@ -11,7 +11,7 @@ import {
   TimeRangeSelect,
   UsageCard,
 } from "@september/app-ui/blocks/usage";
-import { downloadUsageCsv, useElevenLabsQuota, useUsage } from "@platform/services/usage";
+import { downloadUsageCsv, useElevenLabsQuota, useUsage } from "@september/app-ui/services/usage";
 import type { SpendBucket, TimeRange } from "@september/core/rules/usage-summary";
 
 const SHORT_LIST = 8;

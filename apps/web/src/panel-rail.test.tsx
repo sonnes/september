@@ -1,18 +1,13 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PanelRail } from '@september/app-ui/blocks/space-panel';
 import { InputLayer } from '@september/app-ui/blocks/access';
 import { DEFAULT_ACCESS } from '@september/core/rules/access';
 import { HeaderActionsSlot } from '@september/app-ui/blocks/screen';
+import { panel } from '@september/app-ui/services/settings';
 
-vi.mock('@platform/services/os', () => ({
-  currentPanel: () => ({ open: false, tab: 'phrases' }),
-  rememberPanel: async () => undefined,
-  currentSetup: () => null,
-  subscribeSetup: () => () => {},
-}));
-vi.mock('@platform/services/speech', () => ({ useSpeaking: () => null }));
+vi.mock('@september/app-ui/services/speech', () => ({ useSpeaking: () => null }));
 vi.mock('@september/app-ui/blocks/chrome', () => ({ usePanel: () => null }));
 vi.mock('@september/app-ui/blocks/phrase-panel', () => ({ Phrases: () => <p>Phrase list</p> }));
 vi.mock('@september/app-ui/blocks/speech-settings', () => ({ SpeechSettings: () => <p>Voice settings</p> }));
@@ -21,6 +16,8 @@ vi.mock('@september/app-ui/blocks/speech-settings', () => ({ SpeechSettings: () 
 const container = document.createElement('div');
 document.body.append(container);
 let root = createRoot(container);
+// The rail starts from the stored state, which the test platform empties.
+beforeEach(() => panel.load());
 afterEach(() => {
   act(() => root.unmount());
   root = createRoot(container);

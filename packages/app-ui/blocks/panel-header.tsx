@@ -19,7 +19,7 @@ import {
   SheetTitle,
 } from "@september/ui/components/sheet";
 
-import { APP_NAV } from "@platform/rules/app-nav";
+import { APP_NAV } from "@september/app-ui/navigation";
 
 import { Phrases } from "@september/app-ui/blocks/phrase-panel";
 import { SpeechSettings } from "@september/app-ui/blocks/speech-settings";

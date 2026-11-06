@@ -31,11 +31,13 @@ cargo fmt --all -- --check
   routes in `src/main.tsx` import them through `@september/app-ui`.
 - `packages/ui/` owns shadcn primitives and `theme.css`. `src/styles.css` is a
   small Tailwind entry point that imports that theme.
-- `packages/core/` owns autocomplete and platform-independent rules. Local
-  rule files are compatibility exports; `app-nav`, `settings-nav`, and
-  `onboarding` stay local because they define the platform route contract.
-- `src/services/` owns Tauri, platform, cloud, and React Query adapters. Shared
-  UI imports them through `@platform/*`, which maps to `src/`.
+- `packages/core/` owns autocomplete and platform-independent rules, including
+  the pages, the settings sections, and the setup steps.
+- `packages/app-ui/services/` owns the services that both apps share.
+  `src/platform.ts` owns the Mac platform that they call. Shared UI imports it
+  through `@platform/adapter`, which maps to `src/platform.ts`.
+- `src/window.ts` owns the panel window and the saved path, which only the
+  desktop app has.
 - Do not add a desktop copy of a shared screen, primitive, token, or pure rule.
   Add or change the canonical workspace package instead.
 - The app has one window, `panel`, and two shells.
@@ -43,18 +45,16 @@ cargo fmt --all -- --check
   sidebar with the brand, the setup title, and the step list.
   `packages/app-ui/layouts/panel.tsx` holds `PanelShell`, the shell of every
   other route. Show all sections. Do not add collapsible groups.
-- Keep the pages of the More menu in `APP_NAV` in `src/rules/app-nav.ts`, where
-  a test can read them. Give each path an icon in `packages/app-ui/layouts/app.tsx`,
-  the web shell. The icon record is typed by path, so a missing icon fails the
-  build.
-- Keep the rules of the panel paths in `src/rules/panel-nav.ts`:
-  `SPACE_MODE_PATH` and `isSpaceModePath`.
+- Keep the pages of the More menu in `APP_PAGES` in
+  `packages/core/rules/navigation.ts`, where a test can read them. A page that
+  only one platform has names its capability in `requires`. Give each path an
+  icon in `packages/app-ui/navigation.ts`. The icon record is typed by path, so
+  a missing icon fails the build.
 - Let the float choice decide the Dock icon. `policy(setup, float)` in
   `src-tauri/src/window.rs` holds the rule. `panel_show` must not change the
   activation policy.
-- Call the Rust backend from a service module: `src/services/os.ts` for settings and
-  the system, `src/services/data.ts` for the rows, `src/services/ai.ts` for the writing service.
-  Do not call `invoke` from a component or from `src/services/speech.ts`.
+- Call the Rust backend from `src/platform.ts` or `src/window.ts` only. Do not
+  call `invoke` from a component or from a shared service.
 - Change a space with `space_patch`, never with a whole row. Three writers
   change a space and each one knows only its own fields, so a whole-row write
   lets the last writer undo the others.
@@ -110,11 +110,11 @@ cargo fmt --all -- --check
 - Read a note aloud through `markdownToVoiceText`. A voice says `Monday`, not
   `# Monday`. A voice-over writes no message.
 - Keep the rules of a presentation and an export in
-  `packages/core/rules/present.ts`, and the stage in
+  `packages/core/rules/present/`, and the stage in
   `packages/app-ui/blocks/present.tsx`. Present is an overlay, never a route: a
   route would need a window title, an opening path, and a place in the frozen
   route list, and the address must stay on the note the user is holding.
-  `PresentOverlay` calls `fullScreen(true)` when it opens and
+  `PresentOverlay` calls `platform.device.fullScreen(true)` when it opens and
   `fullScreen(false)` when it closes.
 - Let a presentation run with no voice at all. Silence is a mode, not a
   failure: big words and a partner who reads them is the oldest assistive move
@@ -123,37 +123,39 @@ cargo fmt --all -- --check
   when the sound stops, so the story keeps the pace of the voice.
 - Say `Present`, `Export`, `Text`, `Audio`, and `Video`, and never the retired
   name for any of them. A test reads every source file for it.
-- Save a file through `src/services/export.ts`, with the WebView download
-  support. Say why a row cannot run in the place of its own description, and
+- Save a file through `packages/app-ui/services/export.ts`, which calls
+  `platform.device.save`, with the WebView download support. Say why a row cannot run in the place of its own description, and
   keep its target. A row that disappears teaches the user nothing.
 - Keep the rules of a space in `packages/core/rules/spaces.ts`, where a test can read them
   without a renderer: the slug, the search, the new title, the relative time,
   the transcript page, and the composer helpers.
-- Send every command through `call()` in `src/services/data.ts`. A Tauri command
-  rejects with a string, so a screen that reads `error.message` shows nothing
-  without it.
+- Send every command through `call()` in `src/commands.ts`, and add the command
+  to `Commands` with its arguments and its answer. A Tauri command rejects with
+  a string, so a screen that reads `error.message` shows nothing without
+  `call()`.
 - Ask before an action that erases rows. Use the shadcn `AlertDialog`, and give
   the confirming button the `destructive` variant.
-- Give each row the owner from `currentUserId()` in `src/services/os.ts`. Do not read
-  the operating system again after setup.
-- Offer words through `useSuggestions()` in `src/services/suggest.ts`. Keep the rules in
+- Give each row the owner from `currentUserId()` in
+  `packages/app-ui/services/settings.ts`. Do not read the operating system
+  again after setup.
+- Offer words through `useSuggestions()` in `packages/app-ui/services/suggest.ts`. Keep the rules in
   `packages/core/autocomplete`, where a test can read them without a renderer.
   It is the one autocomplete implementation used by both applications.
-- Speak through `speak()` in `src/services/speech.ts`. Every voice meets the
+- Speak through `speak()` in `packages/app-ui/services/speech.ts`. Every voice meets the
   `SpeechProvider` interface, so a screen never names a service. Spoken
   messages use the native playback commands, where the process tap receives
-  them. Use `src/services/player.ts` only for voice-list previews.
+  them. Use `packages/app-ui/services/player.ts` only for voice-list previews.
 - A cloud voice that fails must fall back to the voice of the operating
   system. Silence is the worst answer for a user who cannot speak.
 - Give each control of a phrase row a 44px target, through `RowButton` in
   `packages/app-ui/blocks/phrase-panel.tsx`. A user of September points with
   less accuracy than a typical browser user.
-- Keep the rules of a phrase, a code, and a shortcut idea in `packages/core/rules/phrases.ts`,
+- Keep the rules of a phrase, a code, and a shortcut idea in `packages/core/rules/phrases/`,
   and the rules of a stripe in `packages/core/rules/stripes.ts`. A change there
   applies to both applications.
 - A model never writes over a phrase that the user kept. Write new rows with
   `phrase_replace_ai`, which erases only the rows with `pinned = 0`.
-- Add a word from the engine with `applySuggestion` in `src/services/suggest.ts`. The
+- Add a word from the engine with `applySuggestion` in `@september/core/autocomplete`. The
   screen must not cut the text at the caret itself, because only the engine
   knows a part-written word from a finished one.
 - Give each row of the composer its own colour. A word is amber, a past
@@ -177,24 +179,29 @@ cargo fmt --all -- --check
   through `BrandMark` in `packages/app-ui/blocks/brand.tsx`. The Apple logo is the U+F8FF glyph from the
   macOS system font, which `system-ui` supplies. Apple asks for a written
   trademark licence before a third party shows this mark.
-- Keep the rule for the first route in `openingPath`, in `src/rules/app-nav.ts`. It
+- Keep the rule for the first route in `openingPath`, in
+  `packages/core/rules/navigation.ts`. It
   is an allowlist of app paths. A saved address that names no screen must not
   decide where the app opens.
 - Add a screen as a route in `src/main.tsx`. Keep the step rules in
-  `src/rules/onboarding.ts`, where a test can read them.
-- Keep the settings sections in `src/rules/settings-nav.ts`, where a test can read
-  them, the section list in `packages/app-ui/layouts/settings.tsx`, and the screens in
-  `packages/app-ui/pages/settings.tsx`. Give each path an icon in `packages/app-ui/layouts/settings.tsx`.
-  The icon record is typed by path.
+  `packages/core/rules/onboarding.ts`, where a test can read them.
+- Keep the settings sections in `SETTINGS_SECTIONS` in
+  `packages/core/rules/navigation.ts`, where a test can read them, the section
+  list in `packages/app-ui/layouts/settings.tsx`, and the screens in
+  `packages/app-ui/pages/settings.tsx`. Give each path an icon in
+  `packages/app-ui/navigation.ts`. The icon record is typed by path.
 - Keep the parts that setup and settings share in `packages/app-ui/blocks/services.tsx`: the mode
   card, the mark, the state pill, and the key panel. Do not write a second one.
-- Write a setting from a screen through `updateSetup()` in `src/services/os.ts`. It
-  holds the new answers, so `currentSetup()` gives them at once.
-- Open an address with `openInBrowser()` in `src/services/os.ts`. A Tauri window blocks
+- Write a setting from a screen through `updateSetup()` in
+  `packages/app-ui/services/settings.ts`. It holds the new answers, so
+  `currentSetup()` gives them at once.
+- Open an address with `platform.device.openInBrowser()`. A Tauri window blocks
   a plain link.
-- Read the saved setup through `currentSetup()` in `src/services/os.ts`, never through
-  `invoke` in a route. The module holds the value it wrote, so a guard right
-  after setup sees the new answers.
+- Read the saved setup through `currentSetup()` in
+  `packages/app-ui/services/settings.ts`, never through `invoke` in a route.
+  `src/main.tsx` awaits `loadSettings()` before the first render, and the
+  module holds the value it wrote, so a guard right after setup sees the new
+  answers.
 - Follow the root `DESIGN.md` for every screen.
 - Keep each screen usable from the 400×560 minimum of the panel to the full
   screen.

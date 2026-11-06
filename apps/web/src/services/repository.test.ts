@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { BackupContents } from '@september/core/rules/backup';
+import type { StoredBackup } from '@september/core/rules/backup';
 
 import { DATABASE_NAME, LEGACY_DATABASES, openRepository, type AnalyticsEvent } from './repository';
 import type {
@@ -337,13 +337,13 @@ describe('BrowserRepository', () => {
     await repository.putAnalyticsEvent(analytics());
     await repository.putBlob('speech-1', new Blob(['audio']));
 
-    expect(await repository.backupContents()).toEqual({
+    expect(await repository.exportBackup()).toEqual({
       settings: {
         setup,
         speech,
-        dismissedIdeas: ['idea-1'],
-        spaceModes: { general: 'notes' },
-        panel: { open: true, tab: 'voice' },
+        'dismissed-ideas': ['idea-1'],
+        'space-modes': { general: 'notes' },
+        'panel-open': { open: true, tab: 'voice' },
         present: { tone: 'cream', spoken: false },
       },
       spaces: [space({ updated_at: 30 })],
@@ -370,11 +370,11 @@ describe('BrowserRepository', () => {
     await repository.putAnalyticsEvent(analytics());
     await repository.putBlob('speech-1', new Blob(['audio']));
 
-    const next = backupContents({
+    const next = storedBackup({
       spaces: [space({ id: 'space-2', title: 'Friends' })],
       messages: [message({ id: 'message-2', space_id: 'space-2' })],
     });
-    await repository.replaceBackupContents(next);
+    await repository.importBackup(next);
 
     expect(await repository.listSpaces('local-user')).toEqual(next.spaces);
     expect(await repository.listMessages()).toEqual(next.messages);
@@ -399,12 +399,12 @@ describe('BrowserRepository', () => {
     await repository.putSetting('dismissed-ideas', ['old-idea']);
     await repository.putSpace(space());
 
-    const invalid = backupContents({
+    const invalid = storedBackup({
       spaces: [space({ id: 'space-2', title: 'Friends' })],
     });
-    invalid.settings.dismissedIdeas = (() => 'not cloneable') as unknown as string[];
+    invalid.settings['dismissed-ideas'] = () => 'not cloneable';
 
-    await expect(repository.replaceBackupContents(invalid)).rejects.toBeDefined();
+    await expect(repository.importBackup(invalid)).rejects.toBeDefined();
     expect(await repository.getSetting('dismissed-ideas')).toEqual(['old-idea']);
     expect(await repository.listSpaces('local-user')).toEqual([space()]);
     repository.close();
@@ -467,14 +467,12 @@ describe('BrowserRepository', () => {
   });
 });
 
-function backupContents(overrides: Partial<BackupContents> = {}): BackupContents {
+function storedBackup(overrides: Partial<StoredBackup> = {}): StoredBackup {
   return {
     settings: {
-      setup: null,
-      speech: null,
-      dismissedIdeas: ['new-idea'],
-      spaceModes: {},
-      panel: { open: false, tab: 'phrases' },
+      'dismissed-ideas': ['new-idea'],
+      'space-modes': {},
+      'panel-open': { open: false, tab: 'phrases' },
       present: { tone: 'indigo', spoken: true },
     },
     spaces: [],

@@ -24,9 +24,9 @@ import {
   spaceNeedsSetup,
 } from "@september/core/rules/spaces";
 
-import { hasWritingService } from "@platform/services/ai";
-import { askAgent, resolveAgentProposal } from "@platform/services/agent";
-import { useAgentMessages, useAllMessages, useUpdateSpace } from "@platform/services/data";
+import { hasWritingService } from "@september/app-ui/services/ai";
+import { askAgent, resolveAgentProposal } from "@september/app-ui/services/agent";
+import { useAgentMessages, useAllMessages, useUpdateSpace } from "@september/app-ui/services/data";
 import { RightPanel, ScreenHeader } from "@september/app-ui/blocks/screen";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import {

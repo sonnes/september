@@ -19,12 +19,7 @@ vi.mock('@tanstack/react-router', () => ({
   useRouterState: ({ select }: { select: (value: { location: { pathname: string } }) => unknown }) =>
     select({ location: { pathname: '/welcome' } }),
 }));
-vi.mock('@platform/services/os', () => ({
-  osName: '',
-  currentSetup: () => null,
-  subscribeSetup: () => () => {},
-}));
-vi.mock('@platform/services/speech', () => ({ useSpeaking: () => null }));
+vi.mock('@september/app-ui/services/speech', () => ({ useSpeaking: () => null }));
 vi.mock('@september/app-ui/pages/help', () => ({ HelpGuideContent: () => null }));
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

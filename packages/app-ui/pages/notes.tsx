@@ -55,7 +55,7 @@ import {
   usePutPhrase,
   useUpdateNote,
   useUpdateSpace,
-} from "@platform/services/data";
+} from "@september/app-ui/services/data";
 import type { Note, Space } from "@september/core/rules/records";
 import {
   markdownToVoiceText,
@@ -83,14 +83,11 @@ import {
   saveNoteAudio,
   saveNoteText,
   saveNoteVideo,
-  type VideoStage,
-} from "@platform/services/export";
-import {
-  currentPresent,
-  guardUnsavedChanges,
-  rememberPresent,
-} from "@platform/services/os";
-import { speak, stopSpeaking, useSpeaking, useVoiceFallback } from "@platform/services/speech";
+} from "@september/app-ui/services/export";
+import type { VideoStage } from "@september/app-ui/platform";
+import { platform } from "@platform/adapter";
+import { present } from "@september/app-ui/services/settings";
+import { speak, stopSpeaking, useSpeaking, useVoiceFallback } from "@september/app-ui/services/speech";
 import {
   spaceParams,
   SpaceDock,
@@ -397,7 +394,7 @@ export function NoteEditor({
 
   useEffect(() => {
     if (!dirty) return;
-    return guardUnsavedChanges();
+    return platform.device.guardUnsavedChanges();
   }, [dirty]);
 
   return (
@@ -614,7 +611,7 @@ function ExportDialog({
   open: boolean;
   onClose: () => void;
 }) {
-  const [tone, setTone] = useState<PresentToneKey>(() => currentPresent().tone);
+  const [tone, setTone] = useState<PresentToneKey>(() => present.get().tone);
   const [busy, setBusy] = useState<ExportKind | null>(null);
   const [stage, setStage] = useState<VideoStage | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
@@ -622,7 +619,7 @@ function ExportDialog({
   const chooseTone = (next: PresentToneKey) => {
     setTone(next);
     // One tone for the stage and the film, so a note looks the same either way.
-    void rememberPresent({ ...currentPresent(), tone: next });
+    void present.set({ ...present.get(), tone: next });
   };
 
   const run = (kind: ExportKind) => {

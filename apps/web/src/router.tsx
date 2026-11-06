@@ -36,14 +36,10 @@ import { UsageSettings } from '@september/app-ui/pages/usage';
 import { VoiceCloneScreen, VoiceScreen } from '@september/app-ui/pages/voice';
 import { helpGuide } from '@september/core/rules/help/search';
 import { analyticsPath } from '@/rules/analytics';
-import { isSetupDone } from '@/rules/onboarding';
-import { isConnectionId } from '@/rules/settings-nav';
+import { isConnectionId } from '@september/core/rules/navigation';
+import { isSetupDone } from '@september/core/rules/onboarding';
+import { currentSetup } from '@september/app-ui/services/settings';
 import { countPage } from '@/services/analytics';
-import {
-  bootstrapBrowserServices,
-  currentSetup,
-  savePath,
-} from '@/services/os';
 
 export const APP_ROUTE_PATHS = [
   '/',
@@ -80,8 +76,7 @@ const setupRoute = createRoute({
   // Setup runs once. A user who has finished it and asks for a step — from
   // the landing page, a bookmark, or the back button — goes to the app
   // instead. The mirror of the guard the app routes keep.
-  beforeLoad: async () => {
-    await bootstrapBrowserServices();
+  beforeLoad: () => {
     if (isSetupDone(currentSetup())) throw redirect({ to: '/dashboard' });
   },
   component: OnboardingLayout,
@@ -90,19 +85,13 @@ const setupRoute = createRoute({
 const shellRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'shell',
-  // Help has no setup guard, but it still shows the access profile. The build
-  // machine that draws the Help pages has no saved settings to read.
-  beforeLoad: async () => {
-    if (typeof indexedDB !== 'undefined') await bootstrapBrowserServices();
-  },
   component: AppShell,
 });
 
 const appRoute = createRoute({
   getParentRoute: () => shellRoute,
   id: 'app',
-  beforeLoad: async () => {
-    await bootstrapBrowserServices();
+  beforeLoad: () => {
     if (!isSetupDone(currentSetup())) throw redirect({ to: '/welcome' });
   },
 });
@@ -266,14 +255,12 @@ const routeTree = rootRoute.addChildren([
  * The router.
  *
  * The prerender passes a memory history, because a build machine has no
- * browser. Only the browser router remembers where the user was, since the
- * path is saved in IndexedDB and a prerender has none.
+ * browser. Only the browser router counts pages.
  */
 export function getRouter(history?: RouterHistory) {
   const router = createRouter({ routeTree, history: history ?? createBrowserHistory() });
   if (!history) {
     router.subscribe('onResolved', ({ toLocation }) => {
-      void savePath(toLocation.pathname);
       // Web only, and by the shape of the route where its address holds a
       // name. The desktop app loads no tracker at all.
       const matched = router.state.matches[router.state.matches.length - 1];

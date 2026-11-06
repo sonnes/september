@@ -28,6 +28,7 @@ import {
   type PresentTone,
   type PresentToneKey,
 } from '@september/core/rules/present/stage';
+import type { VideoStage } from '@september/app-ui/platform';
 
 const WIDTH = 1080;
 const HEIGHT = 1920;
@@ -37,9 +38,6 @@ const MAX_SECONDS = 600;
 
 const CORE_VERSION = '0.12.10';
 const CORE_BASE = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm`;
-
-/** What the export dialog shows while it waits. */
-export type VideoStage = 'voice' | 'frames' | 'video';
 
 export interface RenderVideoInput {
   audio: Blob;

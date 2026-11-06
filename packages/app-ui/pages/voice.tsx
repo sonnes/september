@@ -29,18 +29,14 @@ import { Label } from "@september/ui/components/label";
 import { Skeleton } from "@september/ui/components/skeleton";
 import { Textarea } from "@september/ui/components/textarea";
 
-import { navFor } from "@platform/rules/app-nav";
-import {
-  heardVoiceIds,
-  listVoices,
-  readConnections,
-  rememberHeardVoices,
-  saveSpeech,
-  type Voice,
-} from "@platform/services/os";
+import { navFor } from "@september/core/rules/navigation";
+import { platform } from "@platform/adapter";
+import type { Voice } from "@september/app-ui/platform";
+import { readConnections } from "@september/app-ui/services/connections";
+import { heardVoices as heardSetting } from "@september/app-ui/services/settings";
 import { matchesWords } from "@september/core/rules/pick";
 import { heardVoices, voiceRows } from "@september/core/rules/voice";
-import { play } from "@platform/services/player";
+import { play } from "@september/app-ui/services/player";
 import {
   cloneVoice,
   keepCreatedVoice,
@@ -52,13 +48,14 @@ import {
   validateVoiceClone,
   type CreatedVoice,
   type RecordingStatus,
-} from "@platform/services/cloning";
+} from "@september/app-ui/services/cloning";
 import { Screen } from "@september/app-ui/blocks/screen";
 import {
   speak,
   speechSettings,
+  updateSpeech,
   type VoiceService,
-} from "@platform/services/speech";
+} from "@september/app-ui/services/speech";
 
 const TRY_IT = "This is how I sound today.";
 
@@ -98,8 +95,8 @@ export function VoiceScreen() {
   const [connected, setConnected] = useState<boolean | null>(null);
   // The order is read once. A voice heard now joins Heard lately on the next
   // visit, so a row never moves under a user who is scanning the list.
-  const [heardBefore] = useState(() => [...heardVoiceIds]);
-  const heard = useRef([...heardVoiceIds]);
+  const [heardBefore] = useState(() => heardSetting.get());
+  const heard = useRef(heardSetting.get());
   // Both ElevenLabs services speak with a voice from the same list.
   const cloud = provider !== "system";
 
@@ -112,7 +109,7 @@ export function VoiceScreen() {
   useEffect(() => {
     if (!cloud || !connected) return;
 
-    void listVoices()
+    void platform.providers.voices()
       .then((fresh) =>
         setVoices(keepCreatedVoice(fresh, optimisticCreatedVoice())),
       )
@@ -123,19 +120,19 @@ export function VoiceScreen() {
   // store, so a slider moved in the rail card is not written back over.
   const chooseService = (next: VoiceService) => {
     setProvider(next);
-    void saveSpeech({ ...speechSettings(), provider: next });
+    void updateSpeech({ provider: next });
   };
 
   const hear = (voice: Voice) => {
     if (!voice.preview_url) return;
     void play(voice.preview_url);
     heard.current = heardVoices(heard.current, voice.id);
-    void rememberHeardVoices(heard.current);
+    void heardSetting.set(heard.current);
   };
 
   const chooseVoice = (next: string) => {
     setVoiceId(next);
-    void saveSpeech({ ...speechSettings(), voiceId: next });
+    void updateSpeech({ voiceId: next });
   };
 
   return (
@@ -500,8 +497,7 @@ export function VoiceCloneScreen() {
   const handleCreated = async (created: CreatedVoice) => {
     rememberCreatedVoice(created);
     const current = speechSettings();
-    await saveSpeech({
-      ...current,
+    await updateSpeech({
       // A new clone speaks through the ElevenLabs service in use.
       provider: current.provider === "dialogue" ? "dialogue" : "elevenlabs",
       voiceId: created.id,

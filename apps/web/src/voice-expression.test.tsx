@@ -4,26 +4,17 @@ import { SpeechSettings } from '@september/app-ui/blocks/speech-settings';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-const state = vi.hoisted(() => ({
-  speech: {} as Record<string, unknown>,
-  save: vi.fn(),
-}));
-vi.mock('@platform/services/os', async original => {
-  const actual = await original<typeof import('./services/os')>();
-  return {
-    ...actual,
-    saveSpeech: state.save,
-    readConnections: async () => ({
-      ...actual.BLANK_CONNECTIONS,
-      elevenlabs: { provider: 'elevenlabs', connected: true, label: 'Key', detail: null },
-    }),
-  };
-});
-vi.mock('@platform/services/speech', async original => ({
-  ...(await original<typeof import('./services/speech')>()),
-  speechSettings: () => state.speech,
+
+import { savedSpeech } from '@september/app-ui/services/settings';
+
+import { platform } from './test/platform';
+
+vi.mock('@september/app-ui/services/speech', async original => ({
+  ...(await original<typeof import('@september/app-ui/services/speech')>()),
   speak: vi.fn(),
 }));
+
+const state = { speech: {} as Record<string, unknown> };
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 // The slider measures itself, and jsdom has no ResizeObserver.
 globalThis.ResizeObserver ??= class {
@@ -45,7 +36,10 @@ beforeEach(() => {
     similarity: 0.75,
     speed: 1,
   };
-  state.save.mockReset().mockResolvedValue(undefined);
+  vi.mocked(platform.providers.status).mockResolvedValue([
+    { provider: 'openrouter', connected: false, label: null, detail: null },
+    { provider: 'elevenlabs', connected: true, label: 'Key', detail: null },
+  ]);
 });
 afterEach(() => {
   act(() => root.unmount());
@@ -53,6 +47,7 @@ afterEach(() => {
 });
 
 async function render() {
+  await savedSpeech.set(state.speech as never);
   await act(async () => root.render(<SpeechSettings />));
 }
 
@@ -77,7 +72,7 @@ it('shows the voice model with a preset and keeps it when a preset is chosen', a
   await render();
   expect(button('Eleven Multilingual v2').getAttribute('aria-checked')).toBe('true');
   await act(async () => button('Steady').click());
-  expect(state.save).toHaveBeenLastCalledWith(
+  expect(savedSpeech.get()).toEqual(
     expect.objectContaining({ modelId: 'eleven_multilingual_v2', stability: 0.75, similarity: 0.75 }),
   );
 });
@@ -86,7 +81,7 @@ it('keeps the preset when the model changes', async () => {
   await render();
   await act(async () => button('Expressive').click());
   await act(async () => button('Eleven v3').click());
-  expect(state.save).toHaveBeenLastCalledWith(
+  expect(savedSpeech.get()).toEqual(
     expect.objectContaining({ modelId: 'eleven_v3', stability: 0 }),
   );
   expect(button('Expressive').getAttribute('aria-pressed')).toBe('true');
@@ -104,12 +99,12 @@ it('shows the three Eleven v3 stability modes and no likeness for Eleven v3', as
   await render();
   await act(async () => button('Custom').click());
   await act(async () => button('Eleven v3').click());
-  expect(state.save).toHaveBeenLastCalledWith(
+  expect(savedSpeech.get()).toEqual(
     expect.objectContaining({ modelId: 'eleven_v3', stability: 0.5 }),
   );
   expect(slider('Likeness')).toBeNull();
   await act(async () => button('Creative').click());
-  expect(state.save).toHaveBeenLastCalledWith(expect.objectContaining({ stability: 0 }));
+  expect(savedSpeech.get()).toEqual(expect.objectContaining({ stability: 0 }));
 });
 
 it('shows only the speed for the system voice', async () => {
@@ -128,7 +123,7 @@ it('shows the two Dialogue models and the three presets, without the speed or Cu
   expect(container.textContent).not.toContain('Eleven Flash v2.5');
   expect(container.textContent).not.toContain('Custom');
   await act(async () => button('Expressive').click());
-  expect(state.save).toHaveBeenLastCalledWith(
+  expect(savedSpeech.get()).toEqual(
     expect.objectContaining({ provider: 'dialogue', stability: 0 }),
   );
 });
@@ -138,7 +133,7 @@ it('saves the Dialogue model and keeps the model of the ElevenLabs voice', async
   await render();
   expect(button('Eleven v3').getAttribute('aria-checked')).toBe('true');
   await act(async () => button('Eleven v3 Conversational').click());
-  expect(state.save).toHaveBeenLastCalledWith(
+  expect(savedSpeech.get()).toEqual(
     expect.objectContaining({ dialogueModelId: 'eleven_v3_conversational', modelId: 'eleven_flash_v2_5' }),
   );
 });

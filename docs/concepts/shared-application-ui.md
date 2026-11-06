@@ -16,26 +16,35 @@ The root pnpm workspace has three boundaries:
   import React or platform APIs.
 - `@september/ui` owns the Tailwind theme and generic React primitives. It
   cannot import September screens or app services.
-- `@september/app-ui` owns September layouts, blocks, and application screens.
-  It uses the other two packages and a platform facade.
+- `@september/app-ui` owns September layouts, blocks, application screens,
+  and the services that both apps share. It uses the other two packages and
+  one platform object.
 
 Each app keeps its route bootstrap. Web also keeps its landing page. Both route
 trees import the same components from `@september/app-ui`.
 
-## Platform facade
+## The Platform
 
-Shared screens import platform work through `@platform/*`. TypeScript, Vite,
-and the web test runner map that prefix to the active app's `src/` directory.
+`packages/app-ui/platform.ts` holds the `Platform` interface: `store`, `voice`,
+`providers`, `writing`, `device`, `capabilities`, and `app`. It holds only the
+work that is different on the browser and on the Mac. Each app exports one
+`platform` from its `src/platform.ts`, typed as `Platform`. Shared code imports
+it from `@platform/adapter`, which TypeScript and Vite map to that file.
 
-For example, `@platform/services/data` resolves to the IndexedDB hooks during a
-web build and to the Tauri/SQLite hooks during a desktop build. Both modules
-must expose the surface that the shared screen imports. Building both apps is
-the contract check.
+The shared services in `packages/app-ui/services/` hold everything else, one
+time: the held settings, speech, the data hooks, the writing service, usage,
+backup, export, and cloning. The web tests run them once against an in-memory
+platform.
 
-The Data settings screen uses the same boundary. Its
-`@platform/services/backup` module reads and replaces data through IndexedDB in
-the browser and through typed Tauri commands on desktop. The screen owns file
-selection, preview, and confirmation. The platform service owns persistence.
+An optional member of the interface is a capability. It is absent where the
+platform cannot do the work, for example `writing.apple` in the browser and
+`device.renderVideo` on the Mac. The flags in `capabilities` decide which pages
+and settings sections the navigation shows.
+
+The Data settings screen uses the same boundary. `services/backup.ts` reads
+and replaces data through `platform.store`, which uses IndexedDB in the
+browser and typed Tauri commands on the Mac. The screen owns file selection,
+preview, and confirmation. The store owns persistence.
 
 Use neutral copy when an interaction is the same. If a capability differs,
 keep the control in the same location and show its availability. Do not fork
@@ -74,7 +83,7 @@ off the rendered tree.
 
 Welcome includes the Terms & privacy summary in both apps, before
 personal details or service connections. Its full-policy controls open the
-website through `openInBrowser`, so the setup answers remain in memory.
+website through `platform.device.openInBrowser`, so the setup answers remain in memory.
 The progress bar scrolls horizontally on narrow screens to keep each step
 reachable at its full target size.
 
@@ -82,5 +91,6 @@ reachable at its full target size.
 
 Change a pure rule in `packages/core`, a generic control or token in
 `packages/ui`, and an application interaction in `packages/app-ui`. Change an
-app only when the route bootstrap or platform service differs. Run both app
-builds after a shared UI change so both platform facades are type-checked.
+app only when the route bootstrap or the platform differs. Run both app
+builds after a shared UI change, so both platforms are type-checked against
+the interface.

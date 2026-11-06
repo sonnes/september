@@ -7,7 +7,7 @@ import { ChromeContext } from '@september/app-ui/blocks/chrome';
 import { Screen } from '@september/app-ui/blocks/screen';
 import { SettingsLayout } from '@september/app-ui/layouts/settings';
 import { HelpScreen } from '@september/app-ui/pages/help';
-import { SETTINGS_NAV } from '@platform/rules/settings-nav';
+import { SETTINGS_NAV } from '@september/app-ui/navigation';
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) => (

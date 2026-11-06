@@ -90,7 +90,7 @@ other app routes turn back to `/welcome` before setup is done.
 | `/voice`, `/voice/clone`, `/eyetracker`, `/help`, `/help/$guideSlug`, `/settings` and its sections    | The pages of the app           |
 | `/dashboard`, any other path                                                                          | Redirects to `/`               |
 
-`openingPath(saved, spaces)` in `apps/desktop/src/rules/app-nav.ts` gives the
+`openingPath(saved, spaces, capabilities)` in `packages/core/rules/navigation.ts` gives the
 saved `lastPath` only when that path is exactly one of these pages:
 
 - A space-mode path whose space exists
@@ -101,9 +101,6 @@ saved `lastPath` only when that path is exactly one of these pages:
 
 Else it gives Talk of the space with the highest `updated_at`. With no spaces,
 it gives `/spaces`.
-
-`SPACE_MODE_PATH` in `apps/desktop/src/rules/panel-nav.ts` matches the Talk,
-Notes, note, and Agent paths of a space.
 
 ## Width tiers
 
@@ -125,14 +122,17 @@ the mood menu key.
 
 `PresentOverlay` opens over the panel, as in the web app. When it opens, it
 calls `fullScreen(true)`. When it closes, it calls `fullScreen(false)`. On the
-desktop, `fullScreen` calls `panel_present`, which uses `set_simple_fullscreen`.
-The panel fills the screen without a new macOS desktop, so it works with the
-floating window level. The web version of `fullScreen` does nothing. See
+desktop, `platform.device.fullScreen` calls `panel_present`, which uses
+`set_simple_fullscreen`. The panel fills the screen without a new macOS
+desktop, so it works with the floating window level. The browser platform has
+no `fullScreen`. See
 [Present and export a note](note-present-export.md).
 
 ## Show and hide the panel
 
-The panel starts hidden, and `src/main.tsx` shows it with `panel_show` at boot.
+The panel starts hidden. `src/main.tsx` awaits `loadSettings`, mounts the
+app, and shows the panel with `panel_show`. `src/window.ts` holds the panel
+commands.
 Before setup is done, the bootstrap calls `panel_setup(true)` first. When setup
 becomes done, it calls `panel_setup(false)` and goes to `/`. If setup goes back
 to not done, it calls `panel_setup(true)` again.

@@ -11,6 +11,16 @@ endpoint. The endpoint returns one MP3 file, and the app plays the file. The
 Dialogue voice streams its sound. The first sound plays before ElevenLabs
 finishes the sentence. See [the Dialogue voice](#the-dialogue-voice).
 
+## One Voice Request
+
+`speak` in `packages/app-ui/services/speech.ts` makes one cloud voice from the
+`speech` setting: the voice ID, the model, the stability, the similarity, and
+the speed. For the Dialogue voice, the model comes from `dialogueModelFrom`,
+the stability from `stabilityFor`, and the parts of the text from
+`dialogueParts`. The service then calls `platform.voice.stream` with the text,
+the voice, and the parts. The browser plays the sound itself. The Mac sends
+the same values to the `speech_stream` command, and Rust plays the sound.
+
 ## The ElevenLabs voice
 
 Both apps send one request for each sentence:

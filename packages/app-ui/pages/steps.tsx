@@ -25,23 +25,19 @@ import {
   previousStep,
   SPEAKING_STYLES,
   stepFor,
-  VOICE_SERVICES,
+  voiceServices,
   WRITING_SERVICES,
   type StepPath,
-} from "@platform/rules/onboarding";
+} from "@september/core/rules/onboarding";
+import { platform } from "@platform/adapter";
+import { APP_NAV } from "@september/app-ui/navigation";
+import type { Provider, ProviderStatus, Voice } from "@september/app-ui/platform";
 import {
   BLANK_CONNECTIONS,
-  openInBrowser,
-  forgetProvider,
-  listVoices,
   readConnections,
-  saveSpeech,
-  saveSetup,
   type Connections,
-  type Provider,
-  type ProviderStatus,
-  type Voice,
-} from "@platform/services/os";
+} from "@september/app-ui/services/connections";
+import { saveSetup } from "@september/app-ui/services/settings";
 import {
   CloudStatus,
   ElevenLabsImpactLink,
@@ -49,7 +45,7 @@ import {
   Mark,
   Status,
 } from "@september/app-ui/blocks/services";
-import { speechSettings } from "@platform/services/speech";
+import { updateSpeech } from "@september/app-ui/services/speech";
 import { documentTitle } from "@september/core/rules/titles";
 
 // DESIGN.md asks for a 44px target on primary actions; `lg` is 40px.
@@ -68,7 +64,7 @@ function Step({
   const navigate = useNavigate();
   const { draft } = useDraft();
   const step = stepFor(path);
-  const back = previousStep(path, draft);
+  const back = previousStep(path);
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-6">
@@ -124,7 +120,7 @@ export function WelcomeStep() {
           type="button"
           size="lg"
           className={ACTION}
-          onClick={() => navigate({ to: nextStep("/welcome", draft)! })}
+          onClick={() => navigate({ to: nextStep("/welcome")! })}
         >
           {stepFor("/welcome").action}
         </Button>
@@ -141,11 +137,11 @@ export function WelcomeStep() {
         <p>Continuing does not give consent to optional data processing.</p>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button type="button" variant="outline" className="min-h-11"
-            onClick={() => void openInBrowser("https://september.to/terms-of-service")}>
+            onClick={() => void platform.device.openInBrowser("https://september.to/terms-of-service")}>
             Terms of Service
           </Button>
           <Button type="button" variant="outline" className="min-h-11"
-            onClick={() => void openInBrowser("https://september.to/privacy-policy")}>
+            onClick={() => void platform.device.openInBrowser("https://september.to/privacy-policy")}>
             Privacy Policy
           </Button>
         </div>
@@ -176,7 +172,7 @@ export function ChooseStep() {
           onClick={() => {
             const next = { ...draft, access };
             setDraft(() => next);
-            navigate({ to: nextStep("/choose", next)! });
+            navigate({ to: nextStep("/choose")! });
           }}
         >
           {stepFor("/choose").action}
@@ -205,7 +201,7 @@ export function ProfileStep() {
       name: name.trim(),
       speakingStyle,
     }));
-    navigate({ to: nextStep("/profile", draft)! });
+    navigate({ to: nextStep("/profile")! });
   }
 
   return (
@@ -322,7 +318,7 @@ export function FinishStep() {
           size="lg"
           className={ACTION}
           onClick={() => {
-            saveSetup(draft).then(() => navigate({ to: "/dashboard" }));
+            saveSetup(draft).then(() => navigate({ to: APP_NAV[0].path }));
           }}
         >
           {stepFor("/finish").action}
@@ -418,7 +414,7 @@ export function ConnectStep() {
       return;
     }
     let live = true;
-    listVoices()
+    platform.providers.voices()
       .then((found) => live && setVoices(found))
       .catch(() => live && setVoices([]));
     return () => {
@@ -435,7 +431,7 @@ export function ConnectStep() {
   }
 
   function forget(provider: Provider) {
-    forgetProvider(provider).then(() =>
+    platform.providers.forget(provider).then(() =>
       replace({ provider, connected: false, label: null, detail: null }),
     );
   }
@@ -443,12 +439,11 @@ export function ConnectStep() {
   function submit() {
     // `/voice` owns the voice, in the `speech` setting. Setup seeds it, so the
     // voice chosen here is the voice that speaks the first message.
-    void saveSpeech({
-      ...speechSettings(),
+    void updateSpeech({
       provider: draft.voiceService,
       voiceId: draft.voiceService === "elevenlabs" ? voiceId || null : null,
     });
-    navigate({ to: nextStep("/connect", draft)! });
+    navigate({ to: nextStep("/connect")! });
   }
 
   const chosenVoice = voices.find((voice) => voice.id === voiceId);
@@ -549,7 +544,7 @@ export function ConnectStep() {
               }))
             }
           >
-            {VOICE_SERVICES.map((option) => (
+            {voiceServices(platform.voice.systemDescription).map((option) => (
               <Choice
                 key={option.value}
                 value={option.value}

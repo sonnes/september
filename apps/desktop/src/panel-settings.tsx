@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Label } from "@september/ui/components/label";
 import { Switch } from "@september/ui/components/switch";
 
-import { panelFloat, setPanelFloat } from "@/services/os";
+import { panelFloat, setPanelFloat } from "@/window";
 
 /**
  * The panel section of Settings, on the desktop only.

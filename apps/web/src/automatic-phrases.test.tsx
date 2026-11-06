@@ -3,47 +3,21 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useSyncPhrases as useDesktopPhrases } from '../../desktop/src/services/phrase-sync';
-import { useSyncPhrases as useWebPhrases } from './services/phrase-sync';
+import { DEFAULT_DRAFT, type SavedSetup } from '@september/core/rules/onboarding';
+import { useSyncPhrases as usePhrases } from '@september/app-ui/services/phrase-sync';
+import { setup } from '@september/app-ui/services/settings';
 
 const state = vi.hoisted(() => ({
-  setup: { autoSuggestions: true, autoPhrases: true },
-  listeners: new Set<() => void>(),
   generate: vi.fn(),
   replace: vi.fn(),
   update: vi.fn(),
   writing: true,
 }));
-vi.mock('@platform/services/os', () => ({
-  currentSetup: () => state.setup,
-  currentSpeech: () => null,
-  subscribeSetup: (listener: () => void) => {
-    state.listeners.add(listener);
-    return () => state.listeners.delete(listener);
-  },
-}));
-vi.mock('../../desktop/src/services/os', () => ({
-  currentSetup: () => state.setup,
-  currentSpeech: () => null,
-  subscribeSetup: (listener: () => void) => {
-    state.listeners.add(listener);
-    return () => state.listeners.delete(listener);
-  },
-}));
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useReplaceAiPhrases: () => ({ mutateAsync: state.replace }),
   useUpdateSpace: () => ({ mutateAsync: state.update }),
 }));
-vi.mock('../../desktop/src/services/data', () => ({
-  useReplaceAiPhrases: () => ({ mutateAsync: state.replace }),
-  useUpdateSpace: () => ({ mutateAsync: state.update }),
-}));
-vi.mock('@platform/services/ai', () => ({
-  generate: state.generate,
-  hasWritingService: () => state.writing,
-  itemsFrom: (answer: Record<string, string[]>, key: string) => answer[key] ?? [],
-}));
-vi.mock('../../desktop/src/services/ai', () => ({
+vi.mock('@september/app-ui/services/ai', () => ({
   generate: state.generate,
   hasWritingService: () => state.writing,
   itemsFrom: (answer: Record<string, string[]>, key: string) => answer[key] ?? [],
@@ -51,9 +25,17 @@ vi.mock('../../desktop/src/services/ai', () => ({
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let root: ReturnType<typeof createRoot>;
 const answer = { phrases: ['Please bring some water.'], starters: ['I would like to'] };
-beforeEach(() => {
+const saved = (patch: Partial<SavedSetup>): SavedSetup => ({
+  ...DEFAULT_DRAFT,
+  id: 'person',
+  name: 'Ravi',
+  autoSuggestions: true,
+  autoPhrases: true,
+  ...patch,
+});
+beforeEach(async () => {
   root = createRoot(document.createElement('div'));
-  state.setup = { autoSuggestions: true, autoPhrases: true };
+  await setup.set(saved({}));
   state.writing = true;
   state.generate.mockReset().mockResolvedValue(answer);
   state.replace.mockReset().mockResolvedValue(undefined);
@@ -62,15 +44,11 @@ beforeEach(() => {
 afterEach(() => act(() => root.unmount()));
 async function enable(enabled: boolean) {
   await act(async () => {
-    state.setup = { ...state.setup, autoPhrases: enabled };
-    state.listeners.forEach(listener => listener());
+    await setup.set({ ...setup.get()!, autoPhrases: enabled });
   });
 }
 
-describe.each([
-  ['web', useWebPhrases],
-  ['desktop', useDesktopPhrases],
-] as const)('%s automatic phrases', (_platform, usePhrases) => {
+describe('automatic phrases', () => {
   function Harness({
     id = 'space',
     count = 1,
@@ -111,7 +89,7 @@ describe.each([
     [false, true],
     [true, true],
   ])('respects independent switches (%s, %s)', async (autoSuggestions, autoPhrases) => {
-    state.setup = { autoSuggestions, autoPhrases };
+    await setup.set(saved({ autoSuggestions, autoPhrases }));
     await act(async () => root.render(<Harness />));
     expect(state.generate).toHaveBeenCalledTimes(autoPhrases ? 1 : 0);
     expect(state.replace).toHaveBeenCalledTimes(autoPhrases ? 1 : 0);
@@ -189,8 +167,7 @@ describe.each([
     await act(async () => root.render(<Harness />));
     const signal = state.generate.mock.calls[0][1].signal as AbortSignal;
     await act(async () => {
-      state.setup = { ...state.setup, autoSuggestions: false };
-      state.listeners.forEach(listener => listener());
+      await setup.set({ ...setup.get()!, autoSuggestions: false });
     });
     expect(state.generate).toHaveBeenCalledTimes(1);
     expect(signal.aborted).toBe(false);

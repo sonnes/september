@@ -6,7 +6,7 @@ import { DataSettings } from '@september/app-ui/pages/settings';
 import backupFixture from '../../../packages/core/rules/fixtures/backup-v1.json';
 
 const backup = vi.hoisted(() => ({ download: vi.fn(), restore: vi.fn() }));
-vi.mock('@platform/services/backup', () => ({
+vi.mock('@september/app-ui/services/backup', () => ({
   downloadBackup: backup.download,
   importBackup: backup.restore,
 }));

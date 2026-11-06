@@ -17,7 +17,7 @@
     "types": ["vite/client"],
     "paths": {
       "@/*": ["./src/*"],
-      "@platform/*": ["./src/*"]
+      "@platform/adapter": ["./src/platform.ts"]
     }
   },
   "include": [

@@ -2,16 +2,6 @@ import { useMemo, useRef, useState } from "react";
 
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import {
-  CircleHelp,
-  Eye,
-  House,
-  MessageSquare,
-  Mic,
-  Settings2,
-  type LucideIcon,
-} from "lucide-react";
-
-import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -25,8 +15,8 @@ import {
   SidebarRail,
 } from "@september/ui/components/sidebar";
 
-import { APP_NAV, type AppPath } from "@platform/rules/app-nav";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
+import { APP_NAV } from "@september/app-ui/navigation";
 import {
   ApplyAccess,
   InputLayer,
@@ -39,18 +29,6 @@ import {
   SkipLink,
   useRouteFocus,
 } from "@september/app-ui/blocks/screen";
-
-// Each platform has its own `AppPath`. Web keeps Today, and desktop adds the
-// eye tracker. The key type names both, so this one record stays exhaustive
-// for either platform route union.
-const ICONS: Record<AppPath | "/dashboard" | "/eyetracker", LucideIcon> = {
-  "/dashboard": House,
-  "/spaces": MessageSquare,
-  "/voice": Mic,
-  "/help": CircleHelp,
-  "/settings": Settings2,
-  "/eyetracker": Eye,
-};
 
 /** The app sidebar starts collapsed; manual toggles survive resizing. */
 export function AppShell() {
@@ -133,7 +111,7 @@ function AppSidebar() {
           <nav aria-label="Main" data-scan-group data-housing>
             <SidebarMenu>
               {APP_NAV.map((item) => {
-                const Icon = ICONS[item.path];
+                const Icon = item.icon;
                 const current = pathname.startsWith(item.path);
                 return (
                   <SidebarMenuItem key={item.path}>

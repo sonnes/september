@@ -3,7 +3,7 @@ import { act, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_DRAFT, stepFor, type OnboardingDraft } from './rules/onboarding';
+import { DEFAULT_DRAFT, stepFor, type OnboardingDraft } from '@september/core/rules/onboarding';
 
 const state = vi.hoisted(() => ({
   setup: { access: undefined as unknown },
@@ -14,10 +14,10 @@ const state = vi.hoisted(() => ({
   drafts: new Set<() => void>(),
 }));
 
-vi.mock('@platform/services/os', async (original) => ({
-  ...(await original<typeof import('./services/os')>()),
+vi.mock('@september/app-ui/services/settings', async (original) => ({
+  ...(await original<object>()),
   currentSetup: () => state.setup,
-  subscribeSetup: () => () => {},
+  useSetup: () => state.setup,
   updateSetup: (patch: { access: unknown }) => {
     state.update(patch);
     state.setup = { ...state.setup, ...patch };

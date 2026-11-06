@@ -28,8 +28,10 @@ The production output is `dist/`. Vercel serves prerendered public pages and `ap
 
 - Import pure rules from `@september/core`, primitives from `@september/ui`, and
   application screens from `@september/app-ui`.
-- Shared application UI reaches browser services through the `@platform/*`
-  build alias. Keep that alias mapped to this app's `src/` directory.
+- Shared application UI reaches the browser through `@platform/adapter`. Keep
+  that alias mapped to `src/platform.ts`, and to `src/test/platform.ts` in
+  Vitest. Put shared work in `packages/app-ui/services/`, and only browser work
+  in `src/`.
 - Keep application route paths equal to the desktop paths in `src/router.tsx`. Preserve the web-only landing page at `/`.
 - Use `useNavigate` and `Link` from `@tanstack/react-router`.
 - Styling: shadcn/ui + Tailwind. Font family is Noto Sans (self-hosted via `@fontsource/noto-sans`). Note titles and headings use Fraunces (`@fontsource-variable/fraunces`, `font-heading`).

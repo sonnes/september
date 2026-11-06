@@ -18,7 +18,7 @@ import {
 
 import { Phrases } from "@september/app-ui/blocks/phrase-panel";
 import { SpeechSettings } from "@september/app-ui/blocks/speech-settings";
-import { currentPanel, rememberPanel } from "@platform/services/os";
+import { panel } from "@september/app-ui/services/settings";
 import { usePanel } from "@september/app-ui/blocks/chrome";
 import { HeaderActions } from "@september/app-ui/blocks/screen";
 import { PANEL_TABS, pressTab, type PanelTab } from "@september/core/rules/panel";
@@ -45,7 +45,7 @@ export function PanelRail({
   /** Puts a phrase in the composer of the screen that holds the rail. */
   onInsert: (text: string) => void;
 }) {
-  const [state, setState] = useState(currentPanel);
+  const [state, setState] = useState(panel.get);
   const phone = useIsMobile();
   // A phone opens the sheet only on a press, never from the remembered state,
   // so a screen does not start under a sheet.
@@ -56,7 +56,7 @@ export function PanelRail({
 
   const show = (next: typeof state) => {
     setState(next);
-    void rememberPanel(next);
+    void panel.set(next);
   };
 
   useEffect(() => {

@@ -36,13 +36,10 @@ import {
   type PresentTone,
 } from "@september/core/rules/present/stage";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
-import {
-  currentPresent,
-  fullScreen,
-  rememberPresent,
-} from "@platform/services/os";
-import { speak, stopSpeaking } from "@platform/services/speech";
-import { recordPresentUsage } from "@platform/services/usage";
+import { platform } from "@platform/adapter";
+import { present } from "@september/app-ui/services/settings";
+import { speak, stopSpeaking } from "@september/app-ui/services/speech";
+import { recordPresentUsage } from "@september/app-ui/services/usage";
 
 /** What is speaking, so the note screen can tell its own voice-over apart. */
 const PRESENT_SPEAKER = "present";
@@ -69,7 +66,7 @@ export function PresentOverlay({
 }) {
   const chunks = useMemo(() => presentChunks(content), [content]);
   const [index, setIndex] = useState(0);
-  const [settings, setSettings] = useState<PresentSettings>(currentPresent);
+  const [settings, setSettings] = useState<PresentSettings>(present.get);
   const [paused, setPaused] = useState(false);
   const [speechFailed, setSpeechFailed] = useState(false);
   const [colours, setColours] = useState(false);
@@ -90,11 +87,16 @@ export function PresentOverlay({
     };
   }, []);
 
-  // The desktop panel fills the screen while it presents, and goes back to
-  // its size when the overlay closes. The browser does nothing.
+  // The window fills the screen while it presents, and goes back to its size
+  // when the overlay closes, on a platform that can resize it. The story still
+  // shows in a window that stays small.
   useEffect(() => {
-    void fullScreen(true);
-    return () => void fullScreen(false);
+    const resize = (on: boolean) =>
+      platform.device.fullScreen?.(on).catch((reason: unknown) =>
+        console.warn("September could not resize the window.", reason),
+      );
+    void resize(true);
+    return () => void resize(false);
   }, []);
 
   const tone = presentTone(settings.tone);
@@ -111,7 +113,7 @@ export function PresentOverlay({
   const choose = (next: Partial<PresentSettings>) => {
     const saved = { ...settings, ...next };
     setSettings(saved);
-    void rememberPresent(saved);
+    void present.set(saved);
   };
 
   // One event for the story, not one for each chunk.

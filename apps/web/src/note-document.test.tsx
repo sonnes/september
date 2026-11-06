@@ -7,10 +7,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const save = vi.hoisted(() => vi.fn(async (_patch: unknown) => undefined));
 const speak = vi.hoisted(() => vi.fn(async (_text: string, _id: string) => undefined));
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useUpdateNote: () => ({ mutateAsync: save }),
 }));
-vi.mock('@platform/services/speech', () => ({
+vi.mock('@september/app-ui/services/speech', () => ({
   speak,
   stopSpeaking: () => {},
   useSpeaking: () => null,

@@ -10,19 +10,20 @@ const state = vi.hoisted(() => ({
   moodSaved: vi.fn(async (_id: string, _mood: string | null) => undefined),
 }));
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => () => {} }));
-vi.mock('@platform/services/os', () => ({
-  readTalkDraft: async () => 'hello ', saveTalkDraft: state.saved, guardUnsavedChanges: () => () => {},
+vi.mock('@september/app-ui/services/settings', async original => ({
+  ...(await original<typeof import('@september/app-ui/services/settings')>()),
+  readTalkDraft: async () => 'hello ', saveTalkDraft: state.saved,
   readTalkMood: async () => 'low', saveTalkMood: state.moodSaved,
 }));
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useSpaces: () => ({ data: [{ id: 'space', title: 'Family', context: '' }], isPending: false }),
   useMessages: () => ({ data: [] }), usePhrases: () => ({ data: [] }),
   usePutPhrase: () => ({ mutate: () => {} }),
   useSendMessage: () => ({ mutate: (_text: string, callbacks: { onSuccess: () => void }) => { state.sent = callbacks.onSuccess; }, isPending: false }),
 }));
-vi.mock('@platform/services/phrase-sync', () => ({ useSyncPhrases: () => {} }));
-vi.mock('@platform/services/usage', () => ({ recordMessageUsage: async () => {} }));
-vi.mock('@platform/services/speech', () => ({ speak: async () => true, stopSpeaking: () => {}, useSpeaking: () => null, useVoiceFallback: () => null }));
+vi.mock('@september/app-ui/services/phrase-sync', () => ({ useSyncPhrases: () => {} }));
+vi.mock('@september/app-ui/services/usage', () => ({ recordMessageUsage: async () => {} }));
+vi.mock('@september/app-ui/services/speech', () => ({ speak: async () => true, stopSpeaking: () => {}, useSpeaking: () => null, useVoiceFallback: () => null }));
 vi.mock('@september/app-ui/blocks/screen', () => ({ ScreenHeader: ({ children }: { children: React.ReactNode }) => <>{children}</>, RightPanel: () => null }));
 vi.mock('@september/app-ui/blocks/space-panel', () => ({ PanelRail: () => null }));
 vi.mock('@september/app-ui/blocks/space', () => ({

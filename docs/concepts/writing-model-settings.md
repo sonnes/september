@@ -10,8 +10,9 @@ The saved setup contains `defaultModel` and `suggestionsModel`. Each model
 setting contains a writing service and a model ID. An empty model ID asks the
 selected service to choose a model automatically.
 
-The browser sends `openrouter/free` for an Automatic OpenRouter selection.
-This rule applies to the default model and the Suggestions override.
+Both apps send `openrouter/free` for an Automatic OpenRouter selection. This
+rule applies to the default model and the Suggestions override. The shared
+writing service in `packages/app-ui/services/ai.ts` sends it.
 
 Every text-generation job reads `defaultModel`. This rule includes space
 descriptions, saved-phrase generation, and Agent turns. The provider of

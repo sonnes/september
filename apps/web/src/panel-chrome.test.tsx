@@ -2,13 +2,15 @@
 import React, { act, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SidebarProvider } from '@september/ui/components/sidebar';
 import { ChromeContext, PanelContext, type Tier } from '@september/app-ui/blocks/chrome';
 import { Composer } from '@september/app-ui/blocks/space';
 import { TalkScreen } from '@september/app-ui/pages/talk';
 import type { MoodKey } from '@september/core/rules/moods';
+
+import { platform } from './test/platform';
 
 const messages = vi.hoisted(() => ({ list: [] as { id: string; type: string; text: string; created_at: number }[] }));
 
@@ -18,23 +20,7 @@ const SPACES = [
 ];
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => () => {} }));
-vi.mock('@platform/services/os', () => ({
-  readTalkDraft: async () => '',
-  saveTalkDraft: async () => undefined,
-  readTalkMood: async () => null,
-  saveTalkMood: async () => undefined,
-  guardUnsavedChanges: () => () => {},
-  chooseOutput: async () => undefined,
-  currentOutput: async () => 'speakers',
-  currentSetup: () => null,
-  listOutputs: async () => [{ uid: 'speakers', name: 'MacBook Pro Speakers' }],
-  rememberModes: async () => undefined,
-  spaceModes: {},
-  startVirtualMicrophone: async () => ({}),
-  stopVirtualMicrophone: async () => ({}),
-  virtualMicrophoneStatus: async () => ({ uid: 'unavailable-in-browser', active: false }),
-}));
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useSpaces: () => ({ data: SPACES, isPending: false, isFetching: false }),
   useCreateSpace: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateSpace: () => ({ mutate: vi.fn() }),
@@ -43,15 +29,15 @@ vi.mock('@platform/services/data', () => ({
   usePutPhrase: () => ({ mutate: () => {} }),
   useSendMessage: () => ({ mutate: () => {}, isPending: false }),
 }));
-vi.mock('@platform/services/ai', () => ({ hasWritingService: () => false }));
-vi.mock('@platform/services/phrase-sync', () => ({ useSyncPhrases: () => {} }));
-vi.mock('@platform/services/usage', () => ({ recordMessageUsage: async () => {} }));
+vi.mock('@september/app-ui/services/ai', () => ({ hasWritingService: () => false }));
+vi.mock('@september/app-ui/services/phrase-sync', () => ({ useSyncPhrases: () => {} }));
+vi.mock('@september/app-ui/services/usage', () => ({ recordMessageUsage: async () => {} }));
 const voice = vi.hoisted(() => ({ speaking: null as string | null, listeners: new Set<() => void>() }));
 const setSpeaking = (id: string | null) => {
   voice.speaking = id;
   for (const listener of voice.listeners) listener();
 };
-vi.mock('@platform/services/speech', async () => {
+vi.mock('@september/app-ui/services/speech', async () => {
   const { useSyncExternalStore } = await import('react');
   return {
     speak: async (_text: string, id = 'composer') => {
@@ -95,6 +81,10 @@ window.matchMedia = ((query: string) => ({
 const container = document.createElement('div');
 document.body.append(container);
 let root = createRoot(container);
+beforeEach(() => {
+  platform.device.outputs.list = async () => [{ uid: 'speakers', name: 'MacBook Pro Speakers' }];
+  platform.device.outputs.current = async () => 'speakers';
+});
 afterEach(() => {
   act(() => root.unmount());
   root = createRoot(container);

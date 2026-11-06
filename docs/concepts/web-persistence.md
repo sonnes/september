@@ -31,7 +31,9 @@ transaction. Agent messages never enter the Talk store.
 ## Replace data from a backup
 
 The Data settings screen can read all portable settings and domain stores in
-one transaction. Version 2 includes the Agent transcript. It omits provider
+one transaction. `exportBackup` gives the portable settings as a map by setting
+key, and `importBackup` takes the same map. Core converts the map to and from
+the settings of the file. Version 2 includes the Agent transcript. It omits provider
 keys, audio output, migration state, and the two speech-file stores.
 
 Import reads the complete backup before it opens a write transaction. The

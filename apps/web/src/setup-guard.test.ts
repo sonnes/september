@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import 'fake-indexeddb/auto';
-
 import { createMemoryHistory } from '@tanstack/react-router';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { loadSettings, saveSetup } from '@september/app-ui/services/settings';
+import { DEFAULT_DRAFT } from '@september/core/rules/onboarding';
 
 import { getRouter } from './router';
-import { saveSetup } from './services/os';
 
 /** Where the router settles when it is asked for a path. */
 async function lands(at: string): Promise<string> {
@@ -14,25 +14,24 @@ async function lands(at: string): Promise<string> {
   return router.state.location.pathname;
 }
 
-// The two tests share one database, so the unfinished setup is asked for first.
+beforeEach(() => loadSettings());
+
 describe('the setup flow', () => {
-  it('holds an unfinished setup at the step it asks for', async () => {
+  it('holds an unfinished setup at the step it asks for, and sends an app page to the start', async () => {
     expect(await lands('/welcome')).toBe('/welcome');
+    expect(await lands('/spaces')).toBe('/welcome');
+  });
+
+  it('opens Help before setup ends', async () => {
+    expect(await lands('/help')).toBe('/help');
   });
 
   it('sends a finished setup on to the app', async () => {
-    await saveSetup({
-      name: 'Meera',
-      speakingStyle: 'Plain, warm, and direct.',
-      personalWords: '',
-      mode: 'free',
-      defaultModel: { service: 'none', model: '' },
-      suggestionsModel: null,
-      voiceService: 'system',
-    });
+    await saveSetup({ ...DEFAULT_DRAFT, name: 'Meera' });
 
     // Setup runs once. A returning user who opens the marketing page and
-    // presses Get started should land in the app, not answer it all again.
+    // presses Get started lands in the app, not on the first step again.
     expect(await lands('/welcome')).toBe('/dashboard');
+    expect(await lands('/spaces')).toBe('/spaces');
   });
 });

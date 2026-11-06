@@ -15,9 +15,8 @@ Rust opens `september.sqlite3` in Tauri's application-local-data directory.
 The `settings` table maps a unique text key to a JSON value. SQLite validates
 the stored JSON, and Rust limits keys to 256 bytes.
 
-The webview can get, put, and delete settings through Tauri commands. Successful
-writes emit `september://settings-changed` so ported screens can refresh the
-affected keys.
+The webview gets and puts settings through the `setting_get` and
+`setting_put` commands. A failed write rejects.
 
 The native window size and position use `.window-state.json` in Tauri's
 application configuration directory. The window-state plugin saves these values
@@ -26,11 +25,13 @@ backups.
 
 ## Replace data from a backup
 
-The `backup_export` command returns portable settings and every domain row. It
-does not return Keychain keys, the selected audio output, internal settings, or
-a message's local audio path.
+The `backup_export` command returns the portable settings as a map by setting
+key, and every domain row. It does not return Keychain keys, the selected
+audio output, or internal settings. `backupContentsFrom` in core makes the map
+into the settings of a backup.
 
-The `backup_import` command validates the full payload first. It then replaces
+The `backup_import` command takes the same map, which `storedBackupFrom` in
+core makes. It validates the full payload first. It then replaces
 the portable settings and domain tables in one SQLite transaction. A failed
 row rolls back the complete replacement. See
 [Portable backups](portable-backups.md).

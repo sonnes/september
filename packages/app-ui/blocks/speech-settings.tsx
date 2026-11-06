@@ -7,13 +7,14 @@ import { Label } from "@september/ui/components/label";
 import { Slider } from "@september/ui/components/slider";
 
 import { PickList } from "@september/app-ui/blocks/pick-list";
-import { readConnections, saveSpeech } from "@platform/services/os";
+import { readConnections } from "@september/app-ui/services/connections";
 import {
   DEFAULT_SPEECH,
   speak,
   speechSettings,
+  updateSpeech,
   type SpeechSettings as Speech,
-} from "@platform/services/speech";
+} from "@september/app-ui/services/speech";
 import {
   DIALOGUE_MODEL,
   DIALOGUE_MODELS,
@@ -55,9 +56,8 @@ export function SpeechSettings() {
   );
 
   const change = (next: Partial<Speech>) => {
-    const merged = { ...settings, ...next };
-    setSettings(merged);
-    void saveSpeech(merged);
+    setSettings({ ...settings, ...next });
+    void updateSpeech(next);
   };
 
   useEffect(() => {

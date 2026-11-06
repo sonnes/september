@@ -15,24 +15,21 @@ const state = vi.hoisted(() => ({
   speech: { provider: 'elevenlabs', modelId: 'eleven_flash_v2_5' } as Record<string, unknown>,
   setup: null as null | { access: unknown },
 }));
-vi.mock('@platform/services/os', async (original) => ({
-  ...(await original<typeof import('./services/os')>()),
-  currentSetup: () => state.setup,
-  subscribeSetup: () => () => {},
+vi.mock('@september/app-ui/services/settings', async (original) => ({
+  ...(await original<object>()),
+  useSetup: () => state.setup,
 }));
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useMessages: () => ({ data: [] }),
   usePhrases: (spaceId?: string) => ({ data: state.phrases.filter(one => !spaceId || one.space_id === spaceId) }),
 }));
-vi.mock('@platform/services/suggest', () => ({
-  useSuggestions: () => state.words, applySuggestion: (_text: string, word: string) => word,
-}));
-vi.mock('@platform/services/ai', () => ({
+vi.mock('@september/app-ui/services/suggest', () => ({ useSuggestions: () => state.words }));
+vi.mock('@september/app-ui/services/ai', () => ({
   hasWritingService: () => state.writing,
   generate: async (request: unknown) => { state.generate(request); return state.answer; },
   itemsFrom: (answer: string[]) => answer, userContext: () => '',
 }));
-vi.mock('@platform/services/speech', () => ({ speechSettings: () => state.speech, useSpeaking: () => null, useSpokenWord: () => null }));
+vi.mock('@september/app-ui/services/speech', () => ({ speechSettings: () => state.speech, useSpeaking: () => null, useSpokenWord: () => null }));
 vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
@@ -252,7 +249,7 @@ it('shows tag tiles after the words when the voice reads tags', async () => {
   const row = [...container.querySelectorAll('button')].map(one => one.getAttribute('aria-label') ?? one.textContent);
   expect(row).toEqual(expect.arrayContaining(['and', 'giggles, audio tag', 'laughs, audio tag']));
   await act(async () => button('giggles, audio tag').click());
-  expect(container.querySelector('output')?.textContent).toBe('[giggles]');
+  expect(container.querySelector('output')?.textContent).toBe('so funny [giggles] ');
 });
 
 it('shows no tag tiles when the voice says tags aloud', async () => {

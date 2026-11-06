@@ -6,18 +6,11 @@ import { KeyPanel } from '@september/app-ui/blocks/services';
 import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   usePhrases: () => ({ data: [] }),
   useMessages: () => ({ data: [] }),
   usePutPhrase: () => ({ mutateAsync: vi.fn() }),
   useDeletePhrase: () => ({ mutateAsync: vi.fn() }),
-}));
-vi.mock('@platform/services/os', () => ({
-  dismissedIdeas: () => [],
-  rememberDismissed: vi.fn(),
-  connectProvider: vi.fn(),
-  connectOpenRouter: vi.fn(),
-  openInBrowser: vi.fn(),
 }));
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

@@ -160,6 +160,11 @@ asked for after it is finished goes on to `/dashboard`. So the landing page's
 calls to action, a bookmark, and the back button all land a returning user in
 the app. `src/setup-guard.test.ts` holds both directions.
 
+`src/main.tsx` awaits `loadSettings` from `@september/app-ui/services/settings`
+once, then mounts the app. The guards read the held setup and do not wait. If
+the browser denies storage, the error goes to the console, and the landing
+page and Help still open.
+
 The application routes are:
 
 - `/dashboard`
@@ -258,14 +263,14 @@ The browser uses the Web Speech API for the system voice. A system voice does no
 
 ElevenLabs speech files use a cache key made from the text and every sound setting. The repository splits each file into 1 MiB chunks. The cache holds at most 100 MiB and evicts whole least-recently-used files before each write. Reading a file refreshes its access time. A cache failure does not prevent new speech from playing.
 
-`streamSpeech` in `src/services/os.ts` speaks an ElevenLabs sentence with an MP3 file from the HTTP text-to-speech endpoint. The file goes into the speech cache, and a kept file plays without a request. If the request fails, the system voice speaks the sentence. See `docs/concepts/streaming-voice.md`.
+`voice.stream` in `src/services/voice.ts` speaks an ElevenLabs sentence with an MP3 file from the HTTP text-to-speech endpoint. The file goes into the speech cache, and a kept file plays without a request. If the request fails, the system voice speaks the sentence. See `docs/concepts/streaming-voice.md`.
 
-For the ElevenLabs Dialogue voice, `streamSpeech` sends the sentence to the Text to Dialogue stream with `eleven_v3` instead. With `eleven_v3_conversational`, it uses the Text to Dialogue socket. Each chunk of samples plays on one `AudioContext` while the rest of the sentence arrives. A complete sentence is kept in the same cache as a WAV file. If the voice breaks after its first sound, the system voice does not repeat the sentence. A text of more than 2,000 characters goes in parts, one request after the other. See the Dialogue voice section of `docs/concepts/streaming-voice.md`.
+For the ElevenLabs Dialogue voice, `voice.stream` sends the sentence to the Text to Dialogue stream with `eleven_v3` instead. With `eleven_v3_conversational`, it uses the Text to Dialogue socket. Each chunk of samples plays on one `AudioContext` while the rest of the sentence arrives. A complete sentence is kept in the same cache as a WAV file. If the voice breaks after its first sound, the system voice does not repeat the sentence. A text of more than 2,000 characters goes in parts, one request after the other. See the Dialogue voice section of `docs/concepts/streaming-voice.md`.
 
-A note presents and exports from its own screen. `src/services/export.ts` saves the words as `.md` with nothing configured, the voice as `.mp3` from the speech cache, and a 9:16 `.mp4` with word-synced captions. `synthesizeTimed` in `src/services/os.ts` asks ElevenLabs for the sound and the character alignment together and caches both in the same bounded store. `src/services/video.ts` draws every frame on a canvas and joins them to the voice with `ffmpeg.wasm`, which needs the cross-origin isolation headers in `public/_headers`. Video assembly stays in the browser; cloud speech requests still send text to ElevenLabs. See `docs/concepts/note-present-export.md`.
+A note presents and exports from its own screen. The shared export service saves the words as `.md` with nothing configured, the voice as `.mp3` from the speech cache, and a 9:16 `.mp4` with word-synced captions. `synthesizeTimed` in `src/services/voice.ts` asks ElevenLabs for the sound and the character alignment together and caches both in the same bounded store. `src/services/video.ts` draws every frame on a canvas and joins them to the voice with `ffmpeg.wasm`, which needs the cross-origin isolation headers in `public/_headers`. Video assembly stays in the browser; cloud speech requests still send text to ElevenLabs. See `docs/concepts/note-present-export.md`.
 
-OpenRouter and ElevenLabs calls go directly from the browser. Their keys stay
-in IndexedDB. Setup stores one default writing-model setting. Every AI text
+OpenRouter and ElevenLabs calls go directly from the browser. `src/services/providers.ts`
+keeps their keys in IndexedDB and reads them for each request. Setup stores one default writing-model setting. Every AI text
 request uses this setting. If the separate Suggestions setting is not null,
 Suggestions use it.
 
@@ -275,7 +280,7 @@ ends in whitespace or `. , ! ? ; :`, then wait 200 ms. Local word completion
 still responds to each letter. Setup writes run in order and notify mounted
 generation hooks after a successful save. Portable backups preserve both switches.
 
-`src/services/ai.ts` reaches OpenRouter through `@earendil-works/pi-ai`. It
+The shared writing service in `@september/app-ui/services/ai` reaches OpenRouter through `@earendil-works/pi-ai`. It
 loads the client on the first call that needs a model, so a reader who only
 opens the landing page or a Help guide never downloads it. The client knows
 the published rates of the models it lists, which is where a recorded cost
@@ -303,11 +308,12 @@ The interface shows their unavailable state in the desktop UI positions.
 
 ```text
 src/
+├── platform.ts   the browser platform that the shared code reaches
 ├── components/   web-only landing-page sections
 ├── pages/        the web-only home and legal pages
-├── rules/        platform-only rules and core compatibility exports
-├── services/     IndexedDB, speech, AI, and browser adapters
-└── packages/     remaining browser-only helpers and compatibility exports
+├── rules/        the prerender and analytics rules of the web
+├── services/     IndexedDB, voices, provider keys, video, OAuth, analytics
+└── test/         the in-memory platform of the tests
 ```
 
 The root workspace supplies the common source:
@@ -316,8 +322,10 @@ The root workspace supplies the common source:
 - `packages/ui` owns design tokens and generic primitives.
 - `packages/app-ui` owns application layouts, blocks, and screens.
 
-The shared UI imports browser services through `@platform/*`, which Vite and
-Vitest map to this app's `src/` directory.
+The shared UI imports the browser platform from `@platform/adapter`. TypeScript
+and Vite map it to `src/platform.ts`. Vitest maps it to
+`src/test/platform.ts`, an in-memory platform that a setup file resets before
+each test.
 
 ## Speech and unfinished words
 

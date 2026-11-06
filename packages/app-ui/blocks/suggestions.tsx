@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -26,9 +25,10 @@ import {
   hasWritingService,
   itemsFrom,
   userContext,
-} from "@platform/services/ai";
-import { currentSetup, subscribeSetup, type SavedSetup } from "@platform/services/os";
-import { useMessages, usePhrases } from "@platform/services/data";
+} from "@september/app-ui/services/ai";
+import type { SavedSetup } from "@september/core/rules/onboarding";
+import { useSetup } from "@september/app-ui/services/settings";
+import { useMessages, usePhrases } from "@september/app-ui/services/data";
 import { matchCode, trailingWord } from "@september/core/rules/phrases/codes";
 import { isKept, topPhrases, topRows } from "@september/core/rules/phrases/rows";
 import type { SavedPhrase } from "@september/core/rules/records";
@@ -41,10 +41,11 @@ import {
   wordRow,
 } from "@september/core/rules/audio-tags";
 import { exampleTags, type MoodKey } from "@september/core/rules/moods";
-import { speechSettings, useSpokenWord } from "@platform/services/speech";
+import { speechSettings, useSpokenWord } from "@september/app-ui/services/speech";
 import { wordsOf } from "@september/core/rules/spoken-word";
 import { useReach } from "@september/app-ui/blocks/access";
-import { applySuggestion, useSuggestions } from "@platform/services/suggest";
+import { applySuggestion } from "@september/core/autocomplete";
+import { useSuggestions } from "@september/app-ui/services/suggest";
 import {
   boardWords,
   codeExpansionText,
@@ -225,7 +226,7 @@ export function Suggestions({
   onSpeak: (sentence: string) => void;
   onPin: (phrase: string) => void;
 }) {
-  const setup = useSyncExternalStore(subscribeSetup, currentSetup, currentSetup);
+  const setup = useSetup();
   const { data: spacePhrases } = usePhrases(spaceId);
   // A code works in every space, so the lookup reads them all.
   const { data: allPhrases } = usePhrases();

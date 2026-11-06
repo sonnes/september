@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     tsconfigPaths: true,
-    alias: { '@platform': '/src' },
+    alias: { '@platform/adapter': '/src/platform.ts' },
   },
   server: { port: 3009 },
 });

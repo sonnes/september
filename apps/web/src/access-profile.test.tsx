@@ -9,13 +9,14 @@ const state = vi.hoisted(() => ({
   systemDark: false,
 }));
 
-vi.mock('@platform/services/os', () => ({
-  currentSetup: () => state.setup,
-  subscribeSetup: (listener: () => void) => {
+vi.mock('@september/app-ui/services/settings', async () => {
+  const { useSyncExternalStore } = await import('react');
+  const subscribe = (listener: () => void) => {
     state.listeners.add(listener);
     return () => state.listeners.delete(listener);
-  },
-}));
+  };
+  return { useSetup: () => useSyncExternalStore(subscribe, () => state.setup) };
+});
 
 import { ApplyAccess } from '@september/app-ui/blocks/access';
 import { parseAccess } from '@september/core/rules/access';

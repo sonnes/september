@@ -8,11 +8,8 @@ const state = vi.hoisted(() => ({
   speaking: null as null | string,
 }));
 
-vi.mock('@platform/services/os', () => ({
-  currentSetup: () => state.setup,
-  subscribeSetup: () => () => {},
-}));
-vi.mock('@platform/services/speech', () => ({ useSpeaking: () => state.speaking }));
+vi.mock('@september/app-ui/services/settings', () => ({ useSetup: () => state.setup }));
+vi.mock('@september/app-ui/services/speech', () => ({ useSpeaking: () => state.speaking }));
 
 import { InputLayer, ScanPauseKey } from '@september/app-ui/blocks/access';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@september/ui/components/sheet';

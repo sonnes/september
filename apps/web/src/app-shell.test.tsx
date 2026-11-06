@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppShell } from '@september/app-ui/layouts/app';
 import { ScreenHeader } from '@september/app-ui/blocks/screen';
-import { APP_NAV } from '@platform/rules/app-nav';
+import { APP_NAV } from '@september/app-ui/navigation';
 import { axeViolations } from './axe';
 
 const state = vi.hoisted(() => ({
@@ -25,10 +25,10 @@ vi.mock('@tanstack/react-router', () => ({
     select({ location: { pathname: state.path } }),
 }));
 
-vi.mock('@platform/services/os', async (original) => ({
-  ...(await original<typeof import('./services/os')>()),
+vi.mock('@september/app-ui/services/settings', async (original) => ({
+  ...(await original<object>()),
   currentSetup: () => state.setup,
-  subscribeSetup: () => () => {},
+  useSetup: () => state.setup,
 }));
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

@@ -11,10 +11,6 @@ vi.mock('@tanstack/react-router', () => ({
     </a>
   ),
 }));
-vi.mock('@platform/services/os', async original => {
-  const actual = await original<typeof import('./services/os')>();
-  return { ...actual, readConnections: async () => actual.BLANK_CONNECTIONS };
-});
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let container: HTMLDivElement;

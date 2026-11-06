@@ -2,7 +2,6 @@ import {
   useEffect,
   useRef,
   useState,
-  useSyncExternalStore,
   type ChangeEvent,
   type ReactNode,
 } from "react";
@@ -35,19 +34,16 @@ import {
   SPEAKING_STYLES,
   WRITING_SERVICES,
   type OnboardingDraft,
-} from "@platform/rules/onboarding";
+} from "@september/core/rules/onboarding";
+import { platform } from "@platform/adapter";
+import type { Provider, ProviderStatus } from "@september/app-ui/platform";
 import {
   BLANK_CONNECTIONS,
-  currentSetup,
-  openInBrowser,
   readConnections,
-  subscribeSetup,
-  updateSetup,
   type Connections,
-  type Provider,
-  type ProviderStatus,
-} from "@platform/services/os";
-import { downloadBackup, importBackup } from "@platform/services/backup";
+} from "@september/app-ui/services/connections";
+import { currentSetup, updateSetup, useSetup } from "@september/app-ui/services/settings";
+import { downloadBackup, importBackup } from "@september/app-ui/services/backup";
 import {
   backupProblem,
   backupSummary,
@@ -64,7 +60,7 @@ import {
 import {
   CONNECTION_GUIDES,
   type ConnectionId,
-} from "@platform/rules/settings-nav";
+} from "@september/core/rules/navigation";
 import { PickList } from "@september/app-ui/blocks/pick-list";
 import { AccessForm } from "@september/app-ui/blocks/access";
 import {
@@ -80,7 +76,7 @@ import {
   Status,
 } from "@september/app-ui/blocks/services";
 
-function useSetup(): [
+function useSetupDraft(): [
   OnboardingDraft,
   (patch: Partial<OnboardingDraft>) => void,
 ] {
@@ -133,7 +129,7 @@ function useConnections(): [
  * how every key responds, so an arrow key that passes it must not start it.
  */
 export function AccessSettings() {
-  const [setup, change] = useSetup();
+  const [setup, change] = useSetupDraft();
   const saved = parseAccess((setup as { access?: unknown }).access);
   const [pending, setPending] = useState<InputMethod | null>(null);
   const input = pending ?? saved.input;
@@ -415,7 +411,7 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
           type="button"
           variant="outline"
           className="h-11 px-4"
-          onClick={() => void openInBrowser(guide.url)}
+          onClick={() => void platform.device.openInBrowser(guide.url)}
         >
           Open {guide.name}
           <ExternalLink aria-hidden />
@@ -446,9 +442,7 @@ function SetupSwitch({
   label: string;
   description: string;
 }) {
-  const setup =
-    useSyncExternalStore(subscribeSetup, currentSetup, currentSetup) ??
-    DEFAULT_DRAFT;
+  const setup = useSetup() ?? DEFAULT_DRAFT;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const id = `setting-${field}`;
@@ -537,7 +531,7 @@ function AppleModel() {
  * both, so a feature can never point at a provider the user left.
  */
 export function WritingSettings() {
-  const [setup, change] = useSetup();
+  const [setup, change] = useSetupDraft();
   const [connections] = useConnections();
   const provider = setup.defaultModel.service;
 

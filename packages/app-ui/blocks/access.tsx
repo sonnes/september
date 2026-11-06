@@ -11,8 +11,8 @@ import { Check, Pause, Play } from "lucide-react";
 
 import { cn } from "@september/ui";
 
-import { currentSetup, subscribeSetup } from "@platform/services/os";
-import { useSpeaking } from "@platform/services/speech";
+import { useSetup } from "@september/app-ui/services/settings";
+import { useSpeaking } from "@september/app-ui/services/speech";
 import {
   INPUT_METHODS,
   TIME_MAX_MS,
@@ -35,7 +35,7 @@ const systemDark = () => window.matchMedia?.(DARK_QUERY).matches ?? false;
 
 /** The access profile of the person, or the default before setup. */
 export function useAccess(): AccessProfile {
-  const setup = useSyncExternalStore(subscribeSetup, currentSetup, currentSetup);
+  const setup = useSetup();
   const saved = (setup as { access?: unknown } | null)?.access;
   return useMemo(() => parseAccess(saved), [saved]);
 }

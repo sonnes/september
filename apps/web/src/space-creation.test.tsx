@@ -9,27 +9,28 @@ import { SpacesScreen } from '@september/app-ui/pages/spaces';
 import { SpaceDock, useSpaceBySlug } from '@september/app-ui/blocks/space';
 import { InputLayer } from '@september/app-ui/blocks/access';
 import { DEFAULT_ACCESS } from '@september/core/rules/access';
+import { setup } from '@september/app-ui/services/settings';
+import { DEFAULT_DRAFT } from '@september/core/rules/onboarding';
 import { axeViolations } from './axe';
 
 const state = vi.hoisted(() => ({
   navigate: vi.fn(),
   create: vi.fn(),
   hasWriting: true,
-  agentEnabled: true,
   fetching: false,
   spaces: [] as { id: string; title: string; updated_at: number }[],
 }));
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => state.navigate }));
 
-vi.mock('@platform/services/ai', () => ({
+vi.mock('@september/app-ui/services/ai', () => ({
   hasWritingService: () => state.hasWriting,
   generate: vi.fn(),
   itemsFrom: () => [],
   userContext: () => '',
 }));
 
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useSpaces: () => ({
     data: state.spaces,
     isPending: false,
@@ -43,23 +44,7 @@ vi.mock('@platform/services/data', () => ({
   usePhrases: () => ({ data: [] }),
 }));
 
-const setups = vi.hoisted(() => ({ on: { agentEnabled: true }, off: { agentEnabled: false } }));
-
-vi.mock('@platform/services/os', () => ({
-  // One object for each answer, as the real setup store keeps one object.
-  currentSetup: () => (state.agentEnabled ? setups.on : setups.off),
-  subscribeSetup: () => () => {},
-  spaceModes: {},
-  rememberModes: vi.fn(),
-  listOutputs: vi.fn(async () => []),
-  currentOutput: vi.fn(async () => ''),
-  chooseOutput: vi.fn(),
-  startVirtualMicrophone: vi.fn(),
-  stopVirtualMicrophone: vi.fn(),
-  virtualMicrophoneStatus: vi.fn(async () => ({ active: false, uid: '' })),
-}));
-
-vi.mock('@platform/services/suggest', () => ({
+vi.mock('@september/app-ui/services/suggest', () => ({
   useSuggestions: () => [],
   applySuggestion: (text: string) => text,
 }));
@@ -79,14 +64,14 @@ window.matchMedia = ((query: string) => ({
 let container: HTMLDivElement;
 let root: Root;
 
-beforeEach(() => {
+beforeEach(async () => {
+  await setup.set({ ...DEFAULT_DRAFT, id: 'person', agentEnabled: true });
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
   state.navigate.mockReset();
   state.create.mockReset();
   state.hasWriting = true;
-  state.agentEnabled = true;
   state.fetching = false;
   state.spaces = [];
 });
@@ -148,7 +133,7 @@ describe('making a space', () => {
     });
   });
   it('opens Talk when the agent is off', async () => {
-    state.agentEnabled = false;
+    await setup.set({ ...setup.get()!, agentEnabled: false });
     state.create.mockResolvedValue({ id: 's2', title: 'Amber Cedar Meadow' });
 
     await show();
@@ -264,7 +249,7 @@ describe('the space mode control', () => {
   });
 
   it('hides Agent when the agent is off', async () => {
-    state.agentEnabled = false;
+    await setup.set({ ...setup.get()!, agentEnabled: false });
     expect(await tabs()).toEqual(['Talk', 'Notes']);
   });
 

@@ -193,6 +193,9 @@ importers:
 
   packages/app-ui:
     dependencies:
+      '@earendil-works/pi-ai':
+        specifier: 0.84.4
+        version: 0.84.4(ws@8.21.3)(zod@4.4.3)
       '@fontsource-variable/fraunces':
         specifier: ^5.2.5
         version: 5.3.0
@@ -224,6 +227,9 @@ importers:
       react-dom:
         specifier: 19.2.1
         version: 19.2.1(react@19.2.1)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/core:
     dependencies:

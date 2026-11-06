@@ -4,8 +4,10 @@ import { NoteEditor } from '@september/app-ui/pages/notes';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { platform } from './test/platform';
+
 const save = vi.hoisted(() => vi.fn(async (_patch: unknown) => undefined));
-vi.mock('@platform/services/data', () => ({
+vi.mock('@september/app-ui/services/data', () => ({
   useUpdateNote: () => ({ mutateAsync: save }),
 }));
 // The writing tools open on input. Their stripes are not under test here.
@@ -63,20 +65,19 @@ describe('note durability', () => {
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ id: 'note', name: 'New title' }));
   });
   it('shows a failed save and guards closing until retry succeeds', async () => {
+    const release = vi.fn();
+    const guard = vi.mocked(platform.device.guardUnsavedChanges).mockReturnValue(release);
     save.mockRejectedValue(new Error('disk full'));
     await act(async () =>
       root.render(<NoteEditor note={note} spaceId="space" onRenamed={() => {}} />)
     );
     await act(async () => type('Note', 'keep these words'));
     expect(container.querySelector('[role="alert"]')).toBeTruthy();
-    const closing = new Event('beforeunload', { cancelable: true });
-    window.dispatchEvent(closing);
-    expect(closing.defaultPrevented).toBe(true);
+    expect(guard).toHaveBeenCalled();
+    expect(release).not.toHaveBeenCalled();
     save.mockResolvedValue(undefined);
     await act(async () => (container.querySelector('[role="alert"] button') as HTMLButtonElement).click());
-    const saved = new Event('beforeunload', { cancelable: true });
-    window.dispatchEvent(saved);
-    expect(saved.defaultPrevented).toBe(false);
+    expect(release).toHaveBeenCalled();
     expect(container.querySelector('[aria-label="Note"]')!.textContent).toBe('keep these words');
   });
 });

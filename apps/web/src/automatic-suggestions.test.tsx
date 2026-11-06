@@ -10,23 +10,25 @@ const state = vi.hoisted(() => ({
   generate: vi.fn(),
   writing: true,
 }));
-vi.mock('@platform/services/os', () => ({
-  currentSetup: () => state.setup,
-  currentSpeech: () => null,
-  subscribeSetup: (listener: () => void) => {
+vi.mock('@september/app-ui/services/settings', async original => {
+  const { useSyncExternalStore } = await import('react');
+  const subscribe = (listener: () => void) => {
     state.listeners.add(listener);
     return () => state.listeners.delete(listener);
-  },
-}));
-vi.mock('@platform/services/data', () => ({
+  };
+  return {
+    ...(await original<object>()),
+    useSetup: () => useSyncExternalStore(subscribe, () => state.setup),
+  };
+});
+vi.mock('@september/app-ui/services/data', () => ({
   useMessages: () => ({ data: [] }),
   usePhrases: () => ({ data: [] }),
 }));
-vi.mock('@platform/services/suggest', () => ({
+vi.mock('@september/app-ui/services/suggest', () => ({
   useSuggestions: () => ['localword'],
-  applySuggestion: (_text: string, word: string) => word,
 }));
-vi.mock('@platform/services/ai', () => ({
+vi.mock('@september/app-ui/services/ai', () => ({
   hasWritingService: () => state.writing,
   generate: state.generate,
   itemsFrom: (answer: string[]) => answer,

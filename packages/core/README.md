@@ -23,6 +23,8 @@ import { createEngine } from "@september/core/autocomplete";
 - A version 1 file gets an empty Agent transcript.
 - The old `camera` panel tab of an older desktop file becomes `phrases`.
 
+A store keeps the settings of a backup as a map by setting key, in `StoredBackup`. `backupContentsFrom` makes that map into the typed settings of a backup, and `storedBackupFrom` makes the typed settings into the map. Each app stores the map as it is.
+
 An import also reads the older `writingService` and `writingModel` fields as `defaultModel`, and keeps the user ID of the setup. The `autoSuggestions`, `autoPhrases`, and `agentEnabled` fields of the setup are `true` when they are missing. `parseAccess` reads the access profile, and a backup without a profile gets the default profile. See `docs/concepts/portable-backups.md`.
 
 `rules/time.ts` holds `DAY_MS` and `halfLifeWeight`, the decay that the phrase mining uses.
@@ -59,7 +61,6 @@ The loop uses three hooks of the `Agent`:
 
 - `suggestions.ts` gives the suggestions of Talk and Notes. A draft of one or two words gets the search prompt, and the model writes sentences about the topic of the words. A longer draft gets the completion prompt, and each row starts with the draft. If the call gives a `document`, the user message holds the note with a `<caret/>` mark, and the system prompt holds the note rules.
 - `phrases.ts` gives the prompt that writes the phrases and starters of a space.
-- `space.ts` gives the prompt that names a space and writes its context.
 - `agent.ts` gives the system prompt of the Agent.
 - `parts.ts` holds the parts that more than one prompt uses. `audioTagsBlock` gives the audio tag rules as one section, and `promptOf` joins the sections.
 
@@ -90,6 +91,12 @@ The loop uses three hooks of the `Agent`:
 ## Help
 
 `rules/help/catalog.ts` holds the task guides that the browser app and the desktop app show. Each guide has a slug, a category, platform labels, steps, written fallbacks, and related links. A screenshot has a caption, a width, and an optional step number. A screenshot without a step number shows the full screen. `rules/help/search.ts` finds a guide by slug, groups the guides for the Help home, and searches the titles and the steps. See `docs/concepts/help-system.md`.
+
+## Navigation and Setup
+
+`rules/navigation.ts` holds the pages of the app and the sections of Settings. A page that only one platform has names the capability that it needs in `requires`. `Capabilities` has three flags: `dashboard`, `eyeTracker`, and `floatingPanel`. `appNav` and `settingsNav` give the pages and the sections for a set of capabilities. The file also holds the connection guides, `windowTitle`, and `openingPath`. `openingPath` gives the screen where the app opens: the saved path when it names a page or an existing space, else Talk of the last space, else the first page.
+
+`rules/onboarding.ts` holds the setup draft, the steps, and the step rules. `savedSetupFrom` reads a stored setup and fills the fields of an older setup. `isSetupDone` is true when the setup has a name and a mode. `canReach` blocks a step after About you until the draft has a name. `voiceServices` gives the voice choices, with the description of the system voice that the platform gives.
 
 ## Other Rules
 

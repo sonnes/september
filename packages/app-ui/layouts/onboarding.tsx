@@ -31,11 +31,11 @@ import {
   canReach,
   DEFAULT_DRAFT,
   stepIndex,
-  stepsFor,
+  STEPS,
   type OnboardingDraft,
   type StepPath,
-} from "@platform/rules/onboarding";
-import { osName } from "@platform/services/os";
+} from "@september/core/rules/onboarding";
+import { systemName } from "@september/app-ui/services/settings";
 
 interface DraftValue {
   draft: OnboardingDraft;
@@ -55,11 +55,11 @@ export function useDraft(): DraftValue {
 export function OnboardingLayout() {
   const [draft, setDraft] = useState<OnboardingDraft>({
     ...DEFAULT_DRAFT,
-    name: osName,
+    name: systemName(),
   });
   const value = useMemo(() => ({ draft, setDraft }), [draft]);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const current = stepIndex(pathname, draft);
+  const current = stepIndex(pathname);
 
   // A reload keeps the route but drops the draft, so send an unreachable step
   // back to the start.
@@ -147,7 +147,7 @@ function ProgressNav({
   current: number;
   draft: OnboardingDraft;
 }) {
-  const steps = stepsFor(draft);
+  const steps = STEPS;
 
   return (
     // One list in both shapes, so a screen reader never hears the run twice:
