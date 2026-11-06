@@ -226,7 +226,6 @@ func settingsTalkTests() {
     test("keyboard settings start at the defaults") {
         let settings = KeyboardSettings(defaults: makeDefaults())
         expectEqual(settings.style, .rainbow)
-        expectEqual(settings.appearance, .system)
         expectEqual(settings.returnSpeaksInTalk, true)
     }
 
@@ -234,17 +233,9 @@ func settingsTalkTests() {
         let defaults = makeDefaults()
         let first = KeyboardSettings(defaults: defaults)
         first.style = .mono
-        first.appearance = .dark
         first.returnSpeaksInTalk = false
         let second = KeyboardSettings(defaults: defaults)
         expectEqual(second.style, .mono)
-        expectEqual(second.appearance, .dark)
         expectEqual(second.returnSpeaksInTalk, false)
-    }
-
-    test("the appearance setting maps to an AppKit appearance") {
-        expectEqual(AppearanceSetting.system.appearanceName, nil)
-        expectEqual(AppearanceSetting.light.appearanceName, .aqua)
-        expectEqual(AppearanceSetting.dark.appearanceName, .darkAqua)
     }
 }
