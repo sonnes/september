@@ -66,6 +66,11 @@ public final class TalkSession: ObservableObject {
         text += phrase
     }
 
+    /// Adds text to the bar as it is, such as the rest of a predicted word.
+    public func type(_ typed: String) {
+        text += typed
+    }
+
     public func clear() {
         text = ""
         speaking = nil

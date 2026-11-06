@@ -31,6 +31,9 @@ public final class KeyboardController: ObservableObject {
     /// events.
     @Published public var mode: KeyboardMode = .type
     public let talk = TalkSession()
+    /// Called with each chord that the keys send, such as ⌘S, so the app
+    /// panel can count and learn it.
+    public var onChord: ((Shortcut) -> Void)?
 
     public let panels: PanelStore
 
@@ -168,6 +171,7 @@ public final class KeyboardController: ObservableObject {
                         modifiers: flags.union(resolved.modifiers)
                     )
                 )
+                onChord?(Shortcut(modifiers: flags, key: .character(base.lowercased())))
             }
         }
         modifiers.consume()
@@ -185,12 +189,11 @@ public final class KeyboardController: ObservableObject {
     }
 
     private func post(_ virtual: VirtualKey) {
-        sink.post(
-            Keystroke.events(
-                virtualKey: virtual.rawValue,
-                modifiers: modifiers.active.subtracting(.capsLock)
-            )
-        )
+        let flags = modifiers.active.subtracting(.capsLock)
+        sink.post(Keystroke.events(virtualKey: virtual.rawValue, modifiers: flags))
+        if !flags.subtracting(.shift).isEmpty {
+            onChord?(Shortcut(modifiers: flags, key: .virtual(virtual)))
+        }
         if !isMirroring, !isFieldPrivate {
             switch virtual {
             case .delete: echo = String(echo.dropLast())

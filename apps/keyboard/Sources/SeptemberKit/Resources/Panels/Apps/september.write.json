@@ -1,5 +1,5 @@
 {
-  "title": "WRITE",
+  "title": "Write",
   "columns": 2,
   "buttons": [
     { "id": "heading", "label": "Heading", "action": { "type": "text", "text": "# " } },

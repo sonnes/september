@@ -125,3 +125,21 @@ public struct AXTreeRow: Equatable, Sendable, Identifiable {
 
     public var id: Int { node.id }
 }
+
+extension AXNode {
+    /// The same node with no value on the focused element, for a field that
+    /// holds private text.
+    func hidingFocusedValue() -> AXNode {
+        AXNode(
+            id: id, role: role, label: label, value: isFocused ? nil : value, isFocused: isFocused,
+            menuKeys: menuKeys, children: children.map { $0.hidingFocusedValue() })
+    }
+}
+
+extension AXTree {
+    /// The tree with no value on the focused element. The viewer shows this
+    /// while private text is in the focused field.
+    public func hidingFocusedValue() -> AXTree {
+        AXTree(appName: appName, root: root?.hidingFocusedValue())
+    }
+}

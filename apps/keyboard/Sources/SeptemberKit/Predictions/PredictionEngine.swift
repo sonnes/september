@@ -44,6 +44,7 @@ public final class PredictionEngine: ObservableObject {
     private let defaults: UserDefaults
 
     private var input: InputMirror = .local(text: "")
+    private var isPrivate = false
     private var context: PredictionContext?
     /// The context of the current predictions. A failed or cancelled request
     /// leaves it as it was.
@@ -69,12 +70,14 @@ public final class PredictionEngine: ObservableObject {
     }
 
     /// Feeds the engine with the input bar. A password field, a selection,
-    /// and any other state with no text show no predictions.
-    public func update(input: InputMirror, mode: PredictionMode, said: [String]) {
-        let context = PredictionContext(input: input, mode: mode, said: said)
-        guard input != self.input || context != self.context else { return }
+    /// and any other state with no text show no predictions. `isPrivate` is
+    /// true while private text is in the focused field.
+    public func update(input: InputMirror, mode: PredictionMode, said: [String], isPrivate: Bool = false) {
+        let context = isPrivate ? nil : PredictionContext(input: input, mode: mode, said: said)
+        guard input != self.input || context != self.context || isPrivate != self.isPrivate else { return }
         self.input = input
         self.context = context
+        self.isPrivate = isPrivate
         refresh()
     }
 
@@ -96,7 +99,10 @@ public final class PredictionEngine: ObservableObject {
     // MARK: - State
 
     private func refresh() {
-        notice = Self.notice(for: input, availability: availability, sentences: sentencesEnabled)
+        notice =
+            isPrivate
+            ? .privateText
+            : Self.notice(for: input, availability: availability, sentences: sentencesEnabled)
         words = wordsEnabled ? context.map(completer.completions(for:)) ?? [] : []
 
         guard let context, sentencesEnabled, availability == .ready else {

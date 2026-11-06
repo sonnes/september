@@ -55,7 +55,7 @@ public struct UserButton: Sendable, Hashable, Identifiable {
     public var panelActions: [PanelAction] {
         switch action {
         case .shortcut(let shortcut): [.shortcut(shortcut)]
-        case .sequence(let keys): keys.map { .shortcut($0) }
+        case .sequence(let keys): [.sequence(keys)]
         case .text(let text): [.text(text)]
         case .privateText: [.privateText(id)]
         }
