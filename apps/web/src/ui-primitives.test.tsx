@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 
-import { cn, Slider } from '@september/ui';
+import { cn } from '@september/ui';
+import { Slider } from '@september/ui/components/slider';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 

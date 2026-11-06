@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist', '.output', '.nitro', 'routeTree.gen.ts', 'node_modules', 'src-tauri/target'],
+    ignores: ['dist', 'node_modules'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -19,8 +19,6 @@ export default tseslint.config(
     files: ['**/*.{ts,tsx}'],
     languageOptions: { ecmaVersion: 2022, globals: globals.browser },
     plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
-    // Match the prior eslint-config-next strictness so the migration doesn't
-    // newly fail on pre-existing code: classic hook rules only, lenient TS.
     rules: {
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',

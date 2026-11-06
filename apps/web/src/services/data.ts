@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
-import { STARTER_PACK, type SavedPhrase } from '@/rules/phrases';
+import { STARTER_PACK, type SavedPhrase } from '@september/core/rules/phrases';
 import { currentUserId } from '@/services/os';
 import {
   getRepository,

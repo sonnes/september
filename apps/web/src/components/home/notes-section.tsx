@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { Download, Play, Square } from 'lucide-react';
 import { Plus } from 'lucide-react';
 
-import { BrandMark } from '@/components/brand';
+import { BrandMark } from '@september/app-ui/blocks/brand';
 
-import { presentChunks, presentTone, roleSpec } from '@/rules/present';
+import { presentChunks, presentTone, roleSpec } from '@september/core/rules/present';
 
 import { useDemoSpeech } from './use-demo-speech';
 

@@ -2,8 +2,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { Volume2 } from 'lucide-react';
 
-import { type SavedPhrase, matchCode, trailingWord } from '@/rules/phrases';
-import { codeExpansionText, stripeForText } from '@/rules/stripes';
+import { type SavedPhrase, matchCode, trailingWord } from '@september/core/rules/phrases';
+import { codeExpansionText, stripeForText } from '@september/core/rules/stripes';
 
 import { type LandingStripe, LandingSuggestionStripes } from './live-demo-section';
 import { SectionHeader } from './section-header';

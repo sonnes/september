@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { BrandMark, BrandWordmark } from '@/components/brand';
+import { BrandMark, BrandWordmark } from '@september/app-ui/blocks/brand';
 import { Footer } from '@/components/home/footer';
 
 function LegalPage({ title, children }: { title: string; children: ReactNode }) {

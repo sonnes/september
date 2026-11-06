@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { matchesWords, searchModels } from "../src/rules/pick.ts";
+import { matchesWords, searchModels } from "../../../packages/core/rules/pick.ts";
 
 const MODELS = [
   {

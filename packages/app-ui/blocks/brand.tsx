@@ -47,7 +47,7 @@ export function BrandWordmark({
       {...props}
     >
       <span className={inverse ? "text-white" : "text-indigo-600"}>Sep</span>
-      <span className="text-indigo-200">tember</span>
+      <span className="text-indigo-200 dark:text-indigo-300">tember</span>
     </span>
   );
 }

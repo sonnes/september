@@ -1,8 +1,8 @@
 import { authorizeOpenRouter } from './oauth';
 import { modelSettingsFrom } from '@september/core/rules/model-config';
 import { DEFAULT_DRAFT, type OnboardingDraft } from '@/rules/onboarding';
-import { panelStateFrom, type PanelState } from '@/rules/panel';
-import { presentSettings, type PresentSettings, type SpeechAlignment } from '@/rules/present';
+import { panelStateFrom, type PanelState } from '@september/core/rules/panel';
+import { presentSettings, type PresentSettings, type SpeechAlignment } from '@september/core/rules/present';
 import { getRepository } from '@/services/repository';
 import {
   CONVERSATIONAL_MODEL,

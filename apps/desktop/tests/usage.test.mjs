@@ -8,7 +8,7 @@ import {
   summarizeUsage,
   toRecentCalls,
   usageCallsToCsv,
-} from "../src/rules/usage-summary.ts";
+} from "../../../packages/core/rules/usage-summary.ts";
 
 const event = (event_type, data, timestamp = Date.UTC(2026, 7, 20, 12)) => ({
   id: crypto.randomUUID(),

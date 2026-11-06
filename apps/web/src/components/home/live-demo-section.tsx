@@ -17,7 +17,7 @@ import {
   Volume2,
 } from 'lucide-react';
 
-import { type SuggestionSource, joinTokens, matchTyped, stripeForText } from '@/rules/stripes';
+import { type SuggestionSource, joinTokens, matchTyped, stripeForText } from '@september/core/rules/stripes';
 
 import { useDemoSpeech } from './use-demo-speech';
 

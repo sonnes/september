@@ -20,7 +20,7 @@ import {
   sanitizeStarters,
   type PhraseKind,
   type SavedPhrase,
-} from "@/rules/phrases";
+} from "@september/core/rules/phrases";
 
 /**
  * Keeps the phrases of a space near the conversation.

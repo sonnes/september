@@ -1,4 +1,4 @@
-import type { UsageEventType } from '@/rules/usage-summary';
+import type { UsageEventType } from '@september/core/rules/usage-summary';
 import type { AgentMessage } from '@september/core/rules/agent';
 import { panelStateFrom } from '@september/core/rules/panel';
 import { presentSettings } from '@september/core/rules/present';

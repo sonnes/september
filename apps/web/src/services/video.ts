@@ -25,7 +25,7 @@ import {
   type PresentTone,
   type PresentToneKey,
   type SpeechAlignment,
-} from '@/rules/present';
+} from '@september/core/rules/present';
 
 const WIDTH = 1080;
 const HEIGHT = 1920;

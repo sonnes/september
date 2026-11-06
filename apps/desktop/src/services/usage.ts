@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { call } from "@/services/data";
 import { currentUserId } from "@/services/os";
-import type { ExportKind } from "@/rules/present";
+import type { ExportKind } from "@september/core/rules/present";
 import {
   getTimeRangeBounds,
   summarizeUsage,
@@ -12,7 +12,7 @@ import {
   type CostSource,
   type TimeRange,
   type UsageEvent,
-} from "@/rules/usage-summary";
+} from "@september/core/rules/usage-summary";
 
 export type GenerationFeature = "suggestions" | "phrases" | "context" | "agent";
 

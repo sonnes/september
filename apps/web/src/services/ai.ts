@@ -14,7 +14,7 @@ import {
   buildSpaceContextPrompt,
   spaceDescriptionFrom,
   type SpaceDescription,
-} from '@/rules/prompts';
+} from '@september/core/rules/prompts';
 
 /**
  * The writing service.

@@ -17,7 +17,7 @@ import {
   MAX_SUGGESTIONS,
   SEED_CORPUS,
   suggestionsFor,
-} from "../src/autocomplete/index.ts";
+} from "../../../packages/core/autocomplete/index.ts";
 
 const CARE = [
   "can you please raise the bed a little",

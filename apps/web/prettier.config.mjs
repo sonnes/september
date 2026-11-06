@@ -1,6 +1,6 @@
 /** @type {import('prettier').Config} */
 export default {
-  plugins: ['prettier-plugin-tailwindcss', '@trivago/prettier-plugin-sort-imports'],
+  plugins: ['prettier-plugin-tailwindcss'],
   semi: true,
   tabWidth: 2,
   printWidth: 100,
@@ -8,16 +8,4 @@ export default {
   trailingComma: 'es5',
   bracketSpacing: true,
   arrowParens: 'avoid',
-  importOrder: [
-    '^react$',
-    '^next(.*)$',
-    '<THIRD_PARTY_MODULES>',
-    '^@/components/(.*)$',
-    '^@/hooks/(.*)$',
-    '^@/services/(.*)$',
-    '^@/(.*)$',
-    '^[./]',
-  ],
-  importOrderSeparation: true,
-  importOrderSortSpecifiers: true,
 };

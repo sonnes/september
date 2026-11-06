@@ -3,7 +3,6 @@ import { StrictMode, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 
-import { Toaster } from '@september/ui/components/sonner';
 import { type getRouter } from '@/router';
 
 /**
@@ -24,7 +23,6 @@ export function App({ router }: { router: ReturnType<typeof getRouter> }): React
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
-        <Toaster position="top-center" closeButton duration={15000} />
       </QueryClientProvider>
     </StrictMode>
   );

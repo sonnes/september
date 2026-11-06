@@ -6,7 +6,7 @@ import {
   Autocomplete,
   createEngine,
   suggestionsFor,
-} from "../src/autocomplete/index.ts";
+} from "../../../packages/core/autocomplete/index.ts";
 
 test("a new engine knows the seed words", () => {
   const engine = createEngine();

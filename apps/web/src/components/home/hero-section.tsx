@@ -3,7 +3,7 @@ import { Button } from '@september/ui/components/button';
 import { Link } from '@tanstack/react-router';
 import { ArrowDown, Github, Volume2 } from 'lucide-react';
 
-import { BrandMark, BrandWordmark } from '@/components/brand';
+import { BrandMark, BrandWordmark } from '@september/app-ui/blocks/brand';
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },

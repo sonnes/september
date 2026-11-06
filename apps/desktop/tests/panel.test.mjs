@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CLOSED_PANEL, panelStateFrom, pressTab } from "../src/rules/panel.ts";
+import { CLOSED_PANEL, panelStateFrom, pressTab } from "../../../packages/core/rules/panel.ts";
 
 test("the card starts closed, on the phrases", () => {
   assert.deepEqual(CLOSED_PANEL, { open: false, tab: "phrases" });

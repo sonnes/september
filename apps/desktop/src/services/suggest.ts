@@ -15,10 +15,10 @@ import {
   createEngine,
   suggestionsFor,
   type Autocomplete,
-} from "@/autocomplete/index.ts";
+} from "@september/core/autocomplete";
 import { useAllMessages } from "@/services/data";
 
-export { applySuggestion, MAX_SUGGESTIONS } from "@/autocomplete/index.ts";
+export { applySuggestion, MAX_SUGGESTIONS } from "@september/core/autocomplete";
 
 let engine: Autocomplete | null = null;
 

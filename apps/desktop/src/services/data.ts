@@ -7,7 +7,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 
 import { currentUserId } from "@/services/os";
-import { STARTER_PACK, type SavedPhrase } from "@/rules/phrases";
+import { STARTER_PACK, type SavedPhrase } from "@september/core/rules/phrases";
 import type { AgentMessage } from "@september/core/rules/agent";
 
 export type { AgentMessage };

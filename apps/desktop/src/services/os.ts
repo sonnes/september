@@ -6,8 +6,8 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-shell";
 
 import { DEFAULT_DRAFT, type OnboardingDraft } from "@/rules/onboarding";
-import { panelStateFrom, type PanelState } from "@/rules/panel";
-import { presentSettings, type PresentSettings } from "@/rules/present";
+import { panelStateFrom, type PanelState } from "@september/core/rules/panel";
+import { presentSettings, type PresentSettings } from "@september/core/rules/present";
 import type { SpeechSettings } from "@/services/speech";
 
 /**

@@ -8,7 +8,7 @@ import {
   stopNativeSpeech,
   streamSpeech,
 } from "@/services/os";
-import { elevenLabsCredits } from "@/rules/usage-summary";
+import { elevenLabsCredits } from "@september/core/rules/usage-summary";
 import { recordTtsUsage } from "@/services/usage";
 import {
   DEFAULT_VOICE_MODEL,

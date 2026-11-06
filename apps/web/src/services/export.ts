@@ -6,13 +6,13 @@
  * stands between them and a copy of it.
  */
 
-import { markdownToVoiceText } from '@/rules/notes';
+import { markdownToVoiceText } from '@september/core/rules/notes';
 import {
   exportFileName,
   exportReason,
   type ExportKind,
   type PresentToneKey,
-} from '@/rules/present';
+} from '@september/core/rules/present';
 import { synthesizeSpeech, synthesizeTimed } from '@/services/os';
 import { speechSettings } from '@/services/speech';
 import { recordExportUsage } from '@/services/usage';
