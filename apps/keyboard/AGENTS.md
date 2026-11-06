@@ -130,6 +130,12 @@ only what needs a running app — the panel, the event sink, the menu bar.
   Nothing probed then means anything.
 - `ImageRenderer` draws nothing inside a `ScrollView` — that is why
   `AXTreeView` takes a `scrolls` flag and `--snapshot --viewer` passes `false`.
+- `ImageRenderer` draws an AppKit view (`NSViewRepresentable`) as a yellow
+  box. A view that holds one leaves it out when `isSnapshot` is true, as the
+  grip does with its drag area.
+- A floating window moves only by its grip. The grip calls `performDrag`, so a
+  window that never becomes key moves too. `isMovableByWindowBackground` is
+  off, so a press on a key never moves the window.
 - `ImageRenderer` puts a grey layer over the whole view when the view holds
   an app icon from `NSWorkspace`. Draw the icon into a small bitmap first
   with `tabIcon()`.

@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let treeModel = AXTreeModel()
     private let keyboardSettings = KeyboardSettings()
     private let inputMonitoring = InputMonitoringStatus()
+    private let keyboardPosition = KeyboardPosition()
     private var controller: KeyboardController!
     private var session: KeyboardSession!
     private var speech: SpeechServices!
@@ -300,15 +301,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let sizes = Dictionary(uniqueKeysWithValues: DetachedPanel.allCases.map { ($0, panelSize($0)) })
         let keysSize = WindowContent.measure(content.keysCard())
         let visible = FloatingPanel.activeScreen?.visibleFrame ?? .zero
-        let origin = PanelPlacement.keysOrigin(
-            keysSize: keysSize, panels: sizes, in: visible, rightInset: reservedWidth,
-            margin: FloatingPanel.margin)
+        let screens = NSScreen.screens.map(\.visibleFrame)
+        // The place where the user dragged the keyboard, if it is on a screen.
+        let origin = KeyboardPosition.origin(
+            saved: keyboardPosition.saved, size: size, screens: screens,
+            fallback: PanelPlacement.keysOrigin(
+                keysSize: keysSize, panels: sizes, in: visible, rightInset: reservedWidth,
+                margin: FloatingPanel.margin))
         keyboard.setFrameOrigin(origin)
         keyboard.orderFront(nil)
+        observers.append(
+            NotificationCenter.default.addObserver(
+                forName: NSWindow.didMoveNotification, object: keyboard, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.keyboardMoved() }
+            })
 
         let keys = CGRect(origin: origin, size: keysSize)
         let defaults = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
-        let screens = NSScreen.screens.map(\.visibleFrame)
         for panel in DetachedPanel.allCases {
             let window = FloatingPanel(root: content.panel(panel, appIcon: appIcon), contentSize: sizes[panel]!)
             window.placement = .free
@@ -325,6 +335,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         showTreePanel(height: size.height)
+    }
+
+    /// Keeps the place of the keyboard for the next launch, as the place of
+    /// its Type mode window.
+    private func keyboardMoved() {
+        guard let keyboardPanel else { return }
+        keyboardPosition.saved = KeyboardPosition.typeOrigin(of: keyboardPanel.frame.origin, in: mode)
     }
 
     private func panelSize(_ panel: DetachedPanel) -> CGSize {

@@ -1,8 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// The card of a shortcut panel in a window of its own: the surface of the
-/// keyboard with a grip at the top. The user drags the window by the card.
+/// The card of a shortcut panel in a window of its own, or of the keys: the
+/// surface of the keyboard with a grip at the top. The user drags the window
+/// by the grip.
 public struct PanelCard<Content: View>: View {
     private let sidePadding: CGFloat
     private let content: Content
@@ -23,15 +24,47 @@ public struct PanelCard<Content: View>: View {
                 RoundedRectangle(cornerRadius: Metrics.Detached.cornerRadius, style: .continuous)
                     .fill(Color(Tokens.background))
             )
-            .overlay(alignment: .top) {
-                Capsule()
-                    .fill(Color(Tokens.labelSecondary))
-                    .opacity(Metrics.Detached.gripOpacity)
-                    .frame(width: Metrics.Detached.grip.width, height: Metrics.Detached.grip.height)
-                    .padding(.top, Metrics.Detached.gripTop)
-                    .accessibilityHidden(true)
-            }
+            .overlay(alignment: .top) { Grip(height: Metrics.Detached.topPadding) }
     }
+}
+
+/// The grip at the top of a card: a bar the width of the card. A drag on it
+/// moves the window. The drag does not activate the app or take focus.
+struct Grip: View {
+    let height: CGFloat
+    @Environment(\.isSnapshot) private var isSnapshot
+
+    var body: some View {
+        Capsule()
+            .fill(Color(Tokens.labelSecondary))
+            .opacity(Metrics.Detached.gripOpacity)
+            .frame(width: Metrics.Detached.grip.width, height: Metrics.Detached.grip.height)
+            .padding(.top, Metrics.Detached.gripTop)
+            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .top)
+            .background { if !isSnapshot { WindowDragArea() } }
+            .accessibilityHidden(true)
+    }
+}
+
+extension EnvironmentValues {
+    /// True when `--snapshot` draws the view. `ImageRenderer` draws an AppKit
+    /// view as a yellow box, so the grip leaves out its drag area.
+    @Entry public var isSnapshot = false
+}
+
+/// Moves its window when the user drags it. `performDrag` lets the window
+/// server move the window, so a panel that never becomes key moves too.
+private struct WindowDragArea: NSViewRepresentable {
+    final class DragView: NSView {
+        override var mouseDownCanMoveWindow: Bool { true }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+        override func mouseDown(with event: NSEvent) {
+            window?.performDrag(with: event)
+        }
+    }
+
+    func makeNSView(context: Context) -> DragView { DragView() }
+    func updateNSView(_ view: DragView, context: Context) {}
 }
 
 /// A keypad in a window of its own: Edit, Text, or System.

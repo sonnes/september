@@ -47,7 +47,7 @@ enum Snapshot {
         let isLight = arguments.contains("--light")
         let appearance = NSAppearance(named: isLight ? .aqua : .darkAqua)
         let renderer = ImageRenderer(
-            content: view.environment(\.colorScheme, isLight ? .light : .dark))
+            content: view.environment(\.colorScheme, isLight ? .light : .dark).environment(\.isSnapshot, true))
         renderer.scale = 2
 
         var rendered: CGImage?

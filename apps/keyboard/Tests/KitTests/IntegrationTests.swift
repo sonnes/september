@@ -181,6 +181,34 @@ private func placementTests() {
         expect(!PanelPlacement.isVisible(saved, on: [screen]))
         expect(PanelPlacement.isVisible(CGRect(x: 100, y: 100, width: 174, height: 340), on: [screen]))
     }
+
+    test("the keyboard window keeps the place where the user put it") {
+        let defaults = UserDefaults(suiteName: "september-test-\(UUID().uuidString)")!
+        let position = KeyboardPosition(defaults: defaults)
+        expectEqual(position.saved, nil)
+        position.saved = CGPoint(x: 300, y: 200)
+        expectEqual(KeyboardPosition(defaults: defaults).saved, CGPoint(x: 300, y: 200))
+    }
+
+    test("a saved place on no screen gives way to the default place") {
+        let size = CGSize(width: 1300, height: 600)
+        let fallback = CGPoint(x: 10, y: 24)
+        expectEqual(
+            KeyboardPosition.origin(saved: CGPoint(x: 300, y: 200), size: size, screens: [screen], fallback: fallback),
+            CGPoint(x: 300, y: 200))
+        expectEqual(
+            KeyboardPosition.origin(saved: CGPoint(x: 9000, y: 200), size: size, screens: [screen], fallback: fallback),
+            fallback)
+        expectEqual(KeyboardPosition.origin(saved: nil, size: size, screens: [screen], fallback: fallback), fallback)
+    }
+
+    test("the keyboard keeps one place in both modes") {
+        let talk = CGPoint(x: 100, y: 50)
+        let type = KeyboardPosition.typeOrigin(of: talk, in: .talk)
+        expectEqual(type.x, talk.x + KeyboardScreen.keysInset(.talk) - KeyboardScreen.keysInset(.type))
+        expectEqual(KeyboardPosition.windowOrigin(type, in: .talk), talk)
+        expectEqual(KeyboardPosition.typeOrigin(of: talk, in: .type), talk)
+    }
 }
 
 // MARK: - The session

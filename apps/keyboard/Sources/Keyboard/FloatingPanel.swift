@@ -40,7 +40,8 @@ final class FloatingPanel: NSPanel {
         level = .floating
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
 
-        isMovableByWindowBackground = true
+        // A window moves only by its grip, so a press on a key never moves it.
+        isMovableByWindowBackground = false
         backgroundColor = .clear
         isOpaque = false
         hasShadow = true

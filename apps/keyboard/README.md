@@ -67,9 +67,11 @@ keys. A row of word completions sits on top of the keys. Speak, Type, Talk,
 Write, and Settings are at the right of the input bar.
 
 The Edit, Text, and System keypads and the app panel float in windows of their
-own. By default they sit beside the keys. To move a panel, drag it by the grip
-at its top. The keyboard keeps the place of each panel for the next launch.
-The keyboard window and the panels never take focus.
+own. By default they sit beside the keys. To move the keyboard window or a
+panel, drag it by the grip at its top. A drag does not take focus from the app
+in front. The keyboard keeps the place of each window for the next launch. If
+a saved place is on no screen, the window goes back to its default place. The
+keyboard window and the panels never take focus.
 
 The app panel has two tabs. The first tab shows the panel of the app in front.
 The second tab, Mine, shows the buttons that the user made on the My Panel page

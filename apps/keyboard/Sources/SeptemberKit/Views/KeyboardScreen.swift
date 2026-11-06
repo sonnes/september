@@ -90,6 +90,7 @@ public struct KeyboardScreen: View {
         .padding(Metrics.surfacePadding)
         .background(Color(Tokens.background))
         .clipShape(RoundedRectangle(cornerRadius: Metrics.surfaceCornerRadius, style: .continuous))
+        .overlay(alignment: .top) { Grip(height: Metrics.surfacePadding) }
     }
 }
 

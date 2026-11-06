@@ -1,4 +1,4 @@
-import CoreGraphics
+import Foundation
 
 /// The shortcut panels that float in windows of their own beside the keys.
 public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
@@ -58,5 +58,55 @@ public enum PanelPlacement {
     /// True when a saved frame is on one of the screens.
     public static func isVisible(_ frame: CGRect, on screens: [CGRect]) -> Bool {
         screens.contains { $0.intersects(frame) }
+    }
+}
+
+/// The place of the keyboard window after the user drags it by its grip.
+///
+/// The saved place is the bottom left corner of the window in Type mode. In
+/// Talk mode the window is wider at the left, so that the keys stay where
+/// they are on the screen.
+@MainActor
+public struct KeyboardPosition {
+    /// The name of the saved place in `UserDefaults`.
+    public static let key = "September Keyboard Window Origin"
+    private let defaults: UserDefaults
+
+    public init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    public var saved: CGPoint? {
+        get {
+            guard let pair = defaults.array(forKey: Self.key) as? [Double], pair.count == 2 else { return nil }
+            return CGPoint(x: pair[0], y: pair[1])
+        }
+        nonmutating set {
+            defaults.set(newValue.map { [Double($0.x), Double($0.y)] }, forKey: Self.key)
+        }
+    }
+
+    /// The saved place, if a window of `size` there is on one of the
+    /// screens. Otherwise `fallback`.
+    public static func origin(
+        saved: CGPoint?, size: CGSize, screens: [CGRect], fallback: CGPoint
+    ) -> CGPoint {
+        guard let saved, PanelPlacement.isVisible(CGRect(origin: saved, size: size), on: screens)
+        else { return fallback }
+        return saved
+    }
+
+    /// The Type mode corner of a window at `origin` in `mode`.
+    public static func typeOrigin(of origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
+        CGPoint(x: origin.x + shift(mode), y: origin.y)
+    }
+
+    /// The corner of the window in `mode` for the Type mode corner `origin`.
+    public static func windowOrigin(_ origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
+        CGPoint(x: origin.x - shift(mode), y: origin.y)
+    }
+
+    private static func shift(_ mode: KeyboardMode) -> CGFloat {
+        KeyboardScreen.keysInset(mode) - KeyboardScreen.keysInset(.type)
     }
 }
