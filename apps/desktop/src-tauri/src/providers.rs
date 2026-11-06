@@ -8,19 +8,12 @@ use base64::Engine as _;
 use futures_util::{SinkExt, StreamExt};
 use reqwest::StatusCode;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::Value;
 use tokio_tungstenite::tungstenite::{self, client::IntoClientRequest, Message};
 
-pub(crate) const OPEN_ROUTER: &str = "https://openrouter.ai";
+use crate::speech::VoiceSettings;
 
-/// Free models, best first. OpenRouter takes the whole list and uses the
-/// first one that answers, so one bad day for one model is not one bad day
-/// for the user. Refresh the ids when they rotate.
-pub(crate) const OPEN_ROUTER_MODELS: [&str; 4] = [
-    "qwen/qwen3-next-80b-a3b-instruct:free",
-    "google/gemma-4-26b-a4b-it:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
-    "openai/gpt-oss-20b:free",
-];
+pub(crate) const OPEN_ROUTER: &str = "https://openrouter.ai";
 const ELEVEN_LABS: &str = "https://api.elevenlabs.io";
 
 /// An ElevenLabs file that does not arrive in this time does not answer. The
@@ -29,6 +22,10 @@ const FIRST_FILE_AUDIO: Duration = Duration::from_secs(15);
 /// A Dialogue voice that sends no sound in this time does not answer. The
 /// system voice then speaks. Eleven v3 starts to speak late, so the wait is long.
 const FIRST_DIALOGUE_AUDIO: Duration = Duration::from_secs(10);
+
+/// The realtime Eleven v3 model. ElevenLabs serves it on the dialogue socket
+/// only.
+const CONVERSATIONAL_MODEL: &str = "eleven_v3_conversational";
 
 /// One Keychain service holds both accounts, so the Mac shows them together.
 const KEYCHAIN_SERVICE: &str = "com.september.desktop";
@@ -116,8 +113,8 @@ pub struct Voice {
     pub name: String,
     #[serde(default)]
     pub preview_url: Option<String>,
-    /// `cloned`, `professional`, `premade`, or `similar`. It sets the order,
-    /// and the Voice screen groups the voices of the user by it.
+    /// `cloned`, `professional`, `premade`, or `similar`. The Voice screen
+    /// groups the voices by it.
     #[serde(default)]
     pub category: Option<String>,
     /// True for a voice the user made. A library voice they added is false.
@@ -281,6 +278,7 @@ impl ProviderKeys {
 
 // ------------------------------------------------------------------ network
 
+#[derive(Clone)]
 pub struct Providers {
     client: reqwest::Client,
     open_router: String,
@@ -296,7 +294,7 @@ impl Default for Providers {
 }
 
 impl Providers {
-    /// A test points both bases at loopback. Nothing else calls this.
+    /// The services at these addresses, instead of the public ones.
     pub fn with_bases(open_router: &str, eleven_labs: &str) -> Self {
         Self {
             client: reqwest::Client::new(),
@@ -307,11 +305,16 @@ impl Providers {
         }
     }
 
-    /// A test shortens the wait for the first sound. Nothing else calls this.
+    /// The services with this wait for the first sound.
     pub fn first_audio_within(mut self, limit: Duration) -> Self {
         self.first_file_audio = limit;
         self.first_dialogue_audio = limit;
         self
+    }
+
+    /// The HTTP client every request of this app shares.
+    pub(crate) fn client(&self) -> &reqwest::Client {
+        &self.client
     }
 
     /// The longest wait for the file of the ElevenLabs voice.
@@ -370,74 +373,78 @@ impl Providers {
         decode(response).await
     }
 
-    /// Text from OpenRouter, in the shape that the local model answers in.
     /// The sound of one sentence, as MP3 bytes.
-    pub async fn speak(
-        &self,
-        key: &str,
-        settings: &crate::speech::SpeechSettings,
-        text: &str,
-    ) -> Result<Vec<u8>> {
-        let voice = settings.voice_id.as_deref().unwrap_or_default();
+    pub async fn speak(&self, key: &str, voice: &VoiceSettings, text: &str) -> Result<Vec<u8>> {
         let response = self
             .client
             .post(format!(
-                "{}/v1/text-to-speech/{voice}?output_format=mp3_44100_128",
-                self.eleven_labs
+                "{}/v1/text-to-speech/{}?output_format=mp3_44100_128",
+                self.eleven_labs, voice.voice_id
             ))
             .header("xi-api-key", key)
             .json(&serde_json::json!({
                 "text": text,
-                "model_id": settings.model_id,
+                "model_id": voice.model_id,
                 "voice_settings": {
-                    "stability": settings.stability,
-                    "similarity_boost": settings.similarity,
-                    "speed": settings.speed,
+                    "stability": voice.stability,
+                    "similarity_boost": voice.similarity,
+                    "speed": voice.speed,
                 },
             }))
             .send()
             .await?;
 
-        let status = response.status();
-        if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
-            return Err(ProviderError::Rejected);
-        }
-        if !status.is_success() {
-            return Err(ProviderError::Unexpected(format!(
-                "ElevenLabs answered {status}"
-            )));
-        }
+        Ok(accepted(response).await?.bytes().await?.to_vec())
+    }
 
-        Ok(response.bytes().await?.to_vec())
+    /// Speaks the parts of one sentence in the Dialogue voice. Each chunk of
+    /// sound goes to `on_samples` as it arrives: 16-bit mono samples at 24 kHz.
+    pub async fn speak_dialogue(
+        &self,
+        key: &str,
+        voice: &VoiceSettings,
+        parts: &[String],
+        mut on_samples: impl FnMut(&[i16]),
+    ) -> Result<()> {
+        if voice.model_id == CONVERSATIONAL_MODEL {
+            return self
+                .speak_dialogue_socket(key, voice, parts, on_samples)
+                .await;
+        }
+        for part in parts {
+            self.speak_dialogue_stream(key, voice, part, &mut on_samples)
+                .await?;
+        }
+        Ok(())
     }
 
     /// Speaks the parts of one sentence through the ElevenLabs dialogue socket.
     ///
-    /// Eleven v3 Conversational has only this socket. The first message
-    /// registers the one voice, then each part goes as one `inputs` frame, and
-    /// `close_socket` asks for the rest of the sound and the final mark.
-    pub async fn speak_dialogue_socket(
+    /// The first message registers the one voice, then each part goes as one
+    /// `inputs` frame, and `close_socket` asks for the rest of the sound and
+    /// the final mark.
+    async fn speak_dialogue_socket(
         &self,
         key: &str,
-        settings: &crate::speech::SpeechSettings,
+        voice: &VoiceSettings,
         parts: &[String],
         on_samples: impl FnMut(&[i16]),
     ) -> Result<()> {
-        let voice = settings.voice_id.as_deref().unwrap_or_default();
+        let voice_id = voice.voice_id.as_str();
         let mut messages = vec![serde_json::json!({
-            "voices": [voice],
-            "voice_settings": { "stability": crate::speech::v3_stability(settings.stability) },
+            "voices": [voice_id],
+            "voice_settings": { "stability": voice.stability },
         })];
         messages.extend(
-            parts
-                .iter()
-                .map(|part| serde_json::json!({ "inputs": [{ "text": part, "voice_id": voice }] })),
+            parts.iter().map(
+                |part| serde_json::json!({ "inputs": [{ "text": part, "voice_id": voice_id }] }),
+            ),
         );
         messages.push(serde_json::json!({ "close_socket": true }));
         self.socket_stream(
             &format!(
                 "/v1/text-to-dialogue/stream-input?model_id={}&output_format=pcm_24000",
-                crate::speech::dialogue_model(settings)
+                voice.model_id
             ),
             key,
             messages,
@@ -447,10 +454,9 @@ impl Providers {
         .await
     }
 
-    /// Sends the messages through the ElevenLabs dialogue socket and plays its
-    /// sound. Each chunk of sound goes to `on_samples` as it arrives: 16-bit
-    /// mono samples at 24 kHz. A chunk can end inside a sample, so the odd byte
-    /// waits for the next chunk. The call returns at the final mark.
+    /// Sends the messages through the ElevenLabs dialogue socket. Each chunk of
+    /// sound goes to `on_samples` as it arrives. The call returns at the final
+    /// mark.
     async fn socket_stream(
         &self,
         path: &str,
@@ -532,20 +538,17 @@ impl Providers {
 
     /// Speaks one part of a sentence through the ElevenLabs Dialogue stream.
     ///
-    /// The voice is always Eleven v3, so the text keeps its audio tags. The
-    /// stream sends one JSON object after the other, with or without a line
-    /// break between them. Each chunk of sound goes to `on_samples` as it
-    /// arrives, as in `socket_stream`. The call returns when the stream ends.
-    pub async fn speak_dialogue_stream(
+    /// The stream sends one JSON object after the other, with or without a
+    /// line break between them. The call returns when the stream ends.
+    async fn speak_dialogue_stream(
         &self,
         key: &str,
-        settings: &crate::speech::SpeechSettings,
+        voice: &VoiceSettings,
         text: &str,
         mut on_samples: impl FnMut(&[i16]),
     ) -> Result<()> {
         let deadline = tokio::time::Instant::now() + self.first_dialogue_audio;
         let late = || ProviderError::Unexpected("ElevenLabs sent no sound in time".into());
-        let voice = settings.voice_id.as_deref().unwrap_or_default();
         let request = self
             .client
             .post(format!(
@@ -554,26 +557,16 @@ impl Providers {
             ))
             .header("xi-api-key", key)
             .json(&serde_json::json!({
-                "inputs": [{ "text": text, "voice_id": voice }],
-                "model_id": crate::speech::DIALOGUE_MODEL,
-                "settings": { "stability": crate::speech::v3_stability(settings.stability) },
+                "inputs": [{ "text": text, "voice_id": voice.voice_id }],
+                "model_id": voice.model_id,
+                "settings": { "stability": voice.stability },
             }))
             .send();
         let response = tokio::time::timeout_at(deadline, request)
             .await
             .map_err(|_| late())??;
 
-        let status = response.status();
-        if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
-            return Err(ProviderError::Rejected);
-        }
-        if !status.is_success() {
-            return Err(ProviderError::Unexpected(format!(
-                "ElevenLabs answered {status}"
-            )));
-        }
-
-        let mut body = response.bytes_stream();
+        let mut body = accepted(response).await?.bytes_stream();
         let mut waiting: Vec<u8> = Vec::new();
         let mut carry: Option<u8> = None;
         let mut heard = false;
@@ -629,13 +622,13 @@ impl Providers {
             .send()
             .await?;
 
-        decode_eleven_labs(response).await
+        decode(response).await
     }
 
     pub async fn voices(&self, key: &str) -> Result<Vec<Voice>> {
-        // The web app asks the same way. `non-default` leaves out the stock
-        // voices, so the list holds the voices of this account only. The v2
-        // list counts a page with `page_size`, and gives 10 without it.
+        // `non-default` leaves out the stock voices, so the list holds the
+        // voices of this account only. The v2 list counts a page with
+        // `page_size`, and gives 10 without it.
         let response = self
             .client
             .get(format!(
@@ -646,10 +639,7 @@ impl Providers {
             .send()
             .await?;
         let body: VoiceList = decode(response).await?;
-
-        let mut voices = body.voices;
-        voices.sort_by_key(|voice| rank(voice.category.as_deref()));
-        Ok(voices)
+        Ok(body.voices)
     }
 
     /// Every OpenRouter model, the free ones first and then by name.
@@ -698,19 +688,9 @@ impl Providers {
     }
 }
 
-/// The order of the web app. A voice that the user made comes first, and a
-/// stock voice comes last.
-fn rank(category: Option<&str>) -> u8 {
-    match category {
-        Some("cloned") => 1,
-        Some("professional") => 2,
-        Some("premade") => 3,
-        Some("similar") => 4,
-        _ => 5,
-    }
-}
-
-async fn decode<T: DeserializeOwned>(response: reqwest::Response) -> Result<T> {
+/// The response when the service accepted the request. A refusal becomes
+/// the error that says why, with the message of the service when it sent one.
+async fn accepted(response: reqwest::Response) -> Result<reqwest::Response> {
     let status = response.status();
     if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
         return Err(ProviderError::Rejected);
@@ -718,47 +698,30 @@ async fn decode<T: DeserializeOwned>(response: reqwest::Response) -> Result<T> {
     if status == StatusCode::TOO_MANY_REQUESTS {
         return Err(ProviderError::QuotaEmpty);
     }
-    if !status.is_success() {
-        return Err(ProviderError::Unexpected(format!(
-            "HTTP {}",
-            status.as_u16()
-        )));
-    }
-    response
-        .json()
-        .await
-        .map_err(|error| ProviderError::Unexpected(error.to_string()))
-}
-
-/// Reads the provider's useful failure sentence before the response is lost.
-async fn decode_eleven_labs<T: DeserializeOwned>(response: reqwest::Response) -> Result<T> {
-    let status = response.status();
-    if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
-        return Err(ProviderError::Rejected);
-    }
-    if status == StatusCode::TOO_MANY_REQUESTS {
-        return Err(ProviderError::QuotaEmpty);
+    if status.is_success() {
+        return Ok(response);
     }
 
     let bytes = response.bytes().await?;
-    if !status.is_success() {
-        let message = serde_json::from_slice::<serde_json::Value>(&bytes)
-            .ok()
-            .and_then(|body| {
-                body.pointer("/detail/message")
-                    .or_else(|| body.get("detail"))
-                    .and_then(|value| value.as_str())
-                    .map(str::to_owned)
-            })
-            .or_else(|| {
-                let text = String::from_utf8_lossy(&bytes).trim().to_owned();
-                (!text.is_empty()).then_some(text)
-            })
-            .unwrap_or_else(|| format!("ElevenLabs answered {status}"));
-        return Err(ProviderError::Unexpected(message));
-    }
+    let message = serde_json::from_slice::<Value>(&bytes)
+        .ok()
+        .and_then(|body| {
+            body.pointer("/detail/message")
+                .or_else(|| body.get("detail"))
+                .and_then(Value::as_str)
+                .map(str::to_owned)
+        })
+        .or_else(|| {
+            let text = String::from_utf8_lossy(&bytes).trim().to_owned();
+            (!text.is_empty()).then_some(text)
+        })
+        .unwrap_or_else(|| format!("HTTP {}", status.as_u16()));
+    Err(ProviderError::Unexpected(message))
+}
 
-    serde_json::from_slice(&bytes).map_err(ProviderError::Encoding)
+async fn decode<T: DeserializeOwned>(response: reqwest::Response) -> Result<T> {
+    let bytes = accepted(response).await?.bytes().await?;
+    serde_json::from_slice(&bytes).map_err(|error| ProviderError::Unexpected(error.to_string()))
 }
 
 fn open_router_detail(data: &OpenRouterKey) -> String {
@@ -877,8 +840,10 @@ fn samples_from(audio: &str, carry: &mut Option<u8>) -> Result<Vec<i16>> {
         *carry = bytes.pop();
     }
     Ok(bytes
-        .chunks_exact(2)
-        .map(|pair| i16::from_le_bytes([pair[0], pair[1]]))
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|pair| i16::from_le_bytes(*pair))
         .collect())
 }
 
@@ -949,21 +914,6 @@ mod tests {
             Err(super::ProviderError::Keychain(detail)) if detail == "locked"
         ));
         assert_eq!(reads.get(), Provider::ALL.len());
-    }
-
-    #[test]
-    fn the_screen_reads_the_category_and_owner_of_a_voice() {
-        // The Voice screen puts a voice the user made in its own group.
-        let voice: Voice = serde_json::from_value(serde_json::json!({
-            "voice_id": "v1",
-            "name": "My voice",
-            "category": "cloned",
-            "is_owner": true,
-        }))
-        .unwrap();
-        let sent = serde_json::to_value(&voice).unwrap();
-        assert_eq!(sent["category"], "cloned");
-        assert_eq!(sent["is_owner"], true);
     }
 
     #[test]

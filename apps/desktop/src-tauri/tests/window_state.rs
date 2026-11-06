@@ -5,10 +5,6 @@ use tauri::{Manager, PhysicalPosition, PhysicalSize};
 const WINDOWS: [(&str, u32, u32, i32, i32); 1] = [("panel", 480, 640, 260, 120)];
 
 fn main() {
-    if env::var_os("SEPTEMBER_WINDOW_TEST").is_none() {
-        println!("Set SEPTEMBER_WINDOW_TEST=1 to run the native window test.");
-        return;
-    }
     let args: Vec<String> = env::args().collect();
     if args.len() == 1 {
         for close in ["quit", "close"] {

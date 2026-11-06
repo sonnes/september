@@ -96,20 +96,14 @@ pub fn float_on(saved: Option<&Value>) -> bool {
     saved.and_then(Value::as_bool).unwrap_or(true)
 }
 
-fn saved_setting<R: Runtime>(app: &AppHandle<R>, key: &str) -> Result<Option<Value>, String> {
-    match app.try_state::<BackendState>() {
-        Some(state) => state
-            .repository
-            .lock()
-            .map_err(|error| error.to_string())?
-            .get_setting(key)
-            .map_err(|error| error.to_string()),
-        None => Ok(None),
-    }
-}
-
+/// The saved float choice. An app with no storage, such as a window test,
+/// floats.
 fn saved_float<R: Runtime>(app: &AppHandle<R>) -> Result<bool, String> {
-    Ok(float_on(saved_setting(app, PANEL_FLOAT_SETTING)?.as_ref()))
+    let saved = match app.try_state::<BackendState>() {
+        Some(state) => state.setting(PANEL_FLOAT_SETTING)?,
+        None => None,
+    };
+    Ok(float_on(saved.as_ref()))
 }
 
 /// Keeps the panel above other apps, an app in full screen, and each Space, or
@@ -180,7 +174,9 @@ pub(crate) fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Erro
         .menu(&menu)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "show-panel" => {
-                let _ = show_panel(app);
+                if let Err(error) = show_panel(app) {
+                    eprintln!("[window] could not show the panel: {error}");
+                }
             }
             "quit" => app.exit(0),
             _ => {}
@@ -191,16 +187,20 @@ pub(crate) fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Erro
         tauri_plugin_global_shortcut::Builder::new()
             .with_handler(|app, _, event| {
                 if event.state == ShortcutState::Pressed {
-                    let _ = toggle_panel(app);
+                    if let Err(error) = toggle_panel(app) {
+                        eprintln!("[window] could not toggle the panel: {error}");
+                    }
                 }
             })
             .build(),
     )?;
     // Another app can own the key. The menu bar item still shows the panel.
-    let _ = app.global_shortcut().register(Shortcut::new(
+    if let Err(error) = app.global_shortcut().register(Shortcut::new(
         Some(Modifiers::CONTROL | Modifiers::ALT),
         Code::Space,
-    ));
+    )) {
+        eprintln!("[window] the global key is not available: {error}");
+    }
     Ok(())
 }
 
@@ -227,12 +227,7 @@ pub(crate) fn panel_set_float(app: AppHandle, on: bool) -> Result<(), String> {
     let state = app
         .try_state::<BackendState>()
         .ok_or("September is not ready.")?;
-    state
-        .repository
-        .lock()
-        .map_err(|error| error.to_string())?
-        .put_setting(PANEL_FLOAT_SETTING, &Value::Bool(on))
-        .map_err(|error| error.to_string())?;
+    state.put_setting(PANEL_FLOAT_SETTING, &Value::Bool(on))?;
     apply_float(&app, false, on).map_err(|error| error.to_string())
 }
 

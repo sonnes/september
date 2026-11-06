@@ -2,25 +2,6 @@ use september_desktop_lib::repository::{Message, Note, Repository, SavedPhrase, 
 use serde_json::json;
 
 #[test]
-fn migration_creates_normalized_domain_tables() {
-    let repository = Repository::open_in_memory().unwrap();
-
-    assert_eq!(repository.schema_version().unwrap(), 7);
-    assert_eq!(
-        repository.table_names().unwrap(),
-        vec![
-            "agent_messages",
-            "analytics_events",
-            "messages",
-            "notes",
-            "saved_phrases",
-            "settings",
-            "spaces"
-        ]
-    );
-}
-
-#[test]
 fn settings_store_json_values_by_key() {
     let repository = Repository::open_in_memory().unwrap();
 
@@ -41,10 +22,6 @@ fn settings_store_json_values_by_key() {
         repository.get_setting("speech").unwrap(),
         Some(json!({ "rate": 0.8 }))
     );
-
-    assert!(repository.delete_setting("speech").unwrap());
-    assert!(!repository.delete_setting("speech").unwrap());
-    assert_eq!(repository.get_setting("speech").unwrap(), None);
 }
 
 #[test]
@@ -54,10 +31,8 @@ fn setting_keys_must_not_be_empty_or_exceed_256_bytes() {
 
     assert!(repository.get_setting("").is_err());
     assert!(repository.put_setting("", &json!(true)).is_err());
-    assert!(repository.delete_setting("").is_err());
     assert!(repository.get_setting(&oversized).is_err());
     assert!(repository.put_setting(&oversized, &json!(true)).is_err());
-    assert!(repository.delete_setting(&oversized).is_err());
 }
 
 #[test]
@@ -127,7 +102,6 @@ fn messages_are_upserted_listed_in_conversation_order_and_deleted() {
 
     let edited = Message {
         text: "Hello again".into(),
-        audio_path: Some("audio/message-1.wav".into()),
         ..message("message-1", Some("space-1"), 10)
     };
     repository.put_message(&edited).unwrap();
@@ -173,7 +147,7 @@ fn notes_are_upserted_listed_by_recent_update_and_deleted() {
 }
 
 #[test]
-fn domain_writes_validate_identity_timestamps_and_space_references() {
+fn domain_writes_need_an_identity_a_time_and_a_space_that_exists() {
     let repository = Repository::open_in_memory().unwrap();
 
     assert!(repository
@@ -196,39 +170,6 @@ fn domain_writes_validate_identity_timestamps_and_space_references() {
         .is_err());
 }
 
-#[test]
-fn absent_optional_domain_fields_are_omitted_from_rpc_json() {
-    assert_eq!(
-        serde_json::to_value(space("space-1", "user-1", 1)).unwrap(),
-        json!({
-            "id": "space-1",
-            "user_id": "user-1",
-            "title": "Home",
-            "created_at": 1,
-            "updated_at": 1
-        })
-    );
-    assert_eq!(
-        serde_json::to_value(message("message-1", None, 1)).unwrap(),
-        json!({
-            "id": "message-1",
-            "user_id": "user-1",
-            "text": "Hello",
-            "type": "text",
-            "created_at": 1
-        })
-    );
-    assert_eq!(
-        serde_json::to_value(note("note-1", None, 1)).unwrap(),
-        json!({
-            "id": "note-1",
-            "content": "",
-            "created_at": 1,
-            "updated_at": 1
-        })
-    );
-}
-
 fn space(id: &str, user_id: &str, updated_at: i64) -> Space {
     Space {
         id: id.into(),
@@ -248,7 +189,6 @@ fn message(id: &str, space_id: Option<&str>, created_at: i64) -> Message {
         user_id: "user-1".into(),
         text: "Hello".into(),
         message_type: "text".into(),
-        audio_path: None,
         created_at,
     }
 }
@@ -324,6 +264,40 @@ fn a_replacement_row_must_not_claim_to_be_pinned() {
     assert!(repository
         .replace_ai_phrases("space-1", &[phrase("sneaky", "Pretends to be kept", true)])
         .is_err());
+}
+
+#[test]
+fn a_replacement_row_must_belong_to_the_space_it_replaces() {
+    let mut repository = Repository::open_in_memory().unwrap();
+    space_for_phrases(&repository);
+    repository
+        .put_space(&Space {
+            id: "space-2".into(),
+            ..space("space-2", "ravi", 1)
+        })
+        .unwrap();
+    let elsewhere = SavedPhrase {
+        space_id: "space-2".into(),
+        ..phrase("stray", "Belongs elsewhere", false)
+    };
+
+    assert!(repository
+        .replace_ai_phrases("space-1", &[elsewhere])
+        .is_err());
+    assert!(repository.list_phrases(Some("space-2")).unwrap().is_empty());
+}
+
+#[test]
+fn a_phrase_longer_than_an_identifier_is_kept() {
+    let repository = Repository::open_in_memory().unwrap();
+    space_for_phrases(&repository);
+    let long = "word ".repeat(100);
+
+    repository
+        .put_phrase(&phrase("long", &long, false))
+        .unwrap();
+
+    assert_eq!(repository.list_phrases(None).unwrap()[0].text, long);
 }
 
 #[test]

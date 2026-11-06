@@ -36,11 +36,10 @@ where
     Arc::new(move || Box::pin(source()))
 }
 
-/// Where the proxy forwards, and what it asks for when nobody chose a model.
+/// Where the proxy forwards.
 #[derive(Clone)]
 pub struct ProxyConfig {
     pub upstream: String,
-    pub fallback_models: Vec<String>,
     /// The on-Mac sidecar, when this Mac has one.
     pub apple: Option<AppleSource>,
 }
@@ -49,10 +48,6 @@ impl Default for ProxyConfig {
     fn default() -> Self {
         Self {
             upstream: crate::providers::OPEN_ROUTER.to_owned(),
-            fallback_models: crate::providers::OPEN_ROUTER_MODELS
-                .iter()
-                .map(|model| (*model).to_owned())
-                .collect(),
             apple: None,
         }
     }
@@ -75,7 +70,6 @@ type KeySource = Arc<dyn Fn() -> Result<String, String> + Send + Sync>;
 struct ProxyState {
     token: String,
     upstream: String,
-    fallback_models: Vec<String>,
     apple: Option<AppleSource>,
     client: reqwest::Client,
     key: KeySource,
@@ -90,7 +84,6 @@ where
     let state = ProxyState {
         token: token.clone(),
         upstream: config.upstream.trim_end_matches('/').to_owned(),
-        fallback_models: config.fallback_models,
         apple: config.apple,
         client: reqwest::Client::new(),
         key: Arc::new(key),
@@ -121,24 +114,10 @@ where
 
 /// One request from the WebView, forwarded with the key of this Mac.
 async fn completions(State(state): State<ProxyState>, headers: HeaderMap, body: Bytes) -> Response {
-    let Some(mut request) = accepted(&state, &headers, &body) else {
-        eprintln!("[writing-proxy] cloud: rejected, no run token or body is not JSON");
-        return failure(StatusCode::UNAUTHORIZED, "This request has no run token.");
+    let request = match accepted(&state, &headers, &body) {
+        Ok(request) => request,
+        Err((status, message)) => return failure(status, message),
     };
-    let Some(fields) = request.as_object_mut() else {
-        return failure(StatusCode::BAD_REQUEST, "The request was not an object.");
-    };
-    // A user who named a model gets that model. A user who named none gets the
-    // free list, where the first model that answers wins.
-    let named = fields
-        .get("model")
-        .and_then(Value::as_str)
-        .is_some_and(|model| !model.trim().is_empty());
-    if !named {
-        fields.remove("model");
-        fields.insert("models".to_owned(), json!(state.fallback_models));
-    }
-
     let key = match (state.key)() {
         Ok(key) => key,
         Err(reason) => {
@@ -147,7 +126,7 @@ async fn completions(State(state): State<ProxyState>, headers: HeaderMap, body: 
         }
     };
     let target = format!("{}/api/v1/chat/completions", state.upstream);
-    forward(&state, target, key, &request).await
+    forward(&state, target, key, &request, body).await
 }
 
 /// One request for the model that runs on this Mac.
@@ -160,9 +139,9 @@ async fn apple_completions(
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
-    let Some(request) = accepted(&state, &headers, &body) else {
-        eprintln!("[writing-proxy] apple: rejected, no run token or body is not JSON");
-        return failure(StatusCode::UNAUTHORIZED, "This request has no run token.");
+    let request = match accepted(&state, &headers, &body) {
+        Ok(request) => request,
+        Err((status, message)) => return failure(status, message),
     };
     let Some(source) = state.apple.clone() else {
         eprintln!("[writing-proxy] apple: no sidecar on this Mac");
@@ -179,25 +158,46 @@ async fn apple_completions(
         }
     };
     let target = format!("{}/v1/chat/completions", base_url.trim_end_matches('/'));
-    forward(&state, target, token, &request).await
+    forward(&state, target, token, &request, body).await
 }
 
-/// The body of a request that carries the run token, or nothing.
-fn accepted(state: &ProxyState, headers: &HeaderMap, body: &Bytes) -> Option<Value> {
+/// The JSON object of a request that carries the run token, or the reason
+/// for the refusal.
+fn accepted(
+    state: &ProxyState,
+    headers: &HeaderMap,
+    body: &Bytes,
+) -> Result<Value, (StatusCode, &'static str)> {
     if !holds_run_token(headers, &state.token) {
-        return None;
+        eprintln!("[writing-proxy] rejected: no run token");
+        return Err((StatusCode::UNAUTHORIZED, "This request has no run token."));
     }
-    serde_json::from_slice::<Value>(body).ok()
+    match serde_json::from_slice::<Value>(body) {
+        Ok(request) if request.is_object() => Ok(request),
+        _ => {
+            eprintln!("[writing-proxy] rejected: the body is not a JSON object");
+            Err((
+                StatusCode::BAD_REQUEST,
+                "The request was not a JSON object.",
+            ))
+        }
+    }
 }
 
-/// Sends one request on, and hands the reply back as it arrives.
-async fn forward(state: &ProxyState, target: String, key: String, request: &Value) -> Response {
+/// Sends the body on unchanged, and hands the reply back as it arrives.
+async fn forward(
+    state: &ProxyState,
+    target: String,
+    key: String,
+    request: &Value,
+    body: Bytes,
+) -> Response {
     // The target, the model, and the stream flag only. The messages are the
     // user's words, and the key is a secret.
     let model = request
         .get("model")
         .and_then(Value::as_str)
-        .unwrap_or("(free list)");
+        .unwrap_or("(none)");
     let streamed = request
         .get("stream")
         .and_then(Value::as_bool)
@@ -209,7 +209,7 @@ async fn forward(state: &ProxyState, target: String, key: String, request: &Valu
         .post(&target)
         .bearer_auth(key)
         .header(header::CONTENT_TYPE, "application/json")
-        .body(serde_json::to_vec(request).unwrap_or_default())
+        .body(body)
         .send()
         .await;
 

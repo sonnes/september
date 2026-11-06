@@ -1,6 +1,7 @@
+//! The apfel sidecar, which serves Apple Intelligence on the loopback.
+
 use reqwest::{StatusCode, Url};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -10,8 +11,6 @@ use {
     tokio::{sync::Mutex, time::Duration},
     uuid::Uuid,
 };
-
-const MODEL: &str = "apple-foundationmodel";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApfelError {
@@ -25,7 +24,7 @@ pub enum ApfelError {
     InvalidResponse(String),
     #[error("Could not start Apple Intelligence. ({0})")]
     Start(String),
-    #[error("Apple Intelligence is not available.")]
+    #[error("Apple Intelligence is off or still getting ready. Turn it on in System Settings.")]
     ModelUnavailable,
     #[error("Apple Intelligence needs macOS 26 on Apple silicon.")]
     Unsupported,
@@ -33,6 +32,7 @@ pub enum ApfelError {
 
 pub type Result<T> = std::result::Result<T, ApfelError>;
 
+/// The health endpoint of one sidecar on the loopback.
 #[derive(Clone)]
 pub struct ApfelClient {
     client: reqwest::Client,
@@ -70,50 +70,15 @@ impl ApfelClient {
             .get(format!("{}/health", self.base_url))
             .send()
             .await?;
-        decode_response(response).await
+        let status = response.status();
+        if !status.is_success() {
+            return Err(ApfelError::Request(error_message(status, response).await));
+        }
+        response
+            .json()
+            .await
+            .map_err(|error| ApfelError::InvalidResponse(error.to_string()))
     }
-
-    pub async fn generate(&self, request: ApfelGenerateRequest) -> Result<ApfelGeneration> {
-        let response = self
-            .client
-            .post(format!("{}/v1/chat/completions", self.base_url))
-            .bearer_auth(&self.token)
-            .json(&ChatCompletionRequest {
-                model: MODEL,
-                messages: &request.messages,
-                stream: false,
-                temperature: request.temperature,
-                max_tokens: request.max_tokens,
-                response_format: request.response_format.as_ref(),
-            })
-            .send()
-            .await?;
-        let response: ChatCompletionResponse = decode_response(response).await?;
-        let choice = response
-            .choices
-            .into_iter()
-            .next()
-            .ok_or_else(|| ApfelError::InvalidResponse("missing completion choice".into()))?;
-
-        Ok(ApfelGeneration {
-            text: choice.message.content,
-            finish_reason: choice.finish_reason,
-            usage: response.usage,
-            model: Some(MODEL.to_owned()),
-            cost_usd: Some(0.0),
-        })
-    }
-}
-
-async fn decode_response<T: for<'de> Deserialize<'de>>(response: reqwest::Response) -> Result<T> {
-    let status = response.status();
-    if !status.is_success() {
-        return Err(ApfelError::Request(error_message(status, response).await));
-    }
-    response
-        .json()
-        .await
-        .map_err(|error| ApfelError::InvalidResponse(error.to_string()))
 }
 
 async fn error_message(status: StatusCode, response: reqwest::Response) -> String {
@@ -128,150 +93,10 @@ async fn error_message(status: StatusCode, response: reqwest::Response) -> Strin
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct ApfelHealth {
-    pub model: String,
-    pub version: String,
-    pub context_window: u32,
     #[serde(rename = "model_available")]
     pub available: bool,
-    pub prewarmed: bool,
-    pub supported_languages: Vec<String>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct ApfelGenerateRequest {
-    pub messages: Vec<ApfelMessage>,
-    pub temperature: Option<f64>,
-    pub max_tokens: Option<u32>,
-    pub response_format: Option<ApfelResponseFormat>,
-    /// The model the user chose, for OpenRouter. The sidecar holds one model
-    /// on this Mac, so it ignores this field.
-    #[serde(default)]
-    pub model: Option<String>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-pub struct ApfelMessage {
-    pub role: ApfelRole,
-    pub content: String,
-}
-
-impl ApfelMessage {
-    pub fn system(content: impl Into<String>) -> Self {
-        Self {
-            role: ApfelRole::System,
-            content: content.into(),
-        }
-    }
-
-    pub fn user(content: impl Into<String>) -> Self {
-        Self {
-            role: ApfelRole::User,
-            content: content.into(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum ApfelRole {
-    System,
-    User,
-    Assistant,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum ApfelResponseFormat {
-    JsonObject,
-    JsonSchema { name: String, schema: Value },
-}
-
-impl<'de> Deserialize<'de> for ApfelResponseFormat {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        #[serde(tag = "type", rename_all = "snake_case")]
-        enum WireFormat {
-            JsonObject,
-            JsonSchema { name: String, schema: Value },
-        }
-
-        match WireFormat::deserialize(deserializer)? {
-            WireFormat::JsonObject => Ok(Self::JsonObject),
-            WireFormat::JsonSchema { name, schema } => Ok(Self::JsonSchema { name, schema }),
-        }
-    }
-}
-
-impl Serialize for ApfelResponseFormat {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            Self::JsonObject => serde_json::json!({ "type": "json_object" }).serialize(serializer),
-            Self::JsonSchema { name, schema } => serde_json::json!({
-                "type": "json_schema",
-                "json_schema": {
-                    "name": name,
-                    "schema": schema,
-                    "strict": true
-                }
-            })
-            .serialize(serializer),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct ApfelGeneration {
-    pub text: String,
-    pub finish_reason: String,
-    pub usage: ApfelUsage,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub model: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cost_usd: Option<f64>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-pub struct ApfelUsage {
-    pub prompt_tokens: u32,
-    pub completion_tokens: u32,
-    pub total_tokens: u32,
-}
-
-#[derive(Serialize)]
-struct ChatCompletionRequest<'a> {
-    model: &'static str,
-    messages: &'a [ApfelMessage],
-    stream: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    temperature: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    max_tokens: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    response_format: Option<&'a ApfelResponseFormat>,
-}
-
-#[derive(Deserialize)]
-struct ChatCompletionResponse {
-    choices: Vec<ChatCompletionChoice>,
-    usage: ApfelUsage,
-}
-
-#[derive(Deserialize)]
-struct ChatCompletionChoice {
-    message: ChatCompletionMessage,
-    finish_reason: String,
-}
-
-#[derive(Deserialize)]
-struct ChatCompletionMessage {
-    content: String,
 }
 
 #[derive(Deserialize)]
@@ -289,58 +114,6 @@ pub struct ApfelStatus {
     pub supported: bool,
     pub available: bool,
     pub reason: Option<String>,
-    pub model: Option<String>,
-    pub version: Option<String>,
-    pub context_window: Option<u32>,
-    pub prewarmed: Option<bool>,
-    pub supported_languages: Vec<String>,
-}
-
-impl ApfelStatus {
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-    fn from_health(health: ApfelHealth) -> Self {
-        let reason = (!health.available).then(|| {
-            "Apple Intelligence is off or still getting ready. Turn it on in System Settings."
-                .into()
-        });
-        Self {
-            supported: true,
-            available: health.available,
-            reason,
-            model: Some(health.model),
-            version: Some(health.version),
-            context_window: Some(health.context_window),
-            prewarmed: Some(health.prewarmed),
-            supported_languages: health.supported_languages,
-        }
-    }
-
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-    fn unavailable(reason: impl Into<String>) -> Self {
-        Self {
-            supported: true,
-            available: false,
-            reason: Some(reason.into()),
-            model: None,
-            version: None,
-            context_window: None,
-            prewarmed: None,
-            supported_languages: Vec::new(),
-        }
-    }
-
-    fn unsupported() -> Self {
-        Self {
-            supported: false,
-            available: false,
-            reason: Some(ApfelError::Unsupported.to_string()),
-            model: None,
-            version: None,
-            context_window: None,
-            prewarmed: None,
-            supported_languages: Vec::new(),
-        }
-    }
 }
 
 #[derive(Default)]
@@ -350,65 +123,43 @@ pub(crate) struct ApfelState {
 }
 
 impl ApfelState {
-    /// Where the sidecar of this run answers, starting it if it is not up.
-    ///
-    /// The WebView cannot call it: the sidecar allows a loopback origin only,
-    /// and the WebView is not one. The proxy calls it on the WebView's behalf.
+    /// Where the sidecar of this run answers, and its token. It starts the
+    /// sidecar when it is not up, and fails when the model cannot answer.
     pub(crate) async fn endpoint(&self, app: &AppHandle) -> Result<(String, String)> {
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-        {
-            let (client, _health) = self.ready(app).await?;
-            Ok((client.base_url.clone(), client.token.clone()))
-        }
-
-        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
-        {
-            let _ = app;
-            Err(ApfelError::Unsupported)
-        }
+        let client = self.available(app).await?;
+        Ok((client.base_url, client.token))
     }
 
     pub(crate) async fn status(&self, app: &AppHandle) -> ApfelStatus {
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-        {
-            if !macos_is_supported() {
-                return ApfelStatus::unsupported();
-            }
-            return match self.ready(app).await {
-                Ok((_, health)) => ApfelStatus::from_health(health),
-                Err(error) => ApfelStatus::unavailable(error.to_string()),
-            };
-        }
-
-        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
-        {
-            let _ = app;
-            ApfelStatus::unsupported()
+        match self.available(app).await {
+            Ok(_) => ApfelStatus {
+                supported: true,
+                available: true,
+                reason: None,
+            },
+            Err(error) => ApfelStatus {
+                supported: !matches!(error, ApfelError::Unsupported),
+                available: false,
+                reason: Some(error.to_string()),
+            },
         }
     }
 
-    pub(crate) async fn generate(
-        &self,
-        app: &AppHandle,
-        request: ApfelGenerateRequest,
-    ) -> Result<ApfelGeneration> {
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-        {
-            if !macos_is_supported() {
-                return Err(ApfelError::Unsupported);
-            }
-            let (client, health) = self.ready(app).await?;
-            if !health.available {
-                return Err(ApfelError::ModelUnavailable);
-            }
-            return client.generate(request).await;
-        }
+    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+    async fn available(&self, _app: &AppHandle) -> Result<ApfelClient> {
+        Err(ApfelError::Unsupported)
+    }
 
-        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
-        {
-            let _ = (app, request);
-            Err(ApfelError::Unsupported)
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    async fn available(&self, app: &AppHandle) -> Result<ApfelClient> {
+        if !macos_is_supported() {
+            return Err(ApfelError::Unsupported);
         }
+        let (client, health) = self.ready(app).await?;
+        if !health.available {
+            return Err(ApfelError::ModelUnavailable);
+        }
+        Ok(client)
     }
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -461,6 +212,8 @@ impl ApfelState {
         };
         let mut last_error = "it did not answer in time".to_owned();
 
+        // The sidecar reports no start event, so its health endpoint is asked
+        // until it answers, for up to 20 seconds.
         for _ in 0..80 {
             match client.status().await {
                 Ok(health) => {
@@ -479,13 +232,22 @@ impl ApfelState {
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 fn macos_is_supported() -> bool {
-    Command::new("/usr/bin/sw_vers")
+    match Command::new("/usr/bin/sw_vers")
         .arg("-productVersion")
         .output()
-        .ok()
-        .filter(|output| output.status.success())
-        .and_then(|output| String::from_utf8(output.stdout).ok())
-        .is_some_and(|version| macos_version_is_supported(&version))
+    {
+        Ok(output) if output.status.success() => {
+            macos_version_is_supported(&String::from_utf8_lossy(&output.stdout))
+        }
+        Ok(output) => {
+            eprintln!("[apfel] sw_vers failed: {}", output.status);
+            false
+        }
+        Err(error) => {
+            eprintln!("[apfel] sw_vers did not run: {error}");
+            false
+        }
+    }
 }
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -508,7 +270,9 @@ struct ManagedApfel {
 impl ManagedApfel {
     fn stop(&mut self) {
         if let Some(child) = self.child.take() {
-            let _ = child.kill();
+            if let Err(error) = child.kill() {
+                eprintln!("[apfel] could not stop the sidecar: {error}");
+            }
         }
     }
 }

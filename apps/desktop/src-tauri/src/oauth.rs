@@ -1,5 +1,5 @@
 //! OpenRouter PKCE: browser authorization, loopback callback, Keychain storage.
-use crate::providers::{Provider, ProviderKeys, ProviderStatus, Providers};
+use crate::providers::{Provider, ProviderKeys, ProviderStatus, Providers, OPEN_ROUTER};
 use axum::{
     http::{StatusCode, Uri},
     response::{Html, IntoResponse},
@@ -57,44 +57,48 @@ pub(crate) fn openrouter_cancel(request_id: String) {
 pub(crate) async fn openrouter_connect(
     app: AppHandle,
     keys: State<'_, ProviderKeys>,
+    providers: State<'_, Providers>,
     request_id: String,
 ) -> Result<ProviderStatus, String> {
     let (cancel, cancelled) = oneshot::channel();
     {
         let mut active = ACTIVE
             .lock()
-            .map_err(|_| "Could not start authorization.")?;
+            .map_err(|_| "Could not start authorization. Quit and open the app again.")?;
         if let Some((_, previous)) = active.replace((request_id.clone(), cancel)) {
             let _ = previous.send(());
         }
     }
     let result = tokio::select! {
         _ = cancelled => Err("Connection cancelled. Try again.".into()),
-        result = tokio::time::timeout(Duration::from_secs(300), authorize(&app)) =>
+        result = tokio::time::timeout(Duration::from_secs(300), authorize(&app, &providers)) =>
             result.unwrap_or_else(|_| Err("Connection timed out. Try again.".into())),
     };
     // A cancelled or superseded attempt must not persist a late result.
     // Keep this lock through the synchronous Keychain write.
     let mut active = ACTIVE
         .lock()
-        .map_err(|_| "Could not finish authorization.")?;
+        .map_err(|_| "Could not finish authorization. Quit and open the app again.")?;
     if active.as_ref().is_none_or(|(id, _)| id != &request_id) {
         return Err("Connection cancelled. Try again.".into());
     }
     active.take();
     let (key, status) = result?;
     keys.store(Provider::OpenRouter, &key)
-        .map_err(|_| "The key could not be saved on this Mac.".to_string())?;
+        .map_err(|error| error.to_string())?;
     Ok(status)
 }
 
-async fn authorize(app: &AppHandle) -> Result<(String, ProviderStatus), String> {
+async fn authorize(
+    app: &AppHandle,
+    providers: &Providers,
+) -> Result<(String, ProviderStatus), String> {
     let listener = tokio::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
         .await
-        .map_err(|_| "Could not open the local authorization callback.")?;
+        .map_err(|error| format!("Could not open the local authorization callback. ({error})"))?;
     let port = listener
         .local_addr()
-        .map_err(|_| "Could not read the callback address.")?
+        .map_err(|error| format!("Could not read the callback address. ({error})"))?
         .port();
     let path = format!("/callback/{}", uuid::Uuid::new_v4().simple());
     let verifier = format!(
@@ -102,8 +106,8 @@ async fn authorize(app: &AppHandle) -> Result<(String, ProviderStatus), String> 
         uuid::Uuid::new_v4().simple(),
         uuid::Uuid::new_v4().simple()
     );
-    let mut auth = reqwest::Url::parse("https://openrouter.ai/auth")
-        .map_err(|_| "Invalid authorization address.")?;
+    let mut auth = reqwest::Url::parse(&format!("{OPEN_ROUTER}/auth"))
+        .map_err(|error| format!("Invalid authorization address. ({error})"))?;
     auth.query_pairs_mut()
         .append_pair("callback_url", &format!("http://localhost:{port}{path}"))
         .append_pair("code_challenge", &challenge(&verifier))
@@ -111,13 +115,20 @@ async fn authorize(app: &AppHandle) -> Result<(String, ProviderStatus), String> 
     #[allow(deprecated)]
     app.shell()
         .open(auth.as_str(), None)
-        .map_err(|_| "Could not open your browser.")?;
+        .map_err(|error| format!("Could not open your browser. ({error})"))?;
     let code = receive_code(listener, path).await?;
-    let response = reqwest::Client::new().post("https://openrouter.ai/api/v1/auth/keys")
+    let response = providers
+        .client()
+        .post(format!("{OPEN_ROUTER}/api/v1/auth/keys"))
         .json(&serde_json::json!({ "code": code, "code_verifier": verifier, "code_challenge_method": "S256" }))
-        .send().await.map_err(|_| "Could not reach OpenRouter. Try again.")?;
+        .send()
+        .await
+        .map_err(|error| format!("Could not reach OpenRouter. Try again. ({error})"))?;
     if !response.status().is_success() {
-        return Err("OpenRouter authorization expired or failed. Try again.".into());
+        return Err(format!(
+            "OpenRouter authorization expired or failed. Try again. (HTTP {})",
+            response.status().as_u16()
+        ));
     }
     #[derive(serde::Deserialize)]
     struct IssuedKey {
@@ -126,15 +137,15 @@ async fn authorize(app: &AppHandle) -> Result<(String, ProviderStatus), String> 
     let key = response
         .json::<IssuedKey>()
         .await
-        .map_err(|_| "OpenRouter sent an invalid reply.")?
+        .map_err(|error| format!("OpenRouter sent an invalid reply. ({error})"))?
         .key;
     if key.is_empty() {
         return Err("OpenRouter did not return a key.".into());
     }
-    let status = Providers::default()
+    let status = providers
         .check(Provider::OpenRouter, &key)
         .await
-        .map_err(|_| "Could not verify the OpenRouter connection. Try again.")?;
+        .map_err(|error| error.to_string())?;
     Ok((key, status))
 }
 
@@ -155,7 +166,7 @@ async fn receive_code(listener: tokio::net::TcpListener, path: String) -> Result
     }));
     // Keep the server in this future: cancellation or timeout drops the listener.
     tokio::select! {
-        code = receive => code.map_err(|_| "The authorization callback closed.")?,
+        code = receive => code.map_err(|_| "The authorization callback closed.".to_owned())?,
         _ = axum::serve(listener, router) => Err("The authorization callback stopped.".into()),
     }
 }

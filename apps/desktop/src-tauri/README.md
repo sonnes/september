@@ -15,13 +15,23 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --all -- --check
 ```
 
+`cargo test` does not run the two tests that change the system. Run each one
+by name.
+
 The native window test opens temporary windows with separate application
 identifiers. It shows the panel, then sets its size and position. After a quit,
 it reads the same values. A second run closes the panel and makes sure that the
 panel is hidden and the process still runs:
 
 ```sh
-SEPTEMBER_WINDOW_TEST=1 cargo test --test window_state
+cargo test --test window_state
+```
+
+The microphone test publishes `September Microphone` as a system input, then
+removes it:
+
+```sh
+cargo test --test virtual_microphone
 ```
 
 Use `pnpm tauri:dev` or `pnpm tauri:build` from `apps/desktop` to run or package
@@ -78,8 +88,8 @@ panel commands:
 | `panel_setup`     | `on: bool` | On: a normal window with the `Regular` policy. The saved choice does not change. Off: applies the saved float choice.        |
 | `panel_present`   | `on: bool` | On: `set_simple_fullscreen(true)`. Off: `set_simple_fullscreen(false)`.                                                      |
 
-`BackendState.repository` is `pub(crate)` so that `window.rs` can read and
-write the `panel-float` setting.
+`window.rs` reads and writes the `panel-float` setting through
+`BackendState::setting` and `BackendState::put_setting`.
 
 `lib.rs` handles `WindowEvent::CloseRequested` for `panel`. It prevents the
 close and hides the panel, so the draft and the close guard stay. Quit still
@@ -115,8 +125,8 @@ The same setup registers Control-Option-Space through
 `tauri-plugin-global-shortcut`. The crate is pinned to `~2.3`, because 2.4
 needs a newer `tauri`. A press shows the panel. If the panel is visible and is
 the key window, the press hides it. `panel_toggle` holds this rule, and a unit
-test reads it. If another app owns the key, the registration fails with no
-error.
+test reads it. If another app owns the key, the registration fails and the
+app logs the reason.
 
 ### Float over a full-screen app
 
@@ -145,10 +155,6 @@ The `settings` table stores a unique text key and a JSON value. Keys must
 contain 1 to 256 bytes. The `audio-output` setting keeps the Core Audio UID for
 September's own playback device.
 
-The setup value includes `autoSuggestions`, `autoPhrases`, and `agentEnabled`.
-The backup type preserves these booleans through export and restore. Older
-backups default all three fields to `true`. These fields require no schema migration.
-
 The `spaces`, `messages`, `agent_messages`, `notes`, and `saved_phrases` tables
 store domain fields in typed columns. Talk messages and notes can belong to a
 space. Every Agent message belongs to one space. Deleting a space deletes its
@@ -159,11 +165,13 @@ The `analytics_events` table stores one indexed event type and timestamp with
 a JSON payload. It has no foreign key to a space, because a retained usage
 total must survive when the user deletes a conversation.
 
-Schema version 7 creates the Agent transcript table and its indexes. Released
-builds before the domain tables used versions 1 to 3 for a database that held
-only the settings, so the version of the domain tables must be higher than
-those. The migration uses `CREATE TABLE IF NOT EXISTS`, so an install from an
-earlier build gains the domain tables and keeps its settings.
+`MIGRATIONS` in `src/repository.rs` pairs each schema version with its file in
+`migrations/`. The name of the file starts with the version. When Rust opens
+the database, it applies each step above the `user_version` of the database.
+Versions 1 to 3 held only the settings table, so the first step is 4.
+
+To change the schema, add a file with the next version and add it to
+`MIGRATIONS`. Do not change a file that a release applied.
 
 ## Call the domain APIs
 
@@ -217,7 +225,6 @@ type Message = {
   user_id: string;
   text: string;
   type: string;
-  audio_path?: string;
   created_at: number;
 };
 
@@ -236,10 +243,13 @@ recently updated. Message lists use conversation order. Note lists use most
 recently updated order. Pass `space_id` to filter messages or notes to one
 space, or omit it to return every row.
 
-IDs, user IDs, and message types must contain 1 to 256 bytes. Timestamps and
-`phrases_synced_count` cannot be negative. An updated timestamp cannot precede
-its created timestamp. A scoped message or note must reference an existing
-space.
+Rust keeps only the checks that the database needs. The WebView checks the
+values of each field.
+
+- An ID, a user ID, and a setting key contain 1 to 256 bytes.
+- A message type, an agent role, a phrase kind, and phrase text are not empty.
+- A timestamp and `phrases_synced_count` are not negative.
+- A scoped row refers to a space that exists.
 
 Deleting a space also deletes its scoped Talk messages, Agent messages, and
 notes. Global Talk messages and notes remain. For example, this call creates
@@ -261,8 +271,8 @@ const space = await invoke<Space>("space_put", {
 
 ## Call the usage API
 
-`analytics_put` stores a local event. `analytics_list` returns one user's
-events in an inclusive timestamp range, newest first.
+`analytics_put` stores a local event. `analytics_list` returns the events of
+one user in an inclusive timestamp range, newest first.
 
 | Command          | Request                         | Response           |
 | ---------------- | ------------------------------- | ------------------ |
@@ -273,29 +283,24 @@ events in an inclusive timestamp range, newest first.
 type AnalyticsEvent = {
   id: string;
   user_id: string;
-  event_type: "message_sent" | "ai_generation" | "tts_generation";
+  event_type: string;
   timestamp: number;
   data: Record<string, unknown>;
 };
 ```
 
-The app deletes events strictly older than 90 days during startup and before
-or after each usage read or write. This also cleans a process that stays open
-for more than 90 days. The timestamp index keeps cleanup and bounded reports
-out of the event payload.
+The repository deletes events strictly older than 90 days before each usage
+read, after each usage write, and before each backup export. The timestamp
+index keeps cleanup and bounded reports out of the event payload.
 
 ## Call the settings API
 
 Each command accepts a `request` object.
 
-| Command          | Request          | Response             |
-| ---------------- | ---------------- | -------------------- |
-| `setting_get`    | `{ key }`        | JSON value or `null` |
-| `setting_put`    | `{ key, value }` | Stored JSON value    |
-| `setting_delete` | `{ key }`        | `boolean`            |
-
-Successful writes emit `september://settings-changed` with the changed keys.
-Deleting a missing setting returns `false` and does not emit an event.
+| Command       | Request          | Response             |
+| ------------- | ---------------- | -------------------- |
+| `setting_get` | `{ key }`        | JSON value or `null` |
+| `setting_put` | `{ key, value }` | Stored JSON value    |
 
 ## Call the backup API
 
@@ -304,24 +309,30 @@ Deleting a missing setting returns `false` and does not emit an event.
 | `backup_export` | none                          | Portable settings and all domain rows |
 | `backup_import` | `{ request: BackupContents }` | none                                  |
 
-`backup_export` removes each Talk message's local `audio_path`. Version 2 also
-includes Agent messages. It leaves out Keychain keys, the selected audio
-output, and internal settings. Import accepts version 1 with an empty Agent
-transcript.
+`BackupContents` holds the rows of each table and the portable settings:
 
-An older setup value can have no owner ID. Export uses the current Mac login
-name for that backup and does not change the stored value.
+```ts
+type BackupContents = {
+  settings: Record<string, unknown>;
+  spaces: Space[];
+  messages: Message[];
+  agentMessages: AgentMessage[];
+  notes: Note[];
+  savedPhrases: SavedPhrase[];
+  usageEvents: AnalyticsEvent[];
+};
+```
 
-The speech setting keeps the `dialogue` provider and its `dialogueModelId`.
-An older backup has no Dialogue model.
+`settings` uses the stored setting names as keys, for example `panel-open`.
+`PORTABLE_SETTING_KEYS` in `src/repository.rs` lists the portable keys. Export
+leaves out a portable key that has no value. It also leaves out the Keychain
+keys, the selected audio output, and every other setting of this Mac. The
+WebView changes `settings` into the settings of the backup file, and back.
 
-An older panel setting can name the retired `camera` tab. Export writes the
-`phrases` tab instead. Import also accepts an existing file with that value.
-
-`backup_import` validates every value and reference before it changes SQLite.
-It replaces portable settings and domain rows in one transaction. A validation
-or write failure keeps the current database. A successful import emits one
-settings-change event for the portable keys.
+`backup_import` refuses a setting key that is not portable. It replaces the
+portable settings and every row in one transaction. If an ID repeats, a row
+refers to a space that is not in the backup, or a write fails, the current
+database stays.
 
 ## Read the user name
 
@@ -360,7 +371,7 @@ A key never returns to the WebView. Every command answers with a status only.
 | `provider_voices`         | none                | The ElevenLabs voices                      |
 | `provider_clone_voice`    | raw multipart audio | `{ id }`                                   |
 | `provider_models`         | none                | The ElevenLabs speech models               |
-| `provider_writing_models` | none                | Every OpenRouter model, free ones first    |
+| `provider_writing_models` | none                | Every OpenRouter model                     |
 | `provider_quota`          | none                | The current ElevenLabs allowance or `null` |
 
 ```ts
@@ -398,10 +409,9 @@ never crosses the command boundary.
 `phrase_replace_ai` takes `{ space_id, phrases }` and returns the phrases of
 that space. It erases the rows with `pinned = 0` and writes the new rows, in
 one transaction. A pinned row never changes, so a phrase that the user keeps
-cannot be lost by a model. A replacement row that says it is pinned is
-refused.
+cannot be lost by a model. Rust refuses a replacement row that says it is
+pinned, or that belongs to another space.
 
-A phrase kind is `phrase` for a complete thought, or `starter` for an opening.
 `phrase_list` without a space returns every row, because a code works in every
 space.
 
@@ -410,26 +420,22 @@ space.
 The WebView writes with a typed model client, so Rust serves it rather than
 calling for it. `writing_proxy` starts a loopback proxy on the first call and
 answers with `{ baseUrl, token }`. The proxy binds `127.0.0.1` on a free port
-and serves one path, `POST /v1/chat/completions`. It requires the run token in
+and serves `POST /v1/chat/completions`. It requires the run token in
 `Authorization`, swaps that token for the OpenRouter key from the Keychain,
-and forwards the body to OpenRouter unchanged apart from one field. The reply
-is passed back byte for byte, so a streamed answer streams.
+and forwards the body to OpenRouter unchanged. The reply goes back byte for
+byte, so a streamed answer streams.
 
-The token lasts one run and means nothing to another process. A page that
-guesses the port still needs it, and a request without it gets `401`. Every
-other path gets `404`.
+The token lasts one run and means nothing to another process. A request
+without the token gets `401`. A body that is not a JSON object gets `400`.
+Every other path gets `404`. The WebView names the model in each request, and
+Rust adds no field.
 
-The one field the proxy adds is the model. A request that names a `model` is
-forwarded as it is. A request with no model gets a small list of free models,
-and OpenRouter uses the first one that answers. The TypeScript service removes
-the field when the user chose no model, which is how that list is asked for.
-
-The proxy carries the model on this Mac too, at `POST
-/apple/v1/chat/completions`. The sidecar allows a loopback origin only, and the
-WebView is not one, so the WebView cannot reach it by itself; it also holds its
-own token, which is no more the WebView's business than a cloud key is. The
-proxy starts the sidecar on first use and swaps the run token for the
-sidecar's. `apfel_generate` still answers plain text directly.
+The proxy also serves the model on this Mac, at `POST
+/apple/v1/chat/completions`. The sidecar allows only a loopback origin, and
+the WebView is not one. The sidecar also holds its own token. The proxy starts
+the sidecar on first use, and swaps the run token for the token of the
+sidecar. If the Mac cannot run Apple Intelligence, or the model is not
+available, the request gets `502` with the reason.
 
 The TypeScript service selects the model before it calls. It uses the default
 model settings for all jobs except Suggestions. If the Suggestions override is
@@ -437,17 +443,29 @@ not null, Suggestions use it.
 
 `provider_writing_models` gives the models the user can choose. Each row has
 `free`, which is true when a prompt token and a completion token both cost
-zero. A model with no price is not known to be free, so `free` is false. Rust
-sorts the free rows first, then by name. The screen shows the free rows and
-its search reaches the others.
+zero. A model with no price is not known to be free, so `free` is false. The
+WebView puts the rows in order.
 
 ## Speak a sentence
 
-The `speech_synthesize` command takes `{ text, settings }` and returns
-`{ path, from_cache }`. The settings hold the provider, the voice, the model,
-the stability, the similarity, and the speed.
+The `speech_synthesize` command takes `{ text, voice }` and returns
+`{ path, from_cache }`:
 
-Rust names the file from the SHA-256 of those settings and the normalized
+```ts
+type VoiceSettings = {
+  voiceId: string;
+  modelId: string;
+  stability: number;
+  similarity: number;
+  speed: number;
+};
+```
+
+The WebView resolves each value before it calls, for example the model of the
+Dialogue voice and the stability of Eleven v3. Rust sends the values as they
+are.
+
+Rust names the file from the SHA-256 of the voice settings and the normalized
 words, then keeps it in `audio/` under the application-local-data directory.
 The same request therefore reaches ElevenLabs one time. Rust writes to a
 `.part` name first and renames, so a stopped application leaves no half-written
@@ -469,8 +487,8 @@ their sound. Voice-list previews stay in the WebView and do not enter the tap.
 | `audio_output`       | none                         | The UID September uses |
 | `audio_output_set`   | `{ uid }`                    | none                   |
 | `speech_system`      | `{ text, voice_id?, speed }` | none                   |
-| `speech_stream`      | `{ text, settings }`         | `{ from_cache, latency_ms, interrupted }` |
-| `speech_native_stop` | none                         | none                   |
+| `speech_stream`      | `{ text, voice, dialogueParts? }` | `{ from_cache, latency_ms, interrupted }` |
+| `speech_native_stop` | none                         | none, or rejects       |
 
 `audio_output_set` verifies the device and saves its UID without changing the
 macOS sound output. If the saved device is absent, `audio_output` returns the
@@ -516,20 +534,23 @@ file is not audio, `audio::play_speech_file` removes it, so the next request
 asks ElevenLabs again. `cargo test --test speech_playback` covers these cases
 without sound.
 
-`speech_stream` keeps a complete Dialogue sentence as a WAV file beside the
-MP3 files, under the same SHA-256 name. A kept WAV or MP3 file plays without a
-request. When `settings.provider` is `dialogue`, `speech_stream` sends the
-sentence to the Text to Dialogue stream with `eleven_v3`.
-`Providers::speak_dialogue_stream` reads one JSON object after the other and
-gives each chunk of samples to the same engine. A text of more than 2,000
-characters goes in parts, from `speech::dialogue_parts`. The first sound can
-take 10 seconds. For `eleven_v3_conversational`,
-`Providers::speak_dialogue_socket` sends the parts through the Text to
-Dialogue socket.
+When the request has `dialogueParts`, `speech_stream` speaks the sentence in
+the Dialogue voice. The WebView splits the text into the parts.
+`Providers::speak_dialogue` sends each part to the Text to Dialogue stream,
+and Rust gives each chunk of samples to the same engine. The first sound can
+take 10 seconds. For `eleven_v3_conversational`, all parts go through the Text
+to Dialogue socket.
+
+Rust keeps a complete Dialogue sentence as a WAV file, under the same SHA-256
+name as the MP3 file. A kept file plays without a request. If Rust cannot
+write the WAV file, it logs the reason, and the sentence still counts as
+spoken.
+
 If the stream fails before the first sound, the command rejects. The WebView
 then speaks the sentence in the system voice. If the stream fails after the
 first sound, the sound stops and `interrupted` holds the reason.
-`speech_native_stop` also cancels the stream.
+`speech_native_stop` also cancels the stream, and the stopped command resolves
+with no reason. If the stream task panics, the command rejects.
 
 ## Publish the virtual microphone
 
@@ -583,95 +604,45 @@ corners and fits one linear mapping for each axis. It clips the mapped point to
 the camera box. It does not convert it to a window or operating-system pointer.
 
 Neither side saves the preview, point, or calibration. `gaze_stop` joins the
-capture thread. Leaving the page and application exit use the same stop path.
+capture thread. The capture thread stops by itself after an error, and the
+next `gaze_start` starts a new one. Leaving the page and application exit use the same stop path.
 The app requests camera access only after `gaze_start`; `Info.plist` explains
 the use and the signed app has the camera entitlement.
 
 ## Use the apfel API
 
-`apfel_status` and `apfel_generate` start the sidecar
-when the first command needs it. Later calls reuse the healthy process. The
-Agent command forwards the fixed tool-calling request and forces the local
-model and non-streaming response.
-
-`apfel_status` takes no request. It returns this object:
+`apfel_status` starts the sidecar when it is not running. Later calls use the
+same process while it is healthy. The command takes no request and returns
+this object:
 
 ```ts
 type ApfelStatus = {
   supported: boolean;
   available: boolean;
   reason: string | null;
-  model: string | null;
-  version: string | null;
-  context_window: number | null;
-  prewarmed: boolean | null;
-  supported_languages: string[];
 };
 ```
 
 `supported` is false when the current system cannot run the bundled provider.
-`available` is false when Apple Intelligence cannot load its model.
-
-Call `apfel_generate` with one `request` object:
-
-```ts
-type ApfelGenerateRequest = {
-  messages: Array<{
-    role: "system" | "user" | "assistant";
-    content: string;
-  }>;
-  temperature?: number;
-  max_tokens?: number;
-  response_format?:
-    | { type: "json_object" }
-    | { type: "json_schema"; name: string; schema: object };
-};
-```
-
-The command returns the generated text and the token counts:
-
-```ts
-type ApfelGeneration = {
-  text: string;
-  finish_reason: string;
-  model?: string;
-  cost_usd?: number;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-};
-```
-
-The command rejects its promise when Apple Intelligence is unavailable or
-generation fails. The error keeps the message from the apfel OpenAI-compatible
-response.
+`available` is false when Apple Intelligence cannot load its model. Text from
+Apple Intelligence goes through the writing proxy.
 
 ## Understand the sidecar lifecycle
 
-Rust starts one apfel server on a free loopback port when a command first needs
-it. The server accepts one generation request at a time.
+Rust starts one apfel server on a free loopback port when the status command
+or the proxy first needs it. The server accepts one generation request at a
+time.
 
-Rust creates a new bearer token for each server process. It passes the token
+Rust makes a new bearer token for each server process. It passes the token
 through `APFEL_TOKEN`, not through a command argument.
 
-The WebView cannot start shell commands or call the server directly. It uses
-only the two Tauri commands. Rust checks the current process before each use
-and replaces it when the health request fails. It stops the child process when
-the backend exits.
+The WebView cannot start shell commands or call the server directly. Rust
+checks the current process before each use and replaces it when the health
+request fails. It stops the child process when the backend exits.
 
 The bundle contains apfel v1.12.0 and its MIT license. The preparation script
 makes sure that the downloaded archive and extracted binary match pinned
 SHA-256 checksums.
-
-Run the ignored live integration test on a supported Mac:
-
-```sh
-APFEL_BIN="$PWD/binaries/apfel-aarch64-apple-darwin" \
-  cargo test --test apfel live_apfel_serves_a_completion_through_the_rust_client \
-  -- --ignored --exact
-```
 
 ## OpenRouter authorization
 

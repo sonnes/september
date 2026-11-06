@@ -204,8 +204,19 @@ pub(crate) fn gaze_start(
         .run
         .lock()
         .map_err(|_| "the eye-tracker state is unavailable".to_string())?;
-    if run.is_some() {
+    // The camera thread ends by itself after an error, so a finished run
+    // does not block a new one.
+    if run
+        .as_ref()
+        .is_some_and(|current| !current.handle.is_finished())
+    {
         return Err("the eye tracker is already running".to_string());
+    }
+    if let Some(finished) = run.take() {
+        finished
+            .handle
+            .join()
+            .map_err(|_| "the eye-tracker camera stopped unexpectedly".to_string())?;
     }
 
     let stop = Arc::new(AtomicBool::new(false));

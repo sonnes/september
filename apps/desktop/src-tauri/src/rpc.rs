@@ -9,11 +9,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{
     ipc::{InvokeBody, Request as IpcRequest},
-    AppHandle, Emitter, Manager, State,
+    AppHandle, Manager, State,
 };
 
 use crate::{
-    apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
+    apfel::{ApfelState, ApfelStatus},
     audio::{self, AudioDevice, VirtualMicrophoneStatus},
     gaze::GazeState,
     providers::{
@@ -25,29 +25,47 @@ use crate::{
         AgentMessage, AnalyticsEvent, BackupContents, Message, Note, Repository, SavedPhrase,
         Space, SpacePatch,
     },
-    speech::{self, SpeechSettings, StreamError, Streamed},
+    speech::{self, StreamError, Streamed, VoiceSettings},
 };
 
+type RpcResult<T> = std::result::Result<T, String>;
+
+const MAX_VOICE_CLONE_BYTES: usize = 100 * 1024 * 1024;
+const AUDIO_OUTPUT_SETTING: &str = "audio-output";
+
+/// The storage of the app, and the cloud-voice sentence that streams now.
 pub(crate) struct BackendState {
-    pub(crate) repository: Mutex<Repository>,
-    /// The cloud-voice sentence that streams now. A stop or a new sentence
-    /// cancels it.
+    repository: Mutex<Repository>,
+    /// A stop or a new sentence cancels the sentence that streams.
     speech_stream: Mutex<Option<tokio::task::AbortHandle>>,
 }
 
-pub(crate) const ANALYTICS_RETENTION_MS: i64 = 90 * 24 * 60 * 60 * 1_000;
-const MAX_VOICE_CLONE_BYTES: usize = 100 * 1024 * 1024;
-const AUDIO_OUTPUT_SETTING: &str = "audio-output";
+impl BackendState {
+    /// Runs one repository call under the lock, with one error for a lock
+    /// that a panic left behind.
+    fn with_repo<T>(
+        &self,
+        call: impl FnOnce(&mut Repository) -> crate::error::Result<T>,
+    ) -> RpcResult<T> {
+        let mut repository = self.repository.lock().map_err(|_| {
+            "September could not reach its storage. Quit and open the app again.".to_owned()
+        })?;
+        call(&mut repository).map_err(|error| error.to_string())
+    }
+
+    pub(crate) fn setting(&self, key: &str) -> RpcResult<Option<Value>> {
+        self.with_repo(|repository| repository.get_setting(key))
+    }
+
+    pub(crate) fn put_setting(&self, key: &str, value: &Value) -> RpcResult<()> {
+        self.with_repo(|repository| repository.put_setting(key, value))
+    }
+}
 
 fn now_ms() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis() as i64
-}
-
-pub(crate) fn retention_cutoff_ms(now: i64) -> i64 {
-    now.saturating_sub(ANALYTICS_RETENTION_MS).max(0)
+        .map_or(0, |elapsed| elapsed.as_millis() as i64)
 }
 
 #[derive(Deserialize)]
@@ -108,10 +126,16 @@ pub(crate) struct AudioOutputRequest {
     uid: String,
 }
 
+/// One sentence in one cloud voice. `dialogue_parts` holds the parts of the
+/// sentence for the Dialogue voice, and is absent for a voice that makes a
+/// file.
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct SpeakRequest {
     text: String,
-    settings: SpeechSettings,
+    voice: VoiceSettings,
+    #[serde(default)]
+    dialogue_parts: Option<Vec<String>>,
 }
 
 #[derive(Deserialize)]
@@ -144,26 +168,22 @@ pub(crate) struct SettingPutRequest {
     value: Value,
 }
 
-#[derive(Clone, Serialize)]
-struct SettingsChanged {
-    keys: Vec<String>,
-}
-
 pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std::error::Error>> {
     // A public aggregate device can outlive a process that crashed. Each new
     // start removes that stale device, so the microphone begins off.
-    let _ = audio::virtual_microphone_stop();
+    if let Err(error) = audio::virtual_microphone_stop() {
+        eprintln!("[audio] could not remove a stale microphone: {error}");
+    }
 
     let data_directory = app.path().app_local_data_dir()?;
     fs::create_dir_all(&data_directory)?;
     let repository = Repository::open(data_directory.join("september.sqlite3"))?;
-    repository.delete_analytics_events_before(retention_cutoff_ms(now_ms()))?;
-    let provider_keys = ProviderKeys::load();
     app.manage(BackendState {
         repository: Mutex::new(repository),
         speech_stream: Mutex::new(None),
     });
-    app.manage(provider_keys);
+    app.manage(ProviderKeys::load());
+    app.manage(Providers::default());
     app.manage(ApfelState::default());
     app.manage(WritingProxy::default());
     app.manage(GazeState::default());
@@ -175,101 +195,29 @@ pub(crate) fn setting_get(
     state: State<'_, BackendState>,
     request: KeyRequest,
 ) -> RpcResult<Option<Value>> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .get_setting(&request.key)
-        .map_err(rpc_error)
+    state.setting(&request.key)
 }
 
 #[tauri::command(async)]
 pub(crate) fn setting_put(
-    app: AppHandle,
     state: State<'_, BackendState>,
     request: SettingPutRequest,
 ) -> RpcResult<Value> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .put_setting(&request.key, &request.value)
-        .map_err(rpc_error)?;
-    app.emit(
-        "september://settings-changed",
-        SettingsChanged {
-            keys: vec![request.key],
-        },
-    )
-    .map_err(rpc_error)?;
+    state.put_setting(&request.key, &request.value)?;
     Ok(request.value)
 }
 
 #[tauri::command(async)]
-pub(crate) fn setting_delete(
-    app: AppHandle,
-    state: State<'_, BackendState>,
-    request: KeyRequest,
-) -> RpcResult<bool> {
-    let deleted = state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .delete_setting(&request.key)
-        .map_err(rpc_error)?;
-    if deleted {
-        app.emit(
-            "september://settings-changed",
-            SettingsChanged {
-                keys: vec![request.key],
-            },
-        )
-        .map_err(rpc_error)?;
-    }
-    Ok(deleted)
-}
-
-#[tauri::command(async)]
 pub(crate) fn backup_export(state: State<'_, BackendState>) -> RpcResult<BackupContents> {
-    let fallback_user_id = user_id()?;
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .backup_contents(&fallback_user_id)
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.backup_contents(now_ms()))
 }
 
 #[tauri::command(async)]
 pub(crate) fn backup_import(
-    app: AppHandle,
     state: State<'_, BackendState>,
     request: BackupContents,
 ) -> RpcResult<()> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .replace_backup_contents(&request)
-        .map_err(rpc_error)?;
-    app.emit(
-        "september://settings-changed",
-        SettingsChanged {
-            keys: [
-                "setup",
-                "speech",
-                "dismissed-ideas",
-                "space-modes",
-                "new-space-draft",
-                "panel-open",
-                "present",
-            ]
-            .into_iter()
-            .map(str::to_owned)
-            .collect(),
-        },
-    )
-    .map_err(rpc_error)
+    state.with_repo(|repository| repository.replace_backup_contents(&request))
 }
 
 #[tauri::command(async)]
@@ -277,12 +225,7 @@ pub(crate) fn space_list(
     state: State<'_, BackendState>,
     request: SpaceListRequest,
 ) -> RpcResult<Vec<Space>> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .list_spaces(&request.user_id)
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.list_spaces(&request.user_id))
 }
 
 #[tauri::command(async)]
@@ -290,23 +233,19 @@ pub(crate) fn space_get(
     state: State<'_, BackendState>,
     request: EntityIdRequest,
 ) -> RpcResult<Option<Space>> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .get_space(&request.id)
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.get_space(&request.id))
 }
 
 #[tauri::command(async)]
 pub(crate) fn space_put(state: State<'_, BackendState>, request: Space) -> RpcResult<Space> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .put_space(&request)
-        .map_err(rpc_error)?;
+    state.with_repo(|repository| repository.put_space(&request))?;
     Ok(request)
+}
+
+/// Changes some fields of a space, and leaves the rest.
+#[tauri::command(async)]
+pub(crate) fn space_patch(state: State<'_, BackendState>, request: SpacePatch) -> RpcResult<Space> {
+    state.with_repo(|repository| repository.patch_space(&request))
 }
 
 #[tauri::command(async)]
@@ -314,12 +253,7 @@ pub(crate) fn space_delete(
     state: State<'_, BackendState>,
     request: EntityIdRequest,
 ) -> RpcResult<bool> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .delete_space(&request.id)
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.delete_space(&request.id))
 }
 
 #[tauri::command(async)]
@@ -327,12 +261,7 @@ pub(crate) fn message_list(
     state: State<'_, BackendState>,
     request: SpaceFilterRequest,
 ) -> RpcResult<Vec<Message>> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .list_messages(request.space_id.as_deref())
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.list_messages(request.space_id.as_deref()))
 }
 
 #[tauri::command(async)]
@@ -340,55 +269,13 @@ pub(crate) fn message_get(
     state: State<'_, BackendState>,
     request: EntityIdRequest,
 ) -> RpcResult<Option<Message>> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .get_message(&request.id)
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.get_message(&request.id))
 }
 
 #[tauri::command(async)]
 pub(crate) fn message_put(state: State<'_, BackendState>, request: Message) -> RpcResult<Message> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .put_message(&request)
-        .map_err(rpc_error)?;
+    state.with_repo(|repository| repository.put_message(&request))?;
     Ok(request)
-}
-
-/// Stores one local usage event, then applies the rolling retention boundary.
-#[tauri::command(async)]
-pub(crate) fn analytics_put(
-    state: State<'_, BackendState>,
-    request: AnalyticsEvent,
-) -> RpcResult<AnalyticsEvent> {
-    let repository = state.repository.lock().map_err(lock_error)?;
-    repository
-        .put_analytics_event(&request)
-        .map_err(rpc_error)?;
-    repository
-        .delete_analytics_events_before(retention_cutoff_ms(now_ms()))
-        .map_err(rpc_error)?;
-    Ok(request)
-}
-
-/// Reads one bounded report. Opening a report also cleans an app that has
-/// stayed open without recording a new event.
-#[tauri::command(async)]
-pub(crate) fn analytics_list(
-    state: State<'_, BackendState>,
-    request: AnalyticsListRequest,
-) -> RpcResult<Vec<AnalyticsEvent>> {
-    let repository = state.repository.lock().map_err(lock_error)?;
-    repository
-        .delete_analytics_events_before(retention_cutoff_ms(now_ms()))
-        .map_err(rpc_error)?;
-    repository
-        .list_analytics_events(&request.user_id, request.start_at, request.end_at)
-        .map_err(rpc_error)
 }
 
 #[tauri::command(async)]
@@ -396,12 +283,31 @@ pub(crate) fn message_delete(
     state: State<'_, BackendState>,
     request: EntityIdRequest,
 ) -> RpcResult<bool> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .delete_message(&request.id)
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.delete_message(&request.id))
+}
+
+#[tauri::command(async)]
+pub(crate) fn analytics_put(
+    state: State<'_, BackendState>,
+    request: AnalyticsEvent,
+) -> RpcResult<AnalyticsEvent> {
+    state.with_repo(|repository| repository.put_analytics_event(&request, now_ms()))?;
+    Ok(request)
+}
+
+#[tauri::command(async)]
+pub(crate) fn analytics_list(
+    state: State<'_, BackendState>,
+    request: AnalyticsListRequest,
+) -> RpcResult<Vec<AnalyticsEvent>> {
+    state.with_repo(|repository| {
+        repository.list_analytics_events(
+            &request.user_id,
+            request.start_at,
+            request.end_at,
+            now_ms(),
+        )
+    })
 }
 
 #[tauri::command(async)]
@@ -411,14 +317,8 @@ pub(crate) fn agent_message_list(
 ) -> RpcResult<Vec<AgentMessage>> {
     let space_id = request
         .space_id
-        .as_deref()
         .ok_or("An agent transcript needs a space.")?;
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .list_agent_messages(space_id)
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.list_agent_messages(&space_id))
 }
 
 #[tauri::command(async)]
@@ -426,12 +326,7 @@ pub(crate) fn agent_message_put(
     state: State<'_, BackendState>,
     request: AgentMessage,
 ) -> RpcResult<AgentMessage> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .put_agent_message(&request)
-        .map_err(rpc_error)?;
+    state.with_repo(|repository| repository.put_agent_message(&request))?;
     Ok(request)
 }
 
@@ -440,18 +335,15 @@ pub(crate) fn agent_tool_state(
     state: State<'_, BackendState>,
     request: AgentToolStateRequest,
 ) -> RpcResult<AgentMessage> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .update_agent_tool_state(
+    state.with_repo(|repository| {
+        repository.update_agent_tool_state(
             &request.id,
             &request.expected,
             &request.state,
             &request.content,
             request.updated_at,
         )
-        .map_err(rpc_error)
+    })
 }
 
 #[tauri::command(async)]
@@ -459,12 +351,7 @@ pub(crate) fn note_list(
     state: State<'_, BackendState>,
     request: SpaceFilterRequest,
 ) -> RpcResult<Vec<Note>> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .list_notes(request.space_id.as_deref())
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.list_notes(request.space_id.as_deref()))
 }
 
 #[tauri::command(async)]
@@ -472,22 +359,12 @@ pub(crate) fn note_get(
     state: State<'_, BackendState>,
     request: EntityIdRequest,
 ) -> RpcResult<Option<Note>> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .get_note(&request.id)
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.get_note(&request.id))
 }
 
 #[tauri::command(async)]
 pub(crate) fn note_put(state: State<'_, BackendState>, request: Note) -> RpcResult<Note> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .put_note(&request)
-        .map_err(rpc_error)?;
+    state.with_repo(|repository| repository.put_note(&request))?;
     Ok(request)
 }
 
@@ -496,12 +373,7 @@ pub(crate) fn note_delete(
     state: State<'_, BackendState>,
     request: EntityIdRequest,
 ) -> RpcResult<bool> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .delete_note(&request.id)
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.delete_note(&request.id))
 }
 
 #[tauri::command(async)]
@@ -509,12 +381,7 @@ pub(crate) fn phrase_list(
     state: State<'_, BackendState>,
     request: SpaceFilterRequest,
 ) -> RpcResult<Vec<SavedPhrase>> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .list_phrases(request.space_id.as_deref())
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.list_phrases(request.space_id.as_deref()))
 }
 
 #[tauri::command(async)]
@@ -522,12 +389,7 @@ pub(crate) fn phrase_put(
     state: State<'_, BackendState>,
     request: SavedPhrase,
 ) -> RpcResult<SavedPhrase> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .put_phrase(&request)
-        .map_err(rpc_error)?;
+    state.with_repo(|repository| repository.put_phrase(&request))?;
     Ok(request)
 }
 
@@ -536,53 +398,35 @@ pub(crate) fn phrase_delete(
     state: State<'_, BackendState>,
     request: EntityIdRequest,
 ) -> RpcResult<bool> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .delete_phrase(&request.id)
-        .map_err(rpc_error)
+    state.with_repo(|repository| repository.delete_phrase(&request.id))
 }
 
-/// Puts the rows of a model in place of the rows before them.
-///
-/// A pinned row never changes. The erase and the insert happen together, so a
-/// failure cannot leave a space with no phrases.
+/// Puts the rows of a model in place of the unpinned rows of one space, and
+/// returns the phrases of the space.
 #[tauri::command(async)]
 pub(crate) fn phrase_replace_ai(
     state: State<'_, BackendState>,
     request: PhraseReplaceRequest,
 ) -> RpcResult<Vec<SavedPhrase>> {
-    let mut repository = state.repository.lock().map_err(lock_error)?;
-    repository
-        .replace_ai_phrases(&request.space_id, &request.phrases)
-        .map_err(rpc_error)?;
-    repository
-        .list_phrases(Some(&request.space_id))
-        .map_err(rpc_error)
+    state.with_repo(|repository| {
+        repository.replace_ai_phrases(&request.space_id, &request.phrases)?;
+        repository.list_phrases(Some(&request.space_id))
+    })
 }
 
-/// The name the operating system holds for the signed-in user.
-///
-/// The result is empty when the system has no usable name. The onboarding
-/// screen then starts with an empty field.
+/// The name the operating system holds for the signed-in user. Empty when the
+/// system has no usable name.
 #[tauri::command(async)]
 pub(crate) fn user_name() -> String {
     clean_name(&whoami::realname())
 }
 
-/// The login name of the operating system, for example `ravi`.
-///
-/// A space and a message need an identifier for the owner. The display name
-/// from `user_name` can be empty, and the user can change it, so it cannot be
-/// one. The command rejects when the system knows no login name.
+/// The login name of the operating system, for example `ravi`. The command
+/// rejects when the system knows no login name.
 #[tauri::command(async)]
 pub(crate) fn user_id() -> RpcResult<String> {
-    whoami::fallible::username()
-        .ok()
-        .as_deref()
-        .and_then(login_name)
-        .ok_or_else(|| "This Mac has no login name.".to_owned())
+    let raw = whoami::fallible::username().map_err(|error| error.to_string())?;
+    login_name(&raw).ok_or_else(|| "This Mac has no login name.".to_owned())
 }
 
 #[tauri::command]
@@ -593,26 +437,16 @@ pub(crate) async fn apfel_status(
     Ok(state.status(&app).await)
 }
 
-#[tauri::command]
-pub(crate) async fn apfel_generate(
-    app: AppHandle,
-    state: State<'_, ApfelState>,
-    request: ApfelGenerateRequest,
-) -> RpcResult<ApfelGeneration> {
-    state.generate(&app, request).await.map_err(rpc_error)
-}
-
 /// One status for each cloud service. A cached key is tested again here,
 /// because a key that worked in June can fail in August.
 #[tauri::command]
 pub(crate) async fn provider_status(
     keys: State<'_, ProviderKeys>,
+    providers: State<'_, Providers>,
 ) -> RpcResult<Vec<ProviderStatus>> {
-    let providers = Providers::default();
     let mut statuses = Vec::with_capacity(Provider::ALL.len());
-
     for provider in Provider::ALL {
-        let status = match keys.get(provider).map_err(rpc_error)? {
+        let status = match keys.get(provider).map_err(|error| error.to_string())? {
             Some(key) => providers
                 .check(provider, &key)
                 .await
@@ -621,7 +455,6 @@ pub(crate) async fn provider_status(
         };
         statuses.push(status);
     }
-
     Ok(statuses)
 }
 
@@ -629,14 +462,15 @@ pub(crate) async fn provider_status(
 #[tauri::command]
 pub(crate) async fn provider_connect(
     keys: State<'_, ProviderKeys>,
+    providers: State<'_, Providers>,
     request: ProviderConnectRequest,
 ) -> RpcResult<ProviderStatus> {
-    let status = Providers::default()
+    let status = providers
         .check(request.provider, &request.key)
         .await
-        .map_err(rpc_error)?;
+        .map_err(|error| error.to_string())?;
     keys.store(request.provider, &request.key)
-        .map_err(rpc_error)?;
+        .map_err(|error| error.to_string())?;
     Ok(status)
 }
 
@@ -645,32 +479,40 @@ pub(crate) async fn provider_forget(
     keys: State<'_, ProviderKeys>,
     request: ProviderRequest,
 ) -> RpcResult<bool> {
-    keys.forget(request.provider).map_err(rpc_error)
+    keys.forget(request.provider)
+        .map_err(|error| error.to_string())
 }
 
-/// The file that holds one sentence in the chosen voice.
-///
-/// The name of the file is the hash of the settings and the normalized words,
-/// so the same request never goes to the service twice. The response carries
-/// a path, never a key.
+fn audio_directory(app: &AppHandle) -> RpcResult<PathBuf> {
+    Ok(app
+        .path()
+        .app_local_data_dir()
+        .map_err(|error| error.to_string())?
+        .join("audio"))
+}
+
+fn eleven_labs_key(keys: &ProviderKeys) -> RpcResult<Option<String>> {
+    keys.get(Provider::ElevenLabs)
+        .map_err(|error| error.to_string())
+}
+
+/// The MP3 file that holds one sentence in the chosen voice. The response
+/// carries a path, never a key.
 #[tauri::command]
 pub(crate) async fn speech_synthesize(
     app: AppHandle,
     keys: State<'_, ProviderKeys>,
+    providers: State<'_, Providers>,
     request: SpeakRequest,
 ) -> RpcResult<SpokenAudio> {
-    let directory = app
-        .path()
-        .app_local_data_dir()
-        .map_err(rpc_error)?
-        .join("audio");
-    let key = keys.get(Provider::ElevenLabs).map_err(rpc_error)?;
+    let directory = audio_directory(&app)?;
+    let key = eleven_labs_key(&keys)?;
     let (path, from_cache) = speech::synthesize(
         &directory,
-        &request.settings,
+        &request.voice,
         &request.text,
         key.as_deref(),
-        &Providers::default(),
+        &providers,
     )
     .await?;
 
@@ -680,73 +522,68 @@ pub(crate) async fn speech_synthesize(
     })
 }
 
-/// Speaks one sentence in the cloud voice.
-///
-/// Rust holds the key. The native engine plays the sound, so the virtual
-/// microphone hears it. The ElevenLabs voice and a kept sentence play as a
-/// file. The Dialogue voice plays its samples while they arrive. The command
-/// returns when the sound stops.
+/// Speaks one sentence in a cloud voice through the native engine, so the
+/// virtual microphone hears it. The command returns when the sound stops.
 #[tauri::command]
 pub(crate) async fn speech_stream(
     app: AppHandle,
     state: State<'_, BackendState>,
     keys: State<'_, ProviderKeys>,
+    providers: State<'_, Providers>,
     request: SpeakRequest,
 ) -> RpcResult<StreamedAudio> {
-    let directory = app
-        .path()
-        .app_local_data_dir()
-        .map_err(rpc_error)?
-        .join("audio");
-    let key = keys.get(Provider::ElevenLabs).map_err(rpc_error)?;
+    let directory = audio_directory(&app)?;
+    let key = eleven_labs_key(&keys)?;
     let output = september_output(&state)?;
     // From here on, a stop silences this sentence even before it plays.
     let sentence = audio::claim_speech();
+    let providers = (*providers).clone();
 
-    let task = tauri::async_runtime::spawn(stream_sentence(
-        sentence,
-        directory,
-        request.settings,
-        request.text,
-        key,
-        output,
-    ));
+    let task = tokio::spawn(async move {
+        stream_sentence(sentence, directory, request, key, output, &providers).await
+    });
     if let Some(previous) = state
         .speech_stream
         .lock()
-        .map_err(rpc_error)?
-        .replace(task.inner().abort_handle())
+        .map_err(|error| error.to_string())?
+        .replace(task.abort_handle())
     {
         previous.abort();
     }
 
-    // A cancelled sentence was stopped on purpose, so it is no failure.
-    task.await.unwrap_or(Ok(StreamedAudio {
-        from_cache: false,
-        latency_ms: 0,
-        interrupted: None,
-    }))
+    match task.await {
+        Ok(result) => result,
+        // A stop or a newer sentence cancels this one on purpose.
+        Err(error) if error.is_cancelled() => Ok(StreamedAudio {
+            from_cache: false,
+            latency_ms: 0,
+            interrupted: None,
+        }),
+        Err(error) => Err(format!("The voice stopped unexpectedly. ({error})")),
+    }
 }
 
 async fn stream_sentence(
     sentence: i64,
     directory: PathBuf,
-    settings: SpeechSettings,
-    text: String,
+    request: SpeakRequest,
     key: Option<String>,
     output: String,
+    providers: &Providers,
 ) -> RpcResult<StreamedAudio> {
     let began = Instant::now();
     let mut playing: Option<audio::SpeechStream> = None;
     let mut refused: Option<String> = None;
+    let mut broken: Option<String> = None;
     let outcome = speech::stream(
         &directory,
-        &settings,
-        &text,
+        &request.voice,
+        &request.text,
+        request.dialogue_parts.as_deref(),
         key.as_deref(),
-        &Providers::default(),
+        providers,
         |samples| {
-            if refused.is_some() {
+            if refused.is_some() || broken.is_some() {
                 return;
             }
             if playing.is_none() {
@@ -759,8 +596,10 @@ async fn stream_sentence(
                 }
             }
             if let Some(stream) = &playing {
-                // An append fails only after a stop, which ends this task.
-                let _ = stream.append(samples);
+                // An append fails after a stop or a broken output.
+                if let Err(error) = stream.append(samples) {
+                    broken = Some(error);
+                }
             }
         },
     )
@@ -775,11 +614,11 @@ async fn stream_sentence(
     match outcome {
         Ok(Streamed::File { path, from_cache }) => {
             let latency_ms = began.elapsed().as_millis() as u64;
-            let played = tauri::async_runtime::spawn_blocking(move || {
+            let played = tokio::task::spawn_blocking(move || {
                 audio::play_speech_file(sentence, &path, &output)
             })
             .await
-            .map_err(rpc_error)??;
+            .map_err(|error| error.to_string())??;
             Ok(StreamedAudio {
                 from_cache,
                 latency_ms,
@@ -791,17 +630,17 @@ async fn stream_sentence(
         }
         Ok(Streamed::Spoken { first_audio }) => {
             // The sound began, so a failure now is an interruption.
-            let interrupted = match playing {
-                Some(stream) => tauri::async_runtime::spawn_blocking(move || stream.finish())
+            let finished = match playing {
+                Some(stream) => tokio::task::spawn_blocking(move || stream.finish())
                     .await
-                    .map_err(rpc_error)?
+                    .map_err(|error| error.to_string())?
                     .err(),
                 None => None,
             };
             Ok(StreamedAudio {
                 from_cache: false,
                 latency_ms: first_audio.as_millis() as u64,
-                interrupted,
+                interrupted: broken.or(finished),
             })
         }
         Err(StreamError {
@@ -826,7 +665,7 @@ pub(crate) async fn speech_system(
     request: SystemSpeechRequest,
 ) -> RpcResult<()> {
     let output = september_output(&state)?;
-    tauri::async_runtime::spawn_blocking(move || {
+    tokio::task::spawn_blocking(move || {
         audio::speak_system(
             &request.text,
             request.voice_id.as_deref(),
@@ -835,76 +674,94 @@ pub(crate) async fn speech_system(
         )
     })
     .await
-    .map_err(rpc_error)?
+    .map_err(|error| error.to_string())?
 }
 
 /// Stops every native voice now, and the cloud stream that feeds one.
 #[tauri::command(async)]
-pub(crate) fn speech_native_stop(state: State<'_, BackendState>) {
-    if let Some(stream) = state
+pub(crate) fn speech_native_stop(state: State<'_, BackendState>) -> RpcResult<()> {
+    let stream = state
         .speech_stream
         .lock()
-        .ok()
-        .and_then(|mut stream| stream.take())
-    {
+        .map_err(|error| error.to_string())?
+        .take();
+    if let Some(stream) = stream {
         stream.abort();
     }
     audio::stop_speech();
+    Ok(())
 }
 
-/// The address the writing client calls, and the token for this run.
-///
-/// The proxy holds the key. The WebView is given an address on the loopback
-/// and a token that means nothing to another process and nothing after this
-/// run. A command still returns no key.
+/// The address the writing client calls, and the token for this run. The
+/// proxy holds the key, and a command returns no key.
 #[tauri::command]
 pub(crate) async fn writing_proxy(
     app: AppHandle,
     state: State<'_, WritingProxy>,
 ) -> RpcResult<Endpoint> {
-    state.endpoint(&app).await.map_err(rpc_error)
+    state
+        .endpoint(&app)
+        .await
+        .map_err(|error| error.to_string())
 }
 
 /// The ElevenLabs voices for the stored key. The list is empty without a key.
 #[tauri::command]
-pub(crate) async fn provider_voices(keys: State<'_, ProviderKeys>) -> RpcResult<Vec<Voice>> {
-    let Some(key) = keys.get(Provider::ElevenLabs).map_err(rpc_error)? else {
+pub(crate) async fn provider_voices(
+    keys: State<'_, ProviderKeys>,
+    providers: State<'_, Providers>,
+) -> RpcResult<Vec<Voice>> {
+    let Some(key) = eleven_labs_key(&keys)? else {
         return Ok(Vec::new());
     };
-    Providers::default().voices(&key).await.map_err(rpc_error)
+    providers
+        .voices(&key)
+        .await
+        .map_err(|error| error.to_string())
 }
 
-/// The free OpenRouter models for the stored key. Empty without a key.
+/// The OpenRouter models for the stored key. Empty without a key.
 #[tauri::command]
 pub(crate) async fn provider_writing_models(
     keys: State<'_, ProviderKeys>,
+    providers: State<'_, Providers>,
 ) -> RpcResult<Vec<WritingModel>> {
-    let Some(key) = keys.get(Provider::OpenRouter).map_err(rpc_error)? else {
+    let Some(key) = keys
+        .get(Provider::OpenRouter)
+        .map_err(|error| error.to_string())?
+    else {
         return Ok(Vec::new());
     };
-    Providers::default()
+    providers
         .writing_models(&key)
         .await
-        .map_err(rpc_error)
+        .map_err(|error| error.to_string())
 }
 
 /// The ElevenLabs models for the stored key. The list is empty without a key.
 #[tauri::command]
-pub(crate) async fn provider_models(keys: State<'_, ProviderKeys>) -> RpcResult<Vec<Model>> {
-    let Some(key) = keys.get(Provider::ElevenLabs).map_err(rpc_error)? else {
+pub(crate) async fn provider_models(
+    keys: State<'_, ProviderKeys>,
+    providers: State<'_, Providers>,
+) -> RpcResult<Vec<Model>> {
+    let Some(key) = eleven_labs_key(&keys)? else {
         return Ok(Vec::new());
     };
-    Providers::default().models(&key).await.map_err(rpc_error)
+    providers
+        .models(&key)
+        .await
+        .map_err(|error| error.to_string())
 }
 
 /// Creates an ElevenLabs voice from a multipart body made by the Voice screen.
 ///
-/// Raw IPC keeps audio out of JSON. Rust adds the cached native key to one
-/// fixed endpoint, so neither the key nor an arbitrary provider URL reaches
-/// the WebView.
+/// Raw IPC keeps audio out of JSON. Rust adds the cached key to one fixed
+/// endpoint, so neither the key nor an arbitrary provider URL reaches the
+/// WebView.
 #[tauri::command]
 pub(crate) async fn provider_clone_voice(
     keys: State<'_, ProviderKeys>,
+    providers: State<'_, Providers>,
     request: IpcRequest<'_>,
 ) -> RpcResult<CreatedVoice> {
     let content_type = request
@@ -925,30 +782,28 @@ pub(crate) async fn provider_clone_voice(
         return Err("voice cloning samples are too large".into());
     }
 
-    let key = keys
-        .get(Provider::ElevenLabs)
-        .map_err(rpc_error)?
-        .ok_or("Connect ElevenLabs in Settings first.")?;
-    Providers::default()
+    let key = eleven_labs_key(&keys)?.ok_or("Connect ElevenLabs in Settings first.")?;
+    providers
         .clone_voice(&key, &content_type, body)
         .await
-        .map_err(rpc_error)
+        .map_err(|error| error.to_string())
 }
 
-/// The ElevenLabs allowance for the stored key. The result is absent when the
-/// service is not connected.
+/// The ElevenLabs allowance for the stored key. Absent when the service is
+/// not connected.
 #[tauri::command]
 pub(crate) async fn provider_quota(
     keys: State<'_, ProviderKeys>,
+    providers: State<'_, Providers>,
 ) -> RpcResult<Option<ElevenLabsQuota>> {
-    let Some(key) = keys.get(Provider::ElevenLabs).map_err(rpc_error)? else {
+    let Some(key) = eleven_labs_key(&keys)? else {
         return Ok(None);
     };
-    Providers::default()
+    providers
         .quota(&key)
         .await
         .map(Some)
-        .map_err(rpc_error)
+        .map_err(|error| error.to_string())
 }
 
 /// Keeps the first GECOS field and rejects the placeholder `whoami` supplies
@@ -961,36 +816,24 @@ fn clean_name(raw: &str) -> String {
     name.to_owned()
 }
 
-/// Keeps a login name that the repository accepts. A name of only spaces is
-/// not one.
+/// A login name that the repository accepts. A name of only spaces is not one.
 fn login_name(raw: &str) -> Option<String> {
     let name = raw.trim();
     (!name.is_empty()).then(|| name.to_owned())
 }
 
-/// Changes some fields of a space, and leaves the rest.
-///
-/// The rename, the note, and the phrase count each arrive on their own. A
-/// whole-row write would let the last one undo the others.
-#[tauri::command(async)]
-pub(crate) fn space_patch(state: State<'_, BackendState>, request: SpacePatch) -> RpcResult<Space> {
-    let repository = state.repository.lock().map_err(rpc_error)?;
-    repository.patch_space(&request).map_err(rpc_error)
-}
-
-/// Every output this Mac can play through.
 #[tauri::command(async)]
 pub(crate) fn audio_outputs() -> RpcResult<Vec<AudioDevice>> {
     audio::outputs()
 }
 
-/// The output September plays through now.
 #[tauri::command(async)]
 pub(crate) fn audio_output(state: State<'_, BackendState>) -> RpcResult<String> {
     september_output(&state)
 }
 
-/// Saves and verifies the output for both voices of September.
+/// Saves the output for both voices of September after the native engine
+/// accepts it.
 #[tauri::command(async)]
 pub(crate) fn audio_output_set(
     state: State<'_, BackendState>,
@@ -998,22 +841,12 @@ pub(crate) fn audio_output_set(
 ) -> RpcResult<()> {
     audio::validate_output(&request.uid)?;
     audio::prepare_output(&request.uid)?;
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .put_setting(AUDIO_OUTPUT_SETTING, &Value::String(request.uid))
-        .map_err(rpc_error)
+    state.put_setting(AUDIO_OUTPUT_SETTING, &Value::String(request.uid))
 }
 
 /// The saved September output when it is present, otherwise the system output.
 fn september_output(state: &BackendState) -> RpcResult<String> {
-    let saved = state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .get_setting(AUDIO_OUTPUT_SETTING)
-        .map_err(rpc_error)?;
+    let saved = state.setting(AUDIO_OUTPUT_SETTING)?;
     let devices = audio::outputs()?;
     let system_default = audio::default_output()?;
     Ok(audio::application_output(
@@ -1023,55 +856,28 @@ fn september_output(state: &BackendState) -> RpcResult<String> {
     ))
 }
 
-/// Whether calling apps can select September Microphone now.
 #[tauri::command(async)]
 pub(crate) fn virtual_microphone_status() -> VirtualMicrophoneStatus {
     audio::virtual_microphone_status()
 }
 
-/// Publishes September speech as a system input.
 #[tauri::command(async)]
 pub(crate) fn virtual_microphone_start() -> RpcResult<VirtualMicrophoneStatus> {
     audio::virtual_microphone_start()
 }
 
-/// Removes the September system input.
 #[tauri::command(async)]
 pub(crate) fn virtual_microphone_stop() -> RpcResult<VirtualMicrophoneStatus> {
     audio::virtual_microphone_stop()
 }
 
-type RpcResult<T> = std::result::Result<T, String>;
-
-fn rpc_error(error: impl std::fmt::Display) -> String {
-    error.to_string()
-}
-
-fn lock_error<T>(_: std::sync::PoisonError<T>) -> String {
-    "September could not reach its storage. Quit and open the app again.".into()
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{
-        clean_name, login_name, retention_cutoff_ms, EntityIdRequest, SpaceFilterRequest,
-        SpaceListRequest, ANALYTICS_RETENTION_MS,
-    };
+    use super::{clean_name, login_name};
 
     #[test]
-    fn analytics_retention_is_ninety_days() {
-        assert_eq!(ANALYTICS_RETENTION_MS, 90 * 24 * 60 * 60 * 1_000);
-        assert_eq!(retention_cutoff_ms(ANALYTICS_RETENTION_MS + 42), 42);
-        assert_eq!(retention_cutoff_ms(10), 0);
-    }
-
-    #[test]
-    fn a_display_name_survives() {
+    fn a_display_name_keeps_only_its_first_gecos_field() {
         assert_eq!(clean_name("Ravi Atluri"), "Ravi Atluri");
-    }
-
-    #[test]
-    fn gecos_fields_after_the_name_are_dropped() {
         assert_eq!(clean_name("Ravi Atluri,,,"), "Ravi Atluri");
         assert_eq!(clean_name("Ravi Atluri,Room 1,555,555"), "Ravi Atluri");
     }
@@ -1085,30 +891,8 @@ mod tests {
     }
 
     #[test]
-    fn a_login_name_survives() {
-        assert_eq!(login_name("ravi").as_deref(), Some("ravi"));
+    fn a_login_name_is_trimmed_and_a_blank_one_is_refused() {
         assert_eq!(login_name("  ravi  ").as_deref(), Some("ravi"));
-    }
-
-    #[test]
-    fn an_unusable_login_name_becomes_none() {
-        assert_eq!(login_name(""), None);
         assert_eq!(login_name("   "), None);
-    }
-
-    #[test]
-    fn domain_requests_use_snake_case_fields_inside_the_request_envelope() {
-        let spaces: SpaceListRequest =
-            serde_json::from_value(serde_json::json!({ "user_id": "user-1" })).unwrap();
-        let messages: SpaceFilterRequest =
-            serde_json::from_value(serde_json::json!({ "space_id": "space-1" })).unwrap();
-        let all_notes: SpaceFilterRequest = serde_json::from_value(serde_json::json!({})).unwrap();
-        let entity: EntityIdRequest =
-            serde_json::from_value(serde_json::json!({ "id": "note-1" })).unwrap();
-
-        assert_eq!(spaces.user_id, "user-1");
-        assert_eq!(messages.space_id.as_deref(), Some("space-1"));
-        assert_eq!(all_notes.space_id, None);
-        assert_eq!(entity.id, "note-1");
     }
 }

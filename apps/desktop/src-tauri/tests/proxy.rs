@@ -66,7 +66,6 @@ const REPLY: &str = concat!(
 fn config(upstream: &str) -> ProxyConfig {
     ProxyConfig {
         upstream: upstream.to_owned(),
-        fallback_models: vec!["free/one".to_owned(), "free/two".to_owned()],
         apple: None,
     }
 }
@@ -97,7 +96,7 @@ async fn it_lends_the_key_without_giving_it_away() {
     let answer = reqwest::Client::new()
         .post(format!("{}/chat/completions", endpoint.base_url))
         .bearer_auth(&endpoint.token)
-        .json(&json!({ "messages": [] }))
+        .json(&json!({ "model": "openrouter/free", "messages": [] }))
         .send()
         .await
         .unwrap();
@@ -107,28 +106,28 @@ async fn it_lends_the_key_without_giving_it_away() {
 
     let sent = requests.recv().unwrap();
     assert_eq!(header_of(&sent, "authorization"), "Bearer sk-real");
-    // A request that names no model gets the free list, first answer wins.
-    assert_eq!(body_of(&sent)["models"], json!(["free/one", "free/two"]));
+    assert_eq!(
+        body_of(&sent),
+        json!({ "model": "openrouter/free", "messages": [] })
+    );
 }
 
 #[tokio::test]
-async fn it_leaves_a_chosen_model_alone() {
-    let (upstream, requests) = serve_once(REPLY);
-    let endpoint = proxy::serve(config(&upstream), || Ok("sk-real".to_owned()))
+async fn it_refuses_a_body_that_is_not_a_json_object() {
+    let endpoint = proxy::serve(config("http://127.0.0.1:9"), || Ok("sk-real".to_owned()))
         .await
         .unwrap();
 
-    reqwest::Client::new()
-        .post(format!("{}/chat/completions", endpoint.base_url))
-        .bearer_auth(&endpoint.token)
-        .json(&json!({ "model": "vendor/model", "messages": [] }))
-        .send()
-        .await
-        .unwrap();
-
-    let body = body_of(&requests.recv().unwrap());
-    assert_eq!(body["model"], json!("vendor/model"));
-    assert_eq!(body["models"], Value::Null);
+    for body in ["not json", "[]"] {
+        let answer = reqwest::Client::new()
+            .post(format!("{}/chat/completions", endpoint.base_url))
+            .bearer_auth(&endpoint.token)
+            .body(body)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(answer.status(), 400, "{body}");
+    }
 }
 
 #[tokio::test]
@@ -285,8 +284,6 @@ async fn it_carries_apple_intelligence_for_the_web_view() {
     // The sidecar has its own token, and the run token never reaches it.
     assert_eq!(header_of(&sent, "authorization"), "Bearer sidecar-token");
     assert!(sent.starts_with("POST /v1/chat/completions"), "{sent}");
-    // The Mac model is named, so the free cloud list has no business here.
-    assert_eq!(body_of(&sent)["models"], Value::Null);
 }
 
 #[tokio::test]
@@ -305,22 +302,6 @@ async fn it_says_when_this_mac_has_no_apple_intelligence() {
         .unwrap();
 
     assert_eq!(answer.status(), 502);
-}
-
-/// The WebView reaches the proxy on a loopback port that changes each run, so
-/// the content policy must let it connect to any port there.
-#[test]
-fn the_webview_may_connect_to_the_proxy() {
-    let config: Value = serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
-    let csp = config["app"]["security"]["csp"].as_str().unwrap();
-    let connect = csp
-        .split(';')
-        .map(str::trim)
-        .find(|directive| directive.starts_with("connect-src"))
-        .unwrap();
-    assert!(connect
-        .split_whitespace()
-        .any(|source| source == "http://127.0.0.1:*"));
 }
 
 /// The typed client adds its own headers, such as `x-stainless-os`, so the

@@ -230,7 +230,7 @@ async fn an_empty_eleven_labs_quota_is_an_error() {
 }
 
 #[tokio::test]
-async fn the_voice_list_asks_the_way_the_web_app_asks() {
+async fn the_voice_list_holds_the_voices_of_the_account() {
     let (base, requests) = serve_once(
         "200 OK",
         json!({ "voices": [
@@ -241,20 +241,20 @@ async fn the_voice_list_asks_the_way_the_web_app_asks() {
 
     let voices = eleven_labs(&base).voices("xi-test").await.unwrap();
 
-    // The web app asks the v2 list, and leaves out the stock voices.
     let head = requests.recv().unwrap();
     assert!(head.contains("GET /v2/voices"), "{head}");
     assert!(head.contains("voice_type=non-default"), "{head}");
     assert!(head.contains("page_size=100"), "{head}");
 
-    // A voice that the user made comes before a stock voice.
-    assert_eq!(voices.len(), 2);
-    assert_eq!(voices[0].name, "River");
-    assert_eq!(voices[1].name, "Rachel");
-    assert_eq!(voices[0].preview_url, None);
     assert_eq!(
-        voices[1].preview_url.as_deref(),
-        Some("https://storage.googleapis.com/rachel.mp3")
+        voices
+            .iter()
+            .map(|voice| (voice.id.as_str(), voice.preview_url.as_deref()))
+            .collect::<Vec<_>>(),
+        vec![
+            ("21m", Some("https://storage.googleapis.com/rachel.mp3")),
+            ("AZn", None)
+        ]
     );
 }
 
@@ -321,7 +321,7 @@ async fn an_unreachable_service_is_not_a_rejected_key() {
 
 use base64::Engine as _;
 use futures_util::{SinkExt, StreamExt};
-use september_desktop_lib::speech::SpeechSettings;
+use september_desktop_lib::speech::VoiceSettings;
 use std::time::Duration;
 use tokio_tungstenite::tungstenite::{
     handshake::server::{Request, Response},
@@ -336,12 +336,10 @@ struct VoiceCall {
     messages: Vec<Value>,
 }
 
-fn voice_settings() -> SpeechSettings {
-    SpeechSettings {
-        provider: "elevenlabs".into(),
-        voice_id: Some("voice-1".into()),
-        model_id: "eleven_turbo_v2_5".into(),
-        dialogue_model_id: None,
+fn voice_settings() -> VoiceSettings {
+    VoiceSettings {
+        voice_id: "voice-1".into(),
+        model_id: "eleven_flash_v2_5".into(),
         stability: 0.5,
         similarity: 0.75,
         speed: 1.0,
@@ -358,6 +356,8 @@ fn sound(bytes: &[u8]) -> Message {
 }
 
 /// Accepts one socket, reads three messages, then sends the replies.
+// The handshake callback of tungstenite returns its large error type.
+#[allow(clippy::result_large_err)]
 async fn serve_voice(replies: Vec<Message>) -> (String, tokio::sync::oneshot::Receiver<VoiceCall>) {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let address = listener.local_addr().unwrap();
@@ -436,6 +436,7 @@ async fn an_mp3_from_before_the_stream_is_played_again() {
         &voice_settings(),
         "Hello",
         None,
+        None,
         &unreachable(),
         |_| {},
     )
@@ -455,6 +456,7 @@ async fn an_eleven_labs_sentence_plays_an_mp3_file_from_http() {
         &directory,
         &voice_settings(),
         "Hello",
+        None,
         Some("xi-test"),
         &eleven_labs(&base),
         |_| panic!("the ElevenLabs voice plays a file"),
@@ -483,6 +485,7 @@ async fn a_refused_eleven_labs_sentence_has_not_started() {
         &directory,
         &voice_settings(),
         "Hello",
+        None,
         Some("wrong"),
         &eleven_labs(&base),
         |_| {},
@@ -510,6 +513,7 @@ async fn an_eleven_labs_file_that_does_not_arrive_in_time_has_not_started() {
         &directory,
         &voice_settings(),
         "Hello",
+        None,
         Some("xi-test"),
         &eleven_labs(&base).first_audio_within(Duration::from_millis(100)),
         |_| {},
@@ -528,12 +532,16 @@ async fn an_eleven_labs_file_that_does_not_arrive_in_time_has_not_started() {
 
 // ------------------------------------------------------ the dialogue voice
 
-fn dialogue_settings() -> SpeechSettings {
-    SpeechSettings {
-        provider: "dialogue".into(),
-        stability: 0.1,
+fn dialogue_settings() -> VoiceSettings {
+    VoiceSettings {
+        model_id: "eleven_v3".into(),
+        stability: 0.0,
         ..voice_settings()
     }
+}
+
+fn parts(text: &str) -> Vec<String> {
+    vec![text.to_owned()]
 }
 
 fn dialogue_sound(bytes: &[u8]) -> String {
@@ -629,9 +637,12 @@ async fn a_dialogue_stream_sends_the_sentence_to_eleven_v3_and_returns_the_sampl
     let mut samples = Vec::new();
 
     eleven_labs(&base)
-        .speak_dialogue_stream("xi-test", &dialogue_settings(), "[laughs] Hello", |chunk| {
-            samples.extend_from_slice(chunk)
-        })
+        .speak_dialogue(
+            "xi-test",
+            &dialogue_settings(),
+            &parts("[laughs] Hello"),
+            |chunk| samples.extend_from_slice(chunk),
+        )
         .await
         .unwrap();
 
@@ -669,7 +680,7 @@ async fn a_dialogue_sample_split_between_chunks_arrives_whole() {
     let mut samples = Vec::new();
 
     eleven_labs(&base)
-        .speak_dialogue_stream("xi-test", &dialogue_settings(), "Hi", |chunk| {
+        .speak_dialogue("xi-test", &dialogue_settings(), &parts("Hi"), |chunk| {
             samples.extend_from_slice(chunk)
         })
         .await
@@ -683,7 +694,7 @@ async fn a_refused_dialogue_key_is_rejected() {
     let (base, _requests) = serve_dialogue("401 Unauthorized", vec!["{}".into()], 1, false).await;
 
     let error = eleven_labs(&base)
-        .speak_dialogue_stream("wrong", &dialogue_settings(), "Hi", |_| {})
+        .speak_dialogue("wrong", &dialogue_settings(), &parts("Hi"), |_| {})
         .await
         .unwrap_err();
 
@@ -696,7 +707,7 @@ async fn a_dialogue_that_sends_no_sound_in_time_is_an_error() {
 
     let result = eleven_labs(&base)
         .first_audio_within(Duration::from_millis(100))
-        .speak_dialogue_stream("xi-test", &dialogue_settings(), "Hi", |_| {})
+        .speak_dialogue("xi-test", &dialogue_settings(), &parts("Hi"), |_| {})
         .await;
 
     assert!(result.is_err());
@@ -714,7 +725,7 @@ async fn a_dialogue_that_breaks_after_the_first_sound_is_an_error() {
     let mut samples = Vec::new();
 
     let result = eleven_labs(&base)
-        .speak_dialogue_stream("xi-test", &dialogue_settings(), "Hi", |chunk| {
+        .speak_dialogue("xi-test", &dialogue_settings(), &parts("Hi"), |chunk| {
             samples.extend_from_slice(chunk)
         })
         .await;
@@ -734,6 +745,7 @@ async fn a_complete_dialogue_is_kept_as_a_wav_file_and_played_again() {
         &directory,
         &dialogue_settings(),
         "Hello",
+        Some(&parts("Hello")),
         Some("xi-test"),
         &eleven_labs(&base),
         |chunk| samples.extend_from_slice(chunk),
@@ -752,6 +764,7 @@ async fn a_complete_dialogue_is_kept_as_a_wav_file_and_played_again() {
         &directory,
         &dialogue_settings(),
         "Hello",
+        Some(&parts("Hello")),
         Some("xi-test"),
         &unreachable(),
         |_| panic!("a kept sentence needs no request"),
@@ -772,6 +785,7 @@ async fn a_dialogue_that_ends_without_sound_has_not_started() {
         &directory,
         &dialogue_settings(),
         "Hello",
+        Some(&parts("Hello")),
         Some("xi-test"),
         &eleven_labs(&base),
         |_| {},
@@ -797,6 +811,7 @@ async fn a_long_dialogue_goes_in_parts_one_request_after_the_other() {
         &directory,
         &dialogue_settings(),
         &text,
+        Some(&[first.clone(), "The last sentence.".to_owned()]),
         Some("xi-test"),
         &eleven_labs(&base),
         |chunk| samples.extend_from_slice(chunk),
@@ -812,9 +827,9 @@ async fn a_long_dialogue_goes_in_parts_one_request_after_the_other() {
     std::fs::remove_dir_all(&directory).ok();
 }
 
-fn conversational_settings() -> SpeechSettings {
-    SpeechSettings {
-        dialogue_model_id: Some("eleven_v3_conversational".into()),
+fn conversational_settings() -> VoiceSettings {
+    VoiceSettings {
+        model_id: "eleven_v3_conversational".into(),
         ..dialogue_settings()
     }
 }
@@ -838,7 +853,7 @@ async fn a_conversational_dialogue_uses_the_dialogue_socket() {
     let mut samples = Vec::new();
 
     eleven_labs(&base)
-        .speak_dialogue_socket(
+        .speak_dialogue(
             "xi-test",
             &conversational_settings(),
             &["[laughs] Hello".to_owned()],
@@ -874,7 +889,7 @@ async fn a_conversational_dialogue_error_is_an_error() {
     .await;
 
     let error = eleven_labs(&base)
-        .speak_dialogue_socket(
+        .speak_dialogue(
             "xi-test",
             &conversational_settings(),
             &["Hi".to_owned()],
@@ -895,6 +910,7 @@ async fn a_conversational_dialogue_is_kept_apart_from_eleven_v3() {
         &directory,
         &conversational_settings(),
         "Hello",
+        Some(&parts("Hello")),
         Some("xi-test"),
         &eleven_labs(&base),
         |_| {},

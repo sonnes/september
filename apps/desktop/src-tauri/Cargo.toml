@@ -38,6 +38,15 @@ cidre = { version = "0.22.1", default-features = false, features = ["av", "dispa
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
+# The window test opens real windows, so it runs only when named:
+# `cargo test --test window_state`.
 [[test]]
 name = "window_state"
 harness = false
+test = false
+
+# The microphone test publishes a system input device, so it runs only when
+# named: `cargo test --test virtual_microphone`.
+[[test]]
+name = "virtual_microphone"
+test = false

@@ -543,7 +543,9 @@ pub fn play_speech_file(sentence: i64, path: &Path, output_uid: &str) -> Result<
             native_result(status, &error).unwrap_err(),
         )),
         -3 => {
-            let _ = std::fs::remove_file(path);
+            if let Err(removal) = std::fs::remove_file(path) {
+                eprintln!("[audio] could not remove a voice file that is not audio: {removal}");
+            }
             native_result(status, &error).map(|()| Played::Whole)
         }
         _ => native_result(status, &error).map(|()| Played::Whole),
