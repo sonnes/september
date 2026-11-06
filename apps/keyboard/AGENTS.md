@@ -133,9 +133,10 @@ only what needs a running app — the panel, the event sink, the menu bar.
 - `ImageRenderer` draws an AppKit view (`NSViewRepresentable`) as a yellow
   box. A view that holds one leaves it out when `isSnapshot` is true, as the
   grip does with its drag area.
-- A floating window moves only by its grip. The grip calls `performDrag`, so a
-  window that never becomes key moves too. `isMovableByWindowBackground` is
-  off, so a press on a key never moves the window.
+- A floating window moves only by its grip. The grip moves the window from its
+  own mouse events, so a window that never becomes key moves too.
+  `isMovableByWindowBackground` is off, so a press on a key never moves the
+  window.
 - `ImageRenderer` puts a grey layer over the whole view when the view holds
   an app icon from `NSWorkspace`. Draw the icon into a small bitmap first
   with `tabIcon()`.
@@ -143,6 +144,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
   it, so `NSApp.activate()` alone leaves a new window behind the app in front.
 - `make run` and `make dev` show the keyboard on the screen of the user. Stop
   it with `make stop` when the check is done.
+- Do not test with the pointer of the user. To press, hold, or drag, use the
+  QA hook of debug builds (README, "Test the keys without the pointer"). To
+  read the keyboard or press through `AXPress`, use headless agent-desktop.
 - The keyboard window, the tree viewer, and the default places of the shortcut
   panels share the bottom margin of the screen. The keys and the panels
   centre in the space left after `reservedWidth`. `PanelPlacement` puts the
