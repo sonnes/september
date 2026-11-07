@@ -20,6 +20,7 @@ pressTests()
 contextProbeTests()
 screenContextTests()
 talkHistoryTests()
+clipboardTests()
 #if DEBUG
 #endif
 summarize()

@@ -14,6 +14,7 @@ func integrationTests() async {
     placementTests()
     inputBarTests()
     await sessionTests()
+    await clipboardSessionTests()
     await panelHeightTests()
     activationTests()
 }
@@ -326,13 +327,16 @@ private struct SessionParts {
     let userPanel: UserPanelStore?
     let clock: FakeClock
     let completer: CupCompleter
+    let pasteboard: MemoryPasteboard
+    let clipboard: ClipboardHistory
 }
 
 @MainActor
 private func makeSession(
     userPanel: Result<UserPanelStore, any Error>? = nil,
     voiceHolds: Bool = false,
-    predictor: any SentencePredicting = SilentPredictor()
+    predictor: any SentencePredicting = SilentPredictor(),
+    pasteboard: MemoryPasteboard = MemoryPasteboard()
 ) throws -> SessionParts {
     let (controller, sink) = try makeController()
     let defaults = UserDefaults(suiteName: "kit-integration-\(UUID().uuidString)")!
@@ -359,14 +363,17 @@ private func makeSession(
                 privateTexts: MemoryPrivateTexts())
         }
     let clock = FakeClock()
+    let clipboard = ClipboardHistory(defaults: defaults)
     let session = KeyboardSession(
         controller: controller, predictions: engine, speaker: speaker, appPanels: appPanels,
         userPanel: store,
         userPanelUsage: UsageStore(fileURL: folder.appendingPathComponent("my-panel-usage.json")),
-        inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25))
+        inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25),
+        clipboard: clipboard, pasteboard: pasteboard)
     return SessionParts(
         session: session, controller: controller, sink: sink, voice: voice,
-        userPanel: try? store.get(), clock: clock, completer: completer)
+        userPanel: try? store.get(), clock: clock, completer: completer,
+        pasteboard: pasteboard, clipboard: clipboard)
 }
 
 private struct SilentPredictor: SentencePredicting {
@@ -857,5 +864,145 @@ private func activationTests() {
         activation.windowClosed(window)
         activation.appBecameActive(keyWindow: nil)
         expectEqual(window.events, ["front"])
+    }
+}
+
+// MARK: - The clipboard
+
+@MainActor
+private func clipboardSessionTests() async {
+    let command = Modifiers.command
+    let commandKey: UInt16 = 55
+    /// The keys of the chords that the sink got, without the Command key.
+    func chordKeys(_ sink: RecordingSink) -> [UInt16] {
+        sink.downs.map(\.key).filter { $0 != commandKey }
+    }
+
+    await asyncTest("History opens in the place of the predictions and a second press closes it") {
+        let parts = try makeSession()
+        expect(!parts.session.isHistoryOpen)
+        parts.session.toggleHistory()
+        expect(parts.session.isHistoryOpen)
+        parts.session.toggleHistory()
+        expect(!parts.session.isHistoryOpen)
+    }
+
+    await asyncTest("a copied text in Type mode goes on the clipboard and is pasted with Command-V") {
+        let parts = try makeSession()
+        parts.clipboard.add("Ward 7, bed 12")
+        parts.clipboard.add("14 Elm Road")
+        parts.session.toggleHistory()
+        parts.sink.reset()
+        let ward = try expectValue(parts.clipboard.items.last)
+        parts.session.pasteClip(ward)
+        expectEqual(parts.pasteboard.string(), "Ward 7, bed 12")
+        expectEqual(chordKeys(parts.sink), [9])
+        expectEqual(parts.sink.downs.last?.flags, command)
+        expectEqual(parts.clipboard.items.map(\.text), ["Ward 7, bed 12", "14 Elm Road"])
+        expect(!parts.session.isHistoryOpen, "a paste closes the history")
+    }
+
+    await asyncTest("a copied text in Talk mode goes into the Talk bar") {
+        let parts = try makeSession()
+        parts.controller.mode = .talk
+        parts.controller.talk.type("The address is ")
+        parts.clipboard.add("14 Elm Road")
+        parts.session.toggleHistory()
+        parts.sink.reset()
+        parts.session.pasteClip(try expectValue(parts.clipboard.items.first))
+        expectEqual(parts.controller.talk.text, "The address is 14 Elm Road")
+        expect(parts.sink.posted.isEmpty, "Talk mode sends no events to the app in front")
+        expect(!parts.session.isHistoryOpen)
+    }
+
+    await asyncTest("Cut, Copy, and Paste press Command-X, Command-C, and Command-V in Type mode") {
+        let parts = try makeSession()
+        parts.session.cut()
+        parts.session.copy()
+        parts.session.paste()
+        expectEqual(chordKeys(parts.sink), [7, 8, 9])
+        expect(parts.sink.downs.filter { $0.key != commandKey }.allSatisfy { $0.flags == command })
+    }
+
+    await asyncTest("in Talk mode Copy copies the Talk text, Cut also clears it, and Paste types the clipboard") {
+        let parts = try makeSession()
+        parts.controller.mode = .talk
+        parts.controller.talk.type("Good morning")
+        parts.session.copy()
+        expectEqual(parts.pasteboard.string(), "Good morning")
+        expectEqual(parts.controller.talk.text, "Good morning")
+        parts.controller.talk.type(", nurse")
+        parts.session.cut()
+        expectEqual(parts.pasteboard.string(), "Good morning, nurse")
+        expectEqual(parts.controller.talk.text, "")
+        parts.session.paste()
+        parts.session.paste()
+        expectEqual(parts.controller.talk.text, "Good morning, nurseGood morning, nurse")
+        expect(parts.sink.posted.isEmpty)
+    }
+
+    await asyncTest("Cut and Copy are on only for a selection, an echo, or Talk text") {
+        let parts = try makeSession()
+        let session = parts.session
+        parts.controller.focusChanged(to: field("I am on the train", caret: 8))
+        await session.settle()
+        expect(!session.canCutOrCopy, "a caret with no selection")
+        parts.controller.focusChanged(to: field("I am on the train", caret: 8, selection: 9))
+        await session.settle()
+        expect(session.canCutOrCopy, "a selection")
+        parts.controller.focusChanged(to: nil)
+        await session.settle()
+        expect(session.canCutOrCopy, "the app shows no field, so the keyboard cannot tell")
+        parts.controller.focusChanged(
+            to: FocusedField(
+                appName: "Safari", role: "AXTextField", isEditable: true, isSecure: true, text: nil,
+                selection: nil))
+        await session.settle()
+        expect(!session.canCutOrCopy, "a password field")
+        parts.controller.mode = .talk
+        await session.settle()
+        expect(!session.canCutOrCopy, "an empty Talk bar")
+        parts.controller.talk.type("Hello")
+        await session.settle()
+        expect(session.canCutOrCopy)
+    }
+
+    await asyncTest("Paste is on only when the clipboard holds text") {
+        let pasteboard = MemoryPasteboard()
+        let parts = try makeSession(pasteboard: pasteboard)
+        expect(!parts.session.canPaste)
+        pasteboard.copy("Hello")
+        parts.session.pasteboardChanged()
+        expect(parts.session.canPaste)
+        pasteboard.copy(nil, types: ["public.png"])
+        parts.session.pasteboardChanged()
+        expect(!parts.session.canPaste)
+    }
+
+    await asyncTest("an app change and a mode change close the history") {
+        let parts = try makeSession()
+        parts.session.toggleHistory()
+        parts.session.appChanged(name: "Mail", bundleID: "com.apple.mail", windowTitle: nil)
+        expect(!parts.session.isHistoryOpen)
+        parts.session.toggleHistory()
+        parts.controller.mode = .talk
+        await parts.session.settle()
+        expect(!parts.session.isHistoryOpen)
+    }
+
+    await asyncTest("the history turns its pages and starts on the newest page when it opens") {
+        let parts = try makeSession()
+        for index in 0..<13 { parts.clipboard.add("Text \(index)") }
+        parts.session.toggleHistory()
+        expectEqual(parts.session.historyPage, 0)
+        parts.session.newerPage()
+        expectEqual(parts.session.historyPage, 0)
+        parts.session.olderPage()
+        parts.session.olderPage()
+        parts.session.olderPage()
+        expectEqual(parts.session.historyPage, 2)
+        parts.session.toggleHistory()
+        parts.session.toggleHistory()
+        expectEqual(parts.session.historyPage, 0)
     }
 }

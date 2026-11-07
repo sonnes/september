@@ -40,6 +40,19 @@ public final class KeyboardSession: ObservableObject {
     @Published public private(set) var mineButtons: [UserButton] = []
     /// Shows the input bar and the suggestions only when there is text input.
     public let inputBar: InputBarVisibility
+    /// The texts that the user copied.
+    public let clipboard: ClipboardHistory
+    /// The clipboard of macOS.
+    public let pasteboard: any Pasteboard
+    /// True while the clipboard history shows in the place of the predictions.
+    @Published public private(set) var isHistoryOpen = false
+    /// The page of the history that shows. Page 0 holds the newest texts.
+    @Published public private(set) var historyPage = 0
+    /// True when Cut and Copy have something to act on: a selection, an app
+    /// that shows no field, or text in the Talk bar.
+    @Published public private(set) var canCutOrCopy = true
+    /// True when the clipboard holds text.
+    @Published public private(set) var canPaste = false
     @Published private var isWriteInFront = false
     /// The bundle ID of the app in front.
     private var frontBundleID: String?
@@ -71,9 +84,13 @@ public final class KeyboardSession: ObservableObject {
         appPanels: AppPanelModel,
         userPanel: Result<UserPanelStore, any Error>,
         userPanelUsage: UsageStore,
-        inputBar: InputBarVisibility = InputBarVisibility()
+        inputBar: InputBarVisibility = InputBarVisibility(),
+        clipboard: ClipboardHistory = ClipboardHistory(),
+        pasteboard: any Pasteboard = MemoryPasteboard()
     ) {
         self.inputBar = inputBar
+        self.clipboard = clipboard
+        self.pasteboard = pasteboard
         self.controller = controller
         self.predictions = predictions
         self.speaker = speaker
@@ -97,6 +114,7 @@ public final class KeyboardSession: ObservableObject {
         controller.talk.onSpeak = { [weak self] in self?.predictions.submit() }
         rankUserPanel()
         observe()
+        pasteboardChanged()
         update()
     }
 
@@ -130,6 +148,90 @@ public final class KeyboardSession: ObservableObject {
         controller.perform(button)
     }
 
+    // MARK: - The clipboard
+
+    /// Shows the clipboard history in the place of the predictions, or the
+    /// predictions again. The history opens on its newest page.
+    public func toggleHistory() {
+        historyPage = 0
+        isHistoryOpen.toggle()
+    }
+
+    public func olderPage() {
+        historyPage = min(historyPage + 1, clipboard.pageCount - 1)
+    }
+
+    public func newerPage() {
+        historyPage = max(historyPage - 1, 0)
+    }
+
+    /// A press on a copied text. In Type mode the text goes on the clipboard
+    /// and Command-V pastes it into the app in front. In Talk mode the text
+    /// goes into the Talk bar. The history then closes.
+    public func pasteClip(_ item: ClipboardItem) {
+        isHistoryOpen = false
+        switch controller.mode {
+        case .type:
+            pasteboard.write(item.text)
+            clipboard.add(item.text)
+            pasteboardChanged()
+            controller.perform(.shortcut(Self.paste))
+        case .talk:
+            controller.talk.type(item.text)
+        }
+    }
+
+    /// Cut presses Command-X in Type mode. In Talk mode it copies the Talk
+    /// text and clears the bar.
+    public func cut() {
+        switch controller.mode {
+        case .type:
+            controller.perform(.shortcut(Self.cut))
+        case .talk:
+            copyTalkText()
+            controller.talk.clear()
+        }
+    }
+
+    /// Copy presses Command-C in Type mode. In Talk mode it copies the Talk
+    /// text.
+    public func copy() {
+        switch controller.mode {
+        case .type: controller.perform(.shortcut(Self.copy))
+        case .talk: copyTalkText()
+        }
+    }
+
+    /// Paste presses Command-V in Type mode. In Talk mode it types the text
+    /// of the clipboard into the Talk bar.
+    public func paste() {
+        switch controller.mode {
+        case .type:
+            controller.perform(.shortcut(Self.paste))
+        case .talk:
+            guard let text = pasteboard.string() else { return }
+            controller.talk.type(text)
+        }
+    }
+
+    /// The clipboard changed. Paste turns on or off.
+    public func pasteboardChanged() {
+        let hasText = pasteboard.string()?.isEmpty == false
+        if hasText != canPaste { canPaste = hasText }
+        if historyPage >= clipboard.pageCount { historyPage = clipboard.pageCount - 1 }
+    }
+
+    private static let cut = Shortcut(modifiers: .command, key: .character("x"))
+    private static let copy = Shortcut(modifiers: .command, key: .character("c"))
+    private static let paste = Shortcut(modifiers: .command, key: .character("v"))
+
+    private func copyTalkText() {
+        let text = controller.talk.text
+        guard !text.isEmpty else { return }
+        pasteboard.write(text)
+        pasteboardChanged()
+    }
+
     // MARK: - Speak
 
     /// Speak, or Stop during speech. In Type mode Speak reads the selection
@@ -161,6 +263,7 @@ public final class KeyboardSession: ObservableObject {
     /// then the app panel and My Panel take their new order.
     public func appChanged(name: String?, bundleID: String?, windowTitle: String?) {
         controller.appChanged(name: name, bundleID: bundleID)
+        isHistoryOpen = false
         isWriteInFront = bundleID == WritePanel.id
         frontBundleID = bundleID
         screen = nil
@@ -263,6 +366,11 @@ public final class KeyboardSession: ObservableObject {
                         isWriteInFront: isWriteInFront))
             }
             .store(in: &subscriptions)
+        controller.$mode
+            .dropFirst()
+            .removeDuplicates()
+            .sink { [weak self] _ in self?.isHistoryOpen = false }
+            .store(in: &subscriptions)
         // A button added in Settings shows at once. The user is in the Settings
         // window, not aiming at the panel.
         predictions.$screenEnabled
@@ -323,6 +431,20 @@ public final class KeyboardSession: ObservableObject {
         }
         let speakMode = SpeakButton.Mode(isSpeaking: isSpeaking, canSpeak: canSpeak)
         if speakMode != self.speakMode { self.speakMode = speakMode }
+
+        let canCutOrCopy: Bool
+        switch mode {
+        case .talk:
+            canCutOrCopy = !talk.text.isEmpty
+        case .type:
+            switch controller.input {
+            case .secure: canCutOrCopy = false
+            case .mirrored(_, _, let selectionLength): canCutOrCopy = selectionLength > 0
+            // The app shows no field, so the keyboard cannot see a selection.
+            case .local: canCutOrCopy = true
+            }
+        }
+        if canCutOrCopy != self.canCutOrCopy { self.canCutOrCopy = canCutOrCopy }
 
         let word = spokenWord(mode: mode)
         if word != spokenWord { spokenWord = word }

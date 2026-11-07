@@ -27,7 +27,9 @@ private let stubMap = KeyCodeMap { code, modifiers in
         0: ("a", "A"),
         1: ("s", "S"),
         6: ("z", "Z"),
+        7: ("x", "X"),
         8: ("c", "C"),
+        9: ("v", "V"),
         18: ("1", "!"),
     ]
     guard let entry = table[code] else { return nil }
