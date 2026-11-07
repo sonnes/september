@@ -39,7 +39,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Settings` | the Settings pages and `KeyboardSettings` |
 | `Sources/SeptemberKit/Write` | the document library, the editor bridge, `MarkdownSpeech` (the text that Speak reads), and `WritePlacement` (the frame where the window opens) of the Write window |
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, the keyboard screen, and the views of each part |
-| `Sources/SeptemberKit/Resources/Panels` | `edit`/`text`/`system`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
+| `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
 | `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ChordTap`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings and Write windows, snapshots |

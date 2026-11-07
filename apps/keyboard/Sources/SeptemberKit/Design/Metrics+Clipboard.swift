@@ -10,9 +10,6 @@ extension Metrics {
         /// The four buttons, as wide as the same number of mode buttons.
         public static let buttonsWidth: CGFloat =
             TopRow.modeCircle * CGFloat(buttonCount) + TopRow.modeSpacing * CGFloat(buttonCount - 1)
-        /// The input bar is shorter by the width of the buttons and their gap,
-        /// so the buttons and the bar together are as wide as the keys.
-        public static let barWidth: CGFloat = keyboardWidth - buttonsWidth - TopRow.spacing
 
         /// The history has the rows of the prediction stack, and two copied
         /// texts in each row.

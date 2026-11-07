@@ -10,15 +10,11 @@ import SwiftUI
 public struct InputBar: View {
     @EnvironmentObject private var controller: KeyboardController
     private let spokenWord: NSRange?
-    private let width: CGFloat
 
-    /// - Parameters:
-    ///   - spokenWord: during speech, the UTF-16 range of the current word in
-    ///     the text of the bar.
-    ///   - width: the width of the bar.
-    public init(spokenWord: NSRange? = nil, width: CGFloat = Metrics.keyboardWidth) {
+    /// - Parameter spokenWord: during speech, the UTF-16 range of the current
+    ///   word in the text of the bar.
+    public init(spokenWord: NSRange? = nil) {
         self.spokenWord = spokenWord
-        self.width = width
     }
 
     public var body: some View {
@@ -47,7 +43,7 @@ public struct InputBar: View {
             }
         }
         .padding(.horizontal, Metrics.Input.horizontalPadding)
-        .frame(width: width, height: Metrics.Input.height)
+        .frame(width: Metrics.keyboardWidth, height: Metrics.Input.height)
         .background(
             RoundedRectangle(cornerRadius: Metrics.Input.cornerRadius, style: .continuous)
                 .fill(Color(Tokens.key))

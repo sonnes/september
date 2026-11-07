@@ -243,27 +243,26 @@ private func placementTests() {
     let keys = CGRect(x: 1000, y: 24, width: 1000, height: 400)
     let panel = CGSize(width: 174, height: 340)
 
-    test("Text and Edit sit at the right of the keys, and System and the app panel at the left") {
+    test("Text sits at the right of the keys, and System and the app panel at the left") {
         let frames = PanelPlacement.defaultFrames(
-            keys: keys, sizes: [.edit: panel, .text: panel, .system: panel, .app: panel])
+            keys: keys, sizes: [.text: panel, .system: panel, .app: panel])
         let gap = Metrics.Detached.gap
         expectEqual(frames[.text]?.minX, keys.maxX + gap)
-        expectEqual(frames[.edit]?.minX, keys.maxX + gap * 2 + panel.width)
         expectEqual(frames[.system]?.maxX, keys.minX - gap)
         expectEqual(frames[.app]?.maxX, keys.minX - gap * 2 - panel.width)
-        expectEqual(frames[.edit]?.maxY, keys.maxY)
+        expectEqual(frames[.text]?.maxY, keys.maxY)
         expectEqual(frames[.app]?.maxY, keys.maxY)
     }
 
     test("arranging puts the panels around the keys where the keyboard is now") {
         let moved = keys.offsetBy(dx: -400, dy: 300)
-        let sizes: [DetachedPanel: CGSize] = [.edit: panel, .text: panel, .system: panel, .app: panel]
+        let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .app: panel]
         let frames = PanelPlacement.arrangedFrames(keys: moved, sizes: sizes, screen: screen)
         expectEqual(frames, PanelPlacement.defaultFrames(keys: moved, sizes: sizes))
     }
 
     test("arranging keeps every panel on the screen") {
-        let sizes: [DetachedPanel: CGSize] = [.edit: panel, .text: panel, .system: panel, .app: panel]
+        let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .app: panel]
         let atRight = CGRect(x: 1900, y: 1300, width: 1000, height: 400)
         let right = PanelPlacement.arrangedFrames(keys: atRight, sizes: sizes, screen: screen)
         for frame in right.values { expect(screen.contains(frame), "\(frame) is off the screen") }
@@ -274,9 +273,9 @@ private func placementTests() {
 
     test("the group of keys and panels is centred on the screen") {
         let origin = PanelPlacement.keysOrigin(
-            keysSize: keys.size, panels: [.edit: panel, .text: panel, .system: panel, .app: panel],
+            keysSize: keys.size, panels: [.text: panel, .system: panel, .app: panel],
             in: screen, rightInset: 0, margin: 24)
-        let group = panel.width * 4 + Metrics.Detached.gap * 4 + keys.width
+        let group = panel.width * 3 + Metrics.Detached.gap * 3 + keys.width
         expectEqual(origin.x, (screen.width - group) / 2 + (panel.width + Metrics.Detached.gap) * 2)
         expectEqual(origin.y, 24)
     }
@@ -313,6 +312,20 @@ private func placementTests() {
         expectEqual(type.x, talk.x + KeyboardScreen.keysInset(.talk) - KeyboardScreen.keysInset(.type))
         expectEqual(KeyboardPosition.windowOrigin(type, in: .talk), talk)
         expectEqual(KeyboardPosition.typeOrigin(of: talk, in: .type), talk)
+    }
+
+    test("the clipboard buttons fit at the left of the bar, and the keys stay in place in both modes") {
+        let reach = Metrics.Clipboard.buttonsWidth + Metrics.TopRow.spacing
+        for mode in [KeyboardMode.type, .talk] {
+            expect(KeyboardScreen.keysInset(mode) >= reach, "no room for the buttons in \(mode)")
+        }
+        let window = CGPoint(x: 100, y: 50)
+        let keys = KeyboardPosition.keysOrigin(ofWindow: window, in: .type)
+        expectEqual(keys.x, window.x + KeyboardScreen.cardInset(.type))
+        expectEqual(keys.y, window.y)
+        let talk = KeyboardPosition.windowOrigin(window, in: .talk)
+        expectEqual(KeyboardPosition.keysOrigin(ofWindow: talk, in: .talk), keys)
+        expectEqual(KeyboardPosition.typeWindowOrigin(forKeys: keys), window)
     }
 }
 
@@ -777,19 +790,19 @@ private func height(_ view: some View, controller: KeyboardController) -> CGFloa
 
 @MainActor
 private func panelHeightTests() async {
-    await asyncTest("the Text keypad, each app panel, and Mine are as tall as the Edit keypad") {
+    await asyncTest("the Text keypad, each app panel, and Mine are as tall as the System keypad") {
         let parts = try makeSession()
         let controller = parts.controller
-        let edit = height(KeypadCard(panel: controller.panels.edit), controller: controller)
-        expectEqual(height(KeypadCard(panel: controller.panels.text), controller: controller), edit, "Text")
+        let system = height(KeypadCard(panel: controller.panels.system), controller: controller)
+        expectEqual(height(KeypadCard(panel: controller.panels.text), controller: controller), system, "Text")
         let card = AppPanelCard(session: parts.session, appIcon: nil)
         let apps = controller.panels.appPanels.map(\.bundleID) + ["com.example.none"]
         for bundleID in apps {
             parts.session.appChanged(name: nil, bundleID: bundleID, windowTitle: nil)
-            expectEqual(height(card, controller: controller), edit, bundleID)
+            expectEqual(height(card, controller: controller), system, bundleID)
         }
         parts.session.appPanelTab = .mine
-        expectEqual(height(card, controller: controller), edit, "an empty Mine")
+        expectEqual(height(card, controller: controller), system, "an empty Mine")
         let store = try expectValue(parts.userPanel)
         for index in 0..<14 {
             try store.add(NewButton(
@@ -797,7 +810,7 @@ private func panelHeightTests() async {
         }
         try store.add(NewButton(name: "Hello", action: .text("Hello")))
         await parts.session.settle()
-        expectEqual(height(card, controller: controller), edit, "a full Mine")
+        expectEqual(height(card, controller: controller), system, "a full Mine")
     }
 }
 

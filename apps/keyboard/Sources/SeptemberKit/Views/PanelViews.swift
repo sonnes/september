@@ -15,7 +15,7 @@ struct SectionLabel: View {
     }
 }
 
-/// A keypad: the Edit, Text, and System keypads. Each button takes one cell
+/// A keypad: the Text and System keypads. Each button takes one cell
 /// of the grid. The arrows of a keypad, if it has them, sit below the grid
 /// in columns of their own.
 public struct PanelGridView: View {

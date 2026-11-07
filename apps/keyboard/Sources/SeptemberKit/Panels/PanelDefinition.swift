@@ -81,7 +81,7 @@ public struct PanelBlock: Sendable, Hashable {
     }
 }
 
-/// A grid of shortcut buttons: the Edit, Text, and System keypads, or the
+/// A grid of shortcut buttons: the Text and System keypads, or the
 /// shortcuts for the app in front.
 public struct PanelDefinition: Sendable, Hashable {
     public let title: String

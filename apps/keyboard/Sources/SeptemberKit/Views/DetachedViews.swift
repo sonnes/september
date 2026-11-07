@@ -93,7 +93,8 @@ private struct WindowDragArea: NSViewRepresentable {
     func updateNSView(_ view: DragView, context: Context) {}
 }
 
-/// A keypad in a window of its own: Edit, Text, or System.
+/// A keypad in a window of its own: Text or System. A keypad with three
+/// columns, or with arrows, is three buttons wide.
 public struct KeypadCard: View {
     @EnvironmentObject private var controller: KeyboardController
     private let panel: PanelDefinition
@@ -106,7 +107,8 @@ public struct KeypadCard: View {
         PanelCard {
             PanelGridView(
                 panel: panel,
-                width: panel.arrows == nil ? Metrics.AppPanel.width : Metrics.AppPanel.arrowsWidth
+                width: max(panel.columns, panel.arrows?.columns ?? 0) > 2
+                    ? Metrics.AppPanel.arrowsWidth : Metrics.AppPanel.width
             ) { controller.perform($0) }
         }
     }

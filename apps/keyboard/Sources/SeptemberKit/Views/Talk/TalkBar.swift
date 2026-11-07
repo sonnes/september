@@ -8,12 +8,10 @@ import SwiftUI
 public struct TalkBar: View {
     @ObservedObject private var talk: TalkSession
     private let speakingWord: NSRange?
-    private let width: CGFloat
 
-    public init(talk: TalkSession, speakingWord: NSRange? = nil, width: CGFloat = Metrics.keyboardWidth) {
+    public init(talk: TalkSession, speakingWord: NSRange? = nil) {
         self.talk = talk
         self.speakingWord = speakingWord
-        self.width = width
     }
 
     public var body: some View {
@@ -48,7 +46,7 @@ public struct TalkBar: View {
                 .accessibilityHidden(true)
         }
         .padding(.horizontal, Metrics.Input.horizontalPadding)
-        .frame(width: width, height: Metrics.Input.height)
+        .frame(width: Metrics.keyboardWidth, height: Metrics.Input.height)
         .background(
             RoundedRectangle(cornerRadius: Metrics.Input.cornerRadius, style: .continuous)
                 .fill(Color(Tokens.key))

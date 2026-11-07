@@ -85,8 +85,8 @@ public enum Metrics {
         /// The title of a keypad, such as "EDIT". The title and the gap under
         /// it are as tall as the tabs of the app panel and the gap under
         /// them. Then the buttons of the keypads and the app panel start at
-        /// the same height, and Edit, Text, and the app panel end at the same
-        /// height.
+        /// the same height, and System, Text, and the app panel end at the
+        /// same height.
         public static let titleHeight: CGFloat =
             Metrics.Detached.tabHeight + Metrics.Detached.tabsBottom - titleSpacing
         public static let appSpacing: CGFloat = 6

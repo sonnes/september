@@ -5,6 +5,10 @@ import SwiftUI
 /// and the keys with the word completions on top. History shows the
 /// clipboard history in the place of the prediction stack.
 ///
+/// The bar is as wide as the keys and sits over them. The clipboard buttons
+/// sit at the left of the bar, past the left edge of the keys, so the window
+/// has a clear space at the left of the keys card.
+///
 /// In Type mode the shortcut panels float in windows of their own. In Talk
 /// mode they hide, and Phrases and the Said list show at the left and the
 /// right of the keys.
@@ -34,8 +38,23 @@ public struct KeyboardScreen: View {
     }
 
     /// The distance from the left edge of the window to the keys and the
-    /// bar. The app keeps the keys in place when the mode changes.
+    /// bar. The clipboard buttons fit in this space. The app keeps the keys
+    /// in place when the mode changes.
     public static func keysInset(_ mode: KeyboardMode) -> CGFloat {
+        max(cardKeysInset(mode), clipboardReach)
+    }
+
+    /// The clear space at the left of the keys card in Type mode, or of the
+    /// Talk card in Talk mode, under the clipboard buttons.
+    public static func cardInset(_ mode: KeyboardMode) -> CGFloat {
+        keysInset(mode) - cardKeysInset(mode)
+    }
+
+    /// The clipboard buttons and the gap between them and the bar.
+    private static let clipboardReach = Metrics.Clipboard.buttonsWidth + Metrics.TopRow.spacing
+
+    /// The distance from the left edge of the card to the keys.
+    private static func cardKeysInset(_ mode: KeyboardMode) -> CGFloat {
         switch mode {
         case .type: Metrics.Detached.keysSidePadding
         case .talk: Metrics.surfacePadding + Metrics.Talk.phrasesWidth + Metrics.sectionSpacing
@@ -72,13 +91,16 @@ public struct KeyboardScreen: View {
                     arrange: arrange,
                     settings: settings)
             }
-            .padding(.leading, inset)
+            .padding(.leading, inset - Self.clipboardReach)
             .padding(.bottom, Metrics.TopRow.keysTop)
 
-            switch controller.mode {
-            case .type: typeKeys
-            case .talk: talkKeys
+            Group {
+                switch controller.mode {
+                case .type: typeKeys
+                case .talk: talkKeys
+                }
             }
+            .padding(.leading, Self.cardInset(controller.mode))
         }
     }
 
@@ -95,10 +117,9 @@ public struct KeyboardScreen: View {
 
     @ViewBuilder
     private var bar: some View {
-        let width = Metrics.Clipboard.barWidth
         switch controller.mode {
-        case .type: InputBar(spokenWord: session.spokenWord, width: width)
-        case .talk: TalkBar(talk: controller.talk, speakingWord: session.spokenWord, width: width)
+        case .type: InputBar(spokenWord: session.spokenWord)
+        case .talk: TalkBar(talk: controller.talk, speakingWord: session.spokenWord)
         }
     }
 

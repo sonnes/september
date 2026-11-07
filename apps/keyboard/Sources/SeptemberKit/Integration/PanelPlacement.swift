@@ -2,7 +2,6 @@ import Foundation
 
 /// The shortcut panels that float in windows of their own beside the keys.
 public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
-    case edit
     case text
     case system
     case app
@@ -14,14 +13,14 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
 }
 
 /// Where the panels sit until the user drags them: System and the app panel
-/// at the left of the keys, and Text and Edit at the right, with their tops
+/// at the left of the keys, and Text at the right, with their tops
 /// in line with the top of the keys. Frames use the coordinates of AppKit, with
 /// the origin at the bottom left.
 public enum PanelPlacement {
     /// The panels at the left of the keys, from the keys out.
     static let left: [DetachedPanel] = [.system, .app]
     /// The panels at the right of the keys, from the keys out.
-    static let right: [DetachedPanel] = [.text, .edit]
+    static let right: [DetachedPanel] = [.text]
 
     public static func defaultFrames(
         keys: CGRect, sizes: [DetachedPanel: CGSize]
@@ -148,6 +147,19 @@ public struct KeyboardPosition {
     /// The corner of the window in `mode` for the Type mode corner `origin`.
     public static func windowOrigin(_ origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
         CGPoint(x: origin.x - shift(mode), y: origin.y)
+    }
+
+    /// The bottom left corner of the keys card of a window at `origin` in
+    /// `mode`. The window reaches past the keys card at the left, for the
+    /// clipboard buttons.
+    public static func keysOrigin(ofWindow origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
+        let type = typeOrigin(of: origin, in: mode)
+        return CGPoint(x: type.x + KeyboardScreen.cardInset(.type), y: type.y)
+    }
+
+    /// The corner of the Type mode window whose keys card is at `keys`.
+    public static func typeWindowOrigin(forKeys keys: CGPoint) -> CGPoint {
+        CGPoint(x: keys.x - KeyboardScreen.cardInset(.type), y: keys.y)
     }
 
     private static func shift(_ mode: KeyboardMode) -> CGFloat {

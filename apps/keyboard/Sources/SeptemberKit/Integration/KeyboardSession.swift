@@ -175,7 +175,7 @@ public final class KeyboardSession: ObservableObject {
             pasteboard.write(item.text)
             clipboard.add(item.text)
             pasteboardChanged()
-            controller.perform(.shortcut(Self.paste))
+            controller.perform(.shortcut(ClipboardShortcut.paste))
         case .talk:
             controller.talk.type(item.text)
         }
@@ -186,7 +186,7 @@ public final class KeyboardSession: ObservableObject {
     public func cut() {
         switch controller.mode {
         case .type:
-            controller.perform(.shortcut(Self.cut))
+            controller.perform(.shortcut(ClipboardShortcut.cut))
         case .talk:
             copyTalkText()
             controller.talk.clear()
@@ -197,7 +197,7 @@ public final class KeyboardSession: ObservableObject {
     /// text.
     public func copy() {
         switch controller.mode {
-        case .type: controller.perform(.shortcut(Self.copy))
+        case .type: controller.perform(.shortcut(ClipboardShortcut.copy))
         case .talk: copyTalkText()
         }
     }
@@ -207,7 +207,7 @@ public final class KeyboardSession: ObservableObject {
     public func paste() {
         switch controller.mode {
         case .type:
-            controller.perform(.shortcut(Self.paste))
+            controller.perform(.shortcut(ClipboardShortcut.paste))
         case .talk:
             guard let text = pasteboard.string() else { return }
             controller.talk.type(text)
@@ -220,10 +220,6 @@ public final class KeyboardSession: ObservableObject {
         if hasText != canPaste { canPaste = hasText }
         if historyPage >= clipboard.pageCount { historyPage = clipboard.pageCount - 1 }
     }
-
-    private static let cut = Shortcut(modifiers: .command, key: .character("x"))
-    private static let copy = Shortcut(modifiers: .command, key: .character("c"))
-    private static let paste = Shortcut(modifiers: .command, key: .character("v"))
 
     private func copyTalkText() {
         let text = controller.talk.text

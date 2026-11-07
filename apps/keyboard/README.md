@@ -69,8 +69,9 @@ The keyboard window holds the sentence predictions, the input bar, and the
 keys. A row of word completions sits on top of the keys. Cut, Copy, Paste, and
 History are at the left of the input bar. Speak, Type, Talk, Write, and
 Settings are at the right of the input bar. In Type mode, Arrange is between
-Write and Settings. The clipboard buttons and the input bar together are as
-wide as the keys.
+Write and Settings. The input bar is as wide as the keys and sits over them.
+The clipboard buttons sit past the left edge of the keys, so the keyboard
+window has a clear space at the left of the keys.
 
 The word row shows the candidates of macOS, the words of the QuickType bar.
 The candidates use the words before the caret. In a word, they complete the
@@ -86,7 +87,7 @@ When you press Return, or Speak in Talk mode, the keyboard tells macOS which
 picked words the text still holds. macOS learns from these responses. Private
 text and password fields send nothing.
 
-The Edit, Text, and System keypads and the app panel float in windows of their
+The Text and System keypads and the app panel float in windows of their
 own. By default they sit beside the keys. To move the keyboard window or a
 panel, drag it by the grip at its top. A drag does not take focus from the app
 in front. The keyboard keeps the place of each window for the next launch. If
@@ -95,21 +96,26 @@ keyboard window and the panels never take focus.
 
 Arrange moves the panels back beside the keys, at the place where the keyboard
 is now. The menu bar item has the same command, Arrange Panels. System and the
-app panel go to the left of the keys, with System nearest the keys. Text and
-Edit go to the right, with Text nearest the keys. If a panel does not fit on
+app panel go to the left of the keys, with System nearest the keys. Text goes
+to the right. If a panel does not fit on
 its side, it goes to the other side. Each panel stays on the screen.
 `PanelPlacement.arrangedFrames` holds the rule.
 
 The Text keypad has the arrow keys of a Mac keyboard at its bottom, as an
 inverted T. Page Up and Page Down fill the two top corners of the T. The word,
 line, and selection moves are in the grid above the arrows. The arrows are the
-`arrows` block of `text.json`, with three columns, so the Text keypad is wider
-than the other keypads.
+`arrows` block of `text.json`, with three columns, so the Text keypad is three
+buttons wide.
+
+The System keypad has three columns. It holds Undo, Redo, Select All, Save,
+New, Open, Print, and Close, and then Find, Mission Control, Page Up, Page
+Down, the zoom keys, Full Screen, Screenshot, and Quit. No keypad repeats
+Cut, Copy, or Paste.
 
 The app panel has two tabs. The first tab shows the panel of the app in front.
 The second tab, Mine, shows the buttons that the user made on the My Panel page
 of Settings. The title of a keypad is as tall as the tabs of the app panel, so
-the buttons of all the panels start at the same height. Edit, Text, and the
+the buttons of all the panels start at the same height. System, Text, and the
 app panel end at the same height, in each app and in Mine.
 
 In Talk mode, the keys type into the input bar of the keyboard, and other apps

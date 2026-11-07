@@ -34,7 +34,6 @@ struct WindowContent {
     func panel(_ panel: DetachedPanel, appIcon: NSImage?) -> AnyView {
         let view: AnyView
         switch panel {
-        case .edit: view = AnyView(KeypadCard(panel: controller.panels.edit))
         case .text: view = AnyView(KeypadCard(panel: controller.panels.text))
         case .system: view = AnyView(KeypadCard(panel: controller.panels.system))
         case .app: view = AnyView(AppPanelCard(session: session, appIcon: appIcon))

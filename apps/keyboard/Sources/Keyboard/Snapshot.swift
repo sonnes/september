@@ -154,7 +154,7 @@ enum Snapshot {
         // AppKit coordinates: the bottom left corner of the keys is at zero.
         let keys = CGRect(origin: .zero, size: keysSize)
         let frames = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
-        let keyboardFrame = CGRect(origin: keys.origin, size: keyboardSize)
+        let keyboardFrame = CGRect(origin: KeyboardPosition.typeWindowOrigin(forKeys: keys.origin), size: keyboardSize)
         let all = frames.values.reduce(keyboardFrame) { $0.union($1) }
         let padding = Metrics.surfacePadding
 

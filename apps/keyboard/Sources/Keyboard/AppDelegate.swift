@@ -380,9 +380,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // The place where the user dragged the keyboard, if it is on a screen.
         let origin = KeyboardPosition.origin(
             saved: keyboardPosition.saved, size: size, screens: screens,
-            fallback: PanelPlacement.keysOrigin(
-                keysSize: keysSize, panels: sizes, in: visible, rightInset: reservedWidth,
-                margin: FloatingPanel.margin))
+            fallback: KeyboardPosition.typeWindowOrigin(
+                forKeys: PanelPlacement.keysOrigin(
+                    keysSize: keysSize, panels: sizes, in: visible, rightInset: reservedWidth,
+                    margin: FloatingPanel.margin)))
         keyboard.setFrameOrigin(origin)
         keyboard.orderFront(nil)
         observers.append(
@@ -392,7 +393,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 MainActor.assumeIsolated { self?.keyboardMoved() }
             })
 
-        let keys = CGRect(origin: origin, size: keysSize)
+        let keys = CGRect(origin: KeyboardPosition.keysOrigin(ofWindow: origin, in: .type), size: keysSize)
         let defaults = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
         for panel in DetachedPanel.allCases {
             let window = FloatingPanel(root: content.panel(panel, appIcon: appIcon), contentSize: sizes[panel]!)
@@ -417,7 +418,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func arrangePanels() {
         guard let keyboard = keyboardPanel else { return }
         let keys = CGRect(
-            origin: KeyboardPosition.typeOrigin(of: keyboard.frame.origin, in: mode),
+            origin: KeyboardPosition.keysOrigin(ofWindow: keyboard.frame.origin, in: mode),
             size: WindowContent.measure(content.keysCard()))
         let screen = (keyboard.screen ?? NSScreen.main)?.visibleFrame ?? keys
         let sizes = panels.mapValues(\.frame.size)
