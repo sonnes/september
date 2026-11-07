@@ -267,9 +267,9 @@ move under a dwell. See all shows when older messages do not fit. See all
 shows pages of 8 messages in place of the suggestions. Back to suggestions or
 Escape closes the pages. A press on a message speaks it again.
 
-While Speak plays a sentence, Talk shows a speaking card, and the field stays.
-Stop or Escape stops the voice. Write next, or a typed letter, moves the focus
-to the field while the voice goes on. While the browser system voice reads a
+While Speak plays a sentence, Talk shows a speaking card, and the focus stays
+in the field. Stop or Escape stops the voice. If the focus is on the card, Write
+next or a typed letter moves the focus to the field while the voice goes on. While the browser system voice reads a
 message, the word that it reads is indigo. See `docs/concepts/spoken-word.md`.
 
 The composer has Undo, Delete, Clear, five mood keys, the sound output, and

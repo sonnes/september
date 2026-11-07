@@ -124,6 +124,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
     const sent = draft.current();
     setSentence(sentence);
     setWriting(false);
+    field.current?.focus();
     void speak(sentence);
     send.mutate(sentence, {
       onSuccess: () => {
@@ -454,8 +455,9 @@ function LabelButton({
 }
 
 /**
- * The card below the messages while a sentence plays. Stop is the first key.
- * Write next, or a typed letter, moves to the field while the voice goes on.
+ * The card below the messages while a sentence plays. The focus stays in the
+ * field. Write next, or a typed letter in the card, moves to the field while
+ * the voice goes on.
  */
 function SpeakingCard({
   text,
@@ -464,8 +466,6 @@ function SpeakingCard({
   text: string;
   onWrite: (key?: string) => void;
 }) {
-  const stop = useRef<HTMLButtonElement>(null);
-  useEffect(() => stop.current?.focus(), []);
   useEscape(stopSpeaking);
 
   return (
@@ -488,7 +488,6 @@ function SpeakingCard({
       <p className="mt-1.5 text-xl leading-snug">{text}</p>
       <div className="mt-3 flex items-center gap-2">
         <button
-          ref={stop}
           type="button"
           onClick={() => stopSpeaking()}
           className="focus-attention bg-background text-brand inline-flex min-h-12 items-center gap-2 rounded-full px-4 font-semibold"

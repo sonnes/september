@@ -255,9 +255,9 @@ The Talk screen has four parts, from the top:
    `talk-mood:<id>` setting. See `docs/concepts/audio-tags.md`.
 
 While Speak plays a sentence, the speaking card shows below the messages, and
-the field stays. Stop, or Escape, stops the voice. Write next, or a typed
-letter, moves the focus to the field while the voice goes on. Under the composer, a line shows the keys
-that work now.
+the focus stays in the field. Stop, or Escape, stops the voice. If the focus is
+on the card, Write next or a typed letter moves the focus to the field while
+the voice goes on. Under the composer, a line shows the keys that work now.
 
 In the compact tier, the composer folds. See [The panel header](#the-panel-header).
 

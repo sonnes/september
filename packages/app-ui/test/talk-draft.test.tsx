@@ -247,6 +247,13 @@ describe('the messages of Talk', () => {
     expect(follows(container.querySelector('textarea'), card)).toBe(true);
   });
 
+  it('keeps the focus in the field after Speak', async () => {
+    const container = await speakWords('Good morning');
+
+    expect(container.querySelector('[role="region"][aria-label="Speaking"]')).not.toBeNull();
+    expect(document.activeElement).toBe(container.querySelector('textarea'));
+  });
+
   it('stops the sentence on Stop', async () => {
     const container = await speakWords('Good morning');
 
