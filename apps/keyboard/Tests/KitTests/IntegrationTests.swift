@@ -621,10 +621,11 @@ private func height(_ view: some View, controller: KeyboardController) -> CGFloa
 
 @MainActor
 private func panelHeightTests() async {
-    await asyncTest("each app panel and Mine are as tall as the Edit keypad") {
+    await asyncTest("the Text keypad, each app panel, and Mine are as tall as the Edit keypad") {
         let parts = try makeSession()
         let controller = parts.controller
         let edit = height(KeypadCard(panel: controller.panels.edit), controller: controller)
+        expectEqual(height(KeypadCard(panel: controller.panels.text), controller: controller), edit, "Text")
         let card = AppPanelCard(session: parts.session, appIcon: nil)
         let apps = controller.panels.appPanels.map(\.bundleID) + ["com.example.none"]
         for bundleID in apps {

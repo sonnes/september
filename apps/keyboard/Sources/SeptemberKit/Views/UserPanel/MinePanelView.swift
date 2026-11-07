@@ -13,7 +13,6 @@ public struct MinePanelView: View {
     private let press: (UserButton) -> Void
 
     @State private var page = 0
-    @Environment(\.panelButtonHeight) private var buttonHeight
 
     public init(
         buttons: [UserButton],
@@ -67,7 +66,7 @@ public struct MinePanelView: View {
                     Color(Tokens.strokeSpecial),
                     style: StrokeStyle(lineWidth: 1, dash: Metrics.UserPanel.emptyDash)
                 )
-                .frame(width: width, height: buttonHeight)
+                .frame(width: width, height: Metrics.UserPanel.buttonHeight)
                 .accessibilityHidden(true)
         }
     }
@@ -82,11 +81,10 @@ struct MineButtonView: View {
 
     @State private var isPressed = false
     @State private var isHovered = false
-    @Environment(\.panelButtonHeight) private var height
 
     var body: some View {
         label
-            .frame(width: width, height: height)
+            .frame(width: width, height: Metrics.UserPanel.buttonHeight)
             .mineChrome(fill: fill, stroke: stroke)
             .pressable(label: button.accessibilityLabel, trigger: .down(.once)) { isPressed = $0 } action: {
                 press()
@@ -145,7 +143,6 @@ struct MinePageButton: View {
     let press: () -> Void
 
     @State private var isPressed = false
-    @Environment(\.panelButtonHeight) private var height
 
     init(page: Int, of count: Int, width: CGFloat, press: @escaping () -> Void) {
         self.page = page
@@ -158,7 +155,7 @@ struct MinePageButton: View {
         Text(MinePages.pageLabel(page: page, of: count))
             .font(Typography.UserPanel.keys)
             .foregroundStyle(Color(Tokens.accent))
-            .frame(width: width, height: height)
+            .frame(width: width, height: Metrics.UserPanel.buttonHeight)
             .mineChrome(
                 fill: isPressed ? Tokens.keySpecial.pressed : Tokens.keySpecial,
                 stroke: Tokens.strokeSpecial)

@@ -77,9 +77,14 @@ public enum Metrics {
 
     /// The keypads and the app shortcuts list.
     public enum Panel {
-        /// The title of a keypad, such as "EDIT".
-        public static let titleHeight: CGFloat = 11
         public static let titleSpacing: CGFloat = 8
+        /// The title of a keypad, such as "EDIT". The title and the gap under
+        /// it are as tall as the tabs of the app panel and the gap under
+        /// them. Then the buttons of the keypads and the app panel start at
+        /// the same height, and Edit, Text, and the app panel end at the same
+        /// height.
+        public static let titleHeight: CGFloat =
+            Metrics.Detached.tabHeight + Metrics.Detached.tabsBottom - titleSpacing
         public static let appSpacing: CGFloat = 6
         public static let appHeaderBottom: CGFloat = 2
         public static let appDot: CGFloat = 5
