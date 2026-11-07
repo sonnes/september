@@ -15,13 +15,15 @@ Sources/
     Integration/    the session that joins the parts, panel placement, the app in front
     Panels/         panel model, JSON loading, app panel ranking and learning
     Predictions/    sentence predictions and word completions
+    ScreenContext/  the text near the focused field, and the rule of each app
     Speech/         the voice: macOS voices, Personal Voice, ElevenLabs
     Talk/           Talk mode, the Said list, the Phrases panel
     UserPanel/      My Panel, private text, the Accessibility Keyboard import
     Settings/       the pages of the Settings window
     Write/          the documents, the editor bridge, and the spoken text of the Write window
     Views/          keys, shortcut buttons, panels, the keyboard screen, the views of each part
-    Resources/      Panels/{edit,text,system,phrases}.json, Panels/Apps/generic.json, Panels/Apps/<bundle id>.json
+    Resources/      Panels/{edit,text,system,phrases}.json, Panels/Apps/generic.json, Panels/Apps/<bundle id>.json,
+                    Context/<bundle id>.json
   Keyboard/         the app: floating panels, CGEvent sink, focus watcher, chord tap, tree reader,
                     menu bar, the Settings and Write windows
 Tests/KitTests/     tests (see "Tests" below)
@@ -186,7 +188,50 @@ the focused field. It prints the shape of each text and none of its words: a
 capitalized word is `W`, another word is `w`, and digits are `9`. `dy` is the
 distance from the top of the field, and a negative `dy` is above it. Add
 `--electron` to ask Chrome and Electron apps for their full tree first. The
-probe prints 400 lines or fewer. To print more, add `--lines 3000`.
+probe prints 400 lines or fewer. To print more, add `--lines 3000`. The
+probe also prints what the text on screen step reads, as shapes.
+
+## Text on Screen
+
+In Type mode, the sentence predictions can read the text near the focused
+field, such as the messages of a chat. The switch is on the Predictions page
+of Settings. It is off until the user turns it on. While it is off, the
+keyboard reads nothing.
+
+The keyboard reads the text when the focus moves, when another app comes to
+the front, and when the field empties after a send. The read runs off the main
+thread and stops after 300 ms. It keeps the newest 1,500 characters. The
+keyboard never reads a password field or a field with private text, and it
+never logs the text.
+
+An app with a rule file gets an exact read. The rule is
+`Sources/SeptemberKit/Resources/Context/<bundle id>.json`:
+
+```json
+{
+  "name": "WhatsApp",
+  "title": {"match": {"identifier": "NavigationBar_HeaderViewButton"}, "attribute": "description"},
+  "conversation": {"identifier": "ChatMessagesTableView"},
+  "message": {"match": {"identifier": "WAMessageBubbleTableViewCell"}, "attribute": "description"}
+}
+```
+
+A match uses `identifier`, `role`, `subrole`, or more than one of them. An
+`attribute` is `value`, `description`, `title`, or `placeholder`. The read
+finds the first `conversation` element, then the text of each `message` in it.
+
+An app with no rule file gets the general rule. The general rule reads the
+static text that comes before the field in reading order. It skips navigation
+landmarks, such as a sidebar, and the text of other fields.
+
+To add a rule for an app:
+
+1. Run `swift run Keyboard --ax --context-shape --wait 5`, and click into the
+   field of the app.
+2. In the output, find the identifier of the container and of each message.
+3. Add `<bundle id>.json` with these identifiers.
+4. Run the probe again. Make sure that the `extracted with the rule of` lines
+   show the messages.
 
 ## The accessibility tree viewer
 

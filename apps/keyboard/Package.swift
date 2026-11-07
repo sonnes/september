@@ -10,7 +10,7 @@ let package = Package(
     targets: [
         .target(
             name: "SeptemberKit",
-            resources: [.copy("Resources/Panels"), .copy("Resources/Accents")]
+            resources: [.copy("Resources/Panels"), .copy("Resources/Accents"), .copy("Resources/Context")]
         ),
         .executableTarget(
             name: "Keyboard",

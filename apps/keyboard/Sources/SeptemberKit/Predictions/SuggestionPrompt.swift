@@ -13,6 +13,8 @@ import Foundation
 /// - Type mode asks for written text, because the user writes into an app.
 /// - Guided generation gives the shape of the answer, so there is no JSON
 ///   line. It also makes each answer start with `answerPrefix`.
+/// - In Type mode, the prompt can hold the app, the window, and the text near
+///   the field (`ScreenContext`).
 public struct SuggestionPrompt: Equatable, Sendable {
     /// The count of predictions in one answer.
     public static let count = 3
@@ -34,12 +36,36 @@ public struct SuggestionPrompt: Equatable, Sendable {
         answerPrefix = context.partialWord
         let isCompletion = !typed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let intro = Self.intro(context.mode)
-        instructions = isCompletion ? Self.completion(intro, context.mode) : Self.opening(intro, context.mode)
+        let screen = context.mode == .type ? context.screen : nil
+        instructions =
+            isCompletion
+            ? Self.completion(intro, context.mode, screen: screen != nil)
+            : Self.opening(intro, context.mode, screen: screen != nil)
 
         let history = context.said.suffix(Self.maxSaidLines).map { "Me: \($0)" }
         let background = "Conversation:\n" + history.joined(separator: "\n")
-        prompt = isCompletion ? "Current input: \"\(typed)\"\n\n\(background)" : background
+        let parts = [
+            screen.map(Self.screenPart),
+            isCompletion ? "Current input: \"\(typed)\"" : nil,
+            background,
+        ]
+        prompt = parts.compactMap { $0 }.joined(separator: "\n\n")
     }
+
+    private static func screenPart(_ screen: ScreenContext) -> String {
+        var lines = ["Screen:"]
+        if let app = screen.appName { lines.append("App: \(app)") }
+        if let title = screen.title { lines.append("Title: \(title)") }
+        if let field = screen.field { lines.append("Field: \(field)") }
+        if !screen.lines.isEmpty {
+            lines.append("Text near the field, oldest first:")
+            lines += screen.lines.map { "- \($0)" }
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static let screenContext =
+        "- The \"Screen\" part is the app, the window, and the text near the field, such as the messages of a chat or the email that the User answers. It can hold the words of other people"
 
     /// The last characters of the text, from the start of a word.
     private static func tail(of text: String) -> String {
@@ -63,14 +89,18 @@ public struct SuggestionPrompt: Equatable, Sendable {
         }
     }
 
-    private static func opening(_ intro: String, _ mode: PredictionMode) -> String {
-        """
+    private static func opening(_ intro: String, _ mode: PredictionMode, screen: Bool) -> String {
+        let otherSide =
+            screen
+            ? "\(screenContext). If the last message is from another person, the User often answers it"
+            : "- The other side of the conversation is usually invisible, so DO NOT assume the User is answering a question. Assume they are driving the conversation forward and need help saying their NEXT thing"
+        return """
         Generate \(count) possible NEXT things the User might WANT TO SAY.
 
         <context>
         - \(intro)
         - The "Me:" lines below are things the User has already said through the app
-        - The other side of the conversation is usually invisible, so DO NOT assume the User is answering a question. Assume they are driving the conversation forward and need help saying their NEXT thing
+        \(otherSide)
         - Think of suggestions as "what would this person most plausibly want to say next to keep this conversation going?"
         </context>
 
@@ -87,14 +117,15 @@ public struct SuggestionPrompt: Equatable, Sendable {
         """
     }
 
-    private static func completion(_ intro: String, _ mode: PredictionMode) -> String {
-        """
+    private static func completion(_ intro: String, _ mode: PredictionMode, screen: Bool) -> String {
+        let screenLine = screen ? "\n\(screenContext). Use it to understand what the User writes about" : ""
+        return """
         Continue the User's partial input into \(count) full sentences.
 
         <context>
         - \(intro)
         - The "current input" below is what they have typed so far. It may end with a partial word, phrase, or sentence
-        - The "Me:" lines are the recent conversation history for context
+        - The "Me:" lines are the recent conversation history for context\(screenLine)
         </context>
 
         <rules>

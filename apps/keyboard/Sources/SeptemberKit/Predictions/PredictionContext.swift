@@ -17,23 +17,29 @@ public struct PredictionContext: Equatable, Sendable {
     public var mode: PredictionMode
     /// The sentences that the user spoke, oldest first.
     public var said: [String]
+    /// The app, the window, and the text near the field. Only Type mode
+    /// sends it to the model.
+    public var screen: ScreenContext?
 
-    public init(text: String, caret: Int, mode: PredictionMode, said: [String]) {
+    public init(
+        text: String, caret: Int, mode: PredictionMode, said: [String], screen: ScreenContext? = nil
+    ) {
         self.text = text
         self.caret = min(max(0, caret), text.utf16.count)
         self.mode = mode
         self.said = said
+        self.screen = screen
     }
 
     /// The context of the input bar, or `nil` when the keyboard must not
     /// predict. A password field and any other state with no text give `nil`.
     /// A selection also gives `nil`, because a press would replace it.
-    public init?(input: InputMirror, mode: PredictionMode, said: [String]) {
+    public init?(input: InputMirror, mode: PredictionMode, said: [String], screen: ScreenContext? = nil) {
         if case .mirrored(let text, let caret, let selectionLength) = input {
             guard selectionLength == 0 else { return nil }
-            self.init(text: text, caret: caret, mode: mode, said: said)
+            self.init(text: text, caret: caret, mode: mode, said: said, screen: screen)
         } else if case .local(let text) = input {
-            self.init(text: text, caret: text.utf16.count, mode: mode, said: said)
+            self.init(text: text, caret: text.utf16.count, mode: mode, said: said, screen: screen)
         } else {
             return nil
         }
@@ -71,7 +77,7 @@ public struct PredictionContext: Equatable, Sendable {
     public func completing(with completion: WordCompletion) -> PredictionContext {
         let before = String(typed.dropLast(completion.partial.count)) + completion.word + " "
         return PredictionContext(
-            text: before + following, caret: before.utf16.count, mode: mode, said: said)
+            text: before + following, caret: before.utf16.count, mode: mode, said: said, screen: screen)
     }
 
     /// The full sentence of an answer of the model, or `nil` when the answer

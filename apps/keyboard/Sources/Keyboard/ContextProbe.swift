@@ -51,11 +51,31 @@ enum ContextProbe {
 
         print("\ncontext shape: \(walker.count) elements in \(elapsed) ms, deepest \(walker.deepest)")
         if walker.count >= nodeLimit { print("stopped at \(nodeLimit) elements") }
-        print("focused: \(focused.flatMap { $0.string(kAXRoleAttribute) } ?? "nothing")\n")
+        print("focused: \(focused.flatMap { $0.string(kAXRoleAttribute) } ?? "nothing")")
+        printExtracted(app: app)
         guard let tree else { return print("no tree") }
         for line in ContextShape.lines(for: tree, field: walker.fieldFrame, limit: limit) {
             print(line)
         }
+    }
+
+    /// What the context step reads for the predictions, as shapes.
+    private static func printExtracted(app: NSRunningApplication) {
+        let rules = (try? ContextRules.bundled()) ?? ContextRules(rules: [:])
+        let request = ScreenContextReader.Request(app: app, rules: rules)
+        let start = Date()
+        let screen = ScreenContextReader.read(request)
+        let elapsed = Int(Date().timeIntervalSince(start) * 1000)
+        print("\nextracted with \(request.rule.map { "the rule of \($0.name)" } ?? "the general rule") in \(elapsed) ms")
+        guard let screen else { return print("  nothing (no focused field, or a password field)\n") }
+        func shape(_ text: String?) -> String {
+            text.map { "\"\(ContextShape.shape(of: $0))\" (\($0.count) ch)" } ?? "—"
+        }
+        print("  title  \(shape(screen.title))")
+        print("  field  \(shape(screen.field))")
+        print("  lines  \(screen.lines.count), \(screen.lines.joined().count) ch")
+        for line in screen.lines { print("    \(shape(line))") }
+        print("")
     }
 
     @MainActor

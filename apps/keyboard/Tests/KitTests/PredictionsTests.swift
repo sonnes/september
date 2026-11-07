@@ -557,6 +557,27 @@ private func engineTests() async {
         expect(engine.stripes.isEmpty)
     }
 
+    await asyncTest("the screen switch is off until the user turns it on, and keeps its state") {
+        let defaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        let engine = makeEngine(FakePredictor(answer: tea), defaults: defaults)
+        expect(!engine.screenEnabled)
+        engine.screenEnabled = true
+        expect(makeEngine(FakePredictor(answer: tea), defaults: defaults).screenEnabled)
+    }
+
+    await asyncTest("new text on screen makes a new request") {
+        let predictor = FakePredictor(answer: tea)
+        let engine = makeEngine(predictor)
+        let first = ScreenContext(appName: "WhatsApp", title: nil, field: nil, lines: ["Hi"])
+        let second = ScreenContext(appName: "WhatsApp", title: nil, field: nil, lines: ["Hi", "Lunch?"])
+        engine.update(input: cu, mode: .type, said: [], screen: first)
+        await engine.settle()
+        engine.update(input: cu, mode: .type, said: [], screen: second)
+        await engine.settle()
+        let requests = await predictor.requests
+        expectEqual(requests.map(\.screen), [first, second])
+    }
+
     await asyncTest("the switches keep their state") {
         let defaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
         makeEngine(FakePredictor(answer: tea), defaults: defaults).wordsEnabled = false

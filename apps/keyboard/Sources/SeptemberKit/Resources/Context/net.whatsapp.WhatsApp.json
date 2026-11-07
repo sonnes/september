@@ -1,0 +1,12 @@
+{
+  "name": "WhatsApp",
+  "title": {
+    "match": {"identifier": "NavigationBar_HeaderViewButton"},
+    "attribute": "description"
+  },
+  "conversation": {"identifier": "ChatMessagesTableView"},
+  "message": {
+    "match": {"identifier": "WAMessageBubbleTableViewCell"},
+    "attribute": "description"
+  }
+}

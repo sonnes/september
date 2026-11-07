@@ -17,6 +17,7 @@ await integrationTests()
 writeTests()
 pressTests()
 contextProbeTests()
+screenContextTests()
 #if DEBUG
 #endif
 summarize()

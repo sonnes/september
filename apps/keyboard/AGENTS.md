@@ -31,6 +31,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `SpeakText`, `FrontAppTracker`, `PanelPlacement`, `KeyboardPosition`, `InputBarVisibility` |
 | `Sources/SeptemberKit/Panels` | panel model, JSON loading, app panel ranking and learning |
 | `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence) and word completions |
+| `Sources/SeptemberKit/ScreenContext` | `ScreenContext`, the rule of each app (`ContextRule`), and `ScreenContextExtractor` |
 | `Sources/SeptemberKit/Speech` | `Speaker`, the macOS voices, ElevenLabs, the Keychain store |
 | `Sources/SeptemberKit/Talk` | Talk mode, the Said list, the Phrases panel |
 | `Sources/SeptemberKit/UserPanel` | My Panel, private text, the Accessibility Keyboard import |
@@ -39,6 +40,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, the keyboard screen, and the views of each part |
 | `Sources/SeptemberKit/Resources/Panels` | `edit`/`text`/`system`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
+| `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
 | `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ChordTap`, `MenuBarReader`, `AXTreeReader`, the Settings and Write windows, snapshots |
 | `Tests/KitTests` | tests + the harness |
 
@@ -107,6 +109,14 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `text`. The file name is the panel's identity: an app panel is
   `Apps/<bundle id>.json`. `PanelStore` throws on a missing or broken file,
   and the app shows the error and quits.
+- **Context rules are data.** The rule that reads the text near the field in
+  an app is `Resources/Context/<bundle id>.json`, not Swift. Add one app at a
+  time, and check it with `--ax --context-shape`. An app with no file gets the
+  general rule of `ScreenContextExtractor`.
+- **The text on screen is private.** Read it only while
+  `PredictionEngine.screenEnabled` is true, only in Type mode, and never for a
+  password field or private text. Never log or print it. The probe prints
+  shapes only.
 - **Keep Swift 6 concurrency clean.** UI and controller are `@MainActor`; sinks
   crossing into CoreGraphics are `@unchecked Sendable` with a comment saying
   why. Do not silence warnings any other way.

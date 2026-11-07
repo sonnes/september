@@ -119,6 +119,7 @@ gives it to `writeCaretRead(_:)`. The session sends the paragraph to
 | Call | From | What happens |
 |---|---|---|
 | `type(_:)` | A prediction tile | Types into the app in Type mode, or into the Talk bar in Talk mode. |
+| `screenRead(_:)` | `AppDelegate`, after a read of the text near the field | Keeps the text for the sentence predictions of Type mode. A read of an app that is no longer in front is dropped. A new app clears the text. |
 | `pickWord(_:)` | A word completion | Types the rest of the word as `type(_:)` does. The engine keeps the word until the user submits the text. |
 | `speakPressed()` | Speak | See [Speak](#speak). |
 | `pressAppPanel(_:)` | A button of the app panel | Counts the press for the order of the panel, then does the action. |

@@ -331,7 +331,8 @@ private struct SessionParts {
 @MainActor
 private func makeSession(
     userPanel: Result<UserPanelStore, any Error>? = nil,
-    voiceHolds: Bool = false
+    voiceHolds: Bool = false,
+    predictor: any SentencePredicting = SilentPredictor()
 ) throws -> SessionParts {
     let (controller, sink) = try makeController()
     let defaults = UserDefaults(suiteName: "kit-integration-\(UUID().uuidString)")!
@@ -342,7 +343,7 @@ private func makeSession(
         settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: FakeEngine())
     let completer = CupCompleter()
     let engine = PredictionEngine(
-        predictor: SilentPredictor(), completer: completer, delay: .milliseconds(5),
+        predictor: predictor, completer: completer, delay: .milliseconds(5),
         defaults: defaults)
     let appPanels = AppPanelModel(
         store: controller.panels,
@@ -371,6 +372,16 @@ private func makeSession(
 private struct SilentPredictor: SentencePredicting {
     var availability: PredictionAvailability { .ready }
     func predictions(for context: PredictionContext) async throws -> [String] { [] }
+}
+
+private actor RecordingPredictor: SentencePredicting {
+    nonisolated var availability: PredictionAvailability { .ready }
+    private(set) var requests: [PredictionContext] = []
+
+    func predictions(for context: PredictionContext) async throws -> [String] {
+        requests.append(context)
+        return []
+    }
 }
 
 @MainActor
@@ -463,6 +474,48 @@ private func sessionTests() async {
         parts.session.focusMoved()
         parts.controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "return" }!)
         expectEqual(parts.completer.responses, [])
+    }
+
+    await asyncTest("the text on screen reaches the predictions in Type mode with the switch on") {
+        let predictor = RecordingPredictor()
+        let parts = try makeSession(predictor: predictor)
+        parts.session.appChanged(name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp", windowTitle: nil)
+        parts.controller.focusChanged(to: field("Yes", caret: 3))
+        let screen = ScreenContext(
+            bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
+        parts.session.screenRead(screen)
+        await parts.session.settle()
+        var last = await predictor.requests.last
+        expect(last != nil && last?.screen == nil, "the switch is off")
+
+        parts.session.predictions.screenEnabled = true
+        await parts.session.settle()
+        last = await predictor.requests.last
+        expectEqual(last?.screen, screen)
+
+        parts.controller.mode = .talk
+        parts.controller.talk.type("Hi")
+        await parts.session.settle()
+        last = await predictor.requests.last
+        expect(last?.screen == nil, "Talk mode sends no text from the screen")
+    }
+
+    await asyncTest("a read from another app is dropped, and a new app clears the screen") {
+        let predictor = RecordingPredictor()
+        let parts = try makeSession(predictor: predictor)
+        parts.session.predictions.screenEnabled = true
+        parts.session.appChanged(name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp", windowTitle: nil)
+        parts.controller.focusChanged(to: field("Yes", caret: 3))
+        parts.session.screenRead(
+            ScreenContext(bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"]))
+        await parts.session.settle()
+        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes", windowTitle: nil)
+        parts.controller.focusChanged(to: field("Ye", caret: 2))
+        parts.session.screenRead(
+            ScreenContext(bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Late"]))
+        await parts.session.settle()
+        let last = await predictor.requests.last
+        expect(last != nil && last?.screen == nil)
     }
 
     await asyncTest("Talk mode feeds the predictions with the bar") {

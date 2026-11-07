@@ -26,9 +26,16 @@ public struct PredictionsSettingsPage: View {
                 Text("Three predictions show above the input bar. Apple Intelligence makes them on this Mac.")
             }
             Section {
+                Toggle("Use the text on screen", isOn: $engine.screenEnabled)
+            } footer: {
+                Text(
+                    "In Type mode, the sentence predictions read the text near the field, such as the messages of a chat. The text stays on this Mac. The keyboard never reads a password field or private text."
+                )
+            }
+            Section {
                 Toggle("Word completions", isOn: $engine.wordsEnabled)
             } footer: {
-                Text("Completions for the word at the caret show above the keys. They come from the macOS spell checker.")
+                Text("Completions for the word at the caret show above the keys. They come from the word suggestions of macOS.")
             }
         }
         .formStyle(.grouped)

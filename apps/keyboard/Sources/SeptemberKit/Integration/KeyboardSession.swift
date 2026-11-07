@@ -41,6 +41,10 @@ public final class KeyboardSession: ObservableObject {
     /// Shows the input bar and the suggestions only when there is text input.
     public let inputBar: InputBarVisibility
     @Published private var isWriteInFront = false
+    /// The bundle ID of the app in front.
+    private var frontBundleID: String?
+    /// The text near the field of the app in front, from the last read.
+    private var screen: ScreenContext?
     /// False while the document of the Write window has no text.
     private var writeHasText = false
     /// Gives the name of a chord in the menu bar of the app in front.
@@ -158,9 +162,19 @@ public final class KeyboardSession: ObservableObject {
     public func appChanged(name: String?, bundleID: String?, windowTitle: String?) {
         controller.appChanged(name: name, bundleID: bundleID)
         isWriteInFront = bundleID == WritePanel.id
+        frontBundleID = bundleID
+        screen = nil
         appPanels.appActivated(bundleID: bundleID, windowTitle: windowTitle)
         predictions.forgetPickedWords()
         rankUserPanel()
+    }
+
+    /// The app read the text near the field. A read of an app that is no
+    /// longer in front is dropped.
+    public func screenRead(_ screen: ScreenContext?) {
+        guard screen == nil || screen?.bundleID == frontBundleID else { return }
+        self.screen = screen
+        scheduleUpdate()
     }
 
     public func windowTitleChanged(_ title: String?) {
@@ -251,6 +265,10 @@ public final class KeyboardSession: ObservableObject {
             .store(in: &subscriptions)
         // A button added in Settings shows at once. The user is in the Settings
         // window, not aiming at the panel.
+        predictions.$screenEnabled
+            .dropFirst()
+            .sink { [weak self] _ in self?.scheduleUpdate() }
+            .store(in: &subscriptions)
         userPanel?.$buttons
             .dropFirst()
             .sink { [weak self] _ in self?.scheduleUpdate(rank: true) }
@@ -277,9 +295,11 @@ public final class KeyboardSession: ObservableObject {
         let talk = controller.talk
         let isPrivate = mode == .type && controller.isFieldPrivate
         let input: InputMirror = mode == .talk ? .local(text: talk.text) : controller.input
+        let usesScreen = mode == .type && !isWriteInFront && predictions.screenEnabled
         predictions.update(
             input: input, mode: mode == .talk ? .talk : .type,
-            said: talk.said.lines.reversed().map(\.text), isPrivate: isPrivate)
+            said: talk.said.lines.reversed().map(\.text), isPrivate: isPrivate,
+            screen: usesScreen ? screen : nil)
 
         let isSpeaking = speaker.isSpeaking
         if wasSpeaking, !isSpeaking {

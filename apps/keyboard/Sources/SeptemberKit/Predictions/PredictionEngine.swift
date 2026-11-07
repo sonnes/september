@@ -36,10 +36,16 @@ public final class PredictionEngine: ObservableObject {
             refresh()
         }
     }
+    /// True when the keyboard reads the text near the field in Type mode for
+    /// the sentence predictions. It is off until the user turns it on.
+    @Published public var screenEnabled: Bool {
+        didSet { defaults.set(screenEnabled, forKey: Keys.screen) }
+    }
 
     private enum Keys {
         static let sentences = "predictions.sentences"
         static let words = "predictions.words"
+        static let screen = "predictions.screen"
     }
 
     private let predictor: any SentencePredicting
@@ -75,13 +81,17 @@ public final class PredictionEngine: ObservableObject {
         availability = predictor.availability
         sentencesEnabled = defaults.object(forKey: Keys.sentences) as? Bool ?? true
         wordsEnabled = defaults.object(forKey: Keys.words) as? Bool ?? true
+        screenEnabled = defaults.bool(forKey: Keys.screen)
     }
 
     /// Feeds the engine with the input bar. A password field, a selection,
     /// and any other state with no text show no predictions. `isPrivate` is
     /// true while private text is in the focused field.
-    public func update(input: InputMirror, mode: PredictionMode, said: [String], isPrivate: Bool = false) {
-        let context = isPrivate ? nil : PredictionContext(input: input, mode: mode, said: said)
+    public func update(
+        input: InputMirror, mode: PredictionMode, said: [String], isPrivate: Bool = false,
+        screen: ScreenContext? = nil
+    ) {
+        let context = isPrivate ? nil : PredictionContext(input: input, mode: mode, said: said, screen: screen)
         guard input != self.input || context != self.context || isPrivate != self.isPrivate else { return }
         self.input = input
         self.context = context
