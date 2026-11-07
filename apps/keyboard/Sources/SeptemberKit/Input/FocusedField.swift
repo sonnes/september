@@ -32,6 +32,16 @@ public struct FocusedField: Equatable, Sendable {
         self.selection = selection
     }
 
+    /// The roles of a text input. Terminal exposes a text area with no
+    /// settable value, so the role counts by itself.
+    static let textRoles: Set<String> = ["AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"]
+
+    /// True when the focused element takes text: a password field, an
+    /// editable value, a caret, or a text role. A button or a list is not.
+    public var isTextInput: Bool {
+        isSecure || isEditable || selection != nil || Self.textRoles.contains(role)
+    }
+
     /// How the input bar should show this field, or `nil` when the field gives
     /// us nothing to show and our own echo has to stand in.
     public var display: InputMirror? {

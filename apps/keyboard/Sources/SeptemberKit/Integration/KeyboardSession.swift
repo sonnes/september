@@ -38,6 +38,9 @@ public final class KeyboardSession: ObservableObject {
     /// an app comes to the front, so that a button never moves while the user
     /// aims at it.
     @Published public private(set) var mineButtons: [UserButton] = []
+    /// Shows the input bar and the suggestions only when there is text input.
+    public let inputBar: InputBarVisibility
+    @Published private var isWriteInFront = false
     /// Gives the name of a chord in the menu bar of the app in front.
     public var menuName: (Shortcut) -> String? = { _ in nil }
 
@@ -55,8 +58,10 @@ public final class KeyboardSession: ObservableObject {
         speaker: Speaker,
         appPanels: AppPanelModel,
         userPanel: Result<UserPanelStore, any Error>,
-        userPanelUsage: UsageStore
+        userPanelUsage: UsageStore,
+        inputBar: InputBarVisibility = InputBarVisibility()
     ) {
+        self.inputBar = inputBar
         self.controller = controller
         self.predictions = predictions
         self.speaker = speaker
@@ -131,6 +136,7 @@ public final class KeyboardSession: ObservableObject {
     /// then the app panel and My Panel take their new order.
     public func appChanged(name: String?, bundleID: String?, windowTitle: String?) {
         controller.appChanged(name: name, bundleID: bundleID)
+        isWriteInFront = bundleID == WritePanel.id
         appPanels.appActivated(bundleID: bundleID, windowTitle: windowTitle)
         rankUserPanel()
     }
@@ -180,6 +186,19 @@ public final class KeyboardSession: ObservableObject {
         // update waits a turn.
         Publishers.MergeMany(changes)
             .sink { [weak self] in self?.scheduleUpdate() }
+            .store(in: &subscriptions)
+        // The values come from the publishers: `@Published` publishes before
+        // it stores the new value.
+        controller.$focusedField
+            .combineLatest(controller.$input, controller.$mode, controller.$isFieldPrivate)
+            .combineLatest($isWriteInFront)
+            .sink { [weak self] values, isWriteInFront in
+                let (field, input, mode, isPrivate) = values
+                self?.inputBar.update(
+                    InputBarVisibility.wantsBar(
+                        mode: mode, focusedField: field, isFieldPrivate: isPrivate, input: input,
+                        isWriteInFront: isWriteInFront))
+            }
             .store(in: &subscriptions)
         // A button added in Settings shows at once. The user is in the Settings
         // window, not aiming at the panel.

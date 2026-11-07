@@ -12,30 +12,30 @@ public enum HoldBehavior: Equatable, Sendable {
     case letter(choices: [String])
 }
 
-/// Work that a `PressScheduler` can stop before it runs.
+/// Work that a `DelayScheduler` can stop before it runs.
 @MainActor
-public protocol PressCancellable: AnyObject {
+public protocol ScheduledWork: AnyObject {
     func cancel()
 }
 
-/// Runs work after a delay. The app uses the main queue. The tests use a fake
-/// clock.
+/// Runs work after a delay, for a held key and for the input bar. The app
+/// uses the main queue. The tests use a fake clock.
 @MainActor
-public protocol PressScheduler {
-    func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any PressCancellable
+public protocol DelayScheduler {
+    func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any ScheduledWork
 }
 
 /// Schedules work on the main queue.
-public struct MainQueueScheduler: PressScheduler {
+public struct MainQueueScheduler: DelayScheduler {
     public init() {}
 
-    private final class Item: PressCancellable {
+    private final class Item: ScheduledWork {
         let item: DispatchWorkItem
         init(_ item: DispatchWorkItem) { self.item = item }
         func cancel() { item.cancel() }
     }
 
-    public func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any PressCancellable {
+    public func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any ScheduledWork {
         let item = DispatchWorkItem { MainActor.assumeIsolated { work() } }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
         return Item(item)
@@ -51,16 +51,16 @@ public struct MainQueueScheduler: PressScheduler {
 @MainActor
 public final class KeyPresser {
     private let timing: () -> KeyTiming
-    private let scheduler: any PressScheduler
+    private let scheduler: any DelayScheduler
     private var active: Int?
     private var lastID = 0
-    private var pending: (any PressCancellable)?
+    private var pending: (any ScheduledWork)?
 
     /// - Parameter timing: reads the settings. Each press reads them again,
     ///   so a change in System Settings applies to the next press.
     public init(
         timing: @escaping () -> KeyTiming = { KeyTiming.current() },
-        scheduler: any PressScheduler = MainQueueScheduler()
+        scheduler: any DelayScheduler = MainQueueScheduler()
     ) {
         self.timing = timing
         self.scheduler = scheduler

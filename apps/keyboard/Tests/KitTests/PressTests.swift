@@ -105,8 +105,8 @@ private func heldKeyTests() {
 
 /// A clock that moves only when a test moves it.
 @MainActor
-final class FakeClock: PressScheduler {
-    private final class Item: PressCancellable {
+final class FakeClock: DelayScheduler {
+    private final class Item: ScheduledWork {
         let at: TimeInterval
         let order: Int
         let work: @MainActor () -> Void
@@ -125,7 +125,7 @@ final class FakeClock: PressScheduler {
     private var items: [Item] = []
     private var order = 0
 
-    func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any PressCancellable {
+    func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any ScheduledWork {
         order += 1
         let item = Item(at: now + delay, order: order, work: work)
         items.append(item)

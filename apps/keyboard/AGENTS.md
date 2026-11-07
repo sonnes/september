@@ -28,7 +28,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Design` | tokens, metrics, typography, rainbow/mono styles |
 | `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController` |
 | `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map, the key settings of macOS (`KeyTiming`) and the timing of a held key (`KeyPresser`) |
-| `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `SpeakText`, `FrontAppTracker`, `PanelPlacement` |
+| `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `SpeakText`, `FrontAppTracker`, `PanelPlacement`, `KeyboardPosition`, `InputBarVisibility`, the commands of the QA hook |
 | `Sources/SeptemberKit/Panels` | panel model, JSON loading, app panel ranking and learning |
 | `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence) and word completions |
 | `Sources/SeptemberKit/Speech` | `Speaker`, the macOS voices, ElevenLabs, the Keychain store |

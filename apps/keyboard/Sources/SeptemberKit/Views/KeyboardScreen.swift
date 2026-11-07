@@ -10,6 +10,7 @@ public struct KeyboardScreen: View {
     @EnvironmentObject private var controller: KeyboardController
     @EnvironmentObject private var permission: AccessibilityPermission
     @ObservedObject private var session: KeyboardSession
+    @ObservedObject private var inputBar: InputBarVisibility
     private let phrases: PanelDefinition
     private let write: () -> Void
     private let settings: () -> Void
@@ -21,6 +22,7 @@ public struct KeyboardScreen: View {
         settings: @escaping () -> Void
     ) {
         self.session = session
+        inputBar = session.inputBar
         self.phrases = phrases
         self.write = write
         self.settings = settings
@@ -45,11 +47,12 @@ public struct KeyboardScreen: View {
             }
 
             PredictionStack(engine: session.predictions, onType: session.type)
+                .shown(inputBar.isVisible)
                 .padding(.leading, inset)
                 .padding(.bottom, Metrics.TopRow.stackBottom)
 
             HStack(spacing: Metrics.TopRow.spacing) {
-                bar
+                bar.shown(inputBar.isVisible)
                 SpeakButton(mode: session.speakMode, action: session.speakPressed)
                 ModeButtons(
                     mode: controller.mode,
@@ -98,11 +101,18 @@ public struct KeyboardScreen: View {
 /// show over the top of the keys, so the keys do not move.
 struct KeysWithWords: View {
     @EnvironmentObject private var controller: KeyboardController
-    @ObservedObject var session: KeyboardSession
+    @ObservedObject private var session: KeyboardSession
+    @ObservedObject private var inputBar: InputBarVisibility
+
+    init(session: KeyboardSession) {
+        self.session = session
+        inputBar = session.inputBar
+    }
 
     var body: some View {
         MainKeyboardView {
             WordCompletionRow(engine: session.predictions, onType: session.type)
+                .shown(inputBar.isVisible)
                 .accessibilityHidden(!controller.accentChoices.isEmpty)
         }
         .overlay(alignment: .top) {
@@ -127,6 +137,17 @@ public struct TypeKeysCard: View {
         PanelCard(sidePadding: Metrics.Detached.keysSidePadding) {
             KeysWithWords(session: session)
         }
+    }
+}
+
+extension View {
+    /// Hides the view and keeps its space, so the keys do not move when the
+    /// input bar hides or shows.
+    func shown(_ isShown: Bool) -> some View {
+        opacity(isShown ? 1 : 0)
+            .allowsHitTesting(isShown)
+            .accessibilityHidden(!isShown)
+            .animation(.easeOut(duration: Metrics.activeAnimation), value: isShown)
     }
 }
 

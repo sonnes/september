@@ -10,7 +10,78 @@ func integrationTests() async {
     speakTextTests()
     wiringTests()
     placementTests()
+    inputBarTests()
     await sessionTests()
+}
+
+// MARK: - The input bar
+
+private func focus(_ role: String, editable: Bool = false, secure: Bool = false, caret: Bool = false) -> FocusedField {
+    FocusedField(
+        appName: "App", role: role, isEditable: editable, isSecure: secure, text: nil,
+        selection: caret ? NSRange(location: 0, length: 0) : nil)
+}
+
+@MainActor
+private func inputBarTests() {
+    test("a text field, a password field, a terminal, and a caret are text input") {
+        expect(focus("AXTextField", editable: true).isTextInput)
+        expect(focus("AXTextField", secure: true).isTextInput)
+        expect(focus("AXTextArea").isTextInput, "Terminal exposes a text area with no settable value")
+        expect(focus("AXWebArea", caret: true).isTextInput, "an editable web page has a caret")
+        expect(!focus("AXButton").isTextInput)
+        expect(!focus("AXList").isTextInput)
+    }
+
+    test("in Type mode the bar shows only for text input or an echo") {
+        func wants(_ field: FocusedField?, echo: String = "", isPrivate: Bool = false) -> Bool {
+            InputBarVisibility.wantsBar(
+                mode: .type, focusedField: field, isFieldPrivate: isPrivate, input: .local(text: echo),
+                isWriteInFront: false)
+        }
+        expect(!wants(nil))
+        expect(!wants(focus("AXButton")))
+        expect(wants(focus("AXTextField", editable: true)))
+        expect(wants(focus("AXTextField", secure: true)), "a password field shows its notice")
+        expect(wants(nil, isPrivate: true), "a field with private text shows its notice")
+        expect(wants(nil, echo: "hi"), "an app with no readable field shows the echo")
+    }
+
+    test("Talk mode and the Write window always show the bar") {
+        expect(
+            InputBarVisibility.wantsBar(
+                mode: .talk, focusedField: nil, isFieldPrivate: false, input: .local(text: ""),
+                isWriteInFront: false))
+        expect(
+            InputBarVisibility.wantsBar(
+                mode: .type, focusedField: nil, isFieldPrivate: false, input: .local(text: ""),
+                isWriteInFront: true))
+    }
+
+    test("the bar hides after the delay and shows at once") {
+        let clock = FakeClock()
+        let bar = InputBarVisibility(scheduler: clock, hideDelay: 0.25)
+        bar.update(true)
+        expect(bar.isVisible)
+        bar.update(false)
+        clock.advance(to: 0.125)
+        expect(bar.isVisible, "a short focus gap does not hide the bar")
+        clock.advance(to: 0.25)
+        expect(!bar.isVisible)
+        bar.update(true)
+        expect(bar.isVisible, "the bar shows at once")
+    }
+
+    test("focus that comes back before the delay keeps the bar") {
+        let clock = FakeClock()
+        let bar = InputBarVisibility(scheduler: clock, hideDelay: 0.25)
+        bar.update(true)
+        bar.update(false)
+        clock.advance(to: 0.125)
+        bar.update(true)
+        clock.advance(to: 1)
+        expect(bar.isVisible)
+    }
 }
 
 // MARK: - Speak text
@@ -220,6 +291,7 @@ private struct SessionParts {
     let sink: RecordingSink
     let voice: FakeEngine
     let userPanel: UserPanelStore?
+    let clock: FakeClock
 }
 
 @MainActor
@@ -250,13 +322,15 @@ private func makeSession(
                 fileURL: folder.appendingPathComponent("my-panel.json"),
                 privateTexts: MemoryPrivateTexts())
         }
+    let clock = FakeClock()
     let session = KeyboardSession(
         controller: controller, predictions: engine, speaker: speaker, appPanels: appPanels,
         userPanel: store,
-        userPanelUsage: UsageStore(fileURL: folder.appendingPathComponent("my-panel-usage.json")))
+        userPanelUsage: UsageStore(fileURL: folder.appendingPathComponent("my-panel-usage.json")),
+        inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25))
     return SessionParts(
         session: session, controller: controller, sink: sink, voice: voice,
-        userPanel: try? store.get())
+        userPanel: try? store.get(), clock: clock)
 }
 
 private struct SilentPredictor: SentencePredicting {
@@ -272,6 +346,43 @@ private struct CupCompleter: WordCompleting {
 
 @MainActor
 private func sessionTests() async {
+    await asyncTest("the session shows the bar for a text field and hides it after the delay") {
+        let parts = try makeSession()
+        let bar = parts.session.inputBar
+        expect(!bar.isVisible, "nothing has focus at launch")
+        parts.controller.focusChanged(to: field("", caret: 0))
+        expect(bar.isVisible)
+        parts.controller.focusChanged(to: focus("AXButton"))
+        expect(bar.isVisible)
+        parts.clock.advance(to: 0.25)
+        expect(!bar.isVisible)
+    }
+
+    await asyncTest("the session shows the echo and hides it when Return empties it") {
+        let parts = try makeSession()
+        let bar = parts.session.inputBar
+        parts.controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "key-a" }!)
+        expect(bar.isVisible)
+        parts.controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "return" }!)
+        parts.clock.advance(to: 0.25)
+        expect(!bar.isVisible)
+    }
+
+    await asyncTest("the session shows the bar in Talk mode and in the Write window") {
+        let parts = try makeSession()
+        let bar = parts.session.inputBar
+        parts.controller.mode = .talk
+        expect(bar.isVisible)
+        parts.controller.mode = .type
+        parts.clock.advance(to: 0.25)
+        expect(!bar.isVisible)
+        parts.session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
+        expect(bar.isVisible)
+        parts.session.appChanged(name: "Finder", bundleID: "com.apple.finder", windowTitle: nil)
+        parts.clock.advance(to: 0.5)
+        expect(!bar.isVisible)
+    }
+
     await asyncTest("the input of the controller feeds the word row") {
         let parts = try makeSession()
         parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
