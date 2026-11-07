@@ -236,6 +236,19 @@ func writeDeskTests() {
         expect(layout.actions.minY > layout.cards[0].maxY, "the actions are above the cards")
     }
 
+    test("the blur behind the desk holds the cards, the actions, and the Find field") {
+        let area = CGRect(x: 0, y: 400, width: 1600, height: 600)
+        let layout = WriteDeskLayout(area: area, centre: 800, count: 3, selection: 1)
+        let backdrop = layout.backdrop(withNotice: false)
+        for card in layout.cards {
+            expect(backdrop.contains(card.offsetBy(dx: 0, dy: WriteDeskLayout.selectedLift)), "a raised card is inside")
+        }
+        expect(backdrop.contains(layout.find), "the Find field is inside")
+        expect(backdrop.maxY < layout.notice.maxY, "the notice is outside while it is hidden")
+        expect(layout.backdrop(withNotice: true).contains(layout.notice), "the notice is inside while it shows")
+        expect(area.contains(layout.backdrop(withNotice: true)), "the blur stays in the space above the keyboard")
+    }
+
     test("the cards stay on the screen when the bar is near its edge") {
         let area = CGRect(x: 0, y: 400, width: 1600, height: 600)
         let layout = WriteDeskLayout(area: area, centre: 100, count: 3, selection: 0)

@@ -87,6 +87,10 @@ extension Metrics {
         public static let findSize = CGSize(width: 460, height: 44)
         public static let findPadding: CGFloat = 18
         public static let noticeSize = CGSize(width: 420, height: 40)
+        /// The space between the blur behind the desk and the parts on it.
+        public static let backdropPadding: CGFloat = 24
+        /// The corners of the blur, the same as the cards of the keyboard.
+        public static let backdropCornerRadius: CGFloat = Detached.cornerRadius
         /// A card rises from this scale and from this depth below its place.
         public static let riseScale: CGFloat = 0.6
         public static let riseDepth: CGFloat = 260

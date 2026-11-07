@@ -13,6 +13,7 @@ public struct WriteDeskLayout: Equatable, Sendable {
     public static var cardSize: CGSize { Metrics.WriteDesk.cardSize }
     public static var cardGap: CGFloat { Metrics.WriteDesk.cardGap }
     public static var bottomPadding: CGFloat { Metrics.WriteDesk.bottomPadding }
+    public static var selectedLift: CGFloat { Metrics.WriteDesk.selectedLift }
 
     /// The indexes of the cards in view.
     public let visible: Range<Int>
@@ -24,6 +25,8 @@ public struct WriteDeskLayout: Equatable, Sendable {
     public let notice: CGRect
     /// The middle of the row of cards.
     public let centre: CGFloat
+    /// The space above the keyboard.
+    public let area: CGRect
 
     /// - Parameters:
     ///   - area: the space above the keyboard.
@@ -38,6 +41,7 @@ public struct WriteDeskLayout: Equatable, Sendable {
         let first = min(max(selection - shown / 2, 0), max(count - shown, 0))
         visible = first..<(first + shown)
 
+        self.area = area
         let width = CGFloat(shown) * size.width + CGFloat(max(shown - 1, 0)) * gap
         let left = min(max(bar - width / 2, area.minX), area.maxX - width)
         let bottom = area.minY + Self.bottomPadding
@@ -54,6 +58,25 @@ public struct WriteDeskLayout: Equatable, Sendable {
             width: area.width, height: Metrics.WriteDesk.actionHeight)
         find = Self.centred(Metrics.WriteDesk.findSize, on: centre, y: actions.maxY + space, in: area)
         notice = Self.centred(Metrics.WriteDesk.noticeSize, on: centre, y: find.maxY + space, in: area)
+    }
+
+    /// The frame of the blur behind the desk: around the cards, the actions,
+    /// and the Find field, and the Undo notice while it shows.
+    ///
+    /// - Parameter actionWidth: the width of the row of action buttons. It
+    ///   centres on `centre`, and it can be wider than a short row of cards.
+    public func backdrop(withNotice: Bool, actionWidth: CGFloat = 0) -> CGRect {
+        var rect = find
+        for card in cards {
+            rect = rect.union(card).union(card.offsetBy(dx: 0, dy: Self.selectedLift))
+        }
+        if actionWidth > 0 {
+            rect = rect.union(Self.centred(
+                CGSize(width: actionWidth, height: actions.height), on: centre, y: actions.minY, in: area))
+        }
+        if withNotice { rect = rect.union(notice) }
+        let padding = Metrics.WriteDesk.backdropPadding
+        return rect.insetBy(dx: -padding, dy: -padding).intersection(area)
     }
 
     private static func centred(_ size: CGSize, on centre: CGFloat, y: CGFloat, in area: CGRect) -> CGRect {

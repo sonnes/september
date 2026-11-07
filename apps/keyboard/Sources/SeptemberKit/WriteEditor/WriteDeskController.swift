@@ -24,6 +24,9 @@ public enum WriteDeskCommand: Equatable, Sendable {
 /// keyboard, a Find field, the actions of the selected card, and Undo of
 /// Move to Trash.
 ///
+/// A blur of the screen sits behind the cards, the actions, and the Find
+/// field, so that they stand clear of the windows below.
+///
 /// The cards rise out of the input bar when the desk opens, 30 ms apart, and
 /// go back down into it when the desk closes. With Reduce Motion on, the
 /// cards appear and go with no motion.
@@ -60,6 +63,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     }
 
     private let root = DeskRootView()
+    private let backdrop = NSVisualEffectView()
     private let findBox = DeskPillView(fill: Tokens.writePaper)
     private let find = NSTextField()
     private let count = NSTextField(labelWithString: "")
@@ -83,6 +87,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         window.contentView = root
         window.onKey = { [weak self] command in self?.onCommand?(command) }
         window.onFind = { [weak self] in self?.focusFind() }
+        setUpBackdrop()
         setUpFind()
         setUpActions()
         setUpNotice()
@@ -109,6 +114,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         cards = [:]
         window.setFrame(area, display: false)
         relayout(animated: false)
+        fadeBackdrop(in: true)
         riseCards()
         bringToFront(window)
         window.makeFirstResponder(find)
@@ -123,6 +129,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         hideUndo()
         let key: CardKey? = newDocument ? .newDocument : opening.map(CardKey.document)
         if let key { cards[key]?.isHidden = true }
+        fadeBackdrop(in: false)
         guard !reduceMotion else {
             window.orderOut(nil)
             return
@@ -175,6 +182,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         undoTitle = title
         noticeText.stringValue = "Moved “\(title)” to the Trash"
         notice.isHidden = false
+        relayout(animated: true)
         undoTimer?.invalidate()
         undoTimer = Timer.scheduledTimer(withTimeInterval: Motion.undoTime, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
@@ -185,10 +193,12 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     }
 
     public func hideUndo() {
+        let wasShown = undoTitle != nil
         undoTitle = nil
         notice.isHidden = true
         undoTimer?.invalidate()
         undoTimer = nil
+        if wasShown, isOpen { relayout(animated: true) }
     }
 
     // MARK: - Layout
@@ -234,6 +244,18 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         let row = local(layout.actions)
         let x = min(max(layout.centre - origin.x - size.width / 2, row.minX), row.maxX - size.width)
         actions.frame = CGRect(x: x, y: row.minY, width: size.width, height: row.height)
+
+        let blur = local(
+            layout.backdrop(withNotice: !notice.isHidden, actionWidth: canAct ? size.width : 0))
+        if animated, !reduceMotion, backdrop.frame != blur, !backdrop.frame.isEmpty {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = Motion.cardMove
+                context.timingFunction = Motion.snappyTiming
+                backdrop.animator().frame = blur
+            }
+        } else {
+            backdrop.frame = blur
+        }
         root.setAccessibilityLabel("Documents, \(desk.count)")
     }
 
@@ -276,6 +298,33 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     }
 
     // MARK: - Views
+
+    private func setUpBackdrop() {
+        backdrop.material = .popover
+        backdrop.blendingMode = .behindWindow
+        // The blur stays on while another app is in front, as the keyboard does.
+        backdrop.state = .active
+        backdrop.wantsLayer = true
+        backdrop.layer?.cornerRadius = Sizes.backdropCornerRadius
+        backdrop.layer?.cornerCurve = .continuous
+        backdrop.layer?.masksToBounds = true
+        root.addSubview(backdrop)
+    }
+
+    /// The blur fades in as the cards rise, and out as they go down.
+    private func fadeBackdrop(in visible: Bool) {
+        let alpha: CGFloat = visible ? 1 : 0
+        guard !reduceMotion else {
+            backdrop.alphaValue = alpha
+            return
+        }
+        if visible { backdrop.alphaValue = 0 }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = Motion.deskCards
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            backdrop.animator().alphaValue = alpha
+        }
+    }
 
     private func setUpFind() {
         find.isBezeled = false
