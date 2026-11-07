@@ -2,7 +2,7 @@
 
 A floating accessible keyboard that types into whatever app is in front, with
 shortcut panels around it. It predicts sentences and words, speaks text
-aloud, and has a Talk mode and a Write window. Built with SwiftUI + AppKit, no
+aloud, and has a Talk mode and a Write paper. Built with SwiftUI + AppKit, no
 dependencies.
 
 ```
@@ -21,12 +21,14 @@ Sources/
     Talk/           Talk mode, the Said list, the Phrases panel
     UserPanel/      My Panel, private text, the Accessibility Keyboard import
     Settings/       the pages of the Settings window
-    Write/          the documents, the editor bridge, and the spoken text of the Write window
+    Write/          the documents of Write, `WriteController`, and the text that Speak reads
+    WriteEditor/    the native Markdown editor and the Write paper
     Views/          keys, shortcut buttons, panels, the keyboard screen, the views of each part
     Resources/      Panels/{edit,text,system,phrases}.json, Panels/Apps/generic.json, Panels/Apps/<bundle id>.json,
                     Context/<bundle id>.json
   Keyboard/         the app: floating panels, CGEvent sink, focus watcher, chord tap, tree reader,
-                    menu bar, the Settings and Write windows
+                    menu bar, the Settings window
+  WriteLab/         the Write paper on its own, with a stand-in for the keyboard bar
 Tests/KitTests/     tests (see "Tests" below)
 ```
 
@@ -43,6 +45,7 @@ make release    # sign with Developer ID, notarize, staple, and check the app an
 make publish    # upload the DMG of make release to a GitHub Release
 make open       # build, sign and launch
 make snapshots  # render the keyboard and component library to .build/snapshots
+make lab        # run Write Lab, the native Write editor on its own
 ```
 
 `make run` and `make dev` show the keyboard on your screen. When you are done,
@@ -109,7 +112,7 @@ rejects an upload, `make release` stops. Then run
 - The first launch shows the Accessibility banner. After you allow September
   Keyboard in System Settings, the keys type into another app.
 - Settings opens, and Speak reads the input bar aloud.
-- The Write window opens and saves a document.
+- The Write paper opens and saves a document.
 
 ## The windows
 
@@ -202,14 +205,37 @@ When the history is off, it keeps no texts. If the file does not decode, the
 keyboard moves it to `clipboard-history.broken.json` and starts an empty
 history.
 
-Write opens the Write window, a normal macOS window with a Markdown editor.
-The window grows out of the input bar and opens above the keyboard. By
-default, the editor is a portrait page with the shape of A4 paper, as tall as
-the space above the keyboard. If the user resizes the window, the window keeps
-that size. If Reduce Motion is on, the window opens with no animation.
-`WritePlacement` holds the rule. In the Write window, Speak reads the selection. If nothing is selected, Speak
-reads the whole document without the Markdown marks. `MarkdownSpeech` holds
-the rule. If the document has no text, Speak is off.
+Write opens the Write paper: a sheet with round corners, no window frame,
+and a native Markdown editor (`WriteTextView`). The editor hides the Markdown
+marks and shows the look of the text. The paper comes out of the input bar
+and opens above the keyboard. It is as wide as the largest A4 page above the
+keyboard, and as tall as its text. The paper grows up by one line at a time
+as the user types. At the top of the page it stops, and the text moves up, so
+the typing line stays at the bottom. If Reduce Motion is on, nothing
+animates. `WritePaper` holds the rule.
+
+The editor saves the document 0.12 seconds after the last edit, so Write has
+no Save command. A document that the user did not edit saves byte for byte.
+Command-N starts a new document. A `[[` link opens the document with that
+title. If a save fails, the error shows at the top of the paper.
+
+Command-O, or the Documents key of the Write panel, turns the paper into the
+desk. The paper shrinks into its card, and the other documents rise out of
+the bar as paper cards, newest first. The first card is always New Document.
+The Find field takes the typing, and the input bar shows the query. The left
+and the right arrows move between the cards. Return opens the selected card,
+and Esc goes back to the paper.
+
+While the desk is open, the app panel shows the Documents keys. Rename opens
+the document with its heading selected, because the heading is the file
+name. Duplicate makes a copy with the name "Title 2". Move to Trash puts the
+file in the Trash of macOS, and Undo shows for 8 seconds. Show in Finder
+shows the file in `~/Documents/September`. Each card is a button, and its
+spoken label is the title, the date, and the first line.
+
+In Write, Speak reads the selection. If nothing is selected, Speak reads the
+whole document without the Markdown marks. `MarkdownSpeech` holds the rule.
+If the document has no text, Speak is off.
 
 Settings opens the Settings window. Both windows take focus. The menu bar item
 also opens them. After a press through `AXPress`, macOS refuses to activate
@@ -253,7 +279,7 @@ window:
 ```sh
 swift run Keyboard --snapshot out.png            # Type mode in Messages, with the panels beside the keys
 swift run Keyboard --snapshot out.png --talk     # Talk mode during speech
-swift run Keyboard --snapshot out.png --write    # the Write window in front
+swift run Keyboard --snapshot out.png --write    # the Write paper in front
 swift run Keyboard --snapshot out.png --mine     # the Mine tab of the app panel
 swift run Keyboard --snapshot out.png --clipboard  # the clipboard history, open
 swift run Keyboard --snapshot out.png --mono     # mono variant
@@ -263,6 +289,35 @@ swift run Keyboard --snapshot out.png --viewer   # the tree viewer, reading the 
 ```
 
 The keyboard snapshots use sample text. They read nothing from your apps.
+
+## Write Lab
+
+Write Lab runs the Write paper on its own, with the same `WriteController`
+as the keyboard. Write Lab shows a stand-in for the keyboard bar at the bottom of
+the screen. The bar shows the paragraph at the caret, as the keyboard reads it
+for the predictions. Write opens the paper out of the bar, and Documents opens
+the desk.
+
+```sh
+make lab                                                # the bar and the paper
+swift run WriteLab --demo                               # also types a sample document
+swift run WriteLab --desk                               # also opens the desk of documents
+swift run WriteLab --folder /tmp/notes                  # another folder of documents
+swift run WriteLab --snapshot out.png [--dark]          # render the sample document and quit
+swift run WriteLab --snapshot out.png --file notes.md   # render a file and quit
+swift run WriteLab --debug                              # print the paper frames each second, and draw the paper to /tmp/writelab-<n>.png
+```
+
+Write Lab keeps its documents in `~/Library/Application Support/September/Write Lab`.
+It never opens the documents of the keyboard in `~/Documents/September`.
+
+The paper is as wide as the largest A4 page above the bar, and as tall as its
+text. It grows up by one line at a time as you type. At the top of the page it
+stops, and the text moves up, so the line that you type stays at the bottom.
+With Reduce Motion on, the paper and the text move with no animation.
+
+The demo calls the editor directly. It posts no key events, so it cannot type
+into another app.
 
 ## The input bar
 
@@ -395,7 +450,7 @@ The Keychain holds the secrets:
 - The text of each private text button is in the service
   `com.september.keyboard.private`.
 
-The Write window keeps each document as a Markdown file in
+Write keeps each document as a Markdown file in
 `~/Documents/September`. My Panel, the use counts, the learned shortcuts, and
 the Talk history are JSON files in
 `~/Library/Application Support/September Keyboard`. Only the user can read the

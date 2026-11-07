@@ -260,7 +260,7 @@ public final class KeyboardSession: ObservableObject {
     public func appChanged(name: String?, bundleID: String?, windowTitle: String?) {
         controller.appChanged(name: name, bundleID: bundleID)
         isHistoryOpen = false
-        isWriteInFront = bundleID == WritePanel.id
+        isWriteInFront = WritePanel.isWrite(bundleID)
         frontBundleID = bundleID
         screen = nil
         appPanels.appActivated(bundleID: bundleID, windowTitle: windowTitle)

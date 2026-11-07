@@ -699,6 +699,19 @@ private func sessionTests() async {
         expectEqual(parts.controller.frontmostAppName, "Write")
     }
 
+    await asyncTest("the desk of Write gets the Documents panel, and Speak reads what Write gives") {
+        let parts = try makeSession()
+        parts.session.writeSpeech = { EditorSpeech(selection: "Garden Plans", markdown: "") }
+        parts.session.appChanged(name: "Write", bundleID: WritePanel.documentsID, windowTitle: nil)
+        expectEqual(parts.session.appPanels.current.bundleID, WritePanel.documentsID)
+        parts.session.writeCaretRead(EditorCaret(text: "gar", caret: 3, length: 0))
+        await parts.session.settle()
+        expectEqual(parts.controller.input, .mirrored(text: "gar", caret: 3, selectionLength: 0))
+        parts.session.speakPressed()
+        await parts.session.settle()
+        expectEqual(parts.voice.spoken, ["Garden Plans"])
+    }
+
     await asyncTest("Mine ranks its buttons again only when an app comes to the front") {
         let parts = try makeSession()
         let store = try expectValue(parts.userPanel)

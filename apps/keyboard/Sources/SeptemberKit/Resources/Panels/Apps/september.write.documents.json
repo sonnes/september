@@ -1,0 +1,30 @@
+{
+  "title": "Documents",
+  "columns": 2,
+  "buttons": [
+    { "id": "open", "label": "Open", "symbol": "return",
+      "action": { "type": "shortcut", "modifiers": [], "key": "return" } },
+    { "id": "new-document", "label": "New Document", "symbol": "square.and.pencil",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "n" } },
+    { "id": "rename", "label": "Rename", "symbol": "pencil",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "r" } },
+    { "id": "duplicate", "label": "Duplicate", "symbol": "plus.square.on.square",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "d" } },
+    { "id": "trash", "label": "Move to Trash", "symbol": "trash",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "delete" } },
+    { "id": "undo", "label": "Undo", "symbol": "arrow.uturn.backward",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "z" } },
+    { "id": "find", "label": "Find", "symbol": "magnifyingglass",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "f" } },
+    { "id": "finder", "label": "Show in Finder", "symbol": "folder",
+      "action": { "type": "shortcut", "modifiers": ["command", "option"], "key": "r" } },
+    { "id": "previous", "label": "Previous", "symbol": "arrow.left",
+      "action": { "type": "shortcut", "modifiers": [], "key": "left" } },
+    { "id": "next", "label": "Next", "symbol": "arrow.right",
+      "action": { "type": "shortcut", "modifiers": [], "key": "right" } },
+    { "id": "back", "label": "Back to Paper", "symbol": "escape",
+      "action": { "type": "shortcut", "modifiers": [], "key": "escape" } },
+    { "id": "close", "label": "Close", "symbol": "xmark",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "w" } }
+  ]
+}

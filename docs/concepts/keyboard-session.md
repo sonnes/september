@@ -28,8 +28,9 @@ It runs on the main actor. The checks are in
 The app sets two hooks:
 
 - `menuName` gives the name of a chord from the menu bar of the app in front.
-- `writeSpeech` reads the selection and the document of the Write window. The
-  keyboard cannot read its own web view through the accessibility API.
+- `writeSpeech` reads the selection and the document of the Write paper, or
+  the Find query of the desk. The keyboard cannot read its own window through
+  the accessibility API.
 
 The views read these values of the session:
 
@@ -73,12 +74,12 @@ An update does these steps in this order:
 2. If the speech ended after the last update, it tells Talk mode. Talk mode
    then empties the bar.
 3. It sets `speakMode`. In Type mode, Speak is on when the field has text to
-   read. In the Write window, Speak is on when the document has text.
+   read. On the Write paper, Speak is on when the document has text.
 4. It sets `spokenWord`.
 5. It sets `canCutOrCopy`.
 
 The input bar does not wait for the turn. The session takes the focused field,
-the input, the mode, the private state, and the Write window from their
+the input, the mode, the private state, and the Write paper from their
 publishers. Then it tells `InputBarVisibility` if the bar must show.
 
 My Panel ranks Mine again only when an app comes to the front, so a button
@@ -92,7 +93,7 @@ Settings ranks Mine at once, because the user is in the Settings window.
 `FocusWatcher` follows the app in front. For a new app, the calls come in this
 order:
 
-1. `FrontAppTracker` decides between the Write window and another app.
+1. `FrontAppTracker` decides between the Write paper and another app.
 2. `appChanged(name:bundleID:windowTitle:)`. The controller clears the text of
    the last app. Then the app panel takes the panel of the new app, and Mine
    takes its new order.
@@ -115,14 +116,20 @@ the only observer of the app switch.
 `windowTitleChanged(_:)` tells the app panel. A terminal shows the Claude Code
 panel when its window title names Claude Code.
 
-### The Write window
+### The Write paper
 
-The Write window is in the keyboard process, and the keyboard cannot read its
-own window through the accessibility API. When the window becomes the key
-window, the app calls `appChanged` with `WritePanel.id`. Then a timer reads
-the paragraph at the caret from the editor page every 0.5 seconds. The app
-gives it to `writeCaretRead(_:)`. The session sends the paragraph to
+The Write paper is in the keyboard process, and the keyboard cannot read its
+own window through the accessibility API. When the paper becomes the key
+window, the app calls `appChanged` with `WritePanel.id`. Then the editor
+reports the paragraph at the caret after each edit and each caret move. The
+app gives it to `writeCaretRead(_:)`. The session sends the paragraph to
 `controller.focusChanged(to:)` and records if the document has text.
+
+The desk of Write is the other window of Write. When the paper turns into the
+desk, the app calls `appChanged` with `WritePanel.documentsID`, so the app
+panel shows the Documents keys. The desk reports its Find query in place of
+the paragraph. When the desk turns back into the paper, the app calls
+`appChanged` with `WritePanel.id` again.
 
 ### The clipboard changes
 
@@ -174,7 +181,7 @@ Private text and a password field record nothing.
 
 - During speech, it stops the voice. In Talk mode, the text stays in the bar.
 - In Talk mode, it speaks the bar, and the text goes to the Said list.
-- In Type mode with the Write window in front, it reads `writeSpeech`. It
+- In Type mode with the Write paper in front, it reads `writeSpeech`. It
   speaks the selection, or the whole document without its Markdown marks
   (`MarkdownSpeech`).
 - In Type mode in another app, it speaks the selection of the field, or the
