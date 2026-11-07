@@ -7,17 +7,20 @@ public struct ModeButtons: View {
     private let mode: KeyboardMode
     private let setMode: (KeyboardMode) -> Void
     private let write: () -> Void
+    private let arrange: () -> Void
     private let settings: () -> Void
 
     public init(
         mode: KeyboardMode,
         setMode: @escaping (KeyboardMode) -> Void,
         write: @escaping () -> Void,
+        arrange: @escaping () -> Void,
         settings: @escaping () -> Void
     ) {
         self.mode = mode
         self.setMode = setMode
         self.write = write
+        self.arrange = arrange
         self.settings = settings
     }
 
@@ -30,6 +33,12 @@ public struct ModeButtons: View {
                 setMode(.talk)
             }
             ModeButton(title: "Write", symbol: "pencil", isOn: false, label: "Open Write", action: write)
+            // The panels show only in Type mode.
+            if mode == .type {
+                ModeButton(
+                    title: "Arrange", symbol: "rectangle.3.group", isOn: false,
+                    label: "Arrange the panels around the keyboard", action: arrange)
+            }
             ModeButton(title: "Settings", symbol: "gearshape", isOn: false, label: "Open Settings", action: settings)
                 .padding(.leading, Metrics.TopRow.settingsGap)
         }

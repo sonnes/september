@@ -13,18 +13,21 @@ public struct KeyboardScreen: View {
     @ObservedObject private var inputBar: InputBarVisibility
     private let phrases: PanelDefinition
     private let write: () -> Void
+    private let arrange: () -> Void
     private let settings: () -> Void
 
     public init(
         session: KeyboardSession,
         phrases: PanelDefinition,
         write: @escaping () -> Void,
+        arrange: @escaping () -> Void = {},
         settings: @escaping () -> Void
     ) {
         self.session = session
         inputBar = session.inputBar
         self.phrases = phrases
         self.write = write
+        self.arrange = arrange
         self.settings = settings
     }
 
@@ -60,6 +63,7 @@ public struct KeyboardScreen: View {
                     mode: controller.mode,
                     setMode: { controller.mode = $0 },
                     write: write,
+                    arrange: arrange,
                     settings: settings)
             }
             .padding(.leading, inset)

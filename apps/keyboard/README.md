@@ -64,7 +64,8 @@ macOS resets its Accessibility permission after the next build.
 
 The keyboard window holds the sentence predictions, the input bar, and the
 keys. A row of word completions sits on top of the keys. Speak, Type, Talk,
-Write, and Settings are at the right of the input bar.
+Write, and Settings are at the right of the input bar. In Type mode, Arrange
+is between Write and Settings.
 
 The Edit, Text, and System keypads and the app panel float in windows of their
 own. By default they sit beside the keys. To move the keyboard window or a
@@ -72,6 +73,12 @@ panel, drag it by the grip at its top. A drag does not take focus from the app
 in front. The keyboard keeps the place of each window for the next launch. If
 a saved place is on no screen, the window goes back to its default place. The
 keyboard window and the panels never take focus.
+
+Arrange moves the panels back beside the keys, at the place where the keyboard
+is now. The menu bar item has the same command, Arrange Panels. Edit goes to
+the left of the keys. Text, System, and the app panel go to the right. If a
+panel does not fit on its side, it goes to the other side. Each panel stays on
+the screen. `PanelPlacement.arrangedFrames` holds the rule.
 
 The app panel has two tabs. The first tab shows the panel of the app in front.
 The second tab, Mine, shows the buttons that the user made on the My Panel page

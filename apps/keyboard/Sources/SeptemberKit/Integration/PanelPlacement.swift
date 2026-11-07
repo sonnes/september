@@ -41,6 +41,46 @@ public enum PanelPlacement {
         return frames
     }
 
+    /// The panels around the keys where the keyboard is now, as in
+    /// `defaultFrames`. A panel that has no room at its side goes to the
+    /// other side, out from the panels there. Then each frame moves onto the
+    /// screen.
+    public static func arrangedFrames(
+        keys: CGRect, sizes: [DetachedPanel: CGSize], screen: CGRect
+    ) -> [DetachedPanel: CGRect] {
+        let gap = Metrics.Detached.gap
+        var left = keys.minX
+        var right = keys.maxX
+        var frames: [DetachedPanel: CGRect] = [:]
+
+        func place(_ panel: DetachedPanel, preferLeft: Bool) {
+            guard let size = sizes[panel] else { return }
+            let fitsLeft = left - gap - size.width >= screen.minX
+            let fitsRight = right + gap + size.width <= screen.maxX
+            let x: CGFloat
+            if preferLeft ? (fitsLeft || !fitsRight) : (!fitsRight && fitsLeft) {
+                x = left - gap - size.width
+                left = x
+            } else {
+                x = right + gap
+                right = x + size.width
+            }
+            frames[panel] = CGRect(x: x, y: keys.maxY - size.height, width: size.width, height: size.height)
+        }
+
+        place(.edit, preferLeft: true)
+        for panel in Self.right { place(panel, preferLeft: false) }
+        return frames.mapValues { onScreen($0, screen) }
+    }
+
+    /// `frame`, moved by the least distance so that it is inside `screen`.
+    static func onScreen(_ frame: CGRect, _ screen: CGRect) -> CGRect {
+        var frame = frame
+        frame.origin.x = min(max(frame.minX, screen.minX), screen.maxX - frame.width)
+        frame.origin.y = min(max(frame.minY, screen.minY), screen.maxY - frame.height)
+        return frame
+    }
+
     /// The bottom left corner of the keys, so that the keys and the panels
     /// beside them are centred in the screen, less `rightInset`.
     public static func keysOrigin(

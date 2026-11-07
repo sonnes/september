@@ -75,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             controller: controller, session: session, permission: permission, phrases: phrases,
             presser: KeyPresser(timing: { KeyTiming.current() }),
             write: { [weak self] in self?.showWrite() },
+            arrange: { [weak self] in self?.arrangePanels() },
             settings: { [weak self] in self?.showSettings() })
 
         followSettings()
@@ -340,6 +341,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         showTreePanel(height: size.height)
     }
 
+    /// Moves the shortcut panels around the keys, where the keyboard is now.
+    /// The panels save their new frames.
+    private func arrangePanels() {
+        guard let keyboard = keyboardPanel else { return }
+        let keys = CGRect(
+            origin: KeyboardPosition.typeOrigin(of: keyboard.frame.origin, in: mode),
+            size: WindowContent.measure(content.keysCard()))
+        let screen = (keyboard.screen ?? NSScreen.main)?.visibleFrame ?? keys
+        let sizes = panels.mapValues(\.frame.size)
+        for (panel, frame) in PanelPlacement.arrangedFrames(keys: keys, sizes: sizes, screen: screen) {
+            panels[panel]?.setFrame(frame, display: true, animate: true)
+        }
+    }
+
     /// Keeps the place of the keyboard for the next launch, as the place of
     /// its Type mode window.
     private func keyboardMoved() {
@@ -459,6 +474,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
 
         menu.addItem(withTitle: "Write", action: #selector(openWrite), keyEquivalent: "").target = self
+        menu.addItem(withTitle: "Arrange Panels", action: #selector(arrangePanelsFromMenu), keyEquivalent: "")
+            .target = self
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",").target =
             self
 
@@ -524,6 +541,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openWrite() {
         showWrite()
+    }
+
+    @objc private func arrangePanelsFromMenu() {
+        arrangePanels()
     }
 
     @objc private func openSettings() {

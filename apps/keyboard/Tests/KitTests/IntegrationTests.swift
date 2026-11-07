@@ -254,6 +254,23 @@ private func placementTests() {
         expectEqual(frames[.app]?.maxY, keys.maxY)
     }
 
+    test("arranging puts the panels around the keys where the keyboard is now") {
+        let moved = keys.offsetBy(dx: -400, dy: 300)
+        let sizes: [DetachedPanel: CGSize] = [.edit: panel, .text: panel, .system: panel, .app: panel]
+        let frames = PanelPlacement.arrangedFrames(keys: moved, sizes: sizes, screen: screen)
+        expectEqual(frames, PanelPlacement.defaultFrames(keys: moved, sizes: sizes))
+    }
+
+    test("arranging keeps every panel on the screen") {
+        let sizes: [DetachedPanel: CGSize] = [.edit: panel, .text: panel, .system: panel, .app: panel]
+        let atRight = CGRect(x: 1900, y: 1300, width: 1000, height: 400)
+        let right = PanelPlacement.arrangedFrames(keys: atRight, sizes: sizes, screen: screen)
+        for frame in right.values { expect(screen.contains(frame), "\(frame) is off the screen") }
+        let atLeft = CGRect(x: 50, y: 24, width: 1000, height: 400)
+        let left = PanelPlacement.arrangedFrames(keys: atLeft, sizes: sizes, screen: screen)
+        expect(screen.contains(left[.edit]!), "Edit stays on the screen")
+    }
+
     test("the group of keys and panels is centred on the screen") {
         let origin = PanelPlacement.keysOrigin(
             keysSize: keys.size, panels: [.edit: panel, .text: panel, .system: panel, .app: panel],

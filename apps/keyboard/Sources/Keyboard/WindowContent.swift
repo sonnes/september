@@ -14,11 +14,13 @@ struct WindowContent {
     /// down.
     var presser = KeyPresser()
     var write: () -> Void = {}
+    var arrange: () -> Void = {}
     var settings: () -> Void = {}
 
     func keyboard() -> AnyView {
         AnyView(
-            KeyboardScreen(session: session, phrases: phrases, write: write, settings: settings)
+            KeyboardScreen(
+                session: session, phrases: phrases, write: write, arrange: arrange, settings: settings)
                 .environmentObject(controller)
                 .environmentObject(permission)
                 .environment(\.keyPresser, presser))

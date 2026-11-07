@@ -154,3 +154,5 @@ only what needs a running app — the panel, the event sink, the menu bar.
   panels share the bottom margin of the screen. The keys and the panels
   centre in the space left after `reservedWidth`. `PanelPlacement` puts the
   panels beside the keys, with their tops in line with the top of the keys.
+  Arrange calls `PanelPlacement.arrangedFrames` with the current place of the
+  keys, so the panels follow a keyboard that the user moved.
