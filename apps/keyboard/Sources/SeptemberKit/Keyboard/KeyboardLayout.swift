@@ -69,7 +69,7 @@ public enum KeyboardLayout {
             KeyDefinition(
                 id: "delete",
                 kind: .special,
-                label: "delete",
+                label: "⌫",
                 weight: 1.5,
                 action: .virtual(.delete),
                 accessibilityLabel: "Delete"
@@ -83,7 +83,7 @@ public enum KeyboardLayout {
             KeyDefinition(
                 id: "tab",
                 kind: .special,
-                label: "tab",
+                label: "⇥",
                 weight: 1.5,
                 action: .virtual(.tab),
                 accessibilityLabel: "Tab"
@@ -101,7 +101,7 @@ public enum KeyboardLayout {
             KeyDefinition(
                 id: "capslock",
                 kind: .special,
-                label: "caps lock",
+                label: "⇪",
                 weight: 1.75,
                 action: .modifier(.capsLock),
                 accessibilityLabel: "Caps Lock"
@@ -114,7 +114,7 @@ public enum KeyboardLayout {
             KeyDefinition(
                 id: "return",
                 kind: .special,
-                label: "return",
+                label: "↩",
                 weight: 1.75,
                 action: .virtual(.return),
                 accessibilityLabel: "Return"
@@ -126,7 +126,7 @@ public enum KeyboardLayout {
             KeyDefinition(
                 id: "shift-left",
                 kind: .special,
-                label: "shift",
+                label: "⇧",
                 weight: 2.25,
                 action: .modifier(.shift),
                 accessibilityLabel: "Shift"
@@ -140,7 +140,7 @@ public enum KeyboardLayout {
             KeyDefinition(
                 id: "shift-right",
                 kind: .special,
-                label: "shift",
+                label: "⇧",
                 weight: 2.25,
                 action: .modifier(.shift),
                 accessibilityLabel: "Shift"
@@ -153,15 +153,15 @@ public enum KeyboardLayout {
             action: .modifier(.function), accessibilityLabel: "Function"
         ),
         KeyDefinition(
-            id: "control", kind: .special, label: "control", weight: 1.2,
+            id: "control", kind: .special, label: "⌃", weight: 1.2,
             action: .modifier(.control), accessibilityLabel: "Control"
         ),
         KeyDefinition(
-            id: "option-left", kind: .special, label: "option", weight: 1.2,
+            id: "option-left", kind: .special, label: "⌥", weight: 1.2,
             action: .modifier(.option), accessibilityLabel: "Option"
         ),
         KeyDefinition(
-            id: "command-left", kind: .special, label: "command", weight: 1.4,
+            id: "command-left", kind: .special, label: "⌘", weight: 1.4,
             action: .modifier(.command), accessibilityLabel: "Command"
         ),
         KeyDefinition(
@@ -169,11 +169,11 @@ public enum KeyboardLayout {
             action: .virtual(.space), accessibilityLabel: "Space"
         ),
         KeyDefinition(
-            id: "command-right", kind: .special, label: "command", weight: 1.4,
+            id: "command-right", kind: .special, label: "⌘", weight: 1.4,
             action: .modifier(.command), accessibilityLabel: "Command"
         ),
         KeyDefinition(
-            id: "option-right", kind: .special, label: "option", weight: 1.2,
+            id: "option-right", kind: .special, label: "⌥", weight: 1.2,
             action: .modifier(.option), accessibilityLabel: "Option"
         ),
     ]

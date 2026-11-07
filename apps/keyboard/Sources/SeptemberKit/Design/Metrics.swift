@@ -40,6 +40,10 @@ public enum Metrics {
         "\(Int(size.width))×\(Int(size.height))"
     }
 
+    /// A special key with a symbol for its label, such as ⌘, as large as a
+    /// letter.
+    public static let symbolLabelSize: CGFloat = 18
+
     public static func labelSize(for kind: KeyKind) -> CGFloat {
         switch kind {
         case .standard: 18

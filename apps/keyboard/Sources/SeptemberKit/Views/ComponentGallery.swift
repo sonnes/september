@@ -12,7 +12,7 @@ public struct ComponentGallery: View {
     private var samples: [(title: String, note: String, view: AnyView)] {
         let standard = KeyDefinition(id: "g-a", kind: .standard, label: "A", action: .character("a"))
         let special = KeyDefinition(
-            id: "g-shift", kind: .special, label: "shift", action: .modifier(.shift)
+            id: "g-shift", kind: .special, label: "⇧", action: .modifier(.shift)
         )
         let function = KeyDefinition(
             id: "g-esc", kind: .function, label: "esc", action: .virtual(.escape)

@@ -38,4 +38,5 @@ public enum Typography {
         .system(size: Metrics.labelSize(for: kind), weight: kind == .function ? .medium : .regular)
     }
     public static let keySecondaryLabel = Font.system(size: Metrics.dualSecondaryLabelSize)
+    public static let keySymbol = Font.system(size: Metrics.symbolLabelSize)
 }

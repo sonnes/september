@@ -61,8 +61,9 @@ public struct KeyView: View {
                 .font(Typography.keyLabel(.standard))
                 .foregroundStyle(Color(tint))
         case .special:
+            // A one-character label is a symbol, such as ⌘ or ⇧.
             Text(key.label)
-                .font(Typography.keyLabel(.special))
+                .font(key.label.count == 1 ? Typography.keySymbol : Typography.keyLabel(.special))
                 .foregroundStyle(Color(isActive ? Tokens.accent : tint))
         case .function:
             Text(key.label)
