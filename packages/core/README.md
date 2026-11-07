@@ -66,7 +66,7 @@ The loop uses three hooks of the `Agent`:
 
 `rules/audio-tags.ts` decides which voice receives audio tags, and removes the tags for each other voice. `rules/moods.ts` holds the five moods of Talk, with their prompt instructions and example tags. See `docs/concepts/audio-tags.md`.
 
-`rules/model-config.ts` selects the model for a text job. `GenerationFeature` names the jobs. All jobs use `defaultModel`. If `suggestionsModel` is not null, the suggestions use that model. `withProvider` moves both models to a new provider. `SUGGESTIONS_MODELS` and `AGENT_MODELS` are the curated model lists. `modelChoices` makes a list into rows: Automatic first, then the Frontier and Open groups. `modelIdFor` gives the model id of a request: `openrouter/free` for Automatic, and the one model of Apple Intelligence. `OPENROUTER_BASE` is the address of the OpenRouter API. See `docs/concepts/writing-model-settings.md`.
+`rules/model-config.ts` selects the model for a text job. `GenerationFeature` names the jobs. All jobs use `defaultModel`. If `suggestionsModel` is not null, the suggestions use that model. `withProvider` moves both models to a new provider. `SUGGESTIONS_MODELS` and `AGENT_MODELS` are the curated model lists. `modelChoices` makes a list into rows: Automatic first, then the Frontier and Open groups. `modelIdFor` gives the model id of a request: `openrouter/free` for Automatic, and the one model of Apple Intelligence. `FREE_MODELS` is the list of free models that automatic suggestions and phrases send, best first. `isAutomatic` tells whether a configuration is Automatic. `OPENROUTER_BASE` is the address of the OpenRouter API. See `docs/concepts/writing-model-settings.md`.
 
 ## Phrases
 

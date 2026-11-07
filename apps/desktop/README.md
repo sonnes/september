@@ -924,8 +924,9 @@ and phrases section has two switches and one model list. Each list is a
 A Frontier group and an Open models group follow. A saved model that is not on
 a list shows as the first row, "Current: <id>".
 
-**Automatic** is the first row, and the default. The app sends
-`openrouter/free`, and OpenRouter picks a free model that answers.
+**Automatic** is the first row, and the default. Suggestions and phrases send
+the `FREE_MODELS` list, and OpenRouter uses the first free model that answers.
+The agent sends `openrouter/free`.
 The agent and phrases model goes into `setup.defaultModel`. The suggestions
 model goes into `setup.suggestionsModel`. If `suggestionsModel` is null,
 Suggestions use `defaultModel`. A provider change writes the new service into

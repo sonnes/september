@@ -11,8 +11,26 @@ export interface WritingModelConfig {
 /** The address of the OpenRouter API. */
 export const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
-/** The OpenRouter router that picks a free model. Automatic asks it. */
+/** The OpenRouter router that picks a free model. An automatic Agent asks it. */
 export const AUTOMATIC_MODEL = "openrouter/free";
+
+/**
+ * The free models that automatic suggestions and phrases ask, best first.
+ * OpenRouter takes the whole list and uses the first model that answers, so
+ * one bad day for one model is not one bad day for the user. Refresh the ids
+ * when they rotate.
+ */
+export const FREE_MODELS = [
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+  "openai/gpt-oss-20b:free",
+] as const;
+
+/** True when the user chose Automatic for an OpenRouter job. */
+export function isAutomatic(config: WritingModelConfig): boolean {
+  return config.service === "openrouter" && !config.model.trim();
+}
 
 /** The one model of Apple Intelligence. */
 export const APPLE_MODEL = "apple-foundationmodel";

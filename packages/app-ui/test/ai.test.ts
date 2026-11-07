@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { generate, openAgentWriter } from '@september/app-ui/services/ai';
 import { setup } from '@september/app-ui/services/settings';
 import { DEFAULT_ANSWERS, type SavedSetup } from '@september/core/rules/onboarding';
+import { FREE_MODELS } from '@september/core/rules/model-config';
 
 import { bodyOf, streamedReply, textReply } from './model';
 import { platform } from './platform';
@@ -86,7 +87,7 @@ describe('the writing service', () => {
   });
 
   it.each(['', '   '])(
-    'routes an automatic model (%j) through the free router and keeps JSON mode',
+    'sends an automatic model (%j) as the free model list and keeps JSON mode',
     async model => {
       await chooseModels({ defaultModel: { service: 'openrouter', model } });
       const request = vi.fn(async () => text('{"items":[]}'));
@@ -104,14 +105,15 @@ describe('the writing service', () => {
       );
 
       const body = bodyOf<Body>(request);
-      expect(body.model).toBe('openrouter/free');
+      expect(body).not.toHaveProperty('model');
+      expect(body.models).toEqual(FREE_MODELS);
       expect(body.response_format).toEqual({ type: 'json_object' });
       const messages = body.messages as Array<Record<string, unknown>>;
       expect(messages[0]).toEqual({ role: 'system', content: 'Be brief.' });
     }
   );
 
-  it('uses the free router for an automatic Suggestions override and other automatic requests', async () => {
+  it('sends the free model list for an automatic Suggestions override and other automatic requests', async () => {
     await chooseModels({
       defaultModel: { service: 'openrouter', model: 'default/model' },
       suggestionsModel: { service: 'openrouter', model: '' },
@@ -123,14 +125,14 @@ describe('the writing service', () => {
       { messages: [{ role: 'user', content: 'Suggest something' }] },
       { feature: 'suggestions' }
     );
-    expect(bodyOf<Body>(request).model).toBe('openrouter/free');
+    expect(bodyOf<Body>(request).models).toEqual(FREE_MODELS);
 
     await chooseModels({});
     await generate(
       { messages: [{ role: 'user', content: 'Describe this space' }] },
       { feature: 'phrases' }
     );
-    expect(bodyOf<Body>(request, 1).model).toBe('openrouter/free');
+    expect(bodyOf<Body>(request, 1).models).toEqual(FREE_MODELS);
   });
 
   it('records what an Agent answer spent, and what a failed one did not', async () => {

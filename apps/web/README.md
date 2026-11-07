@@ -296,8 +296,9 @@ the published rates of the models it lists, which is where a recorded cost
 comes from; a model it does not list still runs, and records no cost rather
 than a wrong one.
 
-Automatic text-generation requests send `model: "openrouter/free"`, including
-Suggestions overrides that select Automatic. Named model selections retain
+Automatic suggestion and phrase requests send the `FREE_MODELS` list as
+`models`, with no `model`, including Suggestions overrides that select
+Automatic. OpenRouter uses the first model in the list that answers. Named model selections retain
 their model ID. Requests preserve JSON response settings.
 
 The space Agent uses OpenRouter's tool-calling request shape.
