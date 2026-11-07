@@ -61,6 +61,15 @@ final class EditorWebPage: NSObject, WKScriptMessageHandlerWithReply, WKNavigati
         return try? JSONDecoder().decode(EditorCaret.self, from: Data(json.utf8))
     }
 
+    /// The selection and the document, for Speak. `nil` before the page is ready.
+    func speech() async -> EditorSpeech? {
+        guard ready,
+            let json = try? await webView.evaluateJavaScript(
+                "JSON.stringify(\(EditorCall.speechScript))") as? String
+        else { return nil }
+        return try? JSONDecoder().decode(EditorSpeech.self, from: Data(json.utf8))
+    }
+
     // MARK: Messages
 
     /// The page waits for an answer to each message. The keyboard answers

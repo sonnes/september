@@ -19,7 +19,7 @@ Sources/
     Talk/           Talk mode, the Said list, the Phrases panel
     UserPanel/      My Panel, private text, the Accessibility Keyboard import
     Settings/       the pages of the Settings window
-    Write/          the documents and the editor bridge of the Write window
+    Write/          the documents, the editor bridge, and the spoken text of the Write window
     Views/          keys, shortcut buttons, panels, the keyboard screen, the views of each part
     Resources/      Panels/{edit,text,system,phrases}.json, Panels/Apps/generic.json, Panels/Apps/<bundle id>.json
   Keyboard/         the app: floating panels, CGEvent sink, focus watcher, chord tap, tree reader,
@@ -85,7 +85,9 @@ and the Said list shows at the right. Speak reads the bar aloud and adds it to
 the Said list.
 
 Write opens the Write window, a normal macOS window with a Markdown editor.
-Settings opens the Settings window. Both windows take focus. The menu bar item
+In the Write window, Speak reads the selection. If nothing is selected, Speak
+reads the whole document without the Markdown marks. `MarkdownSpeech` holds
+the rule. Settings opens the Settings window. Both windows take focus. The menu bar item
 also opens them.
 
 ## Pressing and holding keys

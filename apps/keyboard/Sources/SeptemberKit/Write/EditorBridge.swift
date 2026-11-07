@@ -126,6 +126,19 @@ public enum EditorCall: Equatable, Sendable {
         })()
         """
 
+    /// Returns an `EditorSpeech`: the selected text, and the Markdown of the
+    /// open document. The selection is the text of the page, so it holds no
+    /// Markdown marks. A selection that leaves the editor counts as none.
+    public static let speechScript = """
+        (() => {
+          const selection = document.getSelection();
+          const editor = document.querySelector('[contenteditable="true"]');
+          const inEditor = selection && editor && !selection.isCollapsed
+            && editor.contains(selection.anchorNode) && editor.contains(selection.focusNode);
+          return { selection: inEditor ? selection.toString() : "", markdown: window.piper.flush() ?? "" };
+        })()
+        """
+
     /// The JavaScript that makes the call.
     public var script: String {
         switch self {
@@ -220,5 +233,26 @@ public struct EditorCaret: Decodable, Equatable, Sendable {
         FocusedField(
             appName: "Write", role: "AXTextArea", isEditable: true, isSecure: false,
             text: text, selection: NSRange(location: caret, length: length))
+    }
+}
+
+/// What Speak reads in the Write window, from `EditorCall.speechScript`.
+public struct EditorSpeech: Decodable, Equatable, Sendable {
+    /// The selected text of the page, or empty.
+    public let selection: String
+    /// The Markdown of the open document.
+    public let markdown: String
+
+    public init(selection: String, markdown: String) {
+        self.selection = selection
+        self.markdown = markdown
+    }
+
+    /// The selection, or the whole document without its Markdown marks when
+    /// nothing is selected. `nil` when there is nothing to read.
+    public var text: String? {
+        let selected = selection.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = selected.isEmpty ? MarkdownSpeech.plainText(markdown) : selected
+        return text.isEmpty ? nil : text
     }
 }

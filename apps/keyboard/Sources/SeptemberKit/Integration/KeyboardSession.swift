@@ -43,12 +43,18 @@ public final class KeyboardSession: ObservableObject {
     @Published private var isWriteInFront = false
     /// Gives the name of a chord in the menu bar of the app in front.
     public var menuName: (Shortcut) -> String? = { _ in nil }
+    /// Reads what Speak reads in the Write window: the selection and the
+    /// document. The keyboard cannot read its own web view through the
+    /// accessibility API, so the app asks the editor page.
+    public var writeSpeech: () async -> EditorSpeech? = { nil }
 
     /// What Speak read in Type mode.
     private var speaking: SpeakText?
     private var wasSpeaking = false
     private var subscriptions: Set<AnyCancellable> = []
     private var pending: Task<Void, Never>?
+    /// The read of the Write window before Speak speaks it.
+    private var readingWrite: Task<Void, Never>?
     private var isScheduled = false
     private var needsRank = false
 
@@ -112,7 +118,9 @@ public final class KeyboardSession: ObservableObject {
     // MARK: - Speak
 
     /// Speak, or Stop during speech. In Type mode Speak reads the selection
-    /// of the field, or the whole field. In Talk mode it speaks the bar.
+    /// of the field, or the whole field. In the Write window it reads the
+    /// selection, or the whole document without its Markdown marks. In Talk
+    /// mode it speaks the bar.
     public func speakPressed() {
         if speaker.isSpeaking {
             if controller.mode == .talk { controller.talk.stop() } else { speaker.stop() }
@@ -120,6 +128,8 @@ public final class KeyboardSession: ObservableObject {
             switch controller.mode {
             case .talk:
                 controller.talk.speak()
+            case .type where isWriteInFront:
+                speakWrite()
             case .type:
                 guard let text = SpeakText(input: controller.input, isPrivate: controller.isFieldPrivate)
                 else { return }
@@ -163,6 +173,7 @@ public final class KeyboardSession: ObservableObject {
         // An update can start another one, such as the end of a speech that
         // empties the Talk bar.
         for _ in 0..<4 {
+            await readingWrite?.value
             await pending?.value
             await Task.yield()
         }
@@ -170,6 +181,22 @@ public final class KeyboardSession: ObservableObject {
     }
 
     // MARK: - Private
+
+    /// Reads the Write window, then speaks. The bar shows only the paragraph
+    /// at the caret, so no word of the bar lights up.
+    private func speakWrite() {
+        guard readingWrite == nil else { return }
+        readingWrite = Task { [weak self] in
+            guard let self else { return }
+            let text = await self.writeSpeech()?.text
+            self.readingWrite = nil
+            guard let text, self.isWriteInFront, self.controller.mode == .type, !self.speaker.isSpeaking
+            else { return }
+            self.speaking = nil
+            self.speaker.speak(text)
+            self.update()
+        }
+    }
 
     private func rankUserPanel() {
         mineButtons = userPanel?.ranked(by: userPanelUsage) ?? []
@@ -244,7 +271,11 @@ public final class KeyboardSession: ObservableObject {
         case .talk:
             canSpeak = !talk.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .type:
-            canSpeak = SpeakText(input: controller.input, isPrivate: controller.isFieldPrivate) != nil
+            // The Write window reads the whole document, so the paragraph at
+            // the caret can be empty.
+            canSpeak =
+                isWriteInFront
+                || SpeakText(input: controller.input, isPrivate: controller.isFieldPrivate) != nil
         }
         let speakMode = SpeakButton.Mode(isSpeaking: isSpeaking, canSpeak: canSpeak)
         if speakMode != self.speakMode { self.speakMode = speakMode }

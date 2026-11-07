@@ -207,6 +207,65 @@ func writeTests() {
         expectEqual(field.display, .mirrored(text: "Who checks it at ni", caret: 19, selectionLength: 0))
     }
 
+    // MARK: Speak
+
+    test("Speak reads a heading without its marks, as a sentence") {
+        expectEqual(MarkdownSpeech.plainText("# Garden plans"), "Garden plans.")
+        expectEqual(MarkdownSpeech.plainText("### Is it warm? ###"), "Is it warm?")
+        expectEqual(MarkdownSpeech.plainText("#hashtag"), "#hashtag", "a word after # is no heading")
+    }
+
+    test("Speak reads list items, numbers, and quotes without their marks") {
+        expectEqual(MarkdownSpeech.plainText("- Roses\n* Tulips\n  + Lilies"), "Roses\nTulips\nLilies")
+        expectEqual(MarkdownSpeech.plainText("1. Water\n2) Feed"), "1. Water\n2) Feed")
+        expectEqual(MarkdownSpeech.plainText("> Said the gardener"), "Said the gardener")
+    }
+
+    test("Speak reads to-dos without their boxes") {
+        expectEqual(MarkdownSpeech.plainText("- [ ] Buy seeds\n- [x] Dig the bed"), "Buy seeds\nDig the bed")
+    }
+
+    test("Speak reads bold, italic, struck, and marked words without their marks") {
+        expectEqual(MarkdownSpeech.plainText("A **big** and __bold__ plan"), "A big and bold plan")
+        expectEqual(MarkdownSpeech.plainText("An *odd* and _new_ idea"), "An odd and new idea")
+        expectEqual(MarkdownSpeech.plainText("***Both*** ~~gone~~ ==marked=="), "Both gone marked")
+        expectEqual(MarkdownSpeech.plainText("snake_case_name and 2 * 3 * 4"), "snake_case_name and 2 * 3 * 4")
+    }
+
+    test("Speak reads the text of links, images, and document links") {
+        expectEqual(MarkdownSpeech.plainText("See [the plan](https://example.com) now"), "See the plan now")
+        expectEqual(MarkdownSpeech.plainText("![A red rose](rose.png)"), "A red rose")
+        expectEqual(MarkdownSpeech.plainText("Read [[Garden Plans]] and [[Recipes|the recipes]]"),
+            "Read Garden Plans and the recipes")
+        expectEqual(MarkdownSpeech.plainText("Mail <https://example.com>"), "Mail https://example.com")
+        expectEqual(MarkdownSpeech.plainText("A note[^1] here"), "A note here")
+    }
+
+    test("Speak reads code without its marks") {
+        expectEqual(MarkdownSpeech.plainText("Run `make test` first"), "Run make test first")
+        expectEqual(MarkdownSpeech.plainText("```swift\nlet a = 1\n```"), "let a = 1")
+        expectEqual(MarkdownSpeech.plainText("~~~\n# not a heading\n~~~"), "# not a heading")
+    }
+
+    test("Speak skips rules and table lines, and keeps escaped marks") {
+        expectEqual(MarkdownSpeech.plainText("Above\n\n---\n\nBelow"), "Above\n\nBelow")
+        expectEqual(MarkdownSpeech.plainText("| Day | Plant |\n| --- | :---: |\n| Mon | Roses |"),
+            "Day, Plant\nMon, Roses")
+        expectEqual(MarkdownSpeech.plainText(#"Price \*not\* bold"#), "Price *not* bold")
+    }
+
+    test("Speak in Write reads the selection, or the whole document") {
+        let selected = EditorSpeech(selection: "the roses", markdown: "# Plan\n\nSee **the roses**.")
+        expectEqual(selected.text, "the roses")
+        let whole = EditorSpeech(selection: "", markdown: "# Plan\n\nSee **the roses**.")
+        expectEqual(whole.text, "Plan.\n\nSee the roses.")
+        expect(EditorSpeech(selection: " ", markdown: "---\n").text == nil, "nothing to read")
+        expect(EditorCall.speechScript.contains("window.piper.flush()"), "the script reads the document")
+        let decoded = try JSONDecoder().decode(
+            EditorSpeech.self, from: Data(##"{"selection":"","markdown":"# Hi"}"##.utf8))
+        expectEqual(decoded.text, "Hi.")
+    }
+
     // MARK: WriteModel
 
     test("start opens the newest document in the editor") {

@@ -69,6 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         writeWindow = WriteWindowController()
         writeWindow.onKeyChanged = { [weak self] isKey in self?.writeKeyChanged(isKey) }
+        session.writeSpeech = { [weak self] in await self?.writeWindow.speech() }
         settingsWindow = SettingsWindowController(pages: makeSettingsPages())
         content = WindowContent(
             controller: controller, session: session, permission: permission, phrases: phrases,

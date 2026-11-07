@@ -86,6 +86,11 @@ final class WriteWindowController: NSWindowController, NSWindowDelegate, NSToolb
         await page.caret()
     }
 
+    /// The selection and the document, for Speak.
+    func speech() async -> EditorSpeech? {
+        await page.speech()
+    }
+
     @objc private func newDocument() {
         Task {
             await flush()

@@ -451,6 +451,41 @@ private func sessionTests() async {
         expectEqual(parts.session.spokenWord, nil)
     }
 
+    await asyncTest("Speak in the Write window reads the document without its marks") {
+        let parts = try makeSession(voiceHolds: true)
+        parts.session.writeSpeech = { EditorSpeech(selection: "", markdown: "# Plan\n\nSee **the roses**.") }
+        parts.session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
+        parts.controller.focusChanged(to: EditorCaret(text: "", caret: 0, length: 0).focusedField)
+        await parts.session.settle()
+        expectEqual(parts.session.speakMode, .speak, "an empty paragraph at the caret leaves Speak on")
+        parts.session.speakPressed()
+        await parts.session.settle()
+        expectEqual(parts.voice.spoken, ["Plan.\n\nSee the roses."])
+        expectEqual(parts.session.speakMode, .stop)
+        expectEqual(parts.session.spokenWord, nil, "the bar does not hold the document")
+    }
+
+    await asyncTest("Speak in the Write window reads the selection") {
+        let parts = try makeSession()
+        parts.session.writeSpeech = { EditorSpeech(selection: "the roses", markdown: "See **the roses**.") }
+        parts.session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
+        parts.session.speakPressed()
+        await parts.session.settle()
+        expectEqual(parts.voice.spoken, ["the roses"])
+    }
+
+    await asyncTest("Speak in another app reads its field, not the Write document") {
+        let parts = try makeSession()
+        parts.session.writeSpeech = { EditorSpeech(selection: "", markdown: "The document") }
+        parts.session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
+        parts.session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS", windowTitle: nil)
+        parts.controller.focusChanged(to: field("Hello", caret: 5))
+        await parts.session.settle()
+        parts.session.speakPressed()
+        await parts.session.settle()
+        expectEqual(parts.voice.spoken, ["Hello"])
+    }
+
     await asyncTest("Speak in Talk mode speaks the bar, and the bar empties when the speech ends") {
         let parts = try makeSession(voiceHolds: true)
         parts.controller.mode = .talk
