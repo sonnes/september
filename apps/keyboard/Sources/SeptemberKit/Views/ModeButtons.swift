@@ -44,32 +44,3 @@ public struct ModeButtons: View {
         }
     }
 }
-
-private struct ModeButton: View {
-    let title: String
-    let symbol: String
-    let isOn: Bool
-    let label: String
-    let action: () -> Void
-
-    @State private var isPressed = false
-
-    var body: some View {
-        VStack(spacing: Metrics.TopRow.modeLabelSpacing) {
-            Image(systemName: symbol)
-                .font(Typography.modeIcon)
-                .foregroundStyle(Color(isOn ? Tokens.accent : Tokens.labelSecondary))
-                .frame(width: Metrics.TopRow.modeCircle, height: Metrics.TopRow.modeCircle)
-                .background(Circle().fill(Color(isPressed ? Tokens.keyActive : Tokens.key)))
-                .overlay(
-                    Circle().strokeBorder(
-                        Color(isOn ? Tokens.accent : Tokens.strokeStandard),
-                        lineWidth: isOn ? Metrics.TopRow.modeBorderOn : Metrics.TopRow.modeBorder)
-                )
-            Text(title)
-                .font(Typography.modeLabel)
-                .foregroundStyle(Color(isOn ? Tokens.accent : Tokens.sectionLabel))
-        }
-        .pressable(label: label, isSelected: isOn, onPressing: { isPressed = $0 }, action: action)
-    }
-}

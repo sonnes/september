@@ -36,6 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var screenRead: Task<Void, Never>?
     private var fieldWasEmpty = true
     private var writeTimer: Timer?
+    private var clipboardWatcher: ClipboardWatcher?
+    private var clipboardTimer: Timer?
     private var appIcon: NSImage?
     private var mode: KeyboardMode = .type
 
@@ -73,7 +75,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         session = KeyboardSession(
             controller: controller, predictions: predictions, speaker: speech.speaker,
             appPanels: appPanels, userPanel: Result { try UserPanelStore() },
-            userPanelUsage: UsageStore(fileURL: UsageStore.userPanelURL))
+            userPanelUsage: UsageStore(fileURL: UsageStore.userPanelURL),
+            clipboard: ClipboardHistory(fileURL: ClipboardHistory.defaultURL),
+            pasteboard: SystemPasteboard())
+        watchClipboard()
 
         writeWindow = WriteWindowController()
         writeWindow.onKeyChanged = { [weak self] isKey in self?.writeKeyChanged(isKey) }
@@ -150,6 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         pages[.voice] = AnyView(VoiceSettingsPage(speech: speech))
         pages[.speech] = AnyView(SpeechPage(speech: speech, settings: keyboardSettings, said: controller.talk.said))
         pages[.predictions] = AnyView(PredictionsSettingsPage(engine: session.predictions))
+        pages[.clipboard] = AnyView(ClipboardSettingsPage(history: session.clipboard))
         pages[.appPanels] = AnyView(
             AppPanelsSettingsPage(model: session.appPanels, inputMonitoring: inputMonitoring))
         if let store = session.userPanel {
@@ -160,6 +166,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     "My Panel", systemImage: "exclamationmark.triangle", description: Text(error)))
         }
         return pages
+    }
+
+    /// Adds each copy to the clipboard history. macOS has no notification for
+    /// a change of the clipboard, so the keyboard reads its change count every
+    /// 0.5 seconds.
+    private func watchClipboard() {
+        let watcher = ClipboardWatcher(
+            pasteboard: session.pasteboard, history: session.clipboard,
+            shouldSkip: { [weak self] in
+                guard let controller = self?.controller else { return true }
+                return controller.isFieldPrivate || controller.focusedField?.isSecure == true
+            },
+            onChange: { [weak self] in self?.session.pasteboardChanged() })
+        clipboardWatcher = watcher
+        clipboardTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            MainActor.assumeIsolated { watcher.poll() }
+        }
     }
 
     /// The Look page and the Speech page change the keyboard at once.

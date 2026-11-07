@@ -43,7 +43,7 @@ public final class KeyboardSession: ObservableObject {
     /// The texts that the user copied.
     public let clipboard: ClipboardHistory
     /// The clipboard of macOS.
-    public let pasteboard: any Pasteboard
+    public let pasteboard: any ClipboardAccess
     /// True while the clipboard history shows in the place of the predictions.
     @Published public private(set) var isHistoryOpen = false
     /// The page of the history that shows. Page 0 holds the newest texts.
@@ -86,7 +86,7 @@ public final class KeyboardSession: ObservableObject {
         userPanelUsage: UsageStore,
         inputBar: InputBarVisibility = InputBarVisibility(),
         clipboard: ClipboardHistory = ClipboardHistory(),
-        pasteboard: any Pasteboard = MemoryPasteboard()
+        pasteboard: any ClipboardAccess = MemoryPasteboard()
     ) {
         self.inputBar = inputBar
         self.clipboard = clipboard

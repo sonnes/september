@@ -3,6 +3,7 @@ public enum SettingsPage: String, Sendable, Hashable, CaseIterable, Identifiable
     case voice
     case speech
     case predictions
+    case clipboard
     case appPanels
     case myPanel
     case look
@@ -15,6 +16,7 @@ public enum SettingsPage: String, Sendable, Hashable, CaseIterable, Identifiable
         case .voice: "Voice"
         case .speech: "Speech"
         case .predictions: "Predictions"
+        case .clipboard: "Clipboard"
         case .appPanels: "App Panels"
         case .myPanel: "My Panel"
         case .look: "Look"
@@ -28,6 +30,7 @@ public enum SettingsPage: String, Sendable, Hashable, CaseIterable, Identifiable
         case .voice: "person.wave.2.fill"
         case .speech: "waveform"
         case .predictions: "sparkles"
+        case .clipboard: "doc.on.clipboard"
         case .appPanels: "square.grid.2x2.fill"
         case .myPanel: "star.fill"
         case .look: "paintpalette.fill"
@@ -55,7 +58,7 @@ public enum SettingsGroup: String, Sendable, Hashable, CaseIterable, Identifiabl
     public var pages: [SettingsPage] {
         switch self {
         case .speak: [.voice, .speech]
-        case .type: [.predictions, .appPanels, .myPanel]
+        case .type: [.predictions, .clipboard, .appPanels, .myPanel]
         case .keyboard: [.look, .accessibility]
         }
     }

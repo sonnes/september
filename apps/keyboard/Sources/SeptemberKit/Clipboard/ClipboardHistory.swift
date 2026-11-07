@@ -16,6 +16,12 @@ public struct ClipboardItem: Identifiable, Equatable, Sendable, Codable {
         self.date = date
     }
 
+    /// The time since the copy, in the short form of the list: "now",
+    /// "2 min", "1 h".
+    public func age(at now: Date) -> String {
+        shortAge(since: date, at: now)
+    }
+
     /// The text on one line, with a return mark at each line break.
     public var preview: String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)

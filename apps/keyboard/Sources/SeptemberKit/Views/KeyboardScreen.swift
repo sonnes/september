@@ -1,7 +1,9 @@
 import SwiftUI
 
-/// The keyboard window: the prediction stack, the input bar with Speak and
-/// the mode buttons, and the keys with the word completions on top.
+/// The keyboard window: the prediction stack, the input bar with the
+/// clipboard buttons at its left and Speak and the mode buttons at its right,
+/// and the keys with the word completions on top. History shows the
+/// clipboard history in the place of the prediction stack.
 ///
 /// In Type mode the shortcut panels float in windows of their own. In Talk
 /// mode they hide, and Phrases and the Said list show at the left and the
@@ -49,14 +51,15 @@ public struct KeyboardScreen: View {
                     .padding(.bottom, Metrics.TopRow.stackBottom)
             }
 
-            PredictionStack(
-                engine: session.predictions, mode: controller.mode == .talk ? .talk : .type,
-                onType: session.type)
-                .shown(inputBar.isVisible)
+            stack
+                .shown(inputBar.isVisible || session.isHistoryOpen)
                 .padding(.leading, inset)
                 .padding(.bottom, Metrics.TopRow.stackBottom)
 
             HStack(spacing: Metrics.TopRow.spacing) {
+                // Copy works with no text field, for example on a web page,
+                // so the buttons always show.
+                ClipboardButtons(session: session)
                 bar.shown(inputBar.isVisible)
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
                         inputBar.frame = $0
@@ -80,10 +83,22 @@ public struct KeyboardScreen: View {
     }
 
     @ViewBuilder
+    private var stack: some View {
+        if session.isHistoryOpen {
+            ClipboardHistoryView(session: session)
+        } else {
+            PredictionStack(
+                engine: session.predictions, mode: controller.mode == .talk ? .talk : .type,
+                onType: session.type)
+        }
+    }
+
+    @ViewBuilder
     private var bar: some View {
+        let width = Metrics.Clipboard.barWidth
         switch controller.mode {
-        case .type: InputBar(spokenWord: session.spokenWord)
-        case .talk: TalkBar(talk: controller.talk, speakingWord: session.spokenWord)
+        case .type: InputBar(spokenWord: session.spokenWord, width: width)
+        case .talk: TalkBar(talk: controller.talk, speakingWord: session.spokenWord, width: width)
         }
     }
 

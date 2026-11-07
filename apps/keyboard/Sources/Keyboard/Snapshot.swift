@@ -91,7 +91,9 @@ enum Snapshot {
                 learner: ShortcutLearner(fileURL: folder.appendingPathComponent("learned.json")),
                 settings: AppPanelSettings(defaults: defaults)),
             userPanel: .success(userPanel),
-            userPanelUsage: UsageStore(fileURL: folder.appendingPathComponent("my-panel-usage.json")))
+            userPanelUsage: UsageStore(fileURL: folder.appendingPathComponent("my-panel-usage.json")),
+            clipboard: ClipboardHistory(defaults: defaults, now: { Date().addingTimeInterval(-40 * 60) }),
+            pasteboard: MemoryPasteboard())
         let content = WindowContent(
             controller: controller, session: session, permission: permission,
             phrases: try Phrases.bundled())
@@ -120,6 +122,10 @@ enum Snapshot {
                     appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false,
                     text: "I would like a cu", selection: NSRange(location: 17, length: 0)))
             appIcon = icon(of: "com.apple.MobileSMS")?.tabIcon()
+            if arguments.contains("--clipboard") {
+                addSampleCopies(to: session)
+                session.toggleHistory()
+            }
             if arguments.contains("--mine") {
                 try addSampleButtons(to: userPanel)
                 session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS", windowTitle: nil)
@@ -177,6 +183,21 @@ enum Snapshot {
             NewButton(name: "Be right back", action: .text("Be right back")),
         ]
         for sample in samples { try store.add(sample) }
+    }
+
+    /// The copies of the clipboard history mock, oldest first. The history
+    /// dates each copy 40 minutes ago.
+    private static func addSampleCopies(to session: KeyboardSession) {
+        for text in [
+            "Room 4, second floor", "Please call me back after six",
+            "https://maps.apple.com/?q=St+Thomas+Hospital", "Thanks for the flowers, they made my day",
+            "Dear Dr Patel,\nThank you for the appointment on Tuesday.\nI will be there at ten.",
+            "Ward 7, bed 12", "the 4:30 train", "14 Elm Road, Leeds LS6 2AB",
+        ] {
+            session.clipboard.add(text)
+        }
+        (session.pasteboard as? MemoryPasteboard)?.copy("14 Elm Road, Leeds LS6 2AB")
+        session.pasteboardChanged()
     }
 
     /// Lets the predictions and the voice answer before the render.

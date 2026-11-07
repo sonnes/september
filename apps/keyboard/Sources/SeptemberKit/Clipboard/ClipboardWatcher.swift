@@ -2,7 +2,7 @@ import Foundation
 
 /// The general clipboard of macOS, or a stand-in for tests and snapshots.
 @MainActor
-public protocol Pasteboard: AnyObject {
+public protocol ClipboardAccess: AnyObject {
     /// A number that changes each time an app writes to the clipboard.
     var changeCount: Int { get }
     /// The type identifiers of the content, such as `public.utf8-plain-text`.
@@ -15,7 +15,7 @@ public protocol Pasteboard: AnyObject {
 
 /// A clipboard in memory.
 @MainActor
-public final class MemoryPasteboard: Pasteboard {
+public final class MemoryPasteboard: ClipboardAccess {
     public static let textType = "public.utf8-plain-text"
 
     public private(set) var changeCount = 0
@@ -55,7 +55,7 @@ public final class ClipboardWatcher {
     /// the user copied.
     private static let fileType = "public.file-url"
 
-    private let pasteboard: any Pasteboard
+    private let pasteboard: any ClipboardAccess
     private let history: ClipboardHistory
     private let shouldSkip: () -> Bool
     private let onChange: () -> Void
@@ -66,7 +66,7 @@ public final class ClipboardWatcher {
     ///     while the focused field is a password field or holds private text.
     ///   - onChange: Called after each change of the clipboard.
     public init(
-        pasteboard: any Pasteboard,
+        pasteboard: any ClipboardAccess,
         history: ClipboardHistory,
         shouldSkip: @escaping () -> Bool = { false },
         onChange: @escaping () -> Void = {}

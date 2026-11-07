@@ -128,6 +128,18 @@ private func historyTests() {
         expect(history.page(3).isEmpty)
     }
 
+    test("a copied text shows on one line with a mark at each line break") {
+        let item = ClipboardItem(text: "  Dear Dr Patel,\n\nThank you\r\nfor Tuesday \n", date: now)
+        expectEqual(item.preview, "Dear Dr Patel, ↵ Thank you ↵ for Tuesday")
+    }
+
+    test("a copied text shows its age in the short form of the lists") {
+        let item = ClipboardItem(text: "Hello", date: now)
+        expectEqual(item.age(at: now.addingTimeInterval(30)), "now")
+        expectEqual(item.age(at: now.addingTimeInterval(40 * 60)), "40 min")
+        expectEqual(item.age(at: now.addingTimeInterval(3 * 3600)), "3 h")
+    }
+
     test("a description of a copied text never holds the text") {
         let history = ClipboardHistory(defaults: memoryDefaults(), now: { now })
         history.add("my secret address")
