@@ -28,7 +28,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Design` | tokens, metrics, typography, rainbow/mono styles |
 | `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController` |
 | `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map, the key settings of macOS (`KeyTiming`) and the timing of a held key (`KeyPresser`) |
-| `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `SpeakText`, `FrontAppTracker`, `PanelPlacement`, `KeyboardPosition`, `InputBarVisibility`, the commands of the QA hook |
+| `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `SpeakText`, `FrontAppTracker`, `PanelPlacement`, `KeyboardPosition`, `InputBarVisibility` |
 | `Sources/SeptemberKit/Panels` | panel model, JSON loading, app panel ranking and learning |
 | `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence) and word completions |
 | `Sources/SeptemberKit/Speech` | `Speaker`, the macOS voices, ElevenLabs, the Keychain store |
@@ -144,9 +144,8 @@ only what needs a running app — the panel, the event sink, the menu bar.
   it, so `NSApp.activate()` alone leaves a new window behind the app in front.
 - `make run` and `make dev` show the keyboard on the screen of the user. Stop
   it with `make stop` when the check is done.
-- Do not test with the pointer of the user. To press, hold, or drag, use the
-  QA hook of debug builds (README, "Test the keys without the pointer"). To
-  read the keyboard or press through `AXPress`, use headless agent-desktop.
+- Do not test with the pointer of the user. To read the keyboard or press
+  through `AXPress`, use headless agent-desktop.
 - The keyboard window, the tree viewer, and the default places of the shortcut
   panels share the bottom margin of the screen. The keys and the panels
   centre in the space left after `reservedWidth`. `PanelPlacement` puts the

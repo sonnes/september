@@ -17,6 +17,5 @@ await integrationTests()
 writeTests()
 pressTests()
 #if DEBUG
-qaTests()
 #endif
 summarize()

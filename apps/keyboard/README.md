@@ -113,31 +113,6 @@ and each press reads them again:
 - Sticky Keys: one tap on a modifier latches it for the next key, a second tap
   locks it, and a third tap releases it, as Sticky Keys of macOS does.
 
-## Test the keys without the pointer
-
-Debug builds have a QA hook. The hook sends mouse events straight to the
-windows of the keyboard, so the pointer of the system does not move.
-
-1. Make a FIFO: `mkfifo /tmp/kbqa.fifo`.
-2. Start the keyboard with the hook:
-   `KEYBOARD_QA_FIFO=/tmp/kbqa.fifo .build/debug/Keyboard`.
-3. Write one command per line to the FIFO, for example
-   `echo "hold 1500 Delete" > /tmp/kbqa.fifo`.
-
-| Command | Action |
-|---|---|
-| `down <label>` | Puts the button down on the control with this accessibility label. |
-| `up` | Lets the button go up. |
-| `tap <label>` | Puts the button down and up, with no time between. |
-| `hold <ms> <label>` | Puts the button down, waits, and lets it go up. |
-| `drag <window> <dx> <dy>` | Drags the grip of `keyboard`, `edit`, `text`, `system`, or `app`. A positive `dy` moves up. |
-| `wait <ms>` | Waits before the next command. |
-
-To test Slow Keys with no change to System Settings, set
-`KEYBOARD_QA_SLOW_KEYS_MS` to the delay. The keys still type into the app in
-front, so use Talk mode or a blank TextEdit document. Release builds do not
-contain the hook.
-
 ## Render snapshots
 
 Individual snapshots, for comparing against the design mocks without opening a

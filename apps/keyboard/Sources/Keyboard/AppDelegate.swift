@@ -33,9 +33,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var writeTimer: Timer?
     private var appIcon: NSImage?
     private var mode: KeyboardMode = .type
-    #if DEBUG
-    private var qaHook: QAHook?
-    #endif
 
     /// The tree viewer is on by default — it is the window that shows why an
     /// app does or does not mirror.
@@ -75,7 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settingsWindow = SettingsWindowController(pages: makeSettingsPages())
         content = WindowContent(
             controller: controller, session: session, permission: permission, phrases: phrases,
-            presser: KeyPresser(timing: Self.keyTiming),
+            presser: KeyPresser(timing: { KeyTiming.current() }),
             write: { [weak self] in self?.showWrite() },
             settings: { [weak self] in self?.showSettings() })
 
@@ -120,14 +117,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         showWindows()
         installStatusItem()
-        #if DEBUG
-        qaHook = QAHook { [weak self] in
-            guard let self, let keyboardPanel = self.keyboardPanel else { return [:] }
-            var windows: [String: NSWindow] = ["keyboard": keyboardPanel]
-            for (panel, window) in self.panels { windows[panel.rawValue] = window }
-            return windows
-        }
-        #endif
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -141,19 +130,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             NSApp.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater
-    }
-
-    /// The key settings of macOS. In a debug build, `KEYBOARD_QA_SLOW_KEYS_MS`
-    /// turns on Slow Keys for the keyboard alone, so a test does not change
-    /// the settings of the user.
-    private static func keyTiming() -> KeyTiming {
-        var timing = KeyTiming.current()
-        #if DEBUG
-        if let value = ProcessInfo.processInfo.environment["KEYBOARD_QA_SLOW_KEYS_MS"], let ms = Int(value) {
-            timing.slowKeysDelay = TimeInterval(ms) / 1000
-        }
-        #endif
-        return timing
     }
 
     // MARK: - Settings
