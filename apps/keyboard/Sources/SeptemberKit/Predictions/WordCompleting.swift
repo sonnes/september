@@ -88,7 +88,9 @@ public final class CandidateCompleter: WordCompleting {
             _ = checker.requestCandidates(
                 forSelectedRange: caret, in: typed, types: NSTextCheckingAllSystemTypes, options: nil,
                 inSpellDocumentWithTag: tag
-            ) { _, candidates in
+            ) { @Sendable _, candidates in
+                // macOS calls this on a queue of its own, not on the main
+                // actor of the completer.
                 continuation.resume(returning: candidates.compactMap(\.replacementString))
             }
         }
