@@ -206,7 +206,7 @@ func settingsTalkTests() {
         expectEqual(SettingsGroup.allCases, [.speak, .type, .keyboard])
         expectEqual(
             SettingsGroup.allCases.map(\.pages),
-            [[.voice, .speech], [.predictions, .appPanels, .myPanel], [.look, .accessibility]])
+            [[.voice, .speech], [.predictions, .clipboard, .appPanels, .myPanel], [.look, .accessibility]])
         expectEqual(
             Set(SettingsGroup.allCases.flatMap(\.pages)), Set(SettingsPage.allCases),
             "each page is in one group")
@@ -218,7 +218,7 @@ func settingsTalkTests() {
             settings: settings, permission: AccessibilityPermission(isTrusted: false))
         expectEqual(
             SettingsPage.allCases.filter(pages.isPlaceholder),
-            [.voice, .speech, .predictions, .appPanels, .myPanel])
+            [.voice, .speech, .predictions, .clipboard, .appPanels, .myPanel])
         pages[.voice] = AnyView(EmptyView())
         expect(!pages.isPlaceholder(.voice))
     }

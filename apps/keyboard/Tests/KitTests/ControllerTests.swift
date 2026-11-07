@@ -29,7 +29,9 @@ private let stubMap = KeyCodeMap { code, modifiers in
         0: ("a", "A"),
         1: ("s", "S"),
         6: ("z", "Z"),
+        7: ("x", "X"),
         8: ("c", "C"),
+        9: ("v", "V"),
         18: ("1", "!"),
     ]
     guard let entry = table[code] else { return nil }
@@ -101,7 +103,7 @@ func controllerTests() {
     test("a shortcut with no key on any layout beeps and keeps the modifier") {
         let (controller, sink) = try makeController()
         controller.press(key("command-left"))
-        controller.press(key("key-x"))
+        controller.press(key("key-q"))
         expect(sink.posted.isEmpty)
         expectEqual(sink.beeps, 1)
         expectEqual(controller.modifiers.active, .command)

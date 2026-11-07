@@ -150,6 +150,7 @@ snapshots:
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-talk.png" --talk
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-write.png" --write
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-mine.png" --mine
+	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-clipboard.png" --clipboard
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/component-library.png" --gallery
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/tree-viewer.png" --viewer
 

@@ -17,7 +17,7 @@ make release    # Developer ID, notarize, staple, Gatekeeper check (reads ../../
 make publish    # GitHub Release of the DMG — ask the user first
 make icon       # Resources/AppIcon.svg → AppIcon.icns (needs rsvg-convert)
 make open       # build, sign, launch
-make snapshots  # keyboard (Type, Talk, Write, Mine) + component library PNGs in .build/snapshots
+make snapshots  # keyboard (Type, Talk, Write, Mine, Clipboard) + component library PNGs in .build/snapshots
 ```
 
 Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
@@ -28,6 +28,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | Path | Holds |
 |---|---|
 | `Sources/SeptemberKit/Accessibility` | `AXNode`/`AXTree` (another app's tree, snapshotted), `AccessibilityPermission` |
+| `Sources/SeptemberKit/Clipboard` | `ClipboardHistory` (the copied texts), `ClipboardAccess` (the clipboard), and `ClipboardWatcher` (adds each copy) |
 | `Sources/SeptemberKit/Design` | tokens, metrics, typography, rainbow/mono styles |
 | `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController` |
 | `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map, the key settings of macOS (`KeyTiming`) and the timing of a held key (`KeyPresser`) |
@@ -41,10 +42,10 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Settings` | the Settings pages and `KeyboardSettings` |
 | `Sources/SeptemberKit/Write` | the document library, the editor bridge, `MarkdownSpeech` (the text that Speak reads), and `WritePlacement` (the frame where the window opens) of the Write window |
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, the keyboard screen, and the views of each part |
-| `Sources/SeptemberKit/Resources/Panels` | `edit`/`text`/`system`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
+| `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
-| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ChordTap`, `MenuBarReader`, `AXTreeReader`, the Settings and Write windows, snapshots |
+| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ChordTap`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings and Write windows, snapshots |
 | `Tests/KitTests` | tests + the harness |
 
 Rule of thumb: **anything testable lives in `SeptemberKit`**. `Keyboard` holds
@@ -124,6 +125,11 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `PredictionEngine.screenEnabled` is true, only in Type mode, and never for a
   password field or private text. Never log or print it. The probe prints
   shapes only.
+- **The clipboard history is private.** Never log or print a copied text.
+  `ClipboardWatcher` keeps no copy that a password manager marks, no copy of a
+  file, and no copy while the focused field is a password field or holds
+  private text. Only `ClipboardWatcher.poll()` reads the clipboard for the
+  history.
 - **Keep Swift 6 concurrency clean.** UI, controller and keystroke sinks are
   `@MainActor`. A type that holds an accessibility element and crosses actors
   is `@unchecked Sendable`, with a comment that says why. Do not silence

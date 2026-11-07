@@ -3,12 +3,11 @@ import Foundation
 /// The panels shipped with the app: the fixed keypads, one panel per app we
 /// know shortcuts for, and a generic panel for every other app.
 ///
-/// File names are the identity: `edit.json`, `text.json`, `system.json`,
+/// File names are the identity: `text.json`, `system.json`,
 /// `Apps/generic.json`, and `Apps/<bundle id>.json`. The Claude Code panel is
 /// `Apps/claude-code.json`, because it belongs to a tool in a terminal, not to
 /// an app.
 public struct PanelStore: Sendable {
-    public let edit: PanelDefinition
     public let text: PanelDefinition
     public let system: PanelDefinition
     /// The panel of an app with no panel file.
@@ -16,13 +15,11 @@ public struct PanelStore: Sendable {
     private let byBundleID: [String: PanelDefinition]
 
     public init(
-        edit: PanelDefinition,
         text: PanelDefinition,
         system: PanelDefinition,
         generic: PanelDefinition,
         byBundleID: [String: PanelDefinition]
     ) {
-        self.edit = edit
         self.text = text
         self.system = system
         self.generic = generic
@@ -46,9 +43,10 @@ public struct PanelStore: Sendable {
             .sorted { $0.panel.title.localizedStandardCompare($1.panel.title) == .orderedAscending }
     }
 
-    /// The chords of the Edit, Text, and System keypads.
+    /// The chords of the Text and System keypads and of the clipboard
+    /// buttons.
     public var keypadShortcuts: Set<Shortcut> {
-        edit.shortcuts.union(text.shortcuts).union(system.shortcuts)
+        text.shortcuts.union(system.shortcuts).union(ClipboardShortcut.all)
     }
 
     /// Loads the panels from `Resources/Panels`. Throws when a fixed panel is
@@ -78,7 +76,6 @@ public struct PanelStore: Sendable {
         }
 
         return PanelStore(
-            edit: try load("edit"),
             text: try load("text"),
             system: try load("system"),
             generic: try load("generic", in: apps),

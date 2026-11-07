@@ -9,6 +9,7 @@ dependencies.
 Sources/
   SeptemberKit/     models, design tokens, views: everything testable
     Accessibility/  AXNode and AXTree (a snapshot of the tree of another app), AccessibilityPermission
+    Clipboard/      the clipboard history and the watcher of the clipboard
     Design/         tokens, metrics, typography, rainbow and mono styles
     Keyboard/       key definitions, the QWERTY layout, KeyboardController, PressTracker
     Input/          modifiers, keystrokes, layout-aware key code map
@@ -113,9 +114,12 @@ rejects an upload, `make release` stops. Then run
 ## The windows
 
 The keyboard window holds the sentence predictions, the input bar, and the
-keys. A row of word completions sits on top of the keys. Speak, Type, Talk,
-Write, and Settings are at the right of the input bar. In Type mode, Arrange
-is between Write and Settings.
+keys. A row of word completions sits on top of the keys. Cut, Copy, Paste, and
+History are at the left of the input bar. Speak, Type, Talk, Write, and
+Settings are at the right of the input bar. In Type mode, Arrange is between
+Write and Settings. The input bar is as wide as the keys and sits over them.
+The clipboard buttons sit past the left edge of the keys, so the keyboard
+window has a clear space at the left of the keys.
 
 The word row shows the candidates of macOS, the words of the QuickType bar.
 The candidates use the words before the caret. In a word, they complete the
@@ -131,7 +135,7 @@ When you press Return, or Speak in Talk mode, the keyboard tells macOS which
 picked words the text still holds. macOS learns from these responses. Private
 text and password fields send nothing.
 
-The Edit, Text, and System keypads and the app panel float in windows of their
+The Text and System keypads and the app panel float in windows of their
 own. By default they sit beside the keys. To move the keyboard window or a
 panel, drag it by the grip at its top. A drag does not take focus from the app
 in front. The keyboard keeps the place of each window for the next launch. If
@@ -140,21 +144,26 @@ keyboard window and the panels never take focus.
 
 Arrange moves the panels back beside the keys, at the place where the keyboard
 is now. The menu bar item has the same command, Arrange Panels. System and the
-app panel go to the left of the keys, with System nearest the keys. Text and
-Edit go to the right, with Text nearest the keys. If a panel does not fit on
+app panel go to the left of the keys, with System nearest the keys. Text goes
+to the right. If a panel does not fit on
 its side, it goes to the other side. Each panel stays on the screen.
 `PanelPlacement.arrangedFrames` holds the rule.
 
 The Text keypad has the arrow keys of a Mac keyboard at its bottom, as an
 inverted T. Page Up and Page Down fill the two top corners of the T. The word,
 line, and selection moves are in the grid above the arrows. The arrows are the
-`arrows` block of `text.json`, with three columns, so the Text keypad is wider
-than the other keypads.
+`arrows` block of `text.json`, with three columns, so the Text keypad is three
+buttons wide.
+
+The System keypad has three columns. It holds Undo, Redo, Select All, Save,
+New, Open, Print, and Close, and then Find, Mission Control, Page Up, Page
+Down, the zoom keys, Full Screen, Screenshot, and Quit. No keypad repeats
+Cut, Copy, or Paste.
 
 The app panel has two tabs. The first tab shows the panel of the app in front.
 The second tab, Mine, shows the buttons that the user made on the My Panel page
 of Settings. The title of a keypad is as tall as the tabs of the app panel, so
-the buttons of all the panels start at the same height. Edit, Text, and the
+the buttons of all the panels start at the same height. System, Text, and the
 app panel end at the same height, in each app and in Mine.
 
 In Talk mode, the keys type into the input bar of the keyboard, and other apps
@@ -170,6 +179,28 @@ lines of the last hour. Type mode does not use the history. To clear it, open
 Settings, then Speech, then click Clear Talk History. If the file does not
 decode, the keyboard moves it to `talk-history.broken.json` and starts an
 empty history.
+
+Cut, Copy, and Paste press Command-X, Command-C, and Command-V in the app in
+front. In Talk mode they act on the Talk bar: Copy copies its text, Cut also
+clears it, and Paste types the clipboard into it. Cut and Copy are off when
+the field shows no selection, and in a password field. If the app shows no
+field, Cut and Copy stay on. Paste is off when the clipboard holds no text.
+
+History shows the text that you copied, in the place of the sentence
+predictions. A page shows six texts. The newest text is at the bottom left,
+next to the input bar. A press on a text pastes it into the app in front, or
+types it into the Talk bar in Talk mode. Then the predictions show again.
+
+The clipboard history is in
+`~/Library/Application Support/September Keyboard/clipboard-history.json`,
+and only the user can read the file. The history keeps each text for 7 days,
+and 200 texts at most. A copy of a text that is already in the history moves
+it to the newest place. The history keeps no copy from a password manager, no
+copy of a file, and no copy from a password field or a field with private
+text. The Clipboard page of Settings turns the history off and clears it.
+When the history is off, it keeps no texts. If the file does not decode, the
+keyboard moves it to `clipboard-history.broken.json` and starts an empty
+history.
 
 Write opens the Write window, a normal macOS window with a Markdown editor.
 The window grows out of the input bar and opens above the keyboard. By
@@ -188,10 +219,11 @@ window.
 
 ## Pressing and holding keys
 
-The keys, the word row, the accents, and the buttons of the shortcut panels
-act when the mouse button goes down. The prediction tiles, Speak, the mode
-buttons, the tabs, and the Said list act when the button goes up, so a slide
-off the control cancels the press. A press through `AXPress` (Dwell, Switch
+The keys, the word row, the accents, the buttons of the shortcut panels, and
+Cut, Copy, and Paste act when the mouse button goes down. The prediction
+tiles, Speak, the mode buttons, History, the copied texts, the tabs, and the
+Said list act when the button goes up, so a slide off the control cancels the
+press. A press through `AXPress` (Dwell, Switch
 Control, Voice Control) acts at once.
 
 A held key obeys the keyboard settings of macOS. `KeyPresser` applies them,
@@ -223,6 +255,7 @@ swift run Keyboard --snapshot out.png            # Type mode in Messages, with t
 swift run Keyboard --snapshot out.png --talk     # Talk mode during speech
 swift run Keyboard --snapshot out.png --write    # the Write window in front
 swift run Keyboard --snapshot out.png --mine     # the Mine tab of the app panel
+swift run Keyboard --snapshot out.png --clipboard  # the clipboard history, open
 swift run Keyboard --snapshot out.png --mono     # mono variant
 swift run Keyboard --snapshot out.png --light    # light appearance
 swift run Keyboard --snapshot out.png --gallery  # the component library

@@ -14,6 +14,7 @@ func integrationTests() async {
     placementTests()
     inputBarTests()
     await sessionTests()
+    await clipboardSessionTests()
     await panelHeightTests()
     activationTests()
 }
@@ -242,27 +243,26 @@ private func placementTests() {
     let keys = CGRect(x: 1000, y: 24, width: 1000, height: 400)
     let panel = CGSize(width: 174, height: 340)
 
-    test("Text and Edit sit at the right of the keys, and System and the app panel at the left") {
+    test("Text sits at the right of the keys, and System and the app panel at the left") {
         let frames = PanelPlacement.defaultFrames(
-            keys: keys, sizes: [.edit: panel, .text: panel, .system: panel, .app: panel])
+            keys: keys, sizes: [.text: panel, .system: panel, .app: panel])
         let gap = Metrics.Detached.gap
         expectEqual(frames[.text]?.minX, keys.maxX + gap)
-        expectEqual(frames[.edit]?.minX, keys.maxX + gap * 2 + panel.width)
         expectEqual(frames[.system]?.maxX, keys.minX - gap)
         expectEqual(frames[.app]?.maxX, keys.minX - gap * 2 - panel.width)
-        expectEqual(frames[.edit]?.maxY, keys.maxY)
+        expectEqual(frames[.text]?.maxY, keys.maxY)
         expectEqual(frames[.app]?.maxY, keys.maxY)
     }
 
     test("arranging puts the panels around the keys where the keyboard is now") {
         let moved = keys.offsetBy(dx: -400, dy: 300)
-        let sizes: [DetachedPanel: CGSize] = [.edit: panel, .text: panel, .system: panel, .app: panel]
+        let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .app: panel]
         let frames = PanelPlacement.arrangedFrames(keys: moved, sizes: sizes, screen: screen)
         expectEqual(frames, PanelPlacement.defaultFrames(keys: moved, sizes: sizes))
     }
 
     test("arranging keeps every panel on the screen") {
-        let sizes: [DetachedPanel: CGSize] = [.edit: panel, .text: panel, .system: panel, .app: panel]
+        let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .app: panel]
         let atRight = CGRect(x: 1900, y: 1300, width: 1000, height: 400)
         let right = PanelPlacement.arrangedFrames(keys: atRight, sizes: sizes, screen: screen)
         for frame in right.values { expect(screen.contains(frame), "\(frame) is off the screen") }
@@ -273,9 +273,9 @@ private func placementTests() {
 
     test("the group of keys and panels is centred on the screen") {
         let origin = PanelPlacement.keysOrigin(
-            keysSize: keys.size, panels: [.edit: panel, .text: panel, .system: panel, .app: panel],
+            keysSize: keys.size, panels: [.text: panel, .system: panel, .app: panel],
             in: screen, rightInset: 0, margin: 24)
-        let group = panel.width * 4 + Metrics.Detached.gap * 4 + keys.width
+        let group = panel.width * 3 + Metrics.Detached.gap * 3 + keys.width
         expectEqual(origin.x, (screen.width - group) / 2 + (panel.width + Metrics.Detached.gap) * 2)
         expectEqual(origin.y, 24)
     }
@@ -313,6 +313,20 @@ private func placementTests() {
         expectEqual(KeyboardPosition.windowOrigin(type, in: .talk), talk)
         expectEqual(KeyboardPosition.typeOrigin(of: talk, in: .type), talk)
     }
+
+    test("the clipboard buttons fit at the left of the bar, and the keys stay in place in both modes") {
+        let reach = Metrics.Clipboard.buttonsWidth + Metrics.TopRow.spacing
+        for mode in [KeyboardMode.type, .talk] {
+            expect(KeyboardScreen.keysInset(mode) >= reach, "no room for the buttons in \(mode)")
+        }
+        let window = CGPoint(x: 100, y: 50)
+        let keys = KeyboardPosition.keysOrigin(ofWindow: window, in: .type)
+        expectEqual(keys.x, window.x + KeyboardScreen.cardInset(.type))
+        expectEqual(keys.y, window.y)
+        let talk = KeyboardPosition.windowOrigin(window, in: .talk)
+        expectEqual(KeyboardPosition.keysOrigin(ofWindow: talk, in: .talk), keys)
+        expectEqual(KeyboardPosition.typeWindowOrigin(forKeys: keys), window)
+    }
 }
 
 // MARK: - The session
@@ -326,13 +340,16 @@ private struct SessionParts {
     let userPanel: UserPanelStore?
     let clock: FakeClock
     let completer: CupCompleter
+    let pasteboard: MemoryPasteboard
+    let clipboard: ClipboardHistory
 }
 
 @MainActor
 private func makeSession(
     userPanel: Result<UserPanelStore, any Error>? = nil,
     voiceHolds: Bool = false,
-    predictor: any SentencePredicting = SilentPredictor()
+    predictor: any SentencePredicting = SilentPredictor(),
+    pasteboard: MemoryPasteboard = MemoryPasteboard()
 ) throws -> SessionParts {
     let (controller, sink) = try makeController()
     let defaults = UserDefaults(suiteName: "kit-integration-\(UUID().uuidString)")!
@@ -359,14 +376,17 @@ private func makeSession(
                 privateTexts: MemoryPrivateTexts())
         }
     let clock = FakeClock()
+    let clipboard = ClipboardHistory(defaults: defaults)
     let session = KeyboardSession(
         controller: controller, predictions: engine, speaker: speaker, appPanels: appPanels,
         userPanel: store,
         userPanelUsage: UsageStore(fileURL: folder.appendingPathComponent("my-panel-usage.json")),
-        inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25))
+        inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25),
+        clipboard: clipboard, pasteboard: pasteboard)
     return SessionParts(
         session: session, controller: controller, sink: sink, voice: voice,
-        userPanel: try? store.get(), clock: clock, completer: completer)
+        userPanel: try? store.get(), clock: clock, completer: completer,
+        pasteboard: pasteboard, clipboard: clipboard)
 }
 
 private struct SilentPredictor: SentencePredicting {
@@ -770,19 +790,19 @@ private func height(_ view: some View, controller: KeyboardController) -> CGFloa
 
 @MainActor
 private func panelHeightTests() async {
-    await asyncTest("the Text keypad, each app panel, and Mine are as tall as the Edit keypad") {
+    await asyncTest("the Text keypad, each app panel, and Mine are as tall as the System keypad") {
         let parts = try makeSession()
         let controller = parts.controller
-        let edit = height(KeypadCard(panel: controller.panels.edit), controller: controller)
-        expectEqual(height(KeypadCard(panel: controller.panels.text), controller: controller), edit, "Text")
+        let system = height(KeypadCard(panel: controller.panels.system), controller: controller)
+        expectEqual(height(KeypadCard(panel: controller.panels.text), controller: controller), system, "Text")
         let card = AppPanelCard(session: parts.session, appIcon: nil)
         let apps = controller.panels.appPanels.map(\.bundleID) + ["com.example.none"]
         for bundleID in apps {
             parts.session.appChanged(name: nil, bundleID: bundleID, windowTitle: nil)
-            expectEqual(height(card, controller: controller), edit, bundleID)
+            expectEqual(height(card, controller: controller), system, bundleID)
         }
         parts.session.appPanelTab = .mine
-        expectEqual(height(card, controller: controller), edit, "an empty Mine")
+        expectEqual(height(card, controller: controller), system, "an empty Mine")
         let store = try expectValue(parts.userPanel)
         for index in 0..<14 {
             try store.add(NewButton(
@@ -790,7 +810,7 @@ private func panelHeightTests() async {
         }
         try store.add(NewButton(name: "Hello", action: .text("Hello")))
         await parts.session.settle()
-        expectEqual(height(card, controller: controller), edit, "a full Mine")
+        expectEqual(height(card, controller: controller), system, "a full Mine")
     }
 }
 
@@ -857,5 +877,145 @@ private func activationTests() {
         activation.windowClosed(window)
         activation.appBecameActive(keyWindow: nil)
         expectEqual(window.events, ["front"])
+    }
+}
+
+// MARK: - The clipboard
+
+@MainActor
+private func clipboardSessionTests() async {
+    let command = Modifiers.command
+    let commandKey: UInt16 = 55
+    /// The keys of the chords that the sink got, without the Command key.
+    func chordKeys(_ sink: RecordingSink) -> [UInt16] {
+        sink.downs.map(\.key).filter { $0 != commandKey }
+    }
+
+    await asyncTest("History opens in the place of the predictions and a second press closes it") {
+        let parts = try makeSession()
+        expect(!parts.session.isHistoryOpen)
+        parts.session.toggleHistory()
+        expect(parts.session.isHistoryOpen)
+        parts.session.toggleHistory()
+        expect(!parts.session.isHistoryOpen)
+    }
+
+    await asyncTest("a copied text in Type mode goes on the clipboard and is pasted with Command-V") {
+        let parts = try makeSession()
+        parts.clipboard.add("Ward 7, bed 12")
+        parts.clipboard.add("14 Elm Road")
+        parts.session.toggleHistory()
+        parts.sink.reset()
+        let ward = try expectValue(parts.clipboard.items.last)
+        parts.session.pasteClip(ward)
+        expectEqual(parts.pasteboard.string(), "Ward 7, bed 12")
+        expectEqual(chordKeys(parts.sink), [9])
+        expectEqual(parts.sink.downs.last?.flags, command)
+        expectEqual(parts.clipboard.items.map(\.text), ["Ward 7, bed 12", "14 Elm Road"])
+        expect(!parts.session.isHistoryOpen, "a paste closes the history")
+    }
+
+    await asyncTest("a copied text in Talk mode goes into the Talk bar") {
+        let parts = try makeSession()
+        parts.controller.mode = .talk
+        parts.controller.talk.type("The address is ")
+        parts.clipboard.add("14 Elm Road")
+        parts.session.toggleHistory()
+        parts.sink.reset()
+        parts.session.pasteClip(try expectValue(parts.clipboard.items.first))
+        expectEqual(parts.controller.talk.text, "The address is 14 Elm Road")
+        expect(parts.sink.posted.isEmpty, "Talk mode sends no events to the app in front")
+        expect(!parts.session.isHistoryOpen)
+    }
+
+    await asyncTest("Cut, Copy, and Paste press Command-X, Command-C, and Command-V in Type mode") {
+        let parts = try makeSession()
+        parts.session.cut()
+        parts.session.copy()
+        parts.session.paste()
+        expectEqual(chordKeys(parts.sink), [7, 8, 9])
+        expect(parts.sink.downs.filter { $0.key != commandKey }.allSatisfy { $0.flags == command })
+    }
+
+    await asyncTest("in Talk mode Copy copies the Talk text, Cut also clears it, and Paste types the clipboard") {
+        let parts = try makeSession()
+        parts.controller.mode = .talk
+        parts.controller.talk.type("Good morning")
+        parts.session.copy()
+        expectEqual(parts.pasteboard.string(), "Good morning")
+        expectEqual(parts.controller.talk.text, "Good morning")
+        parts.controller.talk.type(", nurse")
+        parts.session.cut()
+        expectEqual(parts.pasteboard.string(), "Good morning, nurse")
+        expectEqual(parts.controller.talk.text, "")
+        parts.session.paste()
+        parts.session.paste()
+        expectEqual(parts.controller.talk.text, "Good morning, nurseGood morning, nurse")
+        expect(parts.sink.posted.isEmpty)
+    }
+
+    await asyncTest("Cut and Copy are on only for a selection, an echo, or Talk text") {
+        let parts = try makeSession()
+        let session = parts.session
+        parts.controller.focusChanged(to: field("I am on the train", caret: 8))
+        await session.settle()
+        expect(!session.canCutOrCopy, "a caret with no selection")
+        parts.controller.focusChanged(to: field("I am on the train", caret: 8, selection: 9))
+        await session.settle()
+        expect(session.canCutOrCopy, "a selection")
+        parts.controller.focusChanged(to: nil)
+        await session.settle()
+        expect(session.canCutOrCopy, "the app shows no field, so the keyboard cannot tell")
+        parts.controller.focusChanged(
+            to: FocusedField(
+                appName: "Safari", role: "AXTextField", isEditable: true, isSecure: true, text: nil,
+                selection: nil))
+        await session.settle()
+        expect(!session.canCutOrCopy, "a password field")
+        parts.controller.mode = .talk
+        await session.settle()
+        expect(!session.canCutOrCopy, "an empty Talk bar")
+        parts.controller.talk.type("Hello")
+        await session.settle()
+        expect(session.canCutOrCopy)
+    }
+
+    await asyncTest("Paste is on only when the clipboard holds text") {
+        let pasteboard = MemoryPasteboard()
+        let parts = try makeSession(pasteboard: pasteboard)
+        expect(!parts.session.canPaste)
+        pasteboard.copy("Hello")
+        parts.session.pasteboardChanged()
+        expect(parts.session.canPaste)
+        pasteboard.copy(nil, types: ["public.png"])
+        parts.session.pasteboardChanged()
+        expect(!parts.session.canPaste)
+    }
+
+    await asyncTest("an app change and a mode change close the history") {
+        let parts = try makeSession()
+        parts.session.toggleHistory()
+        parts.session.appChanged(name: "Mail", bundleID: "com.apple.mail", windowTitle: nil)
+        expect(!parts.session.isHistoryOpen)
+        parts.session.toggleHistory()
+        parts.controller.mode = .talk
+        await parts.session.settle()
+        expect(!parts.session.isHistoryOpen)
+    }
+
+    await asyncTest("the history turns its pages and starts on the newest page when it opens") {
+        let parts = try makeSession()
+        for index in 0..<13 { parts.clipboard.add("Text \(index)") }
+        parts.session.toggleHistory()
+        expectEqual(parts.session.historyPage, 0)
+        parts.session.newerPage()
+        expectEqual(parts.session.historyPage, 0)
+        parts.session.olderPage()
+        parts.session.olderPage()
+        parts.session.olderPage()
+        expectEqual(parts.session.historyPage, 2)
+        parts.session.toggleHistory()
+        parts.session.toggleHistory()
+        expectEqual(parts.session.historyPage, 0)
     }
 }

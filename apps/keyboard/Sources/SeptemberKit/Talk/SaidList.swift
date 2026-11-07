@@ -19,11 +19,17 @@ public struct SaidLine: Identifiable, Equatable, Sendable, Codable {
     /// The time since the line was said, in the short form of the list:
     /// "now", "2 min", "1 h".
     public func age(at now: Date) -> String {
-        let minutes = Int(now.timeIntervalSince(date) / 60)
-        if minutes < 1 { return "now" }
-        if minutes < 60 { return "\(minutes) min" }
-        return "\(minutes / 60) h"
+        shortAge(since: date, at: now)
     }
+}
+
+/// The time since `date`, in the short form of the lists: "now", "2 min",
+/// "1 h".
+func shortAge(since date: Date, at now: Date) -> String {
+    let minutes = Int(now.timeIntervalSince(date) / 60)
+    if minutes < 1 { return "now" }
+    if minutes < 60 { return "\(minutes) min" }
+    return "\(minutes / 60) h"
 }
 
 extension SaidLine: CustomStringConvertible, CustomDebugStringConvertible {

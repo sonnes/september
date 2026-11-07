@@ -23,6 +23,7 @@ It runs on the main actor. The checks are in
 | The app panel | `AppPanelModel` | Tells it the app in front, the window title, the presses, and the chords. |
 | My Panel | `UserPanelStore`, `UsageStore` | Counts the presses and ranks the buttons of the Mine tab. |
 | The input bar | `InputBarVisibility` | Shows the bar and the suggestions only when there is text input. |
+| The clipboard | `ClipboardHistory`, `ClipboardAccess` | Pastes a copied text, and does Cut, Copy, and Paste in each mode. |
 
 The app sets two hooks:
 
@@ -38,6 +39,12 @@ The views read these values of the session:
 - `appPanelTab`: the app tab or the Mine tab.
 - `mineButtons`: the buttons of Mine, most used first.
 - `userPanelError`: the reason that My Panel could not read its file.
+- `isHistoryOpen`: true while the clipboard history shows in the place of the
+  predictions.
+- `historyPage`: the page of the history. Page 0 holds the newest texts.
+- `canCutOrCopy`: true for a selection in the field, for an app that shows no
+  field, and for text in the Talk bar. False for a password field.
+- `canPaste`: true when the clipboard holds text.
 
 ## Start
 
@@ -47,7 +54,8 @@ The views read these values of the session:
 2. It sends each chord of the keys to `chordPressed(_:)`.
 3. It ranks My Panel.
 4. It starts to observe the parts.
-5. It does the first update.
+5. It reads the clipboard for `canPaste`.
+6. It does the first update.
 
 ## The update
 
@@ -67,6 +75,7 @@ An update does these steps in this order:
 3. It sets `speakMode`. In Type mode, Speak is on when the field has text to
    read. In the Write window, Speak is on when the document has text.
 4. It sets `spokenWord`.
+5. It sets `canCutOrCopy`.
 
 The input bar does not wait for the turn. The session takes the focused field,
 the input, the mode, the private state, and the Write window from their
@@ -115,6 +124,21 @@ the paragraph at the caret from the editor page every 0.5 seconds. The app
 gives it to `writeCaretRead(_:)`. The session sends the paragraph to
 `controller.focusChanged(to:)` and records if the document has text.
 
+### The clipboard changes
+
+macOS has no notification for a change of the clipboard. The app makes a
+`ClipboardWatcher`, and a timer calls `poll()` every 0.5 seconds. A poll with
+no change compares one number. For each change, the watcher adds the text to
+`ClipboardHistory` and calls `pasteboardChanged()`. The watcher keeps no copy
+in these conditions:
+
+- The copy has a type of `ClipboardWatcher.skippedTypes`. Password managers
+  set these types (nspasteboard.org).
+- The copy is a file, or it has no plain text.
+- The focused field is a password field or holds private text.
+
+The text on the clipboard at launch does not go into the history.
+
 ## Calls from the views
 
 | Call | From | What happens |
@@ -126,6 +150,10 @@ gives it to `writeCaretRead(_:)`. The session sends the paragraph to
 | `pressAppPanel(_:)` | A button of the app panel | Counts the press for the order of the panel, then does the action. |
 | `pressMine(_:)` | A button of Mine | Counts the press for the order of Mine, then does the action. |
 | `chordPressed(_:)` | `ChordTap` and the chords of the keys | Gives the chord to the app panel to learn. The app panel learns nothing while the field has private text. |
+| `toggleHistory()` | History | Shows the clipboard history in the place of the predictions, on its newest page, or shows the predictions again. An app change and a mode change close the history. |
+| `olderPage()`, `newerPage()` | Older and Newer | Turns the pages of the history. |
+| `pasteClip(_:)` | A copied text | See [The Clipboard](#the-clipboard). |
+| `cut()`, `copy()`, `paste()` | Cut, Copy, and Paste | See [The Clipboard](#the-clipboard). |
 
 ## Picked Words
 
@@ -152,6 +180,23 @@ Private text and a password field record nothing.
 - In Type mode in another app, it speaks the selection of the field, or the
   whole field (`SpeakText`). A password field and private text have nothing to
   read.
+
+## The Clipboard
+
+In Type mode, the clipboard actions go to the app in front:
+
+- Cut, Copy, and Paste press Command-X, Command-C, and Command-V.
+- `pasteClip(_:)` puts the text on the clipboard and moves it to the newest
+  place of the history. Then it presses Command-V.
+
+In Talk mode, the clipboard actions act on the Talk bar, and the app in front
+gets no events:
+
+- Copy puts the text of the bar on the clipboard. Cut also clears the bar.
+- Paste types the text of the clipboard into the bar.
+- `pasteClip(_:)` types the copied text into the bar.
+
+A press on a copied text closes the history.
 
 ## Checks
 

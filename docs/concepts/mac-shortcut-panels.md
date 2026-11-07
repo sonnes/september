@@ -7,7 +7,8 @@ package: keyboard
 # Shortcut panels (macOS)
 
 Panels are on each side of the macOS keyboard. SYSTEM and the app panel are on
-the left. TEXT and EDIT are on the right. The shortcuts of the app in front are
+the left. TEXT is on the right. Cut, Copy, and Paste are buttons at the left
+of the input bar, so no keypad has them. The shortcuts of the app in front are
 also a panel. Each panel is a grid of buttons in a JSON file that the app loads at
 launch.
 
@@ -24,7 +25,9 @@ PanelDefinition   title, columns, buttons, arrows
 ```
 
 `arrows` is an optional `PanelBlock` below the grid, with columns of its own.
-The Text keypad uses it for an inverted T of arrow keys, in three columns.
+The Text keypad uses it for an inverted T of arrow keys, in three columns. A
+keypad with three columns, in its grid or in its arrows, is three buttons
+wide. System has three columns.
 
 A button presses a key combination or types a phrase. A text button uses up
 the latched modifiers, the same as a text key.
@@ -36,8 +39,7 @@ Z"), so a button never has to repeat itself in JSON.
 
 ```
 Sources/SeptemberKit/Resources/Panels/
-├── edit.json                        # right of the keys, outside
-├── text.json                        # right of the keys, nearest
+├── text.json                        # right of the keys
 ├── system.json                      # left of the keys, nearest
 └── Apps/
     ├── generic.json                 # fallback for unknown apps

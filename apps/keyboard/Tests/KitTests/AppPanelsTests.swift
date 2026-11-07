@@ -164,9 +164,39 @@ private func panelFileTests() {
         expect((try? JSONDecoder().decode(PanelDefinition.self, from: json)) == nil)
     }
 
-    test("every bundled panel fits the two-column grid") {
+    test("each keypad has six rows at most") {
         let store = try PanelStore.bundled()
-        for panel in [store.edit, store.text, store.system] + store.appPanels.map(\.panel) {
+        for keypad in [store.text, store.system] {
+            func rows(_ count: Int, _ columns: Int) -> Int { (count + columns - 1) / columns }
+            let arrowRows = keypad.arrows.map { rows($0.buttons.count, $0.columns) } ?? 0
+            expect(
+                rows(keypad.buttons.count, keypad.columns) + arrowRows <= AppPanelLayout.slotCount / 2,
+                "\(keypad.title) has too many rows")
+        }
+    }
+
+    test("System holds the shortcuts of editing, and no keypad repeats a clipboard button") {
+        let store = try PanelStore.bundled()
+        let system = store.system.buttons.map(\.id)
+        for id in ["undo", "redo", "select-all", "save", "new", "open", "print", "close"] {
+            expect(system.contains(id), "System has no \(id)")
+        }
+        let chords = (store.text.buttons + (store.text.arrows?.buttons ?? []) + store.system.buttons)
+            .compactMap { button -> Shortcut? in
+                if case .shortcut(let shortcut) = button.action { return shortcut }
+                return nil
+            }
+        expect(Set(chords).isDisjoint(with: ClipboardShortcut.all), "a keypad repeats a clipboard button")
+    }
+
+    test("the chords of the clipboard buttons are keypad chords, so the app panel does not learn them") {
+        let store = try PanelStore.bundled()
+        expect(ClipboardShortcut.all.isSubset(of: store.keypadShortcuts))
+    }
+
+    test("every app panel fits the two-column grid") {
+        let store = try PanelStore.bundled()
+        for panel in store.appPanels.map(\.panel) {
             expect(
                 AppPanelLayout.slots(panel.buttons) <= AppPanelLayout.slotCount,
                 "\(panel.title) overflows")

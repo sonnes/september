@@ -1,7 +1,13 @@
 import SwiftUI
 
-/// The keyboard window: the prediction stack, the input bar with Speak and
-/// the mode buttons, and the keys with the word completions on top.
+/// The keyboard window: the prediction stack, the input bar with the
+/// clipboard buttons at its left and Speak and the mode buttons at its right,
+/// and the keys with the word completions on top. History shows the
+/// clipboard history in the place of the prediction stack.
+///
+/// The bar is as wide as the keys and sits over them. The clipboard buttons
+/// sit at the left of the bar, past the left edge of the keys, so the window
+/// has a clear space at the left of the keys card.
 ///
 /// In Type mode the shortcut panels float in windows of their own. In Talk
 /// mode they hide, and Phrases and the Said list show at the left and the
@@ -32,8 +38,23 @@ public struct KeyboardScreen: View {
     }
 
     /// The distance from the left edge of the window to the keys and the
-    /// bar. The app keeps the keys in place when the mode changes.
+    /// bar. The clipboard buttons fit in this space. The app keeps the keys
+    /// in place when the mode changes.
     public static func keysInset(_ mode: KeyboardMode) -> CGFloat {
+        max(cardKeysInset(mode), clipboardReach)
+    }
+
+    /// The clear space at the left of the keys card in Type mode, or of the
+    /// Talk card in Talk mode, under the clipboard buttons.
+    public static func cardInset(_ mode: KeyboardMode) -> CGFloat {
+        keysInset(mode) - cardKeysInset(mode)
+    }
+
+    /// The clipboard buttons and the gap between them and the bar.
+    private static let clipboardReach = Metrics.Clipboard.buttonsWidth + Metrics.TopRow.spacing
+
+    /// The distance from the left edge of the card to the keys.
+    private static func cardKeysInset(_ mode: KeyboardMode) -> CGFloat {
         switch mode {
         case .type: Metrics.Detached.keysSidePadding
         case .talk: Metrics.surfacePadding + Metrics.Talk.phrasesWidth + Metrics.sectionSpacing
@@ -49,14 +70,15 @@ public struct KeyboardScreen: View {
                     .padding(.bottom, Metrics.TopRow.stackBottom)
             }
 
-            PredictionStack(
-                engine: session.predictions, mode: controller.mode == .talk ? .talk : .type,
-                onType: session.type)
-                .shown(inputBar.isVisible)
+            stack
+                .shown(inputBar.isVisible || session.isHistoryOpen)
                 .padding(.leading, inset)
                 .padding(.bottom, Metrics.TopRow.stackBottom)
 
-            HStack(spacing: Metrics.TopRow.spacing) {
+            HStack(alignment: .barCenter, spacing: Metrics.TopRow.spacing) {
+                // Copy works with no text field, for example on a web page,
+                // so the buttons always show.
+                ClipboardButtons(session: session)
                 bar.shown(inputBar.isVisible)
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
                         inputBar.frame = $0
@@ -69,13 +91,27 @@ public struct KeyboardScreen: View {
                     arrange: arrange,
                     settings: settings)
             }
-            .padding(.leading, inset)
+            .padding(.leading, inset - Self.clipboardReach)
             .padding(.bottom, Metrics.TopRow.keysTop)
 
-            switch controller.mode {
-            case .type: typeKeys
-            case .talk: talkKeys
+            Group {
+                switch controller.mode {
+                case .type: typeKeys
+                case .talk: talkKeys
+                }
             }
+            .padding(.leading, Self.cardInset(controller.mode))
+        }
+    }
+
+    @ViewBuilder
+    private var stack: some View {
+        if session.isHistoryOpen {
+            ClipboardHistoryView(session: session)
+        } else {
+            PredictionStack(
+                engine: session.predictions, mode: controller.mode == .talk ? .talk : .type,
+                onType: session.type)
         }
     }
 
