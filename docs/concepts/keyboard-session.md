@@ -1,0 +1,142 @@
+---
+title: Keyboard session (macOS)
+description: KeyboardSession joins the parts of the Mac keyboard. The views and the app shell call it, and it tells each part what changed.
+package: keyboard
+---
+
+# Keyboard session (macOS)
+
+`KeyboardSession` joins the parts of the keyboard. The views and the app shell
+(`AppDelegate`) call the session. The session tells each part what changed.
+
+The session is in `apps/keyboard/Sources/SeptemberKit/Integration/KeyboardSession.swift`.
+It runs on the main actor. The checks are in
+`apps/keyboard/Tests/KitTests/IntegrationTests.swift`.
+
+## The parts
+
+| Part | Type | What the session does with it |
+|---|---|---|
+| The keys and the field | `KeyboardController` | Reads the input, the mode, and the private state. Types the text of a prediction. |
+| The predictions | `PredictionEngine` | Feeds it with the field, or with the Talk bar and the Said list. |
+| The voice | `Speaker` | Speaks the text of Speak, and stops it. Gives Talk mode its voice. |
+| The app panel | `AppPanelModel` | Tells it the app in front, the window title, the presses, and the chords. |
+| My Panel | `UserPanelStore`, `UsageStore` | Counts the presses and ranks the buttons of the Mine tab. |
+| The input bar | `InputBarVisibility` | Shows the bar and the suggestions only when there is text input. |
+
+The app sets two hooks:
+
+- `menuName` gives the name of a chord from the menu bar of the app in front.
+- `writeSpeech` reads the selection and the document of the Write window. The
+  keyboard cannot read its own web view through the accessibility API.
+
+The views read these values of the session:
+
+- `speakMode`: Speak, Stop, or off.
+- `spokenWord`: the word that the voice speaks now, as a range in the text of
+  the bar. It is `nil` when the bar does not hold the spoken text.
+- `appPanelTab`: the app tab or the Mine tab.
+- `mineButtons`: the buttons of Mine, most used first.
+- `userPanelError`: the reason that My Panel could not read its file.
+
+## Start
+
+`init` does these steps in this order:
+
+1. It gives the voice to Talk mode (`controller.talk.speech`).
+2. It sends each chord of the keys to `chordPressed(_:)`.
+3. It ranks My Panel.
+4. It starts to observe the parts.
+5. It does the first update.
+
+## The update
+
+The session observes `objectWillChange` of the controller, Talk mode, the Said
+list, and the voice. `objectWillChange` fires before the publisher stores the
+new value, so the update waits one turn. One update runs for all the changes of
+that turn.
+
+An update does these steps in this order:
+
+1. It feeds the predictions. In Type mode, the input is the field. In Talk
+   mode, the input is the Talk bar, and the Said list is the conversation.
+   Private text gives the predictions no input.
+2. If the speech ended after the last update, it tells Talk mode. Talk mode
+   then empties the bar.
+3. It sets `speakMode`. In Type mode, Speak is on when the field has text to
+   read, or when the Write window is in front.
+4. It sets `spokenWord`.
+
+The input bar does not wait for the turn. The session takes the focused field,
+the input, the mode, the private state, and the Write window from their
+publishers. Then it tells `InputBarVisibility` if the bar must show.
+
+My Panel ranks Mine again only when an app comes to the front, so a button
+never moves while the user aims at it. A change in the My Panel page of
+Settings ranks Mine at once, because the user is in the Settings window.
+
+## Calls from the app shell
+
+### An app comes to the front
+
+`FocusWatcher` follows the app in front. For a new app, the calls come in this
+order:
+
+1. `FrontAppTracker` decides between the Write window and another app.
+2. `appChanged(name:bundleID:windowTitle:)`. The controller clears the text of
+   the last app. Then the app panel takes the panel of the new app, and Mine
+   takes its new order.
+3. `focusMoved()`. The private state of the last field ends.
+4. `controller.focusChanged(to:)` with the field of the new app.
+
+If the field of the new app comes before `appChanged`, the controller clears
+it, and the bar stays empty. For this reason, `FocusWatcher.onAppChanged` is
+the only observer of the app switch.
+
+### The focus moves in the same app
+
+1. `focusMoved()`, only for a different element. New text in the same element
+   is not a focus move, so private text stays hidden until the focus leaves its
+   field.
+2. `controller.focusChanged(to:)` with the new field.
+
+### The window title changes
+
+`windowTitleChanged(_:)` tells the app panel. A terminal shows the Claude Code
+panel when its window title names Claude Code.
+
+### The Write window
+
+The Write window is in the keyboard process, and the keyboard cannot read its
+own window through the accessibility API. When the window becomes the key window, the app calls `appChanged` with
+`WritePanel.id`. Then a timer reads the paragraph at the caret from the editor
+page every 0.5 seconds and gives it to `controller.focusChanged(to:)`.
+
+## Calls from the views
+
+| Call | From | What happens |
+|---|---|---|
+| `type(_:)` | A prediction tile or a word completion | Types into the app in Type mode, or into the Talk bar in Talk mode. |
+| `speakPressed()` | Speak | See [Speak](#speak). |
+| `pressAppPanel(_:)` | A button of the app panel | Counts the press for the order of the panel, then does the action. |
+| `pressMine(_:)` | A button of Mine | Counts the press for the order of Mine, then does the action. |
+| `chordPressed(_:)` | `ChordTap` and the chords of the keys | Gives the chord to the app panel to learn. The app panel learns nothing while the field has private text. |
+
+## Speak
+
+`speakPressed()` does one of these:
+
+- During speech, it stops the voice. In Talk mode, the text stays in the bar.
+- In Talk mode, it speaks the bar, and the text goes to the Said list.
+- In Type mode with the Write window in front, it reads `writeSpeech`. It
+  speaks the selection, or the whole document without its Markdown marks
+  (`MarkdownSpeech`).
+- In Type mode in another app, it speaks the selection of the field, or the
+  whole field (`SpeakText`). A password field and private text have nothing to
+  read.
+
+## Checks
+
+`settle()` waits until the parts take the last change: the read of the Write
+window, the pending update, and the request of the predictions. A check calls
+`settle()` before it reads a result.

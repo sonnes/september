@@ -85,7 +85,7 @@ only what needs a running app — the panel, the event sink, the menu bar.
   predictions from the input bar, empties the Talk bar when the speech ends,
   counts the presses of the panels, and ranks My Panel. Put new wiring there,
   with a check in `Tests/KitTests/IntegrationTests.swift`. `AppDelegate` keeps
-  only what needs a running app.
+  only what needs a running app. See `docs/concepts/keyboard-session.md`.
 - **Private text stays private.** Never log, print, or keep the text of a
   field, a private text button, or an API key. While `isFieldPrivate` is true,
   the predictions, Speak, learning, and the tree viewer get no text of the
