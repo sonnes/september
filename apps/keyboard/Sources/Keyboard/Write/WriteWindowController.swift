@@ -7,6 +7,9 @@ import SwiftUI
 /// Markdown editor. It takes focus, and the keyboard types into it the same
 /// as into any other app.
 ///
+/// The window grows out of the input bar of the keyboard when it opens. By
+/// default, the editor is a portrait page with the shape of A4 paper.
+///
 /// Each document is a Markdown file in `~/Documents/September`. The page sends
 /// the text 120 ms after the typing stops, and the model saves it then, so
 /// the window has no Save command.
@@ -23,11 +26,19 @@ final class WriteWindowController: NSWindowController, NSWindowDelegate, NSToolb
     private var titleSubscription: AnyCancellable?
 
     private static let newItem = NSToolbarItem.Identifier("september.write.new")
+    private static let sizeKey = "September Write Size"
+
+    /// The size that the user gave the window, kept between launches. It is
+    /// nil until the user resizes the window.
+    private var userSize: CGSize? {
+        get { UserDefaults.standard.string(forKey: Self.sizeKey).map(NSSizeFromString) }
+        set { UserDefaults.standard.set(newValue.map(NSStringFromSize), forKey: Self.sizeKey) }
+    }
 
     init(library: DocumentLibrary = DocumentLibrary()) {
         model = WriteModel(library: library)
         let window = WriteWindow(
-            contentRect: NSRect(origin: .zero, size: Metrics.writeWindowSize),
+            contentRect: NSRect(origin: .zero, size: Metrics.writeWindowMinSize),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: true)
@@ -38,8 +49,6 @@ final class WriteWindowController: NSWindowController, NSWindowDelegate, NSToolb
         window.contentViewController = makeContent()
         window.delegate = self
         window.onNewDocument = { [weak self] in self?.newDocument() }
-        window.center()
-        window.setFrameAutosaveName("September Write")
 
         let toolbar = NSToolbar(identifier: "september.write")
         toolbar.delegate = self
@@ -60,15 +69,47 @@ final class WriteWindowController: NSWindowController, NSWindowDelegate, NSToolb
 
     /// Opens the window, or brings it to the front. The first open lists the
     /// folder and shows the newest document.
-    func show() {
+    ///
+    /// - Parameters:
+    ///   - bar: the frame of the input bar on the screen. If it is nil, the
+    ///     window opens with no animation, centred on the screen.
+    ///   - floor: the top of the keyboard window. The window opens above it.
+    ///   - screen: the visible frame of the screen.
+    ///   - margin: the space between the window and the edges of the screen.
+    func show(from bar: CGRect?, floor: CGFloat, screen: CGRect, margin: CGFloat) {
         if !started {
             started = true
             page.send(.theme(.september))
             model.start()
         }
         guard let window else { return }
+        guard !window.isVisible else {
+            AppActivation.bringToFront(window)
+            return
+        }
+
+        let frame = WritePlacement.frame(
+            size: userSize, bar: bar ?? CGRect(x: screen.midX, y: floor, width: 0, height: 0),
+            floor: floor, screen: screen, margin: margin)
+        let animates = bar != nil && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        if let bar, animates {
+            window.alphaValue = 0
+            window.setFrame(bar, display: false)
+        } else {
+            window.setFrame(frame, display: false)
+        }
         AppActivation.bringToFront(window)
         window.makeFirstResponder(page.webView)
+        guard animates else { return }
+
+        // The keyboard window floats above the Write window, so the Write
+        // window comes out from behind the bar.
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = Metrics.writeOpenAnimation
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            window.animator().setFrame(frame, display: true)
+            window.animator().alphaValue = 1
+        }
     }
 
     /// True while the Write window is the key window.
@@ -135,6 +176,10 @@ final class WriteWindowController: NSWindowController, NSWindowDelegate, NSToolb
 
     func windowDidResignKey(_ notification: Notification) {
         onKeyChanged?(false)
+    }
+
+    func windowDidEndLiveResize(_ notification: Notification) {
+        userSize = window?.frame.size
     }
 
     func windowWillClose(_ notification: Notification) {

@@ -6,13 +6,19 @@ public struct SpeechSettingsPage: View {
     @ObservedObject private var settings: VoiceSettingsStore
     private let speaker: Speaker
     private let returnSpeaks: Binding<Bool>?
+    private let onClearTalkHistory: (() -> Void)?
+    @State private var confirmsClear = false
 
     /// `returnSpeaks` is the Talk mode setting of Return. Talk mode owns it.
-    /// With `nil`, the page does not show the switch.
-    public init(speech: SpeechServices, returnSpeaks: Binding<Bool>? = nil) {
+    /// With `nil`, the page does not show the switch. With
+    /// `onClearTalkHistory`, the page shows Clear Talk History.
+    public init(
+        speech: SpeechServices, returnSpeaks: Binding<Bool>? = nil, onClearTalkHistory: (() -> Void)? = nil
+    ) {
         settings = speech.settings
         speaker = speech.speaker
         self.returnSpeaks = returnSpeaks
+        self.onClearTalkHistory = onClearTalkHistory
     }
 
     public var body: some View {
@@ -46,9 +52,32 @@ public struct SpeechSettingsPage: View {
                 }
             }
 
-            if let returnSpeaks {
-                Section("Talk Mode") {
-                    Toggle("Return speaks the text in the bar", isOn: returnSpeaks)
+            if returnSpeaks != nil || onClearTalkHistory != nil {
+                Section {
+                    if let returnSpeaks {
+                        Toggle("Return speaks the text in the bar", isOn: returnSpeaks)
+                    }
+                    if let onClearTalkHistory {
+                        HStack {
+                            Spacer()
+                            Button("Clear Talk History…") { confirmsClear = true }
+                        }
+                        .confirmationDialog(
+                            "Clear the Talk history?", isPresented: $confirmsClear
+                        ) {
+                            Button("Clear Talk History", role: .destructive, action: onClearTalkHistory)
+                        } message: {
+                            Text("The Said list loses every line. You cannot undo this.")
+                        }
+                    }
+                } header: {
+                    Text("Talk Mode")
+                } footer: {
+                    if onClearTalkHistory != nil {
+                        Text(
+                            "Talk mode keeps what you said for 30 days on this Mac. The predictions of Talk mode use the last hour. Type mode does not use it."
+                        )
+                    }
                 }
             }
         }

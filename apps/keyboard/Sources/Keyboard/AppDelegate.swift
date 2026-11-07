@@ -54,7 +54,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let phrases: PanelDefinition
         do {
-            controller = KeyboardController(sink: sink, panels: try PanelStore.bundled())
+            controller = KeyboardController(
+                sink: sink, panels: try PanelStore.bundled(),
+                talk: TalkSession(said: SaidList(fileURL: SaidList.defaultURL)))
             phrases = try Phrases.bundled()
             contextRules = try ContextRules.bundled()
         } catch {
@@ -146,7 +148,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func makeSettingsPages() -> SettingsPages {
         var pages = SettingsPages(settings: keyboardSettings, permission: permission)
         pages[.voice] = AnyView(VoiceSettingsPage(speech: speech))
-        pages[.speech] = AnyView(SpeechPage(speech: speech, settings: keyboardSettings))
+        pages[.speech] = AnyView(SpeechPage(speech: speech, settings: keyboardSettings, said: controller.talk.said))
         pages[.predictions] = AnyView(PredictionsSettingsPage(engine: session.predictions))
         pages[.appPanels] = AnyView(
             AppPanelsSettingsPage(model: session.appPanels, inputMonitoring: inputMonitoring))
@@ -280,8 +282,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - The Write window
 
+    /// Opens the Write window out of the input bar. If the keyboard is
+    /// hidden, the window opens with no animation.
     private func showWrite() {
-        writeWindow.show()
+        let keyboard = keyboardPanel?.isVisible == true ? keyboardPanel : nil
+        let screen = (keyboard?.screen ?? FloatingPanel.activeScreen)?.visibleFrame ?? .zero
+        let bar = keyboard.map { WritePlacement.screenRect(session.inputBar.frame, in: $0.frame) }
+        writeWindow.show(
+            from: bar, floor: keyboard?.frame.maxY ?? screen.minY, screen: screen,
+            margin: FloatingPanel.margin)
     }
 
     /// The keyboard cannot read its own window over accessibility, so the
@@ -614,12 +623,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
 }
 
-/// The Speech page with the Return key setting of Talk mode.
+/// The Speech page with the Return key setting of Talk mode and the Talk
+/// history.
 private struct SpeechPage: View {
     let speech: SpeechServices
     @ObservedObject var settings: KeyboardSettings
+    let said: SaidList
 
     var body: some View {
-        SpeechSettingsPage(speech: speech, returnSpeaks: $settings.returnSpeaksInTalk)
+        SpeechSettingsPage(
+            speech: speech, returnSpeaks: $settings.returnSpeaksInTalk, onClearTalkHistory: said.clear)
     }
 }

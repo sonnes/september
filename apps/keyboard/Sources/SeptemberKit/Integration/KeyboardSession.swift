@@ -298,7 +298,8 @@ public final class KeyboardSession: ObservableObject {
         let usesScreen = mode == .type && !isWriteInFront && predictions.screenEnabled
         predictions.update(
             input: input, mode: mode == .talk ? .talk : .type,
-            said: talk.said.lines.reversed().map(\.text), isPrivate: isPrivate,
+            // The Talk history is for Talk mode only.
+            said: mode == .talk ? talk.said.recentTexts : [], isPrivate: isPrivate,
             screen: usesScreen ? screen : nil)
 
         let isSpeaking = speaker.isSpeaking

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The Said list at the right of the keys in Talk mode: the newest lines of
-/// this session. A press on a line speaks it again.
+/// the Talk history. A press on a line speaks it again.
 public struct SaidListView: View {
     @ObservedObject private var said: SaidList
     private let isSpeaking: Bool

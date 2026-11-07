@@ -58,9 +58,10 @@ that turn.
 
 An update does these steps in this order:
 
-1. It feeds the predictions. In Type mode, the input is the field. In Talk
-   mode, the input is the Talk bar, and the Said list is the conversation.
-   Private text gives the predictions no input.
+1. It feeds the predictions. In Type mode, the input is the field, with the
+   text on screen when its switch is on, and no Talk history. In Talk mode,
+   the input is the Talk bar, and the lines of the last hour of the Talk
+   history are the conversation. Private text gives the predictions no input.
 2. If the speech ended after the last update, it tells Talk mode. Talk mode
    then empties the bar.
 3. It sets `speakMode`. In Type mode, Speak is on when the field has text to

@@ -36,7 +36,7 @@ public final class KeyboardController: ObservableObject {
     /// presses a key. Empty when no accents show.
     @Published public private(set) var accentChoices: [String] = []
     public var accents = AccentTable.english
-    public let talk = TalkSession()
+    public let talk: TalkSession
     /// Called with each chord that the keys send, such as ⌘S, so the app
     /// panel can count and learn it.
     public var onChord: ((Shortcut) -> Void)?
@@ -56,8 +56,10 @@ public final class KeyboardController: ObservableObject {
     public init(
         sink: any KeystrokeSink,
         panels: PanelStore,
-        keyCodeMap: KeyCodeMap = SystemKeyboardLayout.currentMap()
+        keyCodeMap: KeyCodeMap = SystemKeyboardLayout.currentMap(),
+        talk: TalkSession = TalkSession()
     ) {
+        self.talk = talk
         self.sink = sink
         self.panels = panels
         self.keyCodeMap = keyCodeMap

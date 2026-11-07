@@ -102,8 +102,21 @@ get no keys. The shortcut panels hide. Phrases show at the left of the keys,
 and the Said list shows at the right. Speak reads the bar aloud and adds it to
 the Said list.
 
+Talk mode keeps its own history, the Said list, in
+`~/Library/Application Support/September Keyboard/talk-history.json`. No
+other part of the keyboard uses this file. The history keeps each line for 30
+days, and 1,000 lines at most. The sentence predictions of Talk mode use the
+lines of the last hour. Type mode does not use the history. To clear it, open
+Settings, then Speech, then click Clear Talk History. If the file does not
+decode, the keyboard moves it to `talk-history.broken.json` and starts an
+empty history.
+
 Write opens the Write window, a normal macOS window with a Markdown editor.
-In the Write window, Speak reads the selection. If nothing is selected, Speak
+The window grows out of the input bar and opens above the keyboard. By
+default, the editor is a portrait page with the shape of A4 paper, as tall as
+the space above the keyboard. If the user resizes the window, the window keeps
+that size. If Reduce Motion is on, the window opens with no animation.
+`WritePlacement` holds the rule. In the Write window, Speak reads the selection. If nothing is selected, Speak
 reads the whole document without the Markdown marks. `MarkdownSpeech` holds
 the rule. If the document has no text, Speak is off.
 
@@ -289,8 +302,10 @@ The Keychain holds the secrets:
   `com.september.keyboard.private`.
 
 The Write window keeps each document as a Markdown file in
-`~/Documents/September`. My Panel, the use counts, and the learned shortcuts
-are JSON files in `~/Library/Application Support/September Keyboard`.
+`~/Documents/September`. My Panel, the use counts, the learned shortcuts, and
+the Talk history are JSON files in
+`~/Library/Application Support/September Keyboard`. Only the user can read the
+Talk history file.
 
 ## Tests
 

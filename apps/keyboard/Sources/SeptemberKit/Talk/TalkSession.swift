@@ -8,7 +8,8 @@ import Foundation
 @MainActor
 public final class TalkSession: ObservableObject {
     @Published public private(set) var text = ""
-    public let said = SaidList()
+    /// The Talk history.
+    public let said: SaidList
     /// The voice that speaks the bar and the Said list.
     public var speech: (any SpeechOutput)?
     /// The Return key speaks the bar. Settings turns it off.
@@ -20,7 +21,9 @@ public final class TalkSession: ObservableObject {
     /// ends.
     private var speaking: String?
 
-    public init() {}
+    public init(said: SaidList = SaidList()) {
+        self.said = said
+    }
 
     // MARK: - Keys
 

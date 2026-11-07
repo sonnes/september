@@ -500,6 +500,24 @@ private func sessionTests() async {
         expect(last?.screen == nil, "Talk mode sends no text from the screen")
     }
 
+    await asyncTest("Type mode sends no Talk history, and Talk mode sends the last hour") {
+        let predictor = RecordingPredictor()
+        let parts = try makeSession(predictor: predictor)
+        let said = parts.controller.talk.said
+        said.add("Yesterday", at: Date().addingTimeInterval(-24 * 3600))
+        said.add("Good morning", at: Date())
+        parts.controller.focusChanged(to: field("Hi", caret: 2))
+        await parts.session.settle()
+        var last = await predictor.requests.last
+        expectEqual(last?.said, [])
+
+        parts.controller.mode = .talk
+        parts.controller.talk.type("Hi")
+        await parts.session.settle()
+        last = await predictor.requests.last
+        expectEqual(last?.said, ["Good morning"])
+    }
+
     await asyncTest("a read from another app is dropped, and a new app clears the screen") {
         let predictor = RecordingPredictor()
         let parts = try makeSession(predictor: predictor)

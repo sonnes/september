@@ -15,9 +15,11 @@ await predictionsTests()
 await speechTests()
 await integrationTests()
 writeTests()
+writePlacementTests()
 pressTests()
 contextProbeTests()
 screenContextTests()
+talkHistoryTests()
 #if DEBUG
 #endif
 summarize()

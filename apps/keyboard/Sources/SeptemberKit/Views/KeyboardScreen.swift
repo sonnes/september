@@ -58,6 +58,9 @@ public struct KeyboardScreen: View {
 
             HStack(spacing: Metrics.TopRow.spacing) {
                 bar.shown(inputBar.isVisible)
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
+                        inputBar.frame = $0
+                    }
                 SpeakButton(mode: session.speakMode, action: session.speakPressed)
                 ModeButtons(
                     mode: controller.mode,

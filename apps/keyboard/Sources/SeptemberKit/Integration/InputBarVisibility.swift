@@ -7,6 +7,9 @@ import Foundation
 @MainActor
 public final class InputBarVisibility: ObservableObject {
     @Published public private(set) var isVisible = false
+    /// The frame of the bar in the keyboard window, with the origin at the
+    /// top left. The Write window opens out of this frame.
+    public var frame: CGRect = .zero
     private let scheduler: any DelayScheduler
     private let hideDelay: TimeInterval
     private var pendingHide: (any ScheduledWork)?
