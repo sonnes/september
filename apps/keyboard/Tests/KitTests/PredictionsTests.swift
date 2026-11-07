@@ -23,6 +23,15 @@ private func stripeTests() {
         expectEqual(stripe.text(toTypeThrough: 0), "p ")
     }
 
+    test("the lead-in mark shows in Type mode only") {
+        let stripe = PredictionStripe(prediction: "Can we go to the garden?", typed: "Can we go")
+        expectEqual(stripe.hidden, 3)
+        expect(stripe.showsLeadIn(in: .type))
+        expect(!stripe.showsLeadIn(in: .talk), "Talk mode shows no lead-in")
+        let fresh = PredictionStripe(prediction: "How was your day?", typed: "")
+        expect(!fresh.showsLeadIn(in: .type), "a row that hides no words shows no lead-in")
+    }
+
     test("a field that ends with a space continues with the next word") {
         let stripe = PredictionStripe(prediction: "I would like a cup", typed: "I would like ")
         expectEqual(stripe.tiles, ["a", "cup"])

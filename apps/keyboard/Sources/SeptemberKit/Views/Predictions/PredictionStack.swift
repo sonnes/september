@@ -8,18 +8,23 @@ import SwiftUI
 /// text, and when Apple Intelligence is not ready.
 public struct PredictionStack: View {
     @ObservedObject private var engine: PredictionEngine
+    private let mode: PredictionMode
     private let onType: (String) -> Void
     private let onOpenSystemSettings: () -> Void
 
     /// - Parameters:
+    ///   - mode: Type mode shows a lead-in mark for the words that the field
+    ///     holds. Talk mode shows none.
     ///   - onType: Types the text of a pressed tile.
     ///   - onOpenSystemSettings: The action of the Apple Intelligence notice.
     public init(
         engine: PredictionEngine,
+        mode: PredictionMode,
         onType: @escaping (String) -> Void,
         onOpenSystemSettings: @escaping () -> Void = PredictionNoticeView.openSystemSettings
     ) {
         self.engine = engine
+        self.mode = mode
         self.onType = onType
         self.onOpenSystemSettings = onOpenSystemSettings
     }
@@ -32,7 +37,7 @@ public struct PredictionStack: View {
                 VStack(alignment: .leading, spacing: Metrics.Predictions.rowSpacing) {
                     // The best row is last, next to the input bar.
                     ForEach(Array(engine.stripes.enumerated().reversed()), id: \.offset) { _, stripe in
-                        PredictionRow(stripe: stripe, onType: onType)
+                        PredictionRow(stripe: stripe, mode: mode, onType: onType)
                     }
                 }
                 .opacity(engine.isStale ? Metrics.Predictions.staleOpacity : 1)
@@ -44,15 +49,16 @@ public struct PredictionStack: View {
     }
 }
 
-/// One prediction: a lead-in mark for the words that the field holds, and
-/// then one tile for each word.
+/// One prediction: in Type mode a lead-in mark for the words that the field
+/// holds, and then one tile for each word.
 struct PredictionRow: View {
     let stripe: PredictionStripe
+    let mode: PredictionMode
     let onType: (String) -> Void
 
     var body: some View {
         HStack(spacing: Metrics.Predictions.tileSpacing) {
-            if stripe.hidden > 0 {
+            if stripe.showsLeadIn(in: mode) {
                 Text("…")
                     .font(Typography.predictionLeadIn)
                     .foregroundStyle(Color(Tokens.keyText))

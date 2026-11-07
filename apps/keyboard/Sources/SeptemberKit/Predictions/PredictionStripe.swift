@@ -13,8 +13,8 @@ public struct PredictionStripe: Equatable, Sendable {
     public let prediction: String
     /// The words that the row shows.
     public let tiles: [String]
-    /// The count of words that the field already holds. The row shows a
-    /// lead-in mark in their place.
+    /// The count of words that the field already holds. In Type mode the
+    /// row shows a lead-in mark in their place.
     public let hidden: Int
     /// False when the prediction does not continue the text in the field. The
     /// tiles of such a row are not active.
@@ -66,6 +66,13 @@ public struct PredictionStripe: Equatable, Sendable {
         guard matches, tiles.indices.contains(index) else { return nil }
         let words = tiles[...index].joined(separator: " ")
         return lead + String(words.dropFirst(partial.count)) + " "
+    }
+
+    /// True when the row shows the lead-in mark before its tiles. Talk mode
+    /// shows none, as in frame 4 of the mock: the Talk bar is next to the
+    /// row, so the hidden words are plain to see.
+    public func showsLeadIn(in mode: PredictionMode) -> Bool {
+        mode == .type && hidden > 0
     }
 
     /// The words of the row up to the tile at `index`, for a spoken label.

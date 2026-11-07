@@ -46,7 +46,9 @@ public struct KeyboardScreen: View {
                     .padding(.bottom, Metrics.TopRow.stackBottom)
             }
 
-            PredictionStack(engine: session.predictions, onType: session.type)
+            PredictionStack(
+                engine: session.predictions, mode: controller.mode == .talk ? .talk : .type,
+                onType: session.type)
                 .shown(inputBar.isVisible)
                 .padding(.leading, inset)
                 .padding(.bottom, Metrics.TopRow.stackBottom)
