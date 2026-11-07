@@ -29,7 +29,7 @@ extension Metrics {
         public static let noticeCornerRadius: CGFloat = 14
         public static let noticeSpacing: CGFloat = 12
 
-        public static let wordSlots = 5
+        public static let wordSlots = 8
         public static let wordHeight: CGFloat = 40
         public static let wordSpacing: CGFloat = 6
         public static let wordCornerRadius: CGFloat = 8

@@ -35,7 +35,7 @@ public struct WordCompletion: Equatable, Hashable, Sendable {
 @MainActor
 public final class SpellCheckerCompleter: WordCompleting {
     /// The most completions in the word row.
-    public static let limit = 5
+    public static let limit = Metrics.Predictions.wordSlots
 
     private let checker = NSSpellChecker.shared
     private let tag = NSSpellChecker.uniqueSpellDocumentTag()

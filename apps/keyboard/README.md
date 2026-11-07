@@ -63,7 +63,7 @@ macOS resets its Accessibility permission after the next build.
 ## The windows
 
 The keyboard window holds the sentence predictions, the input bar, and the
-keys. A row of word completions sits on top of the keys. Speak, Type, Talk,
+keys. A row of up to eight word completions sits on top of the keys. Speak, Type, Talk,
 Write, and Settings are at the right of the input bar. In Type mode, Arrange
 is between Write and Settings.
 

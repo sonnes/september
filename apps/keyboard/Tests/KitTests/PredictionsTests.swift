@@ -201,6 +201,12 @@ private func wordTests() {
         expect(words.allSatisfy { $0.word.lowercased().hasPrefix("cu") })
     }
 
+    test("the spell checker fills every slot of the word row for a common start") {
+        let completer = SpellCheckerCompleter()
+        let context = PredictionContext(text: "th", caret: 2, mode: .type, said: [])
+        expectEqual(completer.completions(for: context).count, 8)
+    }
+
     test("the spell checker gives nothing with no word at the caret") {
         let completer = SpellCheckerCompleter()
         let context = PredictionContext(text: "I would ", caret: 8, mode: .type, said: [])
