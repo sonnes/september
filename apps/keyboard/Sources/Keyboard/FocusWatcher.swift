@@ -227,7 +227,8 @@ final class FocusWatcher {
     func readFocusedField() -> FocusedField? {
         guard let element = focusedElement() else { return nil }
 
-        let isSecure = element.string(kAXSubroleAttribute) == (kAXSecureTextFieldSubrole as String)
+        let subrole = element.string(kAXSubroleAttribute)
+        let isSecure = subrole == (kAXSecureTextFieldSubrole as String)
         var settable: DarwinBoolean = false
         AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &settable)
 
@@ -237,6 +238,7 @@ final class FocusWatcher {
         return FocusedField(
             appName: NSRunningApplication(processIdentifier: element.pid)?.localizedName,
             role: element.string(kAXRoleAttribute) ?? "unknown",
+            subrole: subrole,
             isEditable: settable.boolValue,
             isSecure: isSecure,
             text: read.text,

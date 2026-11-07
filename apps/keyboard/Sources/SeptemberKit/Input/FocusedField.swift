@@ -8,6 +8,8 @@ public struct FocusedField: Equatable, Sendable {
     public var appName: String?
     /// `AXTextField`, `AXTextArea`, `AXComboBox`… — kept for diagnostics.
     public var role: String
+    /// `AXSecureTextField`, `AXDesktop`… `nil` when the element has none.
+    public var subrole: String?
     public var isEditable: Bool
     /// A password field. macOS hides its value from us, and we must not keep
     /// one of our own.
@@ -19,6 +21,7 @@ public struct FocusedField: Equatable, Sendable {
     public init(
         appName: String?,
         role: String,
+        subrole: String? = nil,
         isEditable: Bool,
         isSecure: Bool,
         text: String?,
@@ -26,6 +29,7 @@ public struct FocusedField: Equatable, Sendable {
     ) {
         self.appName = appName
         self.role = role
+        self.subrole = subrole
         self.isEditable = isEditable
         self.isSecure = isSecure
         self.text = text
@@ -36,10 +40,15 @@ public struct FocusedField: Equatable, Sendable {
     /// settable value, so the role counts by itself.
     static let textRoles: Set<String> = ["AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"]
 
+    /// The subroles that never take text. The Finder desktop reports a caret.
+    static let nonTextSubroles: Set<String> = ["AXDesktop"]
+
     /// True when the focused element takes text: a password field, an
-    /// editable value, a caret, or a text role. A button or a list is not.
+    /// editable value, a caret, or a text role. A button, a list, or the
+    /// desktop is not.
     public var isTextInput: Bool {
-        isSecure || isEditable || selection != nil || Self.textRoles.contains(role)
+        if let subrole, Self.nonTextSubroles.contains(subrole) { return false }
+        return isSecure || isEditable || selection != nil || Self.textRoles.contains(role)
     }
 
     /// How the input bar should show this field, or `nil` when the field gives

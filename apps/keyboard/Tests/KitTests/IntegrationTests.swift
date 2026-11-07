@@ -33,6 +33,12 @@ private func inputBarTests() {
         expect(!focus("AXList").isTextInput)
     }
 
+    test("the Finder desktop is not text input, though it reports a caret") {
+        var desktop = focus("AXGroup", caret: true)
+        desktop.subrole = "AXDesktop"
+        expect(!desktop.isTextInput)
+    }
+
     test("in Type mode the bar shows only for text input or an echo") {
         func wants(_ field: FocusedField?, echo: String = "", isPrivate: Bool = false) -> Bool {
             InputBarVisibility.wantsBar(
