@@ -167,7 +167,9 @@ The Rectangle keypad presses the shortcuts of
 [Rectangle](https://rectangleapp.com), the window manager. It shows only when
 Rectangle is installed. It has three columns: the halves and Maximize, the
 thirds, the two thirds and Center, the top corners and Top Half, the bottom
-corners and Bottom Half, and then Smaller, Restore, and Larger. The keys are
+corners and Bottom Half, and then Smaller, Restore, and Larger. Each button
+shows an icon in place of its keys: a small screen with the part of the
+window filled, or an SF Symbol for Smaller, Restore, and Larger. The keys are
 the recommended shortcuts of Rectangle (Control Option and a key). If the user
 chose the Spectacle shortcuts or changed a shortcut in Rectangle, a button
 presses the wrong keys.

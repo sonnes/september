@@ -20,7 +20,8 @@ buttons with actions. September has no absolute layout and no modal editor.
 
 ```
 PanelDefinition   title, columns, buttons, arrows
-  PanelButton     id, label, symbol (SF Symbol), action
+  PanelButton     id, label, symbol (SF Symbol), region, action
+    WindowRegion  x, y, width, height, in fractions of the screen
     PanelAction   .shortcut(Shortcut) | .text(String)
   PanelBlock      columns, buttons
 ```
@@ -32,6 +33,11 @@ wide. System has three columns.
 
 A button presses a key combination or types a phrase. A text button uses up
 the latched modifiers, the same as a text key.
+
+A shortcut button shows its keys. In a keypad, a button with a `region` or a
+`symbol` shows an icon in place of its keys. A `region` draws a small screen
+with the part of the window filled, so the Rectangle keypad needs no SF Symbol
+for two thirds. An app panel always shows the keys.
 
 `Shortcut` renders its own hint (`⇧⌘Z`) and its own spoken name ("Shift Command
 Z"), so a button never has to repeat itself in JSON.

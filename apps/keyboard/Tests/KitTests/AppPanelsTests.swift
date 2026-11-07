@@ -133,6 +133,12 @@ private func panelFileTests() {
         expectEqual(
             action("restore"), .shortcut(Shortcut(modifiers: [.control, .option], key: .virtual(.delete))))
         expect(panel.shortcuts.isSubset(of: store.keypadShortcuts), "the app panel learns a Rectangle chord")
+        for button in panel.buttons {
+            expect(button.region != nil || button.symbol != nil, "\(button.id) has no icon")
+        }
+        expectEqual(
+            panel.buttons.first { $0.id == "first-two-thirds" }?.region,
+            WindowRegion(x: 0, y: 0, width: 2.0 / 3, height: 1))
     }
 
     test("System quits the app in front with Command Q") {

@@ -58,7 +58,7 @@ public struct PanelGridView: View {
             spacing: spacing
         ) {
             ForEach(buttons) { button in
-                ShortcutButtonView(button: button, width: buttonWidth) {
+                ShortcutButtonView(button: button, width: buttonWidth, showsIcon: true) {
                     press(button.action)
                 }
             }
