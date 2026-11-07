@@ -91,8 +91,8 @@ In the panel, the note actions sit in a row above the note. See
 | Row | File | Needs |
 | --- | --- | --- |
 | Text | `<note-slug>.md` | nothing |
-| Audio | `<note-slug>.mp3` | an ElevenLabs voice |
-| Video | `<note-slug>.mp4` | an ElevenLabs voice, in the browser app |
+| Audio | `<note-slug>.mp3` | an ElevenLabs voice or the Dialogue voice |
+| Video | `<note-slug>.mp4` | an ElevenLabs voice or the Dialogue voice, in the browser app |
 
 `exportReason` says why a row cannot run yet, in the place of its own
 description. A row that cannot run keeps its target and its place; a row that
@@ -104,20 +104,21 @@ between them and a copy of it.
 **Audio** reuses the speech cache, so a note read aloud a moment earlier saves
 without asking the service again.
 
-`packages/app-ui/services/export.ts` saves each row through
-`platform.device.save`.
+`packages/app-ui/services/export.ts` saves each row as a download with
+`downloadBlob`.
 
 **Video** is rendered in the browser app, through `platform.device.renderVideo`.
 `synthesizeTimed` in `apps/web/src/services/voice.ts` asks ElevenLabs for
 the sound and the character alignment together; `alignmentToWords` and
 `wordsToCaptions` cut that into captions of up to six words, and
 `apps/web/src/services/video.ts` draws one 1080×1920 frame for each word and
-joins them to the voice with `ffmpeg.wasm`. Nothing leaves the machine.
+joins them to the voice with `ffmpeg.wasm`. The frames and the join stay in
+the browser. ElevenLabs gets the text of the note.
 
 The Mac platform has no `renderVideo`, so the row names the browser instead of
 hiding: `ffmpeg.wasm` reaches
-its core through a blob URL, and the script policy of that window allows
-`'self'` only.
+its core through a blob URL, and the script policy of that window allows no
+script from a blob URL.
 
 ## What is counted
 

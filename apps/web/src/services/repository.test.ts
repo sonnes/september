@@ -347,7 +347,6 @@ describe('BrowserRepository', () => {
       mode: 'advanced',
       defaultModel: { service: 'openrouter', model: '' },
       suggestionsModel: null,
-      voiceService: 'elevenlabs',
     } as const;
     const speech = {
       provider: 'elevenlabs',
@@ -660,7 +659,6 @@ describe('legacy migration', () => {
       personalWords: 'Use short sentences.',
       defaultModel: { service: 'none', model: '' },
       suggestionsModel: null,
-      voiceService: 'elevenlabs',
     });
     expect(await repository.getSetting('provider-keys')).toEqual({
       openrouter: 'openrouter-key',

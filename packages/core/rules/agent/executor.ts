@@ -1,7 +1,7 @@
 /** Runs one tool call against the data of the open space. */
 
 import { appendToNote } from "../notes.ts";
-import { generateCode } from "../phrases/codes.ts";
+import { codesInUse, generateCode } from "../phrases/codes.ts";
 import type {
   Message,
   Note,
@@ -123,7 +123,7 @@ function requireVersion(
     throw new Error(`The ${label} changed. Read it again before changing it.`);
   }
   if (actual !== expected)
-    throw new Error(`The ${label} changed before approval. Ask again.`);
+    throw new Error(`The ${label} changed since it was read. Read it again.`);
 }
 
 const entityId = (seed: string, kind: string) =>
@@ -131,9 +131,6 @@ const entityId = (seed: string, kind: string) =>
 
 const written = (fields: Record<string, unknown>): string =>
   JSON.stringify({ ok: true, ...fields });
-
-const codesOf = (rows: readonly SavedPhrase[]): string[] =>
-  rows.flatMap((row) => (row.code ? [row.code] : []));
 
 /**
  * Applies one write to the open space and returns its result as JSON.
@@ -247,7 +244,7 @@ async function changePhrase(
       space_id: space.id,
       text,
       kind: call.kind ?? "phrase",
-      code: generateCode(text, { existingCodes: codesOf(all) }),
+      code: generateCode(text, { existingCodes: codesInUse(all) }),
       pinned: call.pinned ?? false,
       created_at: at,
       updated_at: at,
@@ -270,7 +267,7 @@ async function changePhrase(
     ...(call.operation === "edit"
       ? {
           code: generateCode(text, {
-            existingCodes: codesOf(all.filter((row) => row.id !== held.id)),
+            existingCodes: codesInUse(all, held.id),
           }),
         }
       : {}),
@@ -306,7 +303,7 @@ async function changeTalkMessage(
     held.text !== call.expected_text ||
     held.created_at !== call.expected_created_at
   ) {
-    throw new Error("The Talk message changed before approval. Ask again.");
+    throw new Error("The Talk message changed since it was read. Read it again.");
   }
   const reset = () =>
     data.patchSpace({

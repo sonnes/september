@@ -50,6 +50,11 @@ describe('cn', () => {
     expect(cn('rounded-full', 'rounded-surface')).toBe('rounded-surface');
   });
 
+  it('keeps the last reach size', () => {
+    expect(cn('min-h-12', 'min-h-reach')).toBe('min-h-reach');
+    expect(cn('size-reach', 'size-16')).toBe('size-16');
+  });
+
   it('keeps the last text role', () => {
     expect(cn('text-sm', 'text-title')).toBe('text-title');
   });

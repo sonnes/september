@@ -2,15 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { generate, openAgentWriter } from '@september/app-ui/services/ai';
 import { setup } from '@september/app-ui/services/settings';
-import { DEFAULT_DRAFT, type SavedSetup } from '@september/core/rules/onboarding';
+import { DEFAULT_ANSWERS, type SavedSetup } from '@september/core/rules/onboarding';
+import { FREE_MODELS } from '@september/core/rules/model-config';
 
+import { bodyOf, streamedReply, textReply } from './model';
 import { platform } from './platform';
+
+type Body = Record<string, unknown>;
 
 async function chooseModels(
   models: Partial<Pick<SavedSetup, 'defaultModel' | 'suggestionsModel'>>
 ) {
   await setup.set({
-    ...DEFAULT_DRAFT,
+    ...DEFAULT_ANSWERS,
     id: 'ravi',
     name: 'Ravi',
     defaultModel: { service: 'openrouter', model: '' },
@@ -26,37 +30,9 @@ beforeEach(() => chooseModels({}));
 
 afterEach(() => vi.unstubAllGlobals());
 
-/** One streamed OpenAI-compatible reply, which is what the client reads. */
-function answer(
-  deltas: Array<Record<string, unknown>>,
-  {
-    model = 'current/tool-model:free',
-    finish = 'stop',
-    usage = { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
-  }: { model?: string; finish?: string; usage?: Record<string, number> } = {}
-) {
-  const events = [
-    ...deltas.map(delta =>
-      JSON.stringify({ id: '1', model, choices: [{ index: 0, delta, finish_reason: null }] })
-    ),
-    JSON.stringify({
-      id: '1',
-      model,
-      choices: [{ index: 0, delta: {}, finish_reason: finish }],
-      usage,
-    }),
-    '[DONE]',
-  ];
-  return new Response(events.map(event => `data: ${event}\n\n`).join(''), {
-    status: 200,
-    headers: { 'content-type': 'text/event-stream' },
-  });
-}
-
-const text = (content: string) => answer([{ role: 'assistant', content }]);
-
-const bodyOf = (request: ReturnType<typeof vi.fn>, call = 0) =>
-  JSON.parse(String(request.mock.calls[call]?.[1]?.body)) as Record<string, unknown>;
+const text = (content: string) => textReply(content, { model: 'current/tool-model:free' });
+const answer = (deltas: Array<Record<string, unknown>>, options: Parameters<typeof streamedReply>[1] = {}) =>
+  streamedReply(deltas, { model: 'current/tool-model:free', ...options });
 
 describe('the writing service', () => {
   it('routes an automatic Agent request through OpenRouter’s current free tool models', async () => {
@@ -69,7 +45,7 @@ describe('the writing service', () => {
     });
     await stream.result();
 
-    const body = bodyOf(request);
+    const body = bodyOf<Body>(request);
     expect(body.model).toBe('openrouter/free');
     expect(body).not.toHaveProperty('models');
     // The loop reads one call at a time, so the model may only make one.
@@ -90,11 +66,11 @@ describe('the writing service', () => {
     );
     await generate(
       { messages: [{ role: 'user', content: 'Describe this space' }] },
-      { feature: 'context' }
+      { feature: 'phrases' }
     );
 
-    expect(bodyOf(request, 0).model).toBe('suggestions/model');
-    expect(bodyOf(request, 1).model).toBe('default/model');
+    expect(bodyOf<Body>(request, 0).model).toBe('suggestions/model');
+    expect(bodyOf<Body>(request, 1).model).toBe('default/model');
   });
 
   it('uses the default model for Suggestions when no override is set', async () => {
@@ -107,11 +83,11 @@ describe('the writing service', () => {
       { feature: 'suggestions' }
     );
 
-    expect(bodyOf(request, 0).model).toBe('default/model');
+    expect(bodyOf<Body>(request, 0).model).toBe('default/model');
   });
 
   it.each(['', '   '])(
-    'routes an automatic model (%j) through the free router and keeps JSON mode',
+    'sends an automatic model (%j) as the free model list and keeps JSON mode',
     async model => {
       await chooseModels({ defaultModel: { service: 'openrouter', model } });
       const request = vi.fn(async () => text('{"items":[]}'));
@@ -128,15 +104,16 @@ describe('the writing service', () => {
         { feature: 'suggestions' }
       );
 
-      const body = bodyOf(request);
-      expect(body.model).toBe('openrouter/free');
+      const body = bodyOf<Body>(request);
+      expect(body).not.toHaveProperty('model');
+      expect(body.models).toEqual(FREE_MODELS);
       expect(body.response_format).toEqual({ type: 'json_object' });
       const messages = body.messages as Array<Record<string, unknown>>;
       expect(messages[0]).toEqual({ role: 'system', content: 'Be brief.' });
     }
   );
 
-  it('uses the free router for an automatic Suggestions override and other automatic requests', async () => {
+  it('sends the free model list for an automatic Suggestions override and other automatic requests', async () => {
     await chooseModels({
       defaultModel: { service: 'openrouter', model: 'default/model' },
       suggestionsModel: { service: 'openrouter', model: '' },
@@ -148,14 +125,14 @@ describe('the writing service', () => {
       { messages: [{ role: 'user', content: 'Suggest something' }] },
       { feature: 'suggestions' }
     );
-    expect(bodyOf(request).model).toBe('openrouter/free');
+    expect(bodyOf<Body>(request).models).toEqual(FREE_MODELS);
 
     await chooseModels({});
     await generate(
       { messages: [{ role: 'user', content: 'Describe this space' }] },
-      { feature: 'context' }
+      { feature: 'phrases' }
     );
-    expect(bodyOf(request, 1).model).toBe('openrouter/free');
+    expect(bodyOf<Body>(request, 1).models).toEqual(FREE_MODELS);
   });
 
   it('records what an Agent answer spent, and what a failed one did not', async () => {
@@ -250,10 +227,10 @@ describe('the writing service', () => {
     const request = vi.fn(async () => text('Hello.'));
     vi.stubGlobal('fetch', request);
 
-    await generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' });
+    await generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'phrases' });
 
     expect(String((request.mock.calls[0] as unknown[])[0])).toBe('http://127.0.0.1:9/apple/v1/chat/completions');
-    expect(bodyOf(request).model).toBe('apple-foundationmodel');
+    expect(bodyOf<Body>(request).model).toBe('apple-foundationmodel');
     expect(lastUsage()).toMatchObject({ provider: 'apple', cost_source: 'free', success: true });
   });
 
@@ -263,7 +240,7 @@ describe('the writing service', () => {
     vi.stubGlobal('fetch', request);
 
     await expect(
-      generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' })
+      generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'phrases' })
     ).rejects.toThrow('Apple Intelligence is not available on this device.');
     expect(request).not.toHaveBeenCalled();
     expect(lastUsage()).toMatchObject({ provider: 'apple', success: false });
@@ -272,7 +249,7 @@ describe('the writing service', () => {
   it('refuses to write before a service is chosen', async () => {
     await chooseModels({ defaultModel: { service: 'none', model: '' } });
     await expect(
-      generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' })
+      generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'phrases' })
     ).rejects.toThrow('AI Assistance is not set up.');
   });
 });

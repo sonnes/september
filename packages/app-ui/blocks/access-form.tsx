@@ -93,7 +93,7 @@ function TimeStepper({
 }) {
   const key = cn(
     "border-input bg-card text-foreground focus-attention key-disabled grid place-items-center rounded-full border-2 text-2xl font-bold",
-    "size-[max(3rem,var(--reach-target,3rem))]",
+    "size-reach",
   );
   const shorter = steppedTime(value, -1);
   const longer = steppedTime(value, 1);

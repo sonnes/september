@@ -1,6 +1,5 @@
 use september_desktop_lib::audio::{
     inputs, virtual_microphone_start, virtual_microphone_status, virtual_microphone_stop,
-    VIRTUAL_MICROPHONE_UID,
 };
 
 struct StopMicrophone;
@@ -18,11 +17,10 @@ fn the_virtual_microphone_is_an_input_until_it_stops() {
 
     let started = virtual_microphone_start().expect("the virtual microphone starts");
     assert!(started.active);
-    assert_eq!(started.name, "September Microphone");
     assert!(inputs()
         .expect("this Mac lists its inputs")
         .iter()
-        .any(|device| device.uid == VIRTUAL_MICROPHONE_UID));
+        .any(|device| device.uid == started.uid && device.name == started.name));
 
     let repeated = virtual_microphone_start().expect("starting twice changes nothing");
     assert_eq!(repeated.uid, started.uid);

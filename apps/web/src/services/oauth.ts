@@ -1,3 +1,5 @@
+import { OPENROUTER_BASE } from '@september/core/rules/model-config';
+
 /** PKCE secrets stay in the initiating window; the callback carries only a code. */
 export async function authorizeOpenRouter(signal: AbortSignal): Promise<string> {
   signal.throwIfAborted();
@@ -36,7 +38,7 @@ export async function authorizeOpenRouter(signal: AbortSignal): Promise<string> 
     popup.location.replace(auth.href);
     const code = await pending;
     channel.onmessage = null;
-    const response = await fetch('https://openrouter.ai/api/v1/auth/keys', {
+    const response = await fetch(`${OPENROUTER_BASE}/auth/keys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code, code_verifier: verifier, code_challenge_method: 'S256' }),

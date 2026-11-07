@@ -37,12 +37,12 @@ and the tokens the call used. A model nobody prices is `unknown`; the report
 never substitutes the price of a similar model.
 
 Cached ElevenLabs audio records a free cached call with no new credits. If
-cloud synthesis succeeds but playback fails, the cloud call remains a
-success. The system-voice fallback creates its own event.
+the cloud voice breaks after its first sound, the cloud call records a
+failure. The system-voice fallback creates its own event.
 
 ## Read two levels of report
 
-The Today screen answers two quick questions for today, this week, or this
+The Today screen of the web app answers two quick questions for today, this week, or this
 month: how much typing did September save, and what did its services use? It
 starts on the current week.
 

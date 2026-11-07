@@ -42,7 +42,7 @@ enum MenuBarReader {
         return AXNode(
             id: id,
             role: element.string(kAXRoleAttribute) ?? "unknown",
-            label: element.string(kAXTitleAttribute),
+            title: element.string(kAXTitleAttribute),
             menuKeys: menuKeys(of: element),
             children: children
         )

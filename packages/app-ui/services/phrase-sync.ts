@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 
+import { platform } from "@platform/adapter";
 import { tagsSpoken } from "@september/core/rules/audio-tags";
-import { generateCode } from "@september/core/rules/phrases/codes";
+import { codesInUse, generateCode } from "@september/core/rules/phrases/codes";
 import { dedupeAgainstPinned } from "@september/core/rules/phrases/rows";
 import { decidePhraseSync, sanitizeStarters } from "@september/core/rules/phrases/sync";
 import { buildPhrasesPrompt, formatPhraseHistory } from "@september/core/rules/prompts/phrases";
@@ -125,9 +126,7 @@ async function writePhrases({
 
   // The codes of the new rows are made here, never by the model, so the rules
   // that keep a code away from a real word hold for every row.
-  const existingCodes = phrases
-    .map((row) => row.code)
-    .filter((code): code is string => Boolean(code));
+  const existingCodes = codesInUse(await platform.store.listPhrases());
   const at = Date.now();
 
   const build = (text: string, kind: PhraseKind): SavedPhrase => {

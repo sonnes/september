@@ -58,7 +58,8 @@ empty until the next change. That is why nothing else in the app watches
 
 Which apps expose what, and why the frontmost app is asked rather than the
 system-wide element, is in
-`docs/research/2026-07-27-reading-the-focused-field.md`.
+`docs/research/2026-07-27-reading-the-focused-field.md` on the
+`archive/old-docs` branch.
 
 ## Seeing it
 

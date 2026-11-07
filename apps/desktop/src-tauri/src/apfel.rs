@@ -1,6 +1,6 @@
 //! The apfel sidecar, which serves Apple Intelligence on the loopback.
 
-use reqwest::{StatusCode, Url};
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
@@ -8,15 +8,16 @@ use tauri::AppHandle;
 use {
     std::{net::TcpListener, process::Command},
     tauri::Manager,
-    tauri_plugin_shell::{process::CommandChild, ShellExt},
+    tauri_plugin_shell::{
+        process::{CommandChild, CommandEvent},
+        ShellExt,
+    },
     tokio::{sync::Mutex, time::Duration},
     uuid::Uuid,
 };
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApfelError {
-    #[error("Apple Intelligence has an invalid address. ({0})")]
-    InvalidEndpoint(String),
     #[error("Could not reach Apple Intelligence. ({0})")]
     Unreachable(#[from] reqwest::Error),
     #[error("Apple Intelligence did not answer. ({0})")]
@@ -42,27 +43,12 @@ pub struct ApfelClient {
 }
 
 impl ApfelClient {
-    pub fn new(client: reqwest::Client, base_url: String, token: String) -> Result<Self> {
-        let url = Url::parse(&base_url)
-            .map_err(|error| ApfelError::InvalidEndpoint(error.to_string()))?;
-        let is_loopback = match url.host_str() {
-            Some("localhost" | "::1") => true,
-            Some(host) => host
-                .parse::<std::net::IpAddr>()
-                .is_ok_and(|ip| ip.is_loopback()),
-            None => false,
-        };
-        if url.scheme() != "http" || !is_loopback {
-            return Err(ApfelError::InvalidEndpoint(
-                "endpoint must use HTTP on the loopback interface".into(),
-            ));
-        }
-
-        Ok(Self {
+    pub fn new(client: reqwest::Client, base_url: String, token: String) -> Self {
+        Self {
             client,
-            base_url: base_url.trim_end_matches('/').to_owned(),
+            base_url,
             token,
-        })
+        }
     }
 
     pub async fn status(&self) -> Result<ApfelHealth> {
@@ -146,6 +132,17 @@ impl ApfelState {
         }
     }
 
+    /// Stops the sidecar of this run. A sidecar that is still starting holds
+    /// the lock, and the exit does not wait for it.
+    pub(crate) fn stop(&self) {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        if let Ok(mut managed) = self.managed.try_lock() {
+            if let Some(mut process) = managed.take() {
+                process.stop();
+            }
+        }
+    }
+
     #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
     async fn available(&self, _app: &AppHandle) -> Result<ApfelClient> {
         Err(ApfelError::Unsupported)
@@ -204,13 +201,40 @@ impl ApfelState {
             .env("APFEL_TOKEN", &token)
             .spawn()
             .map_err(|error| ApfelError::Start(error.to_string()))?;
-        tauri::async_runtime::spawn(async move { while events.recv().await.is_some() {} });
+        // The last line of stderr says why a sidecar did not start. It stays
+        // out of the log, because a served request can carry the user's words.
+        let last_output = std::sync::Arc::new(std::sync::Mutex::new(None::<String>));
+        let heard = last_output.clone();
+        tauri::async_runtime::spawn(async move {
+            while let Some(event) = events.recv().await {
+                let line = match event {
+                    CommandEvent::Stderr(bytes) => {
+                        String::from_utf8_lossy(&bytes).trim().to_owned()
+                    }
+                    CommandEvent::Error(error) => {
+                        eprintln!("[apfel] the sidecar failed: {error}");
+                        error
+                    }
+                    CommandEvent::Terminated(payload) => {
+                        eprintln!("[apfel] the sidecar stopped with code {:?}", payload.code);
+                        continue;
+                    }
+                    _ => continue,
+                };
+                if line.is_empty() {
+                    continue;
+                }
+                if let Ok(mut last) = heard.lock() {
+                    *last = Some(line);
+                }
+            }
+        });
 
         let client = ApfelClient::new(
             app.state::<crate::providers::Providers>().client().clone(),
             format!("http://127.0.0.1:{port}"),
             token,
-        )?;
+        );
         let mut process = ManagedApfel {
             client: client.clone(),
             child: Some(child),
@@ -231,6 +255,9 @@ impl ApfelState {
         }
 
         process.stop();
+        if let Some(line) = last_output.lock().ok().and_then(|mut last| last.take()) {
+            last_error = line;
+        }
         Err(ApfelError::Start(last_error))
     }
 }

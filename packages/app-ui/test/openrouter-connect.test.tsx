@@ -8,7 +8,7 @@ import { findButton, press, renderPart } from './render';
 it('connects OpenRouter through authorization and shows it connected', async () => {
   const status = { provider: 'openrouter' as const, connected: true, label: null, detail: 'Signed in' };
   vi.mocked(platform.providers.connectOpenRouter).mockResolvedValue(status);
-  const { container } = await renderPart(<KeyPanel provider="openrouter" name="OpenRouter" />);
+  const { container } = await renderPart(<KeyPanel provider="openrouter" />);
 
   expect(container.querySelector('input[type="password"]')).toBeNull();
   await press(await findButton('Connect OpenRouter', container));

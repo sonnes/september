@@ -122,6 +122,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             ) { [weak self] _ in
                 MainActor.assumeIsolated { self?.session.predictions.refreshAvailability() }
             })
+        observers.append(
+            DistributedNotificationCenter.default().addObserver(
+                forName: SystemKeyboardLayout.inputSourceChanged, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.controller.layoutChanged(to: SystemKeyboardLayout.currentMap())
+                }
+            })
 
         treeModel.onRefresh = { [weak self] in self?.refreshTree() }
         // Values in the tree age between focus changes — keep them fresh
@@ -420,7 +428,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let keys = CGRect(
             origin: KeyboardPosition.keysOrigin(ofWindow: keyboard.frame.origin, in: mode),
             size: WindowContent.measure(content.keysCard()))
-        let screen = (keyboard.screen ?? NSScreen.main)?.visibleFrame ?? keys
+        let screen = (keyboard.screen ?? FloatingPanel.activeScreen)?.visibleFrame ?? keys
         let sizes = panels.mapValues(\.frame.size)
         for (panel, frame) in PanelPlacement.arrangedFrames(keys: keys, sizes: sizes, screen: screen) {
             panels[panel]?.setFrame(frame, display: true, animate: true)
@@ -445,7 +453,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let intrinsic = WindowContent.measure(screen)
 
         var scale: CGFloat = 1
-        if let screen = NSScreen.main, intrinsic.width > 0 {
+        // The screen of the keyboard, or before it shows, the screen that
+        // holds the pointer.
+        if let screen = keyboardPanel?.screen ?? FloatingPanel.activeScreen, intrinsic.width > 0 {
             let available = screen.visibleFrame.width - 2 * FloatingPanel.margin - reservedWidth
             scale = min(1, available / intrinsic.width)
         }
@@ -487,8 +497,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func showTreePanel(height: CGFloat) {
         guard isTreeVisible else { return }
         let size = CGSize(width: Metrics.treeViewerWidth, height: height)
-        let root = AnyView(
-            AXTreeView(model: treeModel, height: height).environmentObject(permission))
+        let root = AnyView(AXTreeView(model: treeModel, permission: permission, height: height))
 
         if let treePanel {
             treePanel.update(root: root, contentSize: size)
@@ -507,8 +516,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         treeModel.tree = controller.isFieldPrivate ? tree.hidingFocusedValue() : tree
     }
 
-    /// Reading a whole tree costs hundreds of round trips to the other app, so
-    /// keystrokes and app switches coalesce into one read.
+    /// Each read costs many round trips to the other app, so focus moves and
+    /// app switches coalesce into one read.
     private func scheduleTreeRefresh() {
         guard isTreeVisible, !treeRefreshScheduled else { return }
         treeRefreshScheduled = true
@@ -524,7 +533,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = NSImage(
             systemSymbolName: "keyboard",
-            accessibilityDescription: "Keyboard"
+            accessibilityDescription: "September Keyboard"
         )
 
         let menu = NSMenu()
@@ -574,7 +583,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             keyEquivalent: ""
         ).target = self
         menu.addItem(
-            withTitle: "Quit Keyboard",
+            withTitle: "Quit September Keyboard",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
@@ -596,6 +605,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if keyboardPanel.isVisible {
             windows.forEach { $0.orderOut(nil) }
         } else {
+            // The keyboard may show on another screen now, so it is sized
+            // again.
+            refreshKeyboard()
             windows.forEach { $0.orderFront(nil) }
         }
     }
@@ -637,7 +649,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func fail(loadingPanels error: any Error) {
         let alert = NSAlert()
-        alert.messageText = "Keyboard could not load its shortcut panels."
+        alert.messageText = "September Keyboard could not load its shortcut panels."
         alert.informativeText = String(describing: error)
         NSApp.activate()
         alert.runModal()

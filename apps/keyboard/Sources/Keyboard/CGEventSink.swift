@@ -1,17 +1,15 @@
-import CoreGraphics
+import AppKit
 import SeptemberKit
 
 /// Posts keystrokes as real events. The panel never takes focus, so whatever
 /// the user was working in is still frontmost and receives them.
-///
-/// `@unchecked Sendable`: the CGEventSource is only touched from the main
-/// actor, where every key press originates.
-final class CGEventSink: KeystrokeSink, @unchecked Sendable {
+@MainActor
+final class CGEventSink: KeystrokeSink {
     private let source = CGEventSource(stateID: .combinedSessionState)
 
     /// Runs after keystrokes land, so the focus watcher can re-read the field
     /// they went into.
-    var afterPost: (@MainActor () -> Void)?
+    var afterPost: (() -> Void)?
 
     func post(_ events: [Keystroke]) {
         for event in events {
@@ -25,8 +23,7 @@ final class CGEventSink: KeystrokeSink, @unchecked Sendable {
             cgEvent.flags = event.flags.eventFlags
             cgEvent.post(tap: .cghidEventTap)
         }
-        // Every key press starts on the main actor, so this hop is free.
-        MainActor.assumeIsolated { afterPost?() }
+        afterPost?()
     }
 
     /// Characters the current layout cannot produce (emoji, saved phrases) are
@@ -41,7 +38,10 @@ final class CGEventSink: KeystrokeSink, @unchecked Sendable {
             event.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: &utf16)
             event.post(tap: .cghidEventTap)
         }
-        // Every key press starts on the main actor, so this hop is free.
-        MainActor.assumeIsolated { afterPost?() }
+        afterPost?()
+    }
+
+    func beep() {
+        NSSound.beep()
     }
 }

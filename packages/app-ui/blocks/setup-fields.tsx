@@ -1,15 +1,16 @@
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "@september/ui/components/button";
 import { Label } from "@september/ui/components/label";
 import { Textarea } from "@september/ui/components/textarea";
 
 import {
-  DEFAULT_DRAFT,
+  DEFAULT_ANSWERS,
   SPEAKING_STYLES,
-  type OnboardingDraft,
+  type SetupAnswers,
 } from "@september/core/rules/onboarding";
-import { currentSetup, updateSetup } from "@september/app-ui/services/settings";
+import { useAutosave } from "@september/app-ui/services/autosave";
+import { updateSetup, useSetup } from "@september/app-ui/services/settings";
 
 /**
  * A titled part of a setup screen. With `htmlFor`, the title is the label of
@@ -50,18 +51,15 @@ export function Section({
 export function SpeakingStyle({
   value,
   onChange,
-  description,
 }: {
   value: string;
   onChange: (value: string) => void;
-  description: string;
 }) {
   const preset = SPEAKING_STYLES.find((option) => option.value === value);
   const [custom, setCustom] = useState(!preset);
-  const fieldId = useId();
 
   return (
-    <Section title="Speaking style" description={description}>
+    <Section title="Speaking style" description="How September writes for you, in every feature.">
       <div className="flex flex-wrap gap-2">
         {SPEAKING_STYLES.map((option) => {
           const on = !custom && preset?.label === option.label;
@@ -92,19 +90,7 @@ export function SpeakingStyle({
         </Button>
       </div>
       {custom ? (
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={fieldId} className="text-sm font-medium">
-            Your instructions
-          </Label>
-          <Textarea
-            id={fieldId}
-            value={value}
-            rows={4}
-            maxLength={1000}
-            className="leading-relaxed"
-            onChange={(event) => onChange(event.target.value)}
-          />
-        </div>
+        <SavedText label="Your instructions" value={value} onSave={onChange} />
       ) : (
         <p className="text-muted-foreground text-sm">{preset?.value}</p>
       )}
@@ -112,21 +98,75 @@ export function SpeakingStyle({
   );
 }
 
-export function useSetupDraft(): [
-  OnboardingDraft,
-  (patch: Partial<OnboardingDraft>) => void,
-] {
-  // A platform without saved setup draws the defaults instead of throwing.
-  const [setup, setSetup] = useState(() => currentSetup() ?? DEFAULT_DRAFT);
+/**
+ * A text field that keeps itself. It waits half a second after the last
+ * keystroke, so one sentence is one write, not thirty.
+ */
+function SavedText({
+  label,
+  value,
+  onSave,
+}: {
+  label: string;
+  value: string;
+  onSave: (value: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const fieldId = useId();
 
-  return [
-    setup,
-    (patch) => {
-      // The screen shows the new answer at once. Local storage keeps it behind that.
-      setSetup((current) => ({ ...current, ...patch }));
-      void updateSetup(patch);
-    },
-  ];
+  // The buttons above can change the style, so the field follows the answer.
+  useEffect(() => setText(value), [value]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={fieldId} className="text-sm font-medium">
+        {label}
+      </Label>
+      <Textarea
+        id={fieldId}
+        value={text}
+        rows={4}
+        maxLength={1000}
+        className="leading-relaxed"
+        onChange={(event) => {
+          const next = event.target.value;
+          setText(next);
+          clearTimeout(timer.current);
+          timer.current = setTimeout(() => onSave(next), 500);
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * The setup answers of a Settings screen. An edit shows at once and saves
+ * behind it. A failed save shows its alert from `SaveFailed`.
+ */
+export function useSetupAnswers() {
+  const saved = useAutosave<SetupAnswers>(useSetup() ?? DEFAULT_ANSWERS, async (next) => {
+    await updateSetup(next);
+  });
+  return {
+    setup: saved.value,
+    change: (patch: Partial<SetupAnswers>) => saved.write({ ...saved.current(), ...patch }),
+    failed: saved.state === "failed",
+    retry: saved.retry,
+  };
+}
+
+/** The alert of a failed save, with a key that saves again. */
+export function SaveFailed({ retry }: { retry: () => void }) {
+  return (
+    <div role="alert" className="space-y-2 text-sm">
+      <p className="text-destructive">September did not keep the change.</p>
+      <Button type="button" variant="outline" onClick={retry}>
+        Retry saving
+      </Button>
+    </div>
+  );
 }
 
 export function SettingsTitle({ title, description }: { title: string; description: string }) {

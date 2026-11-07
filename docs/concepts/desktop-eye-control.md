@@ -7,7 +7,7 @@ package: desktop
 # Eye-tracker test bed (desktop)
 
 Eye tracking is an isolated desktop experiment reached through **Eye tracker**
-in the sidebar. It is not an application input method. The pointer cannot press
+in the More menu of the panel header. It is not an application input method. The pointer cannot press
 a control, leave the camera box, appear on another page, or move the macOS
 pointer.
 

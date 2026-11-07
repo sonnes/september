@@ -44,7 +44,6 @@ import { Problem } from "@september/app-ui/blocks/states";
 import { SpaceDock } from "@september/app-ui/blocks/space-dock";
 import { spaceParams, useRememberMode, useSpaceBySlug } from "@september/app-ui/blocks/space-routes";
 import { SpaceTitle } from "@september/app-ui/blocks/space-title";
-// ------------------------------------------------------------------- talk
 
 export function TalkScreen({ slug }: { slug: string }) {
   const { space, spaces } = useSpaceBySlug(slug, "talk");
@@ -112,12 +111,20 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   useEffect(() => setPageInput(0), [newest]);
 
   const keep = usePinPhrase(space.id);
+  const saveProblem = send.isError
+    ? "Could not save the message to history."
+    : keep.failed
+      ? "Could not keep the phrase."
+      : null;
 
+  // The voice starts at once. The composer holds the text until local storage
+  // accepts the message, so a failed write loses no words.
   const say = (sentence: string) => {
     const typed = keysTyped.current;
     const sent = draft.current();
     setSentence(sentence);
     setWriting(false);
+    field.current?.focus();
     void speak(sentence);
     send.mutate(sentence, {
       onSuccess: () => {
@@ -129,9 +136,6 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
       },
     });
   };
-
-  // The voice starts at once. The composer holds the text until local storage
-  // accepts the message, so a failed write loses no words.
 
   return (
     <>
@@ -297,9 +301,9 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
             onTypedKey={() => {
               keysTyped.current += 1;
             }}
-            onPin={keep}
+            onPin={keep.pin}
             pending={send.isPending}
-            note={fallback ?? moodProblem ?? undefined}
+            note={fallback ?? moodProblem ?? saveProblem ?? undefined}
             mood={mood}
             onMood={chooseMood}
             suggestions={!transcript}
@@ -451,8 +455,9 @@ function LabelButton({
 }
 
 /**
- * The card below the messages while a sentence plays. Stop is the first key.
- * Write next, or a typed letter, moves to the field while the voice goes on.
+ * The card below the messages while a sentence plays. The focus stays in the
+ * field. Write next, or a typed letter in the card, moves to the field while
+ * the voice goes on.
  */
 function SpeakingCard({
   text,
@@ -461,8 +466,6 @@ function SpeakingCard({
   text: string;
   onWrite: (key?: string) => void;
 }) {
-  const stop = useRef<HTMLButtonElement>(null);
-  useEffect(() => stop.current?.focus(), []);
   useEscape(stopSpeaking);
 
   return (
@@ -485,7 +488,6 @@ function SpeakingCard({
       <p className="mt-1.5 text-xl leading-snug">{text}</p>
       <div className="mt-3 flex items-center gap-2">
         <button
-          ref={stop}
           type="button"
           onClick={() => stopSpeaking()}
           className="focus-attention bg-background text-brand inline-flex min-h-12 items-center gap-2 rounded-full px-4 font-semibold"

@@ -17,6 +17,8 @@ import {
 import {
   APPLE_MODEL,
   modelConfigFor,
+  FREE_MODELS,
+  isAutomatic,
   modelIdFor,
   type GenerationFeature,
   type WritingModelConfig,
@@ -35,7 +37,6 @@ export interface GenerateMessage {
 export interface GenerateRequest {
   messages: GenerateMessage[];
   temperature?: number;
-  max_tokens?: number;
   response_format?: { type: "json_object" };
 }
 
@@ -135,15 +136,23 @@ function priceOf(
 /**
  * The parts of a request the typed client has no option for.
  * `parallel_tool_calls` holds the model to one call at a time, which the
- * agent loop requires.
+ * agent loop requires. `models` sends the free list in place of one model.
  */
 function shapePayload(
   payload: unknown,
-  request: { responseFormat?: GenerateRequest["response_format"]; tools?: boolean },
+  request: {
+    responseFormat?: GenerateRequest["response_format"];
+    tools?: boolean;
+    models?: readonly string[];
+  },
 ): unknown {
   const body = { ...(payload as Record<string, unknown>) };
   if (request.responseFormat) body.response_format = request.responseFormat;
   if (request.tools) body.parallel_tool_calls = false;
+  if (request.models) {
+    delete body.model;
+    body.models = request.models;
+  }
   return body;
 }
 
@@ -186,11 +195,8 @@ export async function generate(
   if (!service) throw new Error("AI Assistance is not set up.");
 
   const started = Date.now();
-  const inputLength = request.messages.reduce(
-    (total, message) => total + message.content.length,
-    0,
-  );
-  const requested = requestedModel(options.feature);
+  const automatic = isAutomatic(configuredModel(options.feature));
+  const requested = automatic ? FREE_MODELS[0] : requestedModel(options.feature);
   let answered: {
     text: string;
     model: string;
@@ -208,8 +214,11 @@ export async function generate(
         apiKey: key,
         signal: options.signal,
         ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
-        ...(request.max_tokens === undefined ? {} : { maxTokens: request.max_tokens }),
-        onPayload: (payload) => shapePayload(payload, { responseFormat: request.response_format }),
+        onPayload: (payload) =>
+          shapePayload(payload, {
+            responseFormat: request.response_format,
+            ...(automatic ? { models: FREE_MODELS } : {}),
+          }),
       },
     );
     answered = {
@@ -225,8 +234,6 @@ export async function generate(
       generation_type: options.feature,
       provider: service,
       model: requested,
-      input_length: inputLength,
-      output_length: 0,
       input_tokens: 0,
       output_tokens: 0,
       latency_ms: Date.now() - started,
@@ -242,8 +249,6 @@ export async function generate(
     generation_type: options.feature,
     provider: service,
     model: answered.model,
-    input_length: inputLength,
-    output_length: answered.text.length,
     input_tokens: answered.promptTokens,
     output_tokens: answered.completionTokens,
     latency_ms: Date.now() - started,
@@ -269,17 +274,11 @@ export async function openAgentWriter(): Promise<AgentWriter> {
   const requested = requestedModel("agent");
   const { models: all, model, priced, key } = await modelFor(requested, service);
   let asked = 0;
-  let sent = 0;
 
   return {
     model,
     stream: (picked, context: Context, options) => {
       asked = Date.now();
-      sent = (context.messages ?? []).reduce(
-        (total, message) =>
-          total + (typeof message.content === "string" ? message.content.length : 0),
-        0,
-      );
       return all.streamSimple(picked, context, {
         ...options,
         apiKey: key,
@@ -296,8 +295,6 @@ export async function openAgentWriter(): Promise<AgentWriter> {
         generation_type: "agent",
         provider: service,
         model: named,
-        input_length: sent,
-        output_length: failed ? 0 : message.usage.output,
         input_tokens: message.usage.input,
         output_tokens: message.usage.output,
         latency_ms: Date.now() - asked,

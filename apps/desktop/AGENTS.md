@@ -11,9 +11,9 @@ Use `pnpm` from `apps/desktop/` or with `pnpm -C apps/desktop <script>`.
 | Command               | Purpose                         |
 | --------------------- | ------------------------------- |
 | `pnpm install`        | Install desktop UI dependencies |
-| `pnpm dev`            | Run the UI in a browser         |
+| `pnpm dev`            | Serve the UI to `pnpm tauri:dev` |
 | `pnpm build`          | Type-check and build the UI     |
-| `pnpm test`           | Run tests (Vitest)              |
+| `pnpm test`           | Run Vitest, then `cargo test --lib` |
 | `pnpm tauri:dev`      | Run the desktop application     |
 | `pnpm tauri:build`    | Build an installable bundle     |
 
@@ -124,17 +124,26 @@ cargo fmt --all -- --check
 - Move to the next chunk when `speak()` resolves, never on a timer. It resolves
   when the sound stops, so the story keeps the pace of the voice.
 - Say `Present`, `Export`, `Text`, `Audio`, and `Video`, and never the retired
-  name for any of them. A test reads every source file for it.
-- Save a file through `packages/app-ui/services/export.ts`, which calls
-  `platform.device.save`, with the WebView download support. Say why a row cannot run in the place of its own description, and
-  keep its target. A row that disappears teaches the user nothing.
+  name for any of them.
+- Save a file through `downloadBlob` in `packages/app-ui/services/browser.ts`,
+  as `packages/app-ui/services/export.ts` does. The panel accepts the download
+  in `on_download` in `src-tauri/src/window.rs` and saves it in the Downloads
+  folder.
+- Say why a row cannot run in the place of its own description, and keep its
+  target. A row that disappears teaches the user nothing.
 - Keep the rules of a space in `packages/core/rules/spaces.ts`, where a test can read them
   without a renderer: the slug, the search, the new title, the relative time,
   the transcript page, and the composer helpers.
 - Send every command through `call()` in `src/commands.ts`, and add the command
   to `Commands` with its arguments and its answer. A Tauri command rejects with
   a string, so a screen that reads `error.message` shows nothing without
-  `call()`.
+  `call()`. Send a raw body, such as voice samples, through `callRaw()`.
+- Give each command an example in `src/commands.test.ts`, and write
+  `contract/commands.json` again with `UPDATE_CONTRACT=1 pnpm test`. The Rust
+  tests in `src-tauri/src/rpc/contract.rs` read that file into the Rust types.
+  A command that one side lacks, a field that one side names differently, and
+  a request field that Rust does not have each fail a test. Give a command
+  that takes JSON arguments a `request` struct with `deny_unknown_fields`.
 - Ask before an action that erases rows. Use the shadcn `AlertDialog`, and give
   the confirming button the `destructive` variant.
 - Give each row the owner from `currentUserId()` in
@@ -172,12 +181,13 @@ cargo fmt --all -- --check
   A field that comes from a service with another name uses
   `#[serde(rename(deserialize = "..."))]`, which works on the way in only. A
   type that the WebView sends uses `#[serde(rename_all = "camelCase")]`. A name
-  that does not match makes a field `undefined`, and TypeScript cannot see it.
+  that does not match makes a field `undefined`. The contract tests catch it.
 - Keep every API key in the macOS Keychain, through `src-tauri/src/providers.rs`.
   A key must not enter the onboarding draft, SQLite, a Tauri event, a log, or
   the browser storage. A command returns a status, never a key.
 - Use a brand mark only from the file that the brand publishes, kept in
-  `public/`. Do not redraw one. The September mark is `public/logo.svg`, shown
+  `packages/app-ui/public/`. Do not redraw one. The September mark is
+  `packages/app-ui/public/logo.svg`, shown
   through `BrandMark` in `packages/app-ui/blocks/brand.tsx`. The Apple logo is the U+F8FF glyph from the
   macOS system font, which `system-ui` supplies. Apple asks for a written
   trademark licence before a third party shows this mark.

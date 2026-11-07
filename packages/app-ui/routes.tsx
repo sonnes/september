@@ -12,7 +12,7 @@ import { platform } from "@platform/adapter";
 import { AgentScreen } from "@september/app-ui/pages/agent";
 import { HelpScreen } from "@september/app-ui/pages/help";
 import { NotesScreen } from "@september/app-ui/pages/notes";
-import { AccessSettings } from "@september/app-ui/pages/settings";
+import { AccessSettings } from "@september/app-ui/pages/settings-access";
 import { DataSettings } from "@september/app-ui/pages/settings-data";
 import { ConnectionScreen, SetupSettings } from "@september/app-ui/pages/settings-services";
 import { WritingSettings } from "@september/app-ui/pages/settings-writing";
@@ -35,7 +35,7 @@ import {
   type AppPath,
   type SettingsPath,
 } from "@september/core/rules/navigation";
-import { isSetupDone } from "@september/core/rules/onboarding";
+import { isSetupDone, STEPS, type StepPath } from "@september/core/rules/onboarding";
 
 export interface AppRoutes {
   /** The layout around Help and the app pages. */
@@ -48,6 +48,11 @@ export interface AppRoutes {
   pages?: Partial<Record<AppPath, RouteComponent>>;
   /** The Settings sections that only this platform has. */
   sections?: Partial<Record<SettingsPath, RouteComponent>>;
+  /**
+   * Resolves once the settings are read. The setup steps and the app pages
+   * wait for it, so a platform can draw its public pages before it reads them.
+   */
+  settingsReady?: () => Promise<void>;
 }
 
 /** Throws when the capabilities of the platform name other pages than the app gives. */
@@ -62,6 +67,14 @@ function checkPages(given: string[]): void {
 
 const finished = () => isSetupDone(currentSetup());
 
+const STEP_PAGES: Record<StepPath, RouteComponent> = {
+  "/welcome": WelcomeStep,
+  "/choose": ChooseStep,
+  "/profile": ProfileStep,
+  "/connect": ConnectStep,
+  "/finish": FinishStep,
+};
+
 /**
  * The route tree of the app. Setup runs once: an unfinished setup sends an
  * app page to the first step, and a finished one sends a step to the first page.
@@ -72,6 +85,7 @@ export function createAppRoutes({
   publicPages = {},
   pages = {},
   sections = {},
+  settingsReady = async () => {},
 }: AppRoutes) {
   checkPages([...Object.keys(pages), ...Object.keys(sections)]);
   const rootRoute = createRootRoute();
@@ -79,7 +93,8 @@ export function createAppRoutes({
   const setupRoute = createRoute({
     getParentRoute: () => rootRoute,
     id: "setup",
-    beforeLoad: () => {
+    beforeLoad: async () => {
+      await settingsReady();
       if (finished()) throw redirect({ to: APP_NAV[0].path });
     },
     component: OnboardingLayout,
@@ -94,8 +109,9 @@ export function createAppRoutes({
   const appRoute = createRoute({
     getParentRoute: () => shellRoute,
     id: "app",
-    beforeLoad: () => {
-      if (!finished()) throw redirect({ to: "/welcome" });
+    beforeLoad: async () => {
+      await settingsReady();
+      if (!finished()) throw redirect({ to: STEPS[0].path });
     },
   });
 
@@ -104,9 +120,6 @@ export function createAppRoutes({
     path: "/settings",
     component: SettingsLayout,
   });
-
-  const step = (path: string, component: RouteComponent) =>
-    createRoute({ getParentRoute: () => setupRoute, path, component });
 
   const page = (path: string, component: RouteComponent) =>
     createRoute({ getParentRoute: () => appRoute, path, component });
@@ -175,13 +188,11 @@ export function createAppRoutes({
     ...Object.entries(publicPages).map(([path, component]) =>
       createRoute({ getParentRoute: () => rootRoute, path, component }),
     ),
-    setupRoute.addChildren([
-      step("/welcome", WelcomeStep),
-      step("/choose", ChooseStep),
-      step("/profile", ProfileStep),
-      step("/connect", ConnectStep),
-      step("/finish", FinishStep),
-    ]),
+    setupRoute.addChildren(
+      STEPS.map(({ path }) =>
+        createRoute({ getParentRoute: () => setupRoute, path, component: STEP_PAGES[path] }),
+      ),
+    ),
     shellRoute.addChildren([
       createRoute({ getParentRoute: () => shellRoute, path: "/help", component: HelpScreen }),
       helpGuideRoute,

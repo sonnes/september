@@ -16,6 +16,8 @@ import { Link } from "@tanstack/react-router";
 import { RadioGroupItem } from "@september/ui/components/radio-group";
 
 import { platform } from "@platform/adapter";
+import { WRITING_SERVICES } from "@september/core/rules/onboarding";
+import { SERVICE_NAMES, type ServiceId } from "@september/core/rules/services";
 import type { Provider, ProviderStatus } from "@september/app-ui/platform";
 import { useConnections, useForgetKey, type Connections } from "@september/app-ui/services/connections";
 import type { ConnectionId } from "@september/core/rules/navigation";
@@ -28,7 +30,7 @@ import type { ConnectionId } from "@september/core/rules/navigation";
  * which `system-ui` in the font stack supplies. Apple asks for a written
  * trademark licence before a third party shows this mark.
  */
-export function Mark({ service }: { service: string }) {
+export function Mark({ service }: { service: ServiceId }) {
   const slot =
     "grid size-9 shrink-0 place-items-center rounded-lg border border-zinc-200 bg-white";
 
@@ -108,7 +110,7 @@ export function CloudStatus({
   return <Status tone="idle" text="Not connected" />;
 }
 
-export function KeyPanel({ provider, name }: { provider: Provider; name: string }) {
+export function KeyPanel({ provider }: { provider: Provider }) {
   const { connections, replace: onConnected } = useConnections();
   const status = connections[provider];
   const forget = useForgetKey();
@@ -158,7 +160,7 @@ export function KeyPanel({ provider, name }: { provider: Provider; name: string 
 
   return (
     <>
-      <Label htmlFor={keyId}>{name} key</Label>
+      <Label htmlFor={keyId}>{SERVICE_NAMES[provider]} key</Label>
       <div className="flex flex-wrap gap-2">
         <Input
           id={keyId}
@@ -250,14 +252,20 @@ export function ServiceChoice({
   description,
   selected,
   disabled,
+  unready,
   badge,
   children,
 }: {
-  value: string;
+  value: ServiceId;
   label: string;
   description: string;
   selected: boolean;
   disabled?: boolean;
+  /**
+   * The choice says it is not ready, and stays in the Tab and arrow order.
+   * The handler of the group ignores it.
+   */
+  unready?: boolean;
   badge?: ReactNode;
   children?: ReactNode;
 }) {
@@ -269,10 +277,10 @@ export function ServiceChoice({
         selected
           ? "border-brand ring-[3px] ring-indigo-500/30"
           : "border-border"
-      } ${disabled ? "border-input border-dashed" : ""}`}
+      } ${disabled || unready ? "border-input border-dashed" : ""}`}
     >
       <label className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] sm:gap-4">
-        <RadioGroupItem value={value} disabled={disabled} />
+        <RadioGroupItem value={value} disabled={disabled} aria-disabled={unready || undefined} />
         <Mark service={value} />
         <span>
           <span className="text-sm font-semibold">{label}</span>
@@ -296,6 +304,14 @@ export function ServiceChoice({
     </div>
   );
 }
+
+/** The writing services this device offers. A device that cannot run Apple Intelligence does not show it. */
+export const offeredWritingServices = (connections: Connections) =>
+  WRITING_SERVICES.filter((option) => option.value !== "apple" || connections.apple.supported);
+
+/** The writing service of a radio value, or nothing. */
+export const writingServiceOf = (value: string) =>
+  WRITING_SERVICES.find((option) => option.value === value)?.value;
 
 export function appleState(connections: Connections): string {
   if (connections.apple.available) {

@@ -9,7 +9,15 @@ import {
   TimeRangeSelect,
   UsageCard,
 } from "@september/app-ui/blocks/usage";
-import { sourceLabel, type SpendBucket, type TimeRange } from "@september/core/rules/usage-summary";
+import { SettingsTitle } from "@september/app-ui/blocks/setup-fields";
+import { sectionFor } from "@september/core/rules/navigation";
+import { DAY_MS } from "@september/core/rules/time";
+import {
+  sourceLabel,
+  type SpendBucket,
+  type TimeRange,
+  USAGE_RETENTION_MS,
+} from "@september/core/rules/usage-summary";
 import { serviceName } from "@september/core/rules/services";
 import { downloadUsageCsv, useElevenLabsQuota, useUsage } from "@september/app-ui/services/usage";
 
@@ -27,12 +35,10 @@ export function UsageSettings() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Usage</h1>
-        <p className="text-muted-foreground text-sm">
-          What September used in the last 90 days. This report stays on this device.
-        </p>
-      </div>
+      <SettingsTitle
+        title={sectionFor("/settings/usage").title}
+        description={`What September used in the last ${USAGE_RETENTION_MS / DAY_MS} days. This report stays on this device.`}
+      />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <TimeRangeSelect value={range} onChange={setRange} />

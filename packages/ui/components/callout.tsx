@@ -41,18 +41,16 @@ const toneIcon: Record<NonNullable<VariantProps<typeof calloutVariants>['tone']>
 type CalloutProps = React.ComponentProps<'div'> &
   VariantProps<typeof calloutVariants> & {
     title?: React.ReactNode;
-    icon?: LucideIcon | null;
   };
 
 function Callout({
   className,
   tone = 'info',
   title,
-  icon,
   children,
   ...props
 }: CalloutProps) {
-  const Icon = icon === null ? null : (icon ?? toneIcon[tone ?? 'info']);
+  const Icon = toneIcon[tone ?? 'info'];
 
   return (
     <div
@@ -61,7 +59,7 @@ function Callout({
       className={cn(calloutVariants({ tone }), className)}
       {...props}
     >
-      {Icon ? <Icon aria-hidden="true" /> : null}
+      <Icon aria-hidden="true" />
       {title ? <CalloutTitle>{title}</CalloutTitle> : null}
       {children ? <CalloutDescription>{children}</CalloutDescription> : null}
     </div>
@@ -91,4 +89,4 @@ function CalloutDescription({ className, ...props }: React.ComponentProps<'div'>
   );
 }
 
-export { Callout, CalloutTitle, CalloutDescription };
+export { Callout };

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "September",
-  "version": "0.6.0",
+  "version": "../package.json",
   "identifier": "app.september.desktop",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -51,10 +51,7 @@
     "targets": "all",
     "macOS": {
       "minimumSystemVersion": "14.2",
-      "entitlements": "September.entitlements",
-      "files": {
-        "embedded.provisionprofile": "./embedded.provisionprofile"
-      }
+      "entitlements": "September.entitlements"
     }
   }
 }

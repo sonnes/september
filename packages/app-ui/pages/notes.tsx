@@ -71,7 +71,7 @@ function Notes({
     return navigate(noteParams(space, row.name));
   };
 
-  const add = () => create.mutateAsync().then(open);
+  const add = () => create.mutate(undefined, { onSuccess: open });
 
   const keep = usePinPhrase(space.id);
 
@@ -92,12 +92,10 @@ function Notes({
         note={toDelete}
         onClose={() => setToDelete(null)}
         onConfirm={() =>
-          remove
-            .mutateAsync(toDelete!.id)
-            .then(() =>
-              navigate({ ...spaceParams(space, "notes"), replace: true }),
-            )
-            .finally(() => setToDelete(null))
+          remove.mutate(toDelete!.id, {
+            onSuccess: () => navigate({ ...spaceParams(space, "notes"), replace: true }),
+            onSettled: () => setToDelete(null),
+          })
         }
       />
 
@@ -131,22 +129,32 @@ function Notes({
               </button>
             </div>
             {error ? <Problem error={error} /> : null}
+            {create.error || remove.error ? (
+              <p role="alert" className="text-destructive text-sm">
+                {(create.error ?? remove.error)!.message}
+              </p>
+            ) : keep.failed ? (
+              <p role="alert" className="text-destructive text-sm">
+                Could not keep the phrase.
+              </p>
+            ) : null}
 
             {about ? (
-              <SpaceAbout key={space.id} space={space} onPin={keep} handle={handle} onTools={setTools} />
+              <SpaceAbout key={space.id} space={space} onPin={keep.pin} handle={handle} onTools={setTools} />
             ) : note ? (
               <NoteEditor
                 key={note.id}
                 note={note}
                 spaceId={space.id}
                 context={space.context ?? ""}
-                onPin={keep}
+                onPin={keep.pin}
                 handle={handle}
                 onTools={setTools}
                 onRenamed={(name) => navigate({ ...noteParams(space, name), replace: true })}
               />
             ) : (
               <EmptyState
+                fill
                 icon={FileText}
                 body="A note holds long text. Write it now, and hear it in your voice when you are ready."
                 action={

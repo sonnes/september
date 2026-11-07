@@ -42,9 +42,13 @@ const SCOPE_GLOBAL: u32 = code(b"glob");
 const SCOPE_INPUT: u32 = code(b"inp ");
 const SCOPE_OUTPUT: u32 = code(b"outp");
 
-pub const VIRTUAL_MICROPHONE_UID: &str = "app.september.desktop.virtual-microphone";
-const VIRTUAL_MICROPHONE_NAME: &str = "September Microphone";
 const NATIVE_ERROR_CAPACITY: usize = 512;
+
+/// The results of `september_speech_file` in `native/audio.m`.
+const FILE_INTERRUPTED: i32 = -2;
+const FILE_NOT_AUDIO: i32 = -3;
+/// The result of `september_speech_stream_begin` for a stopped sentence.
+const STREAM_STOPPED: i64 = 0;
 
 #[repr(C)]
 struct PropertyAddress {
@@ -98,6 +102,8 @@ extern "C" {
         data: *mut c_void,
     ) -> OsStatus;
 
+    fn september_virtual_microphone_uid() -> *const c_char;
+    fn september_virtual_microphone_name() -> *const c_char;
     fn september_virtual_microphone_status() -> bool;
     fn september_virtual_microphone_start(error: *mut c_char, capacity: usize) -> i32;
     fn september_virtual_microphone_stop(error: *mut c_char, capacity: usize) -> i32;
@@ -108,7 +114,6 @@ extern "C" {
     ) -> i32;
     fn september_speech_system(
         words: *const c_char,
-        voice_identifier: *const c_char,
         speed: f32,
         output_uid: *const c_char,
         error: *mut c_char,
@@ -349,40 +354,24 @@ fn uid_of(device: AudioObjectId) -> Result<String, String> {
 
 /// Every output this Mac can play through, in the order the system gives.
 pub fn outputs() -> Result<Vec<AudioDevice>, String> {
-    let address = PropertyAddress::global(DEVICES);
-    let mut found = Vec::new();
-
-    for device in read_ids(SYSTEM_OBJECT, &address, "list the sound devices")? {
-        if !plays_sound(device) {
-            continue;
-        }
-        // A device that will not answer is left out. One quiet virtual device
-        // must not hide the speakers the user can hear.
-        let (Ok(uid), Ok(name)) = (
-            uid_of(device),
-            read_string(
-                device,
-                &PropertyAddress::global(OBJECT_NAME),
-                "read a device name",
-            ),
-        ) else {
-            continue;
-        };
-        found.push(AudioDevice { uid, name });
-    }
-
-    Ok(found)
+    devices(plays_sound)
 }
 
 /// Every input this Mac can record from, in the order the system gives.
 pub fn inputs() -> Result<Vec<AudioDevice>, String> {
+    devices(records_sound)
+}
+
+fn devices(keep: fn(AudioObjectId) -> bool) -> Result<Vec<AudioDevice>, String> {
     let address = PropertyAddress::global(DEVICES);
     let mut found = Vec::new();
 
     for device in read_ids(SYSTEM_OBJECT, &address, "list the sound devices")? {
-        if !records_sound(device) {
+        if !keep(device) {
             continue;
         }
+        // A device that will not answer is left out. One quiet virtual device
+        // must not hide the speakers the user can hear.
         let (Ok(uid), Ok(name)) = (
             uid_of(device),
             read_string(
@@ -439,17 +428,21 @@ pub fn prepare_output(uid: &str) -> Result<(), String> {
 
 /// Whether calling apps can select the September input now.
 pub fn virtual_microphone_status() -> VirtualMicrophoneStatus {
+    // SAFETY: both functions return pointers to static C strings.
+    let (uid, name) = unsafe {
+        (
+            CStr::from_ptr(september_virtual_microphone_uid()),
+            CStr::from_ptr(september_virtual_microphone_name()),
+        )
+    };
+    let uid = uid.to_string_lossy().into_owned();
     let published = unsafe { september_virtual_microphone_status() };
-    let selectable = published
-        && inputs().is_ok_and(|devices| {
-            devices
-                .iter()
-                .any(|device| device.uid == VIRTUAL_MICROPHONE_UID)
-        });
+    let selectable =
+        published && inputs().is_ok_and(|devices| devices.iter().any(|device| device.uid == uid));
     VirtualMicrophoneStatus {
         active: selectable,
-        name: VIRTUAL_MICROPHONE_NAME.into(),
-        uid: VIRTUAL_MICROPHONE_UID.into(),
+        name: name.to_string_lossy().into_owned(),
+        uid,
         detail: microphone_detail(selectable),
     }
 }
@@ -488,20 +481,13 @@ fn wait_for_microphone(active: bool) -> Result<VirtualMicrophoneStatus, String> 
 }
 
 /// Speaks with the operating-system voice from the native process.
-pub fn speak_system(
-    text: &str,
-    voice_id: Option<&str>,
-    speed: f32,
-    output_uid: &str,
-) -> Result<(), String> {
+pub fn speak_system(text: &str, speed: f32, output_uid: &str) -> Result<(), String> {
     let words = native_text(text, "the words")?;
-    let voice = native_text(voice_id.unwrap_or_default(), "the voice identifier")?;
     let output = native_text(output_uid, "the sound output identifier")?;
     let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
     let status = unsafe {
         september_speech_system(
             words.as_ptr(),
-            voice.as_ptr(),
             speed,
             output.as_ptr(),
             error.as_mut_ptr(),
@@ -539,10 +525,10 @@ pub fn play_speech_file(sentence: i64, path: &Path, output_uid: &str) -> Result<
         )
     };
     match status {
-        -2 => Ok(Played::Interrupted(
+        FILE_INTERRUPTED => Ok(Played::Interrupted(
             native_result(status, &error).unwrap_err(),
         )),
-        -3 => {
+        FILE_NOT_AUDIO => {
             if let Err(removal) = std::fs::remove_file(path) {
                 eprintln!("[audio] could not remove a voice file that is not audio: {removal}");
             }
@@ -583,7 +569,7 @@ impl SpeechStream {
                 NATIVE_ERROR_CAPACITY,
             )
         };
-        if stream == 0 {
+        if stream == STREAM_STOPPED {
             return Err("the voice stopped".into());
         }
         if stream < 0 {

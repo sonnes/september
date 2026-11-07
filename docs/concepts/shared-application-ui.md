@@ -33,8 +33,8 @@ it from `@platform/adapter`, which TypeScript and Vite map to that file.
 
 The shared services in `packages/app-ui/services/` hold everything else, one
 time: the held settings, speech, the data hooks, the writing service, usage,
-backup, export, and cloning. The web tests run them once against an in-memory
-platform.
+backup, export, and cloning. The `packages/app-ui` tests run them once against
+an in-memory platform.
 
 An optional member of the interface is a capability. It is absent where the
 platform cannot do the work, for example `writing.apple` in the browser and
@@ -71,9 +71,9 @@ panels move at the same width, the `md` breakpoint (768px) named in
 
 The setup progress list is one `<ol>` in both shapes — it lies on its side in
 the bar and stands up in the sidebar. It is never rendered twice with one copy
-hidden, so a screen reader hears the run of steps once, and every step link
-keeps its full name (`Step 2: About you, current`) when the bar hides the
-visible label.
+hidden, so a screen reader hears the run of steps once. Every step keeps its
+label as its name when the bar hides the visible label. A finished step adds
+", completed". The current step is a `<span aria-current="step">`, not a link.
 
 The narrowest screen a step is laid out for is 320px. A measurement that would
 overflow it — a fixed sidebar width, a `min-w-64` field, a 70px panel indent, a

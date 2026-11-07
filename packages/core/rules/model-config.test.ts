@@ -17,7 +17,7 @@ const settings = (): ModelSettings => ({
 });
 
 describe("model configuration", () => {
-  it.each(["agent", "context", "phrases"] as const)(
+  it.each(["agent", "phrases"] as const)(
     "uses the default model for %s calls",
     (feature) => {
       expect(modelConfigFor(settings(), feature)).toEqual({

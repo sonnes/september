@@ -6,9 +6,11 @@ import SeptemberKit
 final class RecordingSink: KeystrokeSink, @unchecked Sendable {
     var posted: [Keystroke] = []
     var typed: [String] = []
+    var beeps = 0
 
     func post(_ events: [Keystroke]) { posted.append(contentsOf: events) }
     func type(_ text: String) { typed.append(text) }
+    func beep() { beeps += 1 }
 
     func reset() {
         posted = []
@@ -55,6 +57,62 @@ private func key(_ id: String) -> KeyDefinition {
 
 @MainActor
 func controllerTests() {
+    test("a chord with delete leaves the echo as it is, from a key or a panel") {
+        let (controller, _) = try makeController()
+        controller.press(key("key-a"))
+        controller.perform(.shortcut(Shortcut(modifiers: .command, key: .virtual(.delete))))
+        expectEqual(controller.input, .local(text: "a"))
+        controller.press(key("command-left"))
+        controller.press(key("delete"))
+        expectEqual(controller.input, .local(text: "a"))
+    }
+
+    test("a new input source changes the keys that typing posts") {
+        let (controller, sink) = try makeController()
+        controller.layoutChanged(to: KeyCodeMap { code, _ in code == 12 ? "a" : nil })
+        controller.press(key("key-a"))
+        expectEqual(sink.downs.map(\.key), [12])
+    }
+
+    test("a panel return clears the echo and a panel delete drops one character") {
+        let (controller, _) = try makeController()
+        controller.press(key("key-a"))
+        controller.press(key("key-s"))
+        controller.perform(.shortcut(Shortcut(modifiers: [], key: .virtual(.delete))))
+        expectEqual(controller.input, .local(text: "a"))
+        controller.perform(.shortcut(Shortcut(modifiers: [], key: .virtual(.return))))
+        expectEqual(controller.input, .local(text: ""))
+    }
+
+    test("a shortcut on a layout without its letter uses the ASCII-capable layout") {
+        let sink = RecordingSink()
+        let cyrillic = KeyCodeMap(
+            probe: { code, _ in code == 6 ? "я" : nil },
+            shortcutProbe: { code, _ in code == 6 ? "z" : nil }
+        )
+        let controller = KeyboardController(sink: sink, panels: try PanelStore.bundled(), keyCodeMap: cyrillic)
+        controller.perform(.shortcut(Shortcut(modifiers: .command, key: .character("z"))))
+        expectEqual(sink.downs.map(\.key), [55, 6])
+
+        sink.reset()
+        controller.press(key("command-left"))
+        controller.press(key("key-z"))
+        expectEqual(sink.downs.map(\.key), [55, 6])
+    }
+
+    test("a shortcut with no key on any layout beeps and keeps the modifier") {
+        let (controller, sink) = try makeController()
+        controller.press(key("command-left"))
+        controller.press(key("key-q"))
+        expect(sink.posted.isEmpty)
+        expectEqual(sink.beeps, 1)
+        expectEqual(controller.modifiers.active, .command)
+
+        controller.press(key("key-c"))
+        expectEqual(sink.downs.last?.flags, .command)
+        expectEqual(controller.modifiers.active, [])
+    }
+
     test("typing a letter posts that key and echoes it") {
         let (controller, sink) = try makeController()
         controller.press(key("key-a"))
@@ -92,7 +150,7 @@ func controllerTests() {
         let (controller, sink) = try makeController()
         controller.press(key("command-left"))
         controller.press(key("key-c"))
-        expectEqual(sink.downs.map(\.key), [Modifiers.command.virtualKey!, 8])
+        expectEqual(sink.downs.map(\.key), [55, 8])
         expectEqual(sink.downs.last?.flags, .command)
         expectEqual(controller.input, .local(text: ""), "a shortcut is not typed text")
     }
@@ -101,7 +159,7 @@ func controllerTests() {
         let (controller, sink) = try makeController()
         controller.press(key("fn"))
         controller.press(key("f1"))
-        expectEqual(sink.downs.map(\.key), [Modifiers.function.virtualKey!, VirtualKey.f1.rawValue])
+        expectEqual(sink.downs.map(\.key), [63, VirtualKey.f1.rawValue])
         expectEqual(sink.downs.last?.flags, .function)
     }
 
@@ -109,7 +167,7 @@ func controllerTests() {
         let (controller, sink) = try makeController()
         controller.press(key("fn"))
         controller.press(key("key-a"))
-        expectEqual(sink.downs.map(\.key), [Modifiers.function.virtualKey!, 0])
+        expectEqual(sink.downs.map(\.key), [63, 0])
         expectEqual(sink.downs.last?.flags, .function)
         expectEqual(controller.input, .local(text: ""))
     }
@@ -138,7 +196,7 @@ func controllerTests() {
         controller.perform(.shortcut(Shortcut(modifiers: [.command, .shift], key: .character("z"))))
         expectEqual(
             sink.downs.map(\.key),
-            [Modifiers.shift.virtualKey!, Modifiers.command.virtualKey!, 6]
+            [56, 55, 6]
         )
         expectEqual(sink.downs.last?.flags, [.command, .shift])
     }

@@ -1,6 +1,7 @@
 /** The files a note exports to, and why one cannot be saved yet. */
 
 import { noteSlug } from "../notes.ts";
+import type { SpeechService } from "../voice.ts";
 
 export type ExportKind = "text" | "audio" | "video";
 
@@ -42,7 +43,7 @@ export function exportFileName(
 }
 
 export interface ExportReadiness {
-  provider: string;
+  provider: SpeechService;
   voiceId: string | null;
   /** Whether this app can render a video at all. */
   video: boolean;
@@ -52,8 +53,8 @@ export interface ExportReadiness {
  * Why an artifact cannot be saved yet, or nothing when it can.
  *
  * The words always save, on either app, with no service connected. Anything
- * with a voice in it needs the cloud voice, because only that one returns the
- * timing a caption needs.
+ * with a voice in it needs an ElevenLabs voice, because only ElevenLabs returns
+ * the timing that a caption needs.
  */
 export function exportReason(
   kind: ExportKind,
@@ -61,7 +62,7 @@ export function exportReason(
 ): string | null {
   if (kind === "text") return null;
   if (kind === "video" && !video) return "Video comes from the browser app for now.";
-  if (provider !== "elevenlabs") return "Uses your ElevenLabs voice.";
+  if (provider === "system") return "Uses your ElevenLabs voice.";
   if (!voiceId) return "Choose an ElevenLabs voice first.";
   return null;
 }

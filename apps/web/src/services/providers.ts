@@ -11,17 +11,13 @@ import type {
   Voice,
 } from '@september/app-ui/platform';
 import { OPENROUTER_BASE } from '@september/core/rules/model-config';
+import { SERVICE_NAMES } from '@september/core/rules/services';
 import { SETTINGS } from '@september/core/rules/settings';
 
 import { authorizeOpenRouter } from './oauth';
 import { browserRepository } from './repository';
 
 type Keys = Partial<Record<Provider, string>>;
-
-const NAMES: Record<Provider, string> = {
-  openrouter: 'OpenRouter',
-  elevenlabs: 'ElevenLabs',
-};
 
 async function keys(): Promise<Keys> {
   return (await browserRepository.getSetting<Keys>(SETTINGS.providerKeys)) ?? {};
@@ -34,7 +30,7 @@ async function putKeys(next: Keys): Promise<void> {
 /** The key of one service. It rejects when the user has not connected it. */
 export async function providerKey(provider: Provider): Promise<string> {
   const key = (await keys())[provider];
-  if (!key) throw new Error(`Connect ${NAMES[provider]} in Settings first.`);
+  if (!key) throw new Error(`Connect ${SERVICE_NAMES[provider]} in Settings first.`);
   return key;
 }
 
@@ -55,7 +51,7 @@ async function connect(provider: Provider, key: string, signal?: AbortSignal) {
     { headers: headers(provider, trimmed), signal }
   );
   if (!response.ok) {
-    throw new Error(`${NAMES[provider]} did not accept that key. Copy it and try again.`);
+    throw new Error(`${SERVICE_NAMES[provider]} did not accept that key. Copy it and try again.`);
   }
   signal?.throwIfAborted();
   const next = { ...(await keys()), [provider]: trimmed };

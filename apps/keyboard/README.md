@@ -7,11 +7,11 @@ dependencies.
 
 ```
 Sources/
-  SeptemberKit/     models, design tokens, views — everything testable
-    Accessibility/  another app's tree as a snapshot, the Accessibility permission
+  SeptemberKit/     models, design tokens, views: everything testable
+    Accessibility/  AXNode and AXTree (a snapshot of the tree of another app), AccessibilityPermission
     Clipboard/      the clipboard history and the watcher of the clipboard
-    Design/         tokens, metrics, typography, rainbow/mono styles
-    Keyboard/       key definitions, the QWERTY layout, the controller
+    Design/         tokens, metrics, typography, rainbow and mono styles
+    Keyboard/       key definitions, the QWERTY layout, KeyboardController, PressTracker
     Input/          modifiers, keystrokes, layout-aware key code map
     Integration/    the session that joins the parts, panel placement, the app in front
     Panels/         panel model, JSON loading, app panel ranking and learning
@@ -37,8 +37,10 @@ make run        # run unbundled in the foreground
 make dev        # same, detached
 make stop       # quit a running Keyboard
 make test       # run the test suite
-make app        # build and sign Keyboard.app
-make dmg        # package Keyboard.app in an installable DMG
+make app        # build and sign September Keyboard.app
+make dmg        # package the app in an installable DMG
+make release    # sign with Developer ID, notarize, staple, and check the app and the DMG
+make publish    # upload the DMG of make release to a GitHub Release
 make open       # build, sign and launch
 make snapshots  # render the keyboard and component library to .build/snapshots
 ```
@@ -46,22 +48,68 @@ make snapshots  # render the keyboard and component library to .build/snapshots
 `make run` and `make dev` show the keyboard on your screen. When you are done,
 run `make stop`.
 
+Run them from `apps/keyboard/`. From the repo root, use `make mac-run`,
+`mac-dev`, `mac-stop`, `mac-test`, `mac-app`, `keyboard-dmg`, or
+`keyboard-release`.
+
 `make run` and `make dev` launch Keyboard as a child of your shell, so it
 inherits the terminal's Accessibility permission — keys type into other apps
 with nothing to grant. The signed bundle from `make app` is a separate identity
 and needs its own grant (below).
 
-The app bundle uses `com.september.keyboard` as its identifier.
+The app is September Keyboard, with the bundle identifier
+`app.september.keyboard`. The version is `CFBundleShortVersionString` in
+`Resources/Info.plist`.
+
+The icon is a keyboard in the frame of the September mark
+(`packages/app-ui/public/logo.svg`), so that it differs from the icon of the
+desktop app. Its source is `Resources/AppIcon.svg`. After you change the SVG,
+run `make icon` to make `Resources/AppIcon.icns`. The command needs
+`rsvg-convert` (`brew install librsvg`).
 
 ## Build the DMG
 
 Run `make dmg` to build the signed app and create
-`.build/release/Keyboard.dmg`. The disk image contains `Keyboard.app` and an
-`Applications` shortcut.
+`.build/release/September-Keyboard-<version>.dmg`. The disk image contains
+`September Keyboard.app` and an `Applications` shortcut.
 
 The build uses the `Keyboard Dev` signing identity when it is available. If
 the identity is missing, the app is signed ad hoc for local installation and
 macOS resets its Accessibility permission after the next build.
+
+## Release
+
+A release is a DMG that anyone can open. The app and the DMG are signed with
+a Developer ID, notarized by Apple, and stapled. Each one has its own ticket,
+so the app opens without a network connection after the user copies it out of
+the DMG.
+
+`make release` reads the credentials of the desktop release from the `.envrc`
+file in the repository root: `APPLE_SIGNING_IDENTITY`, `APPLE_API_KEY`,
+`APPLE_API_ISSUER`, and `APPLE_API_KEY_PATH`. The file is not in git.
+
+1. Set the new version in `CFBundleShortVersionString`, and increase
+   `CFBundleVersion`, in `Resources/Info.plist`.
+2. Add a `## <version>` section to `CHANGELOG.md`.
+3. Run `make release`. In a worktree, which has no `.envrc`, run
+   `make release ENVRC=<path to .envrc>`.
+4. Open the DMG on a second Mac, or in a new user account, and do the checks in
+   "Check a release" below.
+5. Run `make publish`. It creates the GitHub Release `keyboard-v<version>` on
+   `sonnes/september` with the DMG and the notes of `CHANGELOG.md`. A 0.x
+   version is a pre-release, as the desktop releases are.
+
+Notarization takes from 2 to 15 minutes for each of the two uploads. If Apple
+rejects an upload, `make release` stops. Then run
+`xcrun notarytool log <submission id>` with the same key to read the reason.
+
+### Check a release
+
+- Gatekeeper opens the app with no warning.
+- The first launch shows the Accessibility banner. After you allow September
+  Keyboard in System Settings, the keys type into another app.
+- Settings opens, and Speak reads the input bar aloud.
+- The Write window opens and saves a document.
 
 ## The windows
 
@@ -209,6 +257,7 @@ swift run Keyboard --snapshot out.png --write    # the Write window in front
 swift run Keyboard --snapshot out.png --mine     # the Mine tab of the app panel
 swift run Keyboard --snapshot out.png --clipboard  # the clipboard history, open
 swift run Keyboard --snapshot out.png --mono     # mono variant
+swift run Keyboard --snapshot out.png --light    # light appearance
 swift run Keyboard --snapshot out.png --gallery  # the component library
 swift run Keyboard --snapshot out.png --viewer   # the tree viewer, reading the app in front
 ```
@@ -297,9 +346,9 @@ A second window sits at the right edge of the screen, the same height as the
 keyboard, showing the accessibility tree of whatever app is in front — the tree
 Keyboard itself reads to find the field it types into.
 
-It opens collapsed: only the branch leading to the focused element is unfolded,
-and everything else shows as a shut row with a count of what it is holding, so
-the element being typed into is always the deepest thing on screen. It follows
+The viewer reads and opens only the branch that leads to the focused element.
+Every other element shows as a shut row with a count of its children. The
+element that gets the keystrokes is always the deepest row on screen. It follows
 along as focus moves, as the frontmost app changes, on a slow timer, and from
 its own refresh button.
 

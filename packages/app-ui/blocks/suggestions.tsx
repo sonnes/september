@@ -56,7 +56,7 @@ const TAG_TILE =
  * The lane is never the only sign of where a row came from. The mark in the
  * gutter says the same thing, for a user who does not read colour.
  */
-const LANE: Record<SuggestionSource, { idle: string; active: string }> = {
+export const LANE: Record<SuggestionSource, { idle: string; active: string }> = {
   // From the phrases of the space.
   md: {
     idle: "border-primary/40 bg-card text-foreground hover:border-primary/70 hover:bg-primary/5",
@@ -128,7 +128,7 @@ export function Suggestions({
   history?: string[];
   onTake: (next: string) => void;
   onSpeak: (sentence: string) => void;
-  onPin: (phrase: string) => void;
+  onPin?: (phrase: string) => void;
 }) {
   const setup = useSetup();
   const { data: spacePhrases } = usePhrases(spaceId);
@@ -309,7 +309,7 @@ export function Suggestions({
                   source={stripe.source}
                   code={stripe.code}
                   kept={Boolean(stripe.kept)}
-                  onPin={() => onPin(stripe.text)}
+                  onPin={onPin ? () => onPin(stripe.text) : undefined}
                 />
               </span>
 
@@ -596,17 +596,18 @@ function EndKey({
  * The mark in the gutter. It says where a row came from, for a user who does
  * not read colour.
  */
-function SourceMark({
+export function SourceMark({
   source,
   code,
-  kept,
+  kept = false,
   onPin,
 }: {
   source: SuggestionSource;
   code?: string;
   /** A kept phrase wears a solid pin, the same as its row in the panel. */
-  kept: boolean;
-  onPin: () => void;
+  kept?: boolean;
+  /** Without it, the pin of a phrase only marks the row. */
+  onPin?: () => void;
 }) {
   if (source === "code") {
     return (
@@ -637,6 +638,16 @@ function SourceMark({
         className="text-chart-2 size-4 shrink-0"
         role="img"
         aria-label="You said this before"
+      />
+    );
+  }
+
+  if (source === "md" && !onPin) {
+    return (
+      <Pin
+        className={cn("text-brand size-4 shrink-0", kept && "fill-current")}
+        role="img"
+        aria-label={kept ? "You keep this phrase" : "A saved phrase"}
       />
     );
   }

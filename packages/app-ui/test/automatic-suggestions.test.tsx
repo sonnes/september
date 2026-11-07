@@ -4,29 +4,16 @@ import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import { Suggestions } from '@september/app-ui/blocks/suggestions';
 import { updateSetup } from '@september/app-ui/services/settings';
 
+import { bodyOf, jsonReply, signalOf } from './model';
 import { finishSetup, renderPart } from './render';
-
-/** One streamed OpenAI-compatible reply with `suggestions` as its JSON. */
-function reply(suggestions: string[]): Response {
-  const chunk = (delta: object, finish: string | null) =>
-    JSON.stringify({ id: '1', model: 'test', choices: [{ index: 0, delta, finish_reason: finish }] });
-  const content = JSON.stringify({ suggestions });
-  const events = [chunk({ role: 'assistant', content }, null), chunk({}, 'stop'), '[DONE]'];
-  return new Response(events.map(event => `data: ${event}\n\n`).join(''), {
-    headers: { 'content-type': 'text/event-stream' },
-  });
-}
 
 type Answer = (init: RequestInit) => Promise<Response>;
 
 /** The writing service. Each request takes the next held answer, or a fresh row. */
 const queued: Answer[] = [];
 const request = vi.fn((_url: string, init: RequestInit) =>
-  (queued.shift() ?? (async () => reply(['hello fresh result'])))(init),
+  (queued.shift() ?? (async () => jsonReply({ suggestions: ['hello fresh result'] })))(init),
 );
-const signalOf = (call: number) => request.mock.calls[call]![1].signal as AbortSignal;
-const bodyOf = (call: number) =>
-  JSON.parse(String(request.mock.calls[call]![1].body)) as { messages: { role: string; content: unknown }[] };
 
 /** An answer that waits for the test. */
 function held() {
@@ -35,7 +22,7 @@ function held() {
   queued.push(
     () =>
       new Promise<Response>((done, refuse) => {
-        answer = rows => done(reply(rows));
+        answer = rows => done(jsonReply({ suggestions: rows }));
         fail = refuse;
       }),
   );
@@ -62,7 +49,6 @@ async function render({
         context=""
         history={[]}
         onTake={() => {}}
-        onPin={() => {}}
         onSpeak={() => {}}
         {...props}
       />
@@ -94,6 +80,15 @@ beforeEach(async () => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+});
+
+it('asks after an audio tag', async () => {
+  await render();
+  await show('hello [laughs');
+  await show('hello [laughs]');
+
+  await advance();
+  expect(request).toHaveBeenCalledTimes(1);
 });
 
 it.each([' ', '\n', '.', ',', '!', '?', ';', ':'])('asks after an edit that ends with %j', async boundary => {
@@ -149,7 +144,7 @@ it.each(['answer', 'failure'])('ignores a late %s from an earlier request', asyn
   await advance();
   await show('hello,');
   await advance();
-  expect(signalOf(0).aborted).toBe(true);
+  expect(signalOf(request).aborted).toBe(true);
 
   if (outcome === 'answer') await first.answer(['hello stale result']);
   else await first.fail(new Error('Earlier request failed'));
@@ -169,7 +164,7 @@ it('stops when switched off and waits for another edit when switched on', async 
   await act(async () => {
     await updateSetup({ autoSuggestions: false });
   });
-  expect(signalOf(0).aborted).toBe(true);
+  expect(signalOf(request).aborted).toBe(true);
   await first.answer(['hello stale result']);
   expect(container.textContent).not.toContain('stale');
 
@@ -193,7 +188,7 @@ it('keeps a request when only automatic phrases changes', async () => {
   await act(async () => {
     await updateSetup({ autoPhrases: false });
   });
-  expect(signalOf(0).aborted).toBe(false);
+  expect(signalOf(request).aborted).toBe(false);
   await first.answer(['hello fresh result']);
 
   await vi.waitFor(() => expect(container.textContent).toContain('fresh'));
@@ -267,7 +262,7 @@ it('sends the note and the caret with a request from a note', async () => {
   await advance();
 
   await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
-  expect(JSON.stringify(bodyOf(0).messages)).toContain(JSON.stringify('Intro.\nhello <caret/>\nEnd.').slice(1, -1));
+  expect(JSON.stringify(bodyOf(request).messages)).toContain(JSON.stringify('Intro.\nhello <caret/>\nEnd.').slice(1, -1));
 });
 
 it('names the end key of a row with the label it is given', async () => {

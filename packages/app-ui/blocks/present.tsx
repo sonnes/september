@@ -37,7 +37,7 @@ import {
 } from "@september/core/rules/present/stage";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
 import { platform } from "@platform/adapter";
-import { present } from "@september/app-ui/services/settings";
+import { present, useSetting } from "@september/app-ui/services/settings";
 import { speak, stopSpeaking } from "@september/app-ui/services/speech";
 import { recordPresentUsage } from "@september/app-ui/services/usage";
 import { useEscape } from "@september/app-ui/blocks/keymap";
@@ -67,7 +67,7 @@ export function PresentOverlay({
 }) {
   const chunks = useMemo(() => presentChunks(content), [content]);
   const [index, setIndex] = useState(0);
-  const [settings, setSettings] = useState<PresentSettings>(present.get);
+  const settings = useSetting(present);
   const [paused, setPaused] = useState(false);
   const [speechFailed, setSpeechFailed] = useState(false);
   const [colours, setColours] = useState(false);
@@ -111,11 +111,7 @@ export function PresentOverlay({
 
   const move = (delta: number) => setIndex((at) => stepChunk(at, total, delta));
 
-  const choose = (next: Partial<PresentSettings>) => {
-    const saved = { ...settings, ...next };
-    setSettings(saved);
-    void present.set(saved);
-  };
+  const choose = (next: Partial<PresentSettings>) => present.keep({ ...settings, ...next });
 
   // One event for the story, not one for each chunk.
   useEffect(() => {
@@ -225,7 +221,7 @@ export function PresentOverlay({
           type="button"
           aria-label="Close the presentation"
           onClick={onClose}
-          className="focus-attention pointer-events-auto grid size-[max(3rem,var(--reach-target,3rem))] place-items-center rounded-full transition-opacity hover:opacity-80"
+          className="focus-attention pointer-events-auto grid size-reach place-items-center rounded-full transition-opacity hover:opacity-80"
           style={{ backgroundColor: chrome(12), color: tone.display }}
         >
           <X aria-hidden />
@@ -255,7 +251,7 @@ export function PresentOverlay({
                 aria-label={option.name}
                 aria-pressed={option.key === tone.key}
                 onClick={() => choose({ tone: option.key })}
-                className="focus-attention size-[max(3rem,var(--reach-target,3rem))] rounded-full border-2 transition-transform"
+                className="focus-attention size-reach rounded-full border-2 transition-transform"
                 style={{
                   backgroundColor: option.background,
                   borderColor:
@@ -442,7 +438,7 @@ function MoveKeys({
   onHold: () => void;
 }) {
   const key =
-    "focus-attention key-disabled-on-stage inline-flex min-h-[max(3rem,var(--reach-target,3rem))] min-w-[max(3rem,var(--reach-target,3rem))] items-center justify-center gap-2 rounded-control border-2 px-4 text-base font-semibold";
+    "focus-attention key-disabled-on-stage inline-flex min-h-reach min-w-reach items-center justify-center gap-2 rounded-control border-2 px-4 text-base font-semibold";
   const line = `color-mix(in srgb, ${tone.display} 55%, transparent)`;
   // A disabled key keeps the ink of the tone, so its name stays readable on
   // the stage. The dotted line says that it has nothing to do.
@@ -514,7 +510,7 @@ function ChromeButton({
       aria-label={label}
       aria-pressed={pressed}
       onClick={onClick}
-      className="focus-attention grid size-[max(3rem,var(--reach-target,3rem))] place-items-center rounded-full transition-opacity hover:opacity-80"
+      className="focus-attention grid size-reach place-items-center rounded-full transition-opacity hover:opacity-80"
       style={{
         backgroundColor: `color-mix(in srgb, ${tone.display} ${pressed ? 24 : 12}%, transparent)`,
         color: tone.display,

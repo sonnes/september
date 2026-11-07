@@ -163,10 +163,15 @@ extension PanelAction: Decodable {
         let key: String
 
         var shortcut: Shortcut {
-            get throws {
-                Shortcut(modifiers: try Modifiers(names: modifiers ?? []), key: try Shortcut.Key(name: key))
-            }
+            get throws { try PanelAction.shortcut(modifiers: modifiers ?? [], key: key) }
         }
+    }
+
+    /// A shortcut of panel JSON. An uppercase letter is rejected: a shifted
+    /// key names "shift" among the modifiers.
+    private static func shortcut(modifiers: [String], key: String) throws -> Shortcut {
+        guard key.count != 1 || key == key.lowercased() else { throw PanelDecodingError.uppercaseKey(key) }
+        return Shortcut(modifiers: try Modifiers(names: modifiers), key: try Shortcut.Key(name: key))
     }
 
     public init(from decoder: any Decoder) throws {
@@ -176,9 +181,7 @@ extension PanelAction: Decodable {
         case "shortcut":
             let names = try container.decodeIfPresent([String].self, forKey: .modifiers) ?? []
             let key = try container.decode(String.self, forKey: .key)
-            self = .shortcut(
-                Shortcut(modifiers: try Modifiers(names: names), key: try Shortcut.Key(name: key))
-            )
+            self = .shortcut(try PanelAction.shortcut(modifiers: names, key: key))
         case "sequence":
             let steps = try container.decode([Step].self, forKey: .keys)
             guard !steps.isEmpty else {
@@ -222,6 +225,7 @@ extension Shortcut.Key {
 public enum PanelDecodingError: Error, CustomStringConvertible {
     case unknownModifier(String)
     case unknownKey(String)
+    case uppercaseKey(String)
     case duplicateButton(String)
     case missingPanel(String)
 
@@ -229,6 +233,8 @@ public enum PanelDecodingError: Error, CustomStringConvertible {
         switch self {
         case .unknownModifier(let name): "unknown modifier '\(name)'"
         case .unknownKey(let name): "unknown key '\(name)'"
+        case .uppercaseKey(let name):
+            "key '\(name)' is uppercase. Write it in lowercase and add \"shift\" to the modifiers."
         case .duplicateButton(let id): "two buttons share the id '\(id)'"
         case .missingPanel(let name): "no panel '\(name)' in the app bundle"
         }

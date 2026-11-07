@@ -13,6 +13,7 @@ import type { Capabilities } from "@september/core/rules/navigation";
 import type { PresentToneKey } from "@september/core/rules/present/stage";
 import type { Message, Note, SavedPhrase, Space } from "@september/core/rules/records";
 import type { UsageEvent } from "@september/core/rules/usage-summary";
+import type { CloudSound, ListedVoice, SpeechSettings } from "@september/core/rules/voice";
 
 export type { Capabilities };
 
@@ -37,12 +38,8 @@ export interface PlatformStore extends Omit<AgentRuntimeAdapter, "openWriter"> {
 }
 
 /** One cloud voice, with the values its model takes. */
-export interface CloudVoice {
+export interface CloudVoice extends CloudSound {
   voiceId: string;
-  modelId: string;
-  stability: number;
-  similarity: number;
-  speed: number;
 }
 
 /**
@@ -57,14 +54,12 @@ export interface PlatformVoice {
   /** What setup says about the system voice. */
   systemDescription: string;
   /** Speaks with the voice of the system. `onWord` hears where each word starts. */
-  speakSystem(
-    text: string,
-    voice: { voiceId: string | null; speed: number },
-    onWord?: (charIndex: number) => void,
-  ): Promise<void>;
+  speakSystem(text: string, speed: number, onWord?: (charIndex: number) => void): Promise<void>;
   /**
    * Speaks one sentence in a cloud voice and resolves when the sound stops.
-   * `dialogueParts` holds the parts for the Dialogue voice. It rejects with
+   * `dialogueParts` holds the parts for the Dialogue voice. `settings` are
+   * the speech settings that the voice comes from. The Mac names its voice
+   * files with them. It rejects with
    * `InterruptedSpeech` when the sound broke after it began.
    */
   stream(
@@ -72,11 +67,15 @@ export interface PlatformVoice {
     voice: CloudVoice,
     dialogueParts: string[] | undefined,
     signal: AbortSignal,
+    settings: SpeechSettings,
   ): Promise<{ fromCache: boolean; latencyMs: number }>;
   /** Stops every voice now. */
   stop(): Promise<void>;
-  /** The sound of one sentence in a cloud voice, as a file. */
-  synthesize(text: string, voice: CloudVoice): Promise<Blob>;
+  /**
+   * The sound of one sentence in a cloud voice, as a file. `settings` are the
+   * speech settings that the voice comes from, as for `stream`.
+   */
+  synthesize(text: string, voice: CloudVoice, settings: SpeechSettings): Promise<Blob>;
 }
 
 export type Provider = "openrouter" | "elevenlabs";
@@ -95,14 +94,8 @@ export interface AppleStatus {
   reason: string | null;
 }
 
-export interface Voice {
-  id: string;
-  name: string;
+export interface Voice extends ListedVoice {
   preview_url: string | null;
-  /** `premade`, `cloned`, `generated`, `professional`, and more, from ElevenLabs. */
-  category?: string | null;
-  /** True for a voice the user made. A library voice they added is false. */
-  is_owner?: boolean | null;
 }
 
 export interface ElevenLabsQuota {
@@ -166,10 +159,6 @@ export interface PlatformDevice {
   identity(): Promise<{ name: string; userId: string | null }>;
   /** Opens an address outside the app window. */
   openInBrowser(url: string): Promise<void>;
-  /** Asks before a close while edits are not saved. Returns the release. */
-  guardUnsavedChanges(): () => void;
-  /** Saves a file to the computer of the user. */
-  save(blob: Blob, filename: string): void;
   outputs: {
     list(): Promise<AudioOutput[]>;
     current(): Promise<string>;

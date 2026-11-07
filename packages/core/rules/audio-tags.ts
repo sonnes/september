@@ -7,18 +7,22 @@
  * the way to a voice that cannot read them.
  */
 
-import { DIALOGUE_MODEL, stabilityFor } from "./voice.ts";
+import { DIALOGUE_MODEL } from "./voice.ts";
 
 const TAG_SOURCE = String.raw`\[[^[\]]+\]`;
 const TAG = new RegExp(`^${TAG_SOURCE}$`);
 const TAGS = new RegExp(TAG_SOURCE, "g");
 const TAG_PARTS = new RegExp(`(${TAG_SOURCE})`);
 const ENDING_TAG = new RegExp(`${TAG_SOURCE}$`);
+const TAG_AT_CARET = new RegExp(`${TAG_SOURCE} ?$`);
 
 export const isTag = (token: string): boolean => TAG.test(token);
 
 /** True when the text ends with a tag. */
 export const endsWithTag = (text: string): boolean => ENDING_TAG.test(text);
+
+/** Where the tag that ends the text starts, or -1 when the text ends with no tag. */
+export const endingTagStart = (text: string): number => text.search(ENDING_TAG);
 
 /** The text cut into its tags and the text between them, in order. */
 export const splitTags = (text: string): string[] => text.split(TAG_PARTS);
@@ -48,31 +52,6 @@ export const tagsSpoken = (voice: TagVoice): boolean =>
 /** The text that this voice receives. */
 export const speakableText = (text: string, voice: TagVoice): string =>
   tagsSpoken(voice) ? text : stripTags(text);
-
-/**
- * The words and the settings of a speech file. The Dialogue voice makes its
- * files with Eleven v3 on the text-to-speech endpoint, because an export needs
- * an MP3 file. The file takes the stability mode that the Dialogue voice
- * streams with, and the normal speed, because the Dialogue voice has no speed.
- * A voice that says tags aloud gets the words alone.
- */
-export function fileSound<V extends TagVoice & { stability: number; speed: number }>(
-  text: string,
-  voice: V,
-): { text: string; settings: V } {
-  return {
-    text: speakableText(text, voice),
-    settings:
-      voice.provider === "dialogue"
-        ? {
-            ...voice,
-            modelId: DIALOGUE_MODEL,
-            stability: stabilityFor(DIALOGUE_MODEL, voice.stability),
-            speed: 1,
-          }
-        : voice,
-  };
-}
 
 /** The most tag tiles in the word row. */
 const MAX_TAG_TILES = 2;
@@ -110,14 +89,13 @@ export function tagBefore(
   caret: number,
 ): { start: number; end: number } | null {
   const before = text.slice(0, caret);
-  const found = before.match(/\[[^[\]]+\] ?$/);
+  const found = before.match(TAG_AT_CARET);
   return found?.index === undefined ? null : { start: found.index, end: caret };
 }
 
 /** The draft in order, as runs of words and single tags, for the chip layer. */
 export function draftParts(text: string): { text: string; tag: boolean }[] {
-  return text
-    .split(/(\[[^[\]]+\])/)
+  return splitTags(text)
     .filter(Boolean)
     .map((part) => ({ text: part, tag: isTag(part) }));
 }

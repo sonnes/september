@@ -49,7 +49,7 @@ public struct AppPanelsSettingsPage: View {
             if !inputMonitoring.isAllowed {
                 Section {
                     Text(
-                        "Learning from the hardware keyboard is off. The keyboard learns only the shortcuts that you press with its own keys. To learn from the hardware keyboard, allow Keyboard in Input Monitoring, then quit and open Keyboard again."
+                        "Learning from the hardware keyboard is off. The keyboard learns only the shortcuts that you press with its own keys. To learn from the hardware keyboard, allow September Keyboard in Input Monitoring. Then quit September Keyboard and open it again."
                     )
                     .foregroundStyle(.secondary)
                     Button("Open Input Monitoring Settings") { inputMonitoring.openSettings() }

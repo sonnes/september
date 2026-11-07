@@ -30,9 +30,12 @@ import type {
 } from "@september/core/rules/records";
 import type { UsageEvent } from "@september/core/rules/usage-summary";
 
+import type { FileSettings } from "./rules/voice-file";
 import type { GazeEvent } from "./services/gaze";
 
 type Command<Args, Result> = { args: Args; result: Result };
+/** A cloud voice with the settings that name its voice file. */
+type NamedVoice = CloudVoice & { fileSettings: FileSettings };
 /** A command that takes its arguments under `request`. */
 type Request<Args, Result> = Command<{ request: Args }, Result>;
 
@@ -81,14 +84,14 @@ export interface Commands {
   /** The login name, or null when the system gives none. */
   user_id: Command<undefined, string | null>;
 
-  speech_system: Request<{ text: string; voice_id: string | null; speed: number }, void>;
+  speech_system: Request<{ text: string; speed: number }, void>;
   speech_stream: Request<
-    { text: string; voice: CloudVoice; dialogueParts?: string[] },
+    { text: string; voice: NamedVoice; dialogueParts?: string[] },
     { from_cache: boolean; latency_ms: number; interrupted: string | null }
   >;
   speech_synthesize: Request<
-    { text: string; voice: CloudVoice },
-    { path: string; from_cache: boolean }
+    { text: string; voice: NamedVoice },
+    { path: string }
   >;
   speech_native_stop: Command<undefined, void>;
 
@@ -99,8 +102,8 @@ export interface Commands {
   provider_forget: Request<{ provider: Provider }, boolean>;
   provider_voices: Command<undefined, Voice[]>;
   provider_quota: Command<undefined, ElevenLabsQuota | null>;
-  openrouter_connect: Command<{ requestId: string }, ProviderStatus>;
-  openrouter_cancel: Command<{ requestId: string }, void>;
+  openrouter_connect: Request<{ requestId: string }, ProviderStatus>;
+  openrouter_cancel: Request<{ requestId: string }, void>;
 
   audio_outputs: Command<undefined, AudioOutput[]>;
   audio_output: Command<undefined, string>;
@@ -111,10 +114,10 @@ export interface Commands {
 
   panel_show: Command<undefined, void>;
   panel_hide: Command<undefined, void>;
-  panel_setup: Command<{ on: boolean }, void>;
+  panel_setup: Request<{ on: boolean }, void>;
   panel_float: Command<undefined, boolean>;
-  panel_set_float: Command<{ on: boolean }, void>;
-  panel_present: Command<{ on: boolean }, void>;
+  panel_set_float: Request<{ on: boolean }, void>;
+  panel_present: Request<{ on: boolean }, void>;
 
   gaze_start: Command<{ onEvent: Channel<GazeEvent> }, void>;
   gaze_stop: Command<undefined, void>;
@@ -140,14 +143,19 @@ export async function call<N extends Name>(
   }
 }
 
+/** The commands that take a raw body, with their answers. */
+export interface RawCommands {
+  provider_clone_voice: { result: { id: string } };
+}
+
 /** One call with a raw body, which keeps audio out of JSON. */
-export async function callRaw<T>(
-  name: "provider_clone_voice",
+export async function callRaw<N extends keyof RawCommands>(
+  name: N,
   body: Uint8Array,
   headers: Record<string, string>,
-): Promise<T> {
+): Promise<RawCommands[N]["result"]> {
   try {
-    return await invoke<T>(name, body, { headers });
+    return await invoke<RawCommands[N]["result"]>(name, body, { headers });
   } catch (reason) {
     throw reason instanceof Error ? reason : new Error(String(reason));
   }

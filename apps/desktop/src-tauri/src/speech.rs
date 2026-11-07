@@ -11,7 +11,7 @@ use std::{
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
-use crate::providers::Providers;
+use crate::providers::{Providers, NO_ELEVEN_LABS_KEY};
 
 type Result<T> = std::result::Result<T, String>;
 
@@ -19,9 +19,23 @@ type Result<T> = std::result::Result<T, String>;
 /// them, so the model of the Dialogue voice and the stability modes of
 /// Eleven v3 arrive here as plain values.
 #[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct VoiceSettings {
     pub voice_id: String,
+    pub model_id: String,
+    pub stability: f64,
+    pub similarity: f64,
+    pub speed: f64,
+    pub file_settings: FileSettings,
+}
+
+/// The settings that name the voice file of a sentence. The WebView resolves
+/// them. For the Dialogue voice they are the values that the user saved,
+/// which are not the values that ElevenLabs gets.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct FileSettings {
+    pub provider: String,
     pub model_id: String,
     pub stability: f64,
     pub similarity: f64,
@@ -43,13 +57,15 @@ pub fn normalize(text: &str) -> String {
 /// file of a Dialogue sentence has the same stem.
 pub fn file_name(voice: &VoiceSettings, text: &str) -> String {
     // Three decimal places, so 0.5 and 0.50 give one name.
+    let file = &voice.file_settings;
     let line = format!(
-        "{}|{}|{:.3}|{:.3}|{:.3}|{}",
+        "{}|{}|{}|{:.3}|{:.3}|{:.3}|{}",
+        file.provider,
         voice.voice_id,
-        voice.model_id,
-        voice.stability,
-        voice.similarity,
-        voice.speed,
+        file.model_id,
+        file.stability,
+        file.similarity,
+        file.speed,
         normalize(text),
     );
 
@@ -71,18 +87,13 @@ pub async fn synthesize(
         return Ok((path, true));
     }
 
-    let key = key.ok_or("Connect ElevenLabs in Settings first.")?;
+    let key = key.ok_or(NO_ELEVEN_LABS_KEY)?;
     let audio = providers
         .speak(key, voice, &normalize(text))
         .await
         .map_err(|error| error.to_string())?;
 
-    std::fs::create_dir_all(directory).map_err(|error| error.to_string())?;
-    // A stopped application leaves no half-written file under a name that
-    // says it is complete.
-    let partial = path.with_extension("part");
-    std::fs::write(&partial, &audio).map_err(|error| error.to_string())?;
-    std::fs::rename(&partial, &path).map_err(|error| error.to_string())?;
+    write_whole(&path, &audio).map_err(|error| error.to_string())?;
 
     Ok((path, false))
 }
@@ -135,15 +146,18 @@ pub async fn stream(
         return Ok(Streamed::File { path, from_cache });
     };
 
-    let wav = directory.join(file_name(voice, text)).with_extension("wav");
-    if wav.exists() {
-        return Ok(Streamed::File {
-            path: wav,
-            from_cache: true,
-        });
+    let mp3 = directory.join(file_name(voice, text));
+    let wav = mp3.with_extension("wav");
+    for path in [&wav, &mp3] {
+        if path.exists() {
+            return Ok(Streamed::File {
+                path: path.clone(),
+                from_cache: true,
+            });
+        }
     }
 
-    let key = key.ok_or_else(|| not_started("Connect ElevenLabs in Settings first.".into()))?;
+    let key = key.ok_or_else(|| not_started(NO_ELEVEN_LABS_KEY.into()))?;
     let began = Instant::now();
     let mut first_audio = None;
     let mut samples = Vec::new();
@@ -172,8 +186,7 @@ pub async fn stream(
     Ok(Streamed::Spoken { first_audio })
 }
 
-/// Writes 16-bit mono samples as a WAV file, under a name that is complete
-/// only after the last byte.
+/// Writes 16-bit mono samples as a WAV file.
 fn keep_wav(path: &Path, samples: &[i16]) -> std::io::Result<()> {
     let data = (samples.len() * 2) as u32;
     let mut bytes = Vec::with_capacity(44 + samples.len() * 2);
@@ -193,17 +206,23 @@ fn keep_wav(path: &Path, samples: &[i16]) -> std::io::Result<()> {
         bytes.extend_from_slice(&sample.to_le_bytes());
     }
 
+    write_whole(path, &bytes)
+}
+
+/// Writes a voice file under a name that holds the file only after its last
+/// byte, so a stopped app leaves no half-written file under that name.
+fn write_whole(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     if let Some(directory) = path.parent() {
         std::fs::create_dir_all(directory)?;
     }
     let partial = path.with_extension("part");
-    std::fs::write(&partial, &bytes)?;
+    std::fs::write(&partial, bytes)?;
     std::fs::rename(&partial, path)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{file_name, synthesize, VoiceSettings};
+    use super::{file_name, synthesize, FileSettings, VoiceSettings};
     use crate::providers::Providers;
 
     fn voice() -> VoiceSettings {
@@ -213,6 +232,13 @@ mod tests {
             stability: 0.5,
             similarity: 0.75,
             speed: 1.0,
+            file_settings: FileSettings {
+                provider: "elevenlabs".into(),
+                model_id: "eleven_flash_v2_5".into(),
+                stability: 0.5,
+                similarity: 0.75,
+                speed: 1.0,
+            },
         }
     }
 
@@ -224,10 +250,42 @@ mod tests {
             "stability": 0.5,
             "similarity": 0.75,
             "speed": 1.0,
+            "fileSettings": {
+                "provider": "elevenlabs",
+                "modelId": "eleven_flash_v2_5",
+                "stability": 0.5,
+                "similarity": 0.75,
+                "speed": 1.0,
+            },
         });
         let sent: VoiceSettings = serde_json::from_value(sent).unwrap();
 
         assert_eq!(file_name(&sent, "Hello"), file_name(&voice(), "Hello"));
+    }
+
+    #[test]
+    fn a_voice_file_keeps_the_name_of_its_saved_settings() {
+        assert_eq!(
+            file_name(&voice(), " Hello   world "),
+            "e3f2731ebb4264780916732f5ff2cca005e32bec46359493f9cb82e83ade539a.mp3"
+        );
+
+        // The Dialogue voice sends Eleven v3 a stability mode and no speed,
+        // and names its file with the values that the user saved.
+        let mut dialogue = voice();
+        dialogue.model_id = "eleven_v3_conversational".into();
+        dialogue.stability = 0.5;
+        dialogue.file_settings = FileSettings {
+            provider: "dialogue".into(),
+            model_id: "eleven_v3_conversational".into(),
+            stability: 0.6,
+            similarity: 0.75,
+            speed: 1.2,
+        };
+        assert_eq!(
+            file_name(&dialogue, "Hello world"),
+            "77c68fe9187c14690c9e5bb5932cf717fe408fb85950e3d91e5cf4ef8571e171.mp3"
+        );
     }
 
     #[test]
@@ -241,12 +299,13 @@ mod tests {
     #[test]
     fn a_changed_setting_gives_a_new_name() {
         let base = file_name(&voice(), "Hello");
-        let changes: [fn(&mut VoiceSettings); 5] = [
-            |v| v.stability = 0.6,
-            |v| v.similarity = 0.7,
-            |v| v.speed = 1.1,
+        let changes: [fn(&mut VoiceSettings); 6] = [
+            |v| v.file_settings.provider = "dialogue".into(),
+            |v| v.file_settings.stability = 0.6,
+            |v| v.file_settings.similarity = 0.7,
+            |v| v.file_settings.speed = 1.1,
             |v| v.voice_id = "voice-2".into(),
-            |v| v.model_id = "eleven_v3".into(),
+            |v| v.file_settings.model_id = "eleven_v3".into(),
         ];
         for change in changes {
             let mut changed = voice();
@@ -258,7 +317,7 @@ mod tests {
     #[test]
     fn the_same_number_written_two_ways_gives_one_name() {
         let mut rounded = voice();
-        rounded.stability = 0.5000004;
+        rounded.file_settings.stability = 0.5000004;
         assert_eq!(file_name(&voice(), "Hello"), file_name(&rounded, "Hello"));
     }
 

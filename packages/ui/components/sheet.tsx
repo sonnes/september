@@ -15,12 +15,6 @@ function SheetTrigger({
   return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
 }
 
-function SheetClose({
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Close>) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
-}
-
 function SheetPortal({
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Portal>) {
@@ -72,7 +66,7 @@ function SheetContent({
         {...props}
       >
         {children}
-        <SheetPrimitive.Close className="focus-attention key-disabled text-muted-foreground hover:bg-accent hover:text-accent-foreground absolute top-2 right-2 grid min-h-[max(3rem,var(--reach-target,3rem))] min-w-[max(3rem,var(--reach-target,3rem))] place-items-center rounded-control transition-colors outline-none disabled:pointer-events-none">
+        <SheetPrimitive.Close className="focus-attention key-disabled text-muted-foreground hover:bg-accent hover:text-accent-foreground absolute top-2 right-2 grid min-h-reach min-w-reach place-items-center rounded-control transition-colors outline-none disabled:pointer-events-none">
           <XIcon className="size-4" />
           <span className="sr-only">Close</span>
         </SheetPrimitive.Close>
@@ -86,16 +80,6 @@ function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="sheet-header"
       className={cn("flex flex-col gap-1.5 p-4", className)}
-      {...props}
-    />
-  )
-}
-
-function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="sheet-footer"
-      className={cn("mt-auto flex flex-col gap-2 p-4", className)}
       {...props}
     />
   )
@@ -130,10 +114,8 @@ function SheetDescription({
 export {
   Sheet,
   SheetTrigger,
-  SheetClose,
   SheetContent,
   SheetHeader,
-  SheetFooter,
   SheetTitle,
   SheetDescription,
 }

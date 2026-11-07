@@ -12,26 +12,6 @@ export interface CreatedVoice {
   name: string;
 }
 
-let lastCreatedVoice: CreatedVoice | null = null;
-
-/** Carries one optimistic clone from its route back to the Voice list. */
-export function rememberCreatedVoice(created: CreatedVoice): void {
-  lastCreatedVoice = created;
-}
-
-export function recentCreatedVoice(): CreatedVoice | null {
-  return lastCreatedVoice;
-}
-
-/** Keeps an optimistic clone visible while ElevenLabs updates its account list. */
-export function keepCreatedVoice<T extends { id: string }>(
-  fresh: T[],
-  created: T | null,
-): T[] {
-  if (!created || fresh.some((voice) => voice.id === created.id)) return fresh;
-  return [created, ...fresh];
-}
-
 /** Creates an ElevenLabs voice from the samples. */
 export async function cloneVoice(input: VoiceCloneInput): Promise<CreatedVoice> {
   const problem = validateVoiceClone(input);

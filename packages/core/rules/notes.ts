@@ -1,15 +1,10 @@
 /**
- * The pure rules of a note. A test reads them here, without a renderer.
+ * The rules of a note.
  *
  * A note holds long text that the user writes over minutes or days, and hears
  * back in the chosen voice. Talk holds one sentence, said now.
- *
- * These rules are a port of `packages/notes/lib/title.ts` and
- * `markdownToVoiceText` in the web app. Change them in both apps, or in
- * neither.
  */
 
-// A node test loads this file directly, and node does not resolve `@/`.
 import { slugify } from "./spaces.ts";
 
 /** What the title field shows while a note has no name of its own. */
@@ -19,6 +14,16 @@ export const UNTITLED_NOTE = "Untitled note";
 export function noteNameIsUnset(name: string | null | undefined): boolean {
   const trimmed = name?.trim();
   return !trimmed || trimmed.toLowerCase() === UNTITLED_NOTE.toLowerCase();
+}
+
+/** The note without code blocks. Images, links, inline code, and headings become plain words. */
+function withoutMarkup(content: string): string {
+  return content
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "");
 }
 
 /** How many words of the note make its name. */
@@ -32,12 +37,7 @@ const NAME_LIMIT = 64;
  * before the writing starts. The first words give one instead.
  */
 export function noteNameFromContent(content: string): string | undefined {
-  const text = content
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "")
+  const text = withoutMarkup(content)
     .replace(/[*_>#-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -87,16 +87,12 @@ export function noteFromSlug<T extends { name?: string | null }>(
  * The words of a note, with the markup removed.
  *
  * A voice must say `Monday`, not `# Monday`. Nothing here changes the note
- * itself, so the markup stays on the screen and in IndexedDB.
+ * itself, so the markup stays on the screen and in the store.
  */
 export function markdownToVoiceText(content: string): string {
-  return content
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "")
+  return withoutMarkup(content)
     .replace(/^>\s?/gm, "")
     .replace(/^\s*[-*+]\s+(\[[ xX]\]\s+)?/gm, "")
-    .replace(/`([^`]+)`/g, "$1")
     .replace(/[*_~]/g, "")
     .replace(/\s+/g, " ")
     .trim();

@@ -1,12 +1,16 @@
 import { Button } from '@september/ui/components/button';
 import { Link } from '@tanstack/react-router';
 
+import desktop from '../../../../desktop/package.json';
+
+const MAC_DOWNLOAD = `https://github.com/sonnes/september/releases/download/v${desktop.version}/September_${desktop.version}_aarch64.dmg`;
+
 export function PlatformSection() {
   return (
     <section id="apps" className="scroll-mt-4 bg-zinc-100 px-4 py-14 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.2fr_1fr_1fr] lg:gap-12">
         <div>
-          <h2 className="text-3xl font-semibold leading-tight tracking-tight text-zinc-950 sm:text-4xl">
+          <h2 className="text-3xl leading-tight font-semibold tracking-tight text-zinc-950 sm:text-4xl">
             Your next conversation starts here.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-zinc-700">
@@ -40,9 +44,7 @@ export function PlatformSection() {
               variant="outline"
               className="h-12 rounded-full border-zinc-400 bg-white px-6 text-base font-semibold"
             >
-              <a href="https://github.com/sonnes/september/releases/download/v0.6.0/September_0.6.0_aarch64.dmg">
-                Download for Mac
-              </a>
+              <a href={MAC_DOWNLOAD}>Download for Mac</a>
             </Button>
             <p className="mt-3 text-sm text-zinc-600">Apple Silicon · macOS 14.2 or later</p>
             <p className="mt-1 text-sm text-zinc-600">

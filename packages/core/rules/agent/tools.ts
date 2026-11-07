@@ -1,6 +1,13 @@
 /** The tools the Agent of a space can call, and the arguments each one accepts. */
 
-import type { Message, PhraseKind, SavedPhrase, Space } from "../records.ts";
+import {
+  PHRASE_KINDS,
+  PHRASE_TEXT_LIMIT,
+  type Message,
+  type PhraseKind,
+  type SavedPhrase,
+  type Space,
+} from "../records.ts";
 
 export const AGENT_NOTE_CHUNK_LIMIT = 8_000;
 export const AGENT_TALK_PAGE_LIMIT = 100;
@@ -9,6 +16,10 @@ const AGENT_TEXT_LIMIT = 10_000;
 /** How many phrases and recent Talk messages `inspect_space` returns. */
 export const INSPECT_PHRASE_LIMIT = 100;
 export const INSPECT_TALK_LIMIT = 20;
+
+export const NOTE_OPERATIONS = ["create", "append", "replace", "rename", "delete"] as const;
+export const PHRASE_OPERATIONS = ["create", "edit", "pin", "unpin", "delete"] as const;
+export const TALK_MESSAGE_OPERATIONS = ["create", "edit", "delete"] as const;
 
 export type AgentToolName =
   | "inspect_space"
@@ -133,10 +144,7 @@ export const AGENT_TOOLS: readonly AgentToolDefinition[] = [
       strict: true,
       parameters: objectSchema(
         {
-          operation: {
-            type: "string",
-            enum: ["create", "append", "replace", "rename", "delete"],
-          },
+          operation: { type: "string", enum: NOTE_OPERATIONS },
           note_id: nullableText("The existing note ID, or null when creating."),
           name: nullableText(
             "A note name for create or rename, otherwise null.",
@@ -161,17 +169,14 @@ export const AGENT_TOOLS: readonly AgentToolDefinition[] = [
       strict: true,
       parameters: objectSchema(
         {
-          operation: {
-            type: "string",
-            enum: ["create", "edit", "pin", "unpin", "delete"],
-          },
+          operation: { type: "string", enum: PHRASE_OPERATIONS },
           phrase_id: nullableText(
             "The existing phrase ID, or null when creating.",
           ),
           text: nullableText(
             "The phrase text for create or edit, otherwise null.",
           ),
-          kind: { type: ["string", "null"], enum: ["phrase", "starter", null] },
+          kind: { type: ["string", "null"], enum: [...PHRASE_KINDS, null] },
           pinned: {
             type: ["boolean", "null"],
             description: "Initial pin state when creating.",
@@ -200,7 +205,7 @@ export const AGENT_TOOLS: readonly AgentToolDefinition[] = [
       strict: true,
       parameters: objectSchema(
         {
-          operation: { type: "string", enum: ["create", "edit", "delete"] },
+          operation: { type: "string", enum: TALK_MESSAGE_OPERATIONS },
           message_id: nullableText(
             "The existing message ID, or null when creating.",
           ),
@@ -239,7 +244,7 @@ export type AgentCall =
     }
   | {
       tool: "change_note";
-      operation: "create" | "append" | "replace" | "rename" | "delete";
+      operation: (typeof NOTE_OPERATIONS)[number];
       note_id?: string;
       name?: string;
       text?: string;
@@ -247,7 +252,7 @@ export type AgentCall =
     }
   | {
       tool: "change_phrase";
-      operation: "create" | "edit" | "pin" | "unpin" | "delete";
+      operation: (typeof PHRASE_OPERATIONS)[number];
       phrase_id?: string;
       text?: string;
       kind?: PhraseKind;
@@ -256,7 +261,7 @@ export type AgentCall =
     }
   | {
       tool: "change_talk_message";
-      operation: "create" | "edit" | "delete";
+      operation: (typeof TALK_MESSAGE_OPERATIONS)[number];
       message_id?: string;
       text?: string;
       expected_text?: string;
@@ -409,13 +414,7 @@ export function parseAgentCall(name: AgentToolName, raw: string): AgentCall {
       "text",
       "expected_updated_at",
     ]);
-    const op = operation(row, [
-      "create",
-      "append",
-      "replace",
-      "rename",
-      "delete",
-    ] as const);
+    const op = operation(row, NOTE_OPERATIONS);
     const note_id = optionalText(row, "note_id");
     const nameValue = optionalText(row, "name");
     const text = optionalText(row, "text");
@@ -445,15 +444,11 @@ export function parseAgentCall(name: AgentToolName, raw: string): AgentCall {
       "pinned",
       "expected_updated_at",
     ]);
-    const op = operation(row, [
-      "create",
-      "edit",
-      "pin",
-      "unpin",
-      "delete",
-    ] as const);
+    const op = operation(row, PHRASE_OPERATIONS);
     const phrase_id = optionalText(row, "phrase_id");
     const text = optionalText(row, "text");
+    if (text !== undefined && text.length > PHRASE_TEXT_LIMIT)
+      throw new Error("text is too long.");
     if (op !== "create" && !phrase_id)
       throw new Error("phrase_id is required.");
     if ((op === "create" || op === "edit") && text === undefined)
@@ -465,7 +460,7 @@ export function parseAgentCall(name: AgentToolName, raw: string): AgentCall {
       ...optional("text", text),
       ...optional(
         "kind",
-        optionalChoice(row, "kind", ["phrase", "starter"] as const, "kind is not supported."),
+        optionalChoice(row, "kind", PHRASE_KINDS, "kind is not supported."),
       ),
       ...optional(
         "pinned",
@@ -485,7 +480,7 @@ export function parseAgentCall(name: AgentToolName, raw: string): AgentCall {
     "expected_text",
     "expected_created_at",
   ]);
-  const op = operation(row, ["create", "edit", "delete"] as const);
+  const op = operation(row, TALK_MESSAGE_OPERATIONS);
   const message_id = optionalText(row, "message_id");
   const text = optionalText(row, "text");
   if (op !== "create" && !message_id)

@@ -172,7 +172,9 @@ export const SPACE_MODE_TITLES: Record<SpaceMode, string> = {
   agent: "Agent",
 };
 
-const SPACE_PATH = /^\/spaces\/([^/]+)\/(?:(talk|agent|notes)|(notes)\/[^/]+)$/;
+const SPACE_PATH = new RegExp(
+  `^/spaces/([^/]+)/(?:(${SPACE_MODES.join("|")})|(notes)/[^/]+)$`,
+);
 const HELP_GUIDE_PATH = /^\/help\/([^/]+)$/;
 const CONNECTION_PATH = /^\/settings\/connections\/([^/]+)$/;
 const CLONE_PATH = "/voice/clone";

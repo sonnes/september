@@ -1,4 +1,4 @@
-.PHONY: dev desktop-dev desktop-build desktop-release mac-run mac-dev mac-test mac-app keyboard-dmg mac-stop
+.PHONY: dev desktop-dev desktop-build desktop-release mac-run mac-dev mac-test mac-app keyboard-dmg keyboard-release mac-stop
 
 dev:
 	pnpm -C apps/web dev $(if $(PORT),--port $(PORT))
@@ -23,7 +23,7 @@ desktop-release:
 	: "$${APPLE_API_KEY_PATH:?Set APPLE_API_KEY_PATH in .envrc}"; \
 	test -r "$${APPLE_PROVISIONING_PROFILE}" || { echo "Cannot read APPLE_PROVISIONING_PROFILE"; exit 1; }; \
 	test -r "$${APPLE_API_KEY_PATH}" || { echo "Cannot read APPLE_API_KEY_PATH"; exit 1; }; \
-	desktop_version="$$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")"; \
+	desktop_version="$$(node -p "require('./apps/desktop/package.json').version")"; \
 	case "$$(uname -m)" in \
 		arm64) desktop_arch=aarch64 ;; \
 		x86_64) desktop_arch=x64 ;; \
@@ -46,6 +46,7 @@ desktop-release:
 # Native macOS keyboard (apps/keyboard). See apps/keyboard/README.md.
 # mac-run/mac-dev inherit this terminal's Accessibility permission; mac-app
 # builds the signed bundle and keyboard-dmg packages it for installation.
+# keyboard-release signs with Developer ID and notarizes, as desktop-release does.
 mac-run:
 	$(MAKE) -C apps/keyboard run
 
@@ -60,6 +61,9 @@ mac-app:
 
 keyboard-dmg:
 	$(MAKE) -C apps/keyboard dmg
+
+keyboard-release:
+	$(MAKE) -C apps/keyboard release ENVRC="$(CURDIR)/.envrc"
 
 mac-stop:
 	$(MAKE) -C apps/keyboard stop

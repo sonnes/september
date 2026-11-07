@@ -3,6 +3,7 @@ export const SERVICE_NAMES = {
   apple: "Apple Intelligence",
   openrouter: "OpenRouter",
   elevenlabs: "ElevenLabs",
+  dialogue: "ElevenLabs Dialogue",
   system: "System voice",
   none: "No AI Assistance",
 } as const;

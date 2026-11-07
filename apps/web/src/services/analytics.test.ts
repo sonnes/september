@@ -48,12 +48,6 @@ describe('countPage', () => {
     expect(sent).toEqual([{ url: '/spaces/$slug/talk', title: '/spaces/$slug/talk' }]);
   });
 
-  it('says nothing when the build configured no counter', async () => {
-    const { countPage } = await service();
-
-    expect(() => countPage('/dashboard')).not.toThrow();
-  });
-
   /**
    * The script is deferred, and the landing route resolves the moment the app
    * mounts — with nothing to wait for, it can get there first. A page view
@@ -90,8 +84,12 @@ describe('countPage', () => {
     stillLoading();
 
     countPage('/');
+    window.dispatchEvent(new Event('load'));
+    Object.defineProperty(document, 'readyState', { value: 'complete', configurable: true });
+    const sent = stubTracker();
+    countPage('/dashboard');
 
-    expect(() => window.dispatchEvent(new Event('load'))).not.toThrow();
+    expect(sent.map((one) => one.url)).toEqual(['/dashboard']);
   });
 
   /**

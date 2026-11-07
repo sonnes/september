@@ -14,6 +14,19 @@
 
 static const char *SeptemberMicrophoneUID =
     "app.september.desktop.virtual-microphone";
+static const char *SeptemberMicrophoneName = "September Microphone";
+
+/// The failures of `september_speech_file` that `src/audio.rs` tells apart.
+static const int32_t SeptemberFileInterrupted = -2;
+static const int32_t SeptemberFileNotAudio = -3;
+
+const char *september_virtual_microphone_uid(void) {
+  return SeptemberMicrophoneUID;
+}
+
+const char *september_virtual_microphone_name(void) {
+  return SeptemberMicrophoneName;
+}
 
 static AudioObjectID SeptemberTapID = kAudioObjectUnknown;
 static AudioObjectID SeptemberAggregateID = kAudioObjectUnknown;
@@ -624,7 +637,8 @@ int32_t september_virtual_microphone_start(char *error,
       }
 
       NSDictionary *aggregate = @{
-        AudioKey(kAudioAggregateDeviceNameKey) : @"September Microphone",
+        AudioKey(kAudioAggregateDeviceNameKey) :
+            [NSString stringWithUTF8String:SeptemberMicrophoneName],
         AudioKey(kAudioAggregateDeviceUIDKey) : deviceUID,
         AudioKey(kAudioAggregateDeviceIsPrivateKey) : @0,
       };
@@ -740,8 +754,8 @@ int64_t september_speech_claim(void) {
   return sentence;
 }
 
-int32_t september_speech_system(const char *words, const char *voiceIdentifier,
-                                float speed, const char *outputUID, char *error,
+int32_t september_speech_system(const char *words, float speed,
+                                const char *outputUID, char *error,
                                 uintptr_t errorCapacity) {
   @autoreleasepool {
     if (words == NULL || strlen(words) == 0) {
@@ -761,13 +775,6 @@ int32_t september_speech_system(const char *words, const char *voiceIdentifier,
     float rate = AVSpeechUtteranceDefaultSpeechRate * speed;
     utterance.rate = fmaxf(AVSpeechUtteranceMinimumSpeechRate,
                            fminf(rate, AVSpeechUtteranceMaximumSpeechRate));
-    if (voiceIdentifier != NULL && strlen(voiceIdentifier) > 0) {
-      AVSpeechSynthesisVoice *voice = [AVSpeechSynthesisVoice
-          voiceWithIdentifier:[NSString stringWithUTF8String:voiceIdentifier]];
-      if (voice != nil) {
-        utterance.voice = voice;
-      }
-    }
 
     SeptemberSpeechRun *run = [SeptemberSpeechRun new];
     @synchronized(SeptemberSpeechLock()) {
@@ -823,9 +830,10 @@ int32_t september_speech_system(const char *words, const char *voiceIdentifier,
 
 /// Plays one voice file, when `sentence` is still the sentence that may play.
 ///
-/// The result is 0 after the whole file, or after a stop. It is -2 when the
-/// output changed after the sound began, -3 when the file is not audio, and -1
-/// for another error.
+/// The result is 0 after the whole file, or after a stop. It is
+/// `SeptemberFileInterrupted` when the output changed after the sound began,
+/// `SeptemberFileNotAudio` when the file is not audio, and -1 for another
+/// error.
 int32_t september_speech_file(int64_t sentence, const char *path,
                               const char *outputUID, char *error,
                               uintptr_t errorCapacity) {
@@ -846,7 +854,7 @@ int32_t september_speech_file(int64_t sentence, const char *path,
       WriteError(error, errorCapacity,
                  fileError.localizedDescription
                      ?: @"the voice file did not open");
-      return -3;
+      return SeptemberFileNotAudio;
     }
 
     AVAudioEngine *engine = nil;
@@ -881,7 +889,7 @@ int32_t september_speech_file(int64_t sentence, const char *path,
     ClearSpeech(run);
     if (run.error != nil) {
       WriteError(error, errorCapacity, run.error);
-      return run.interrupted ? -2 : -1;
+      return run.interrupted ? SeptemberFileInterrupted : -1;
     }
     return 0;
   }

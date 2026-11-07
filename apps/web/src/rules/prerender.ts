@@ -6,6 +6,7 @@
  * every crawler read the words without running the application.
  */
 import { HELP_GUIDES } from '@september/core/rules/help/catalog';
+import { documentTitle } from '@september/core/rules/titles';
 
 import { isPublicPath, PUBLIC_PAGES, type PublicPageEntry } from '@/public-pages';
 
@@ -120,7 +121,7 @@ function entryFor(path: string): PublicPageEntry {
     return {
       heading: guide.title,
       description: guide.summary,
-      title: `${guide.title} · Help · September`,
+      title: documentTitle(guide.title, 'Help'),
     };
   }
   if (isPublicPath(path)) return PUBLIC_PAGES[path];
@@ -130,7 +131,7 @@ function entryFor(path: string): PublicPageEntry {
 export function publicPage(path: string): PublicPage {
   const entry = entryFor(path);
   const { heading, description } = entry;
-  const title = entry.title ?? `${heading} · September`;
+  const title = entry.title ?? documentTitle(heading);
   return {
     title,
     heading,

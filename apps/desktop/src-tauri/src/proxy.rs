@@ -40,8 +40,8 @@ where
 #[derive(Clone)]
 pub struct ProxyConfig {
     pub upstream: String,
-    /// The on-Mac sidecar, when this Mac has one.
-    pub apple: Option<AppleSource>,
+    /// The on-Mac sidecar.
+    pub apple: AppleSource,
     pub client: reqwest::Client,
 }
 
@@ -62,7 +62,7 @@ type KeySource = Arc<dyn Fn() -> Result<String, String> + Send + Sync>;
 struct ProxyState {
     token: String,
     upstream: String,
-    apple: Option<AppleSource>,
+    apple: AppleSource,
     client: reqwest::Client,
     key: KeySource,
 }
@@ -135,14 +135,7 @@ async fn apple_completions(
         Ok(request) => request,
         Err((status, message)) => return failure(status, message),
     };
-    let Some(source) = state.apple.clone() else {
-        eprintln!("[writing-proxy] apple: no sidecar on this Mac");
-        return failure(
-            StatusCode::BAD_GATEWAY,
-            "Apple Intelligence is not available on this Mac.",
-        );
-    };
-    let (base_url, token) = match source().await {
+    let (base_url, token) = match (state.apple)().await {
         Ok(found) => found,
         Err(reason) => {
             eprintln!("[writing-proxy] apple: sidecar did not start ({reason})");
@@ -270,10 +263,12 @@ async fn preflight(headers: HeaderMap) -> Response {
         .unwrap_or_else(|_| failure(StatusCode::BAD_GATEWAY, "The reply could not be built."))
 }
 
-/// The proxy serves one path. Everything else is not here.
 async fn missing(uri: axum::http::Uri) -> Response {
     eprintln!("[writing-proxy] no route for {}", uri.path());
-    failure(StatusCode::NOT_FOUND, "This proxy serves one path.")
+    failure(
+        StatusCode::NOT_FOUND,
+        "This proxy serves chat completions only.",
+    )
 }
 
 /// The origin is open because the run token is the gate, not the address. A
@@ -340,9 +335,10 @@ impl WritingProxy {
 
         use tauri::Manager;
         let sidecar = app.clone();
+        let providers = app.state::<crate::providers::Providers>();
         let config = ProxyConfig {
-            upstream: crate::providers::OPEN_ROUTER.to_owned(),
-            apple: Some(apple_upstream(move || {
+            upstream: providers.open_router().to_owned(),
+            apple: apple_upstream(move || {
                 let sidecar = sidecar.clone();
                 async move {
                     sidecar
@@ -351,8 +347,8 @@ impl WritingProxy {
                         .await
                         .map_err(|error| error.to_string())
                 }
-            })),
-            client: app.state::<crate::providers::Providers>().client().clone(),
+            }),
+            client: providers.client().clone(),
         };
 
         let app = app.clone();

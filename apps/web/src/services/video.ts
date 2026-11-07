@@ -2,8 +2,8 @@
  * The 9:16 story film of a note.
  *
  * The browser draws every frame on a canvas and `ffmpeg.wasm` joins them to
- * the voice. Nothing leaves the machine: the words, the sound, and the film
- * are made on the same tab that plays them.
+ * the voice. The frames and the join stay in the browser. ElevenLabs gets the
+ * text of the note for the voice.
  *
  * The caption rules live in `@september/core/rules/present`, so the exported
  * film and the stage agree.
@@ -17,6 +17,7 @@ import {
   type SpeechAlignment,
 } from '@september/core/rules/present/captions';
 import {
+  CHUNK_ROLES,
   chunkFontRatio,
   presentTone,
   roleSpec,
@@ -32,6 +33,8 @@ import type { VideoStage } from '@september/app-ui/platform';
 const WIDTH = 1080;
 const HEIGHT = 1920;
 const ASPECT = HEIGHT / WIDTH;
+/** The face of the word mark in the corner. */
+const MARK_FACE = { fontWeight: 700, fontFamily: 'Lexend, "Noto Sans", sans-serif' };
 /** The longest film one note may become. */
 const MAX_SECONDS = 600;
 
@@ -121,7 +124,7 @@ function drawMark(ctx: CanvasRenderingContext2D, tone: PresentTone, mark: HTMLIm
   }
 
   const size = Math.round(WIDTH * 0.032);
-  ctx.font = `700 ${size}px Lexend, "Noto Sans", sans-serif`;
+  ctx.font = `${MARK_FACE.fontWeight} ${size}px ${MARK_FACE.fontFamily}`;
   ctx.fillStyle = tone.display;
   ctx.globalAlpha = 0.65;
   ctx.textAlign = 'left';
@@ -231,14 +234,10 @@ async function loadFaces(tone: PresentTone): Promise<void> {
   if (!document.fonts) return;
   try {
     if (tone.family === 'reading') await import('@fontsource-variable/fraunces');
-    await Promise.all([
-      document.fonts.load('700 32px "Noto Sans"'),
-      document.fonts.load('500 32px "Noto Sans"'),
-      document.fonts.load('700 32px Lexend'),
-      ...(tone.family === 'reading'
-        ? [document.fonts.load('550 32px "Fraunces Variable"')]
-        : []),
-    ]);
+    const faces = [MARK_FACE, ...CHUNK_ROLES.map(role => roleSpec(role, tone.family))];
+    await Promise.all(
+      faces.map(face => document.fonts.load(`${face.fontWeight} 32px ${face.fontFamily}`)),
+    );
     await document.fonts.ready;
   } catch {
     // Best effort; a missing face costs the look, not the export.

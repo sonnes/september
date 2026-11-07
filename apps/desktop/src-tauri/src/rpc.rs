@@ -13,6 +13,7 @@ use crate::{
     gaze::GazeState,
     providers::{
         CreatedVoice, ElevenLabsQuota, Provider, ProviderKeys, ProviderStatus, Providers, Voice,
+        NO_ELEVEN_LABS_KEY,
     },
     proxy::{Endpoint, WritingProxy},
     repository::{
@@ -28,6 +29,9 @@ type RpcResult<T> = std::result::Result<T, String>;
 /// them, and room for the multipart headers around them.
 const MAX_VOICE_CLONE_BYTES: usize = 101 * 1024 * 1024;
 const AUDIO_OUTPUT_SETTING: &str = "audio-output";
+/// The folder of the voice files, under the local data folder of the app. The
+/// asset scope in `tauri.conf.json` lets the WebView read it.
+const AUDIO_DIRECTORY: &str = "audio";
 
 /// The storage of the app, and the cloud-voice sentence that streams now.
 pub(crate) struct BackendState {
@@ -59,16 +63,19 @@ impl BackendState {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct KeyRequest {
     key: String,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct EntityIdRequest {
     id: String,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct AgentToolStateRequest {
     id: String,
     expected: String,
@@ -78,16 +85,25 @@ pub(crate) struct AgentToolStateRequest {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct SpaceListRequest {
     user_id: String,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct SpaceFilterRequest {
     space_id: Option<String>,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SpaceRequest {
+    space_id: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct AnalyticsListRequest {
     user_id: String,
     start_at: i64,
@@ -97,7 +113,7 @@ pub(crate) struct AnalyticsListRequest {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub(crate) struct BackupExportRequest {
     setting_keys: Vec<String>,
     /// Usage events from before this time are deleted.
@@ -105,30 +121,34 @@ pub(crate) struct BackupExportRequest {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub(crate) struct BackupImportRequest {
     contents: BackupContents,
     setting_keys: Vec<String>,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ProviderRequest {
     provider: Provider,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ProviderConnectRequest {
     provider: Provider,
     key: String,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct PhraseReplaceRequest {
     space_id: String,
     phrases: Vec<SavedPhrase>,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct AudioOutputRequest {
     uid: String,
 }
@@ -137,7 +157,7 @@ pub(crate) struct AudioOutputRequest {
 /// sentence for the Dialogue voice, and is absent for a voice that makes a
 /// file.
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub(crate) struct SpeakRequest {
     text: String,
     voice: VoiceSettings,
@@ -146,9 +166,9 @@ pub(crate) struct SpeakRequest {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct SystemSpeechRequest {
     text: String,
-    voice_id: Option<String>,
     speed: f32,
 }
 
@@ -156,7 +176,6 @@ pub(crate) struct SystemSpeechRequest {
 pub(crate) struct SpokenAudio {
     /// The file on disk. The WebView reads it through the asset protocol.
     path: String,
-    from_cache: bool,
 }
 
 /// One streamed sentence. `interrupted` holds the reason when the sound
@@ -170,9 +189,24 @@ pub(crate) struct StreamedAudio {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct SettingPutRequest {
     key: String,
     value: Value,
+}
+
+/// Turns one panel state on or off.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SwitchRequest {
+    pub(crate) on: bool,
+}
+
+/// Names one OpenRouter sign-in, so a cancel reaches only that one.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub(crate) struct SignInRequest {
+    pub(crate) request_id: String,
 }
 
 pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std::error::Error>> {
@@ -194,6 +228,7 @@ pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std
     app.manage(ApfelState::default());
     app.manage(WritingProxy::default());
     app.manage(GazeState::default());
+    app.manage(crate::oauth::SignIns::default());
     Ok(())
 }
 
@@ -327,12 +362,9 @@ pub(crate) fn analytics_list(
 #[tauri::command(async)]
 pub(crate) fn agent_message_list(
     state: State<'_, BackendState>,
-    request: SpaceFilterRequest,
+    request: SpaceRequest,
 ) -> RpcResult<Vec<AgentMessage>> {
-    let space_id = request
-        .space_id
-        .ok_or("An agent transcript needs a space.")?;
-    state.with_repo(|repository| repository.list_agent_messages(&space_id))
+    state.with_repo(|repository| repository.list_agent_messages(&request.space_id))
 }
 
 #[tauri::command(async)]
@@ -498,7 +530,7 @@ fn audio_directory(app: &AppHandle) -> RpcResult<PathBuf> {
         .path()
         .app_local_data_dir()
         .map_err(|error| error.to_string())?
-        .join("audio"))
+        .join(AUDIO_DIRECTORY))
 }
 
 fn eleven_labs_key(keys: &ProviderKeys) -> RpcResult<Option<String>> {
@@ -517,7 +549,7 @@ pub(crate) async fn speech_synthesize(
 ) -> RpcResult<SpokenAudio> {
     let directory = audio_directory(&app)?;
     let key = eleven_labs_key(&keys)?;
-    let (path, from_cache) = speech::synthesize(
+    let (path, _) = speech::synthesize(
         &directory,
         &request.voice,
         &request.text,
@@ -528,7 +560,6 @@ pub(crate) async fn speech_synthesize(
 
     Ok(SpokenAudio {
         path: path.to_string_lossy().into_owned(),
-        from_cache,
     })
 }
 
@@ -675,16 +706,9 @@ pub(crate) async fn speech_system(
     request: SystemSpeechRequest,
 ) -> RpcResult<()> {
     let output = september_output(&state)?;
-    tokio::task::spawn_blocking(move || {
-        audio::speak_system(
-            &request.text,
-            request.voice_id.as_deref(),
-            request.speed,
-            &output,
-        )
-    })
-    .await
-    .map_err(|error| error.to_string())?
+    tokio::task::spawn_blocking(move || audio::speak_system(&request.text, request.speed, &output))
+        .await
+        .map_err(|error| error.to_string())?
 }
 
 /// Stops every native voice now, and the cloud stream that feeds one.
@@ -759,7 +783,7 @@ pub(crate) async fn provider_clone_voice(
         return Err("voice cloning samples are too large".into());
     }
 
-    let key = eleven_labs_key(&keys)?.ok_or("Connect ElevenLabs in Settings first.")?;
+    let key = eleven_labs_key(&keys)?.ok_or(NO_ELEVEN_LABS_KEY)?;
     providers
         .clone_voice(&key, &content_type, body)
         .await
@@ -849,8 +873,22 @@ pub(crate) fn virtual_microphone_stop() -> RpcResult<VirtualMicrophoneStatus> {
 }
 
 #[cfg(test)]
+mod contract;
+
+#[cfg(test)]
 mod tests {
-    use super::{clean_name, login_name, MAX_VOICE_CLONE_BYTES};
+    use super::{clean_name, login_name, AUDIO_DIRECTORY, MAX_VOICE_CLONE_BYTES};
+
+    #[test]
+    fn the_webview_may_read_the_voice_files() {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        let scope = &config["app"]["security"]["assetProtocol"]["scope"];
+        assert_eq!(
+            scope,
+            &serde_json::json!([format!("$APPLOCALDATA/{AUDIO_DIRECTORY}/*")])
+        );
+    }
 
     #[test]
     fn a_display_name_keeps_only_its_first_gecos_field() {

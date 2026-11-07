@@ -29,6 +29,12 @@ describe("presses", () => {
     expect(presses(key("?", { metaKey: true }), KEYMAP.help)).toBe(true);
   });
 
+  it("clears the composer with Command and Backspace, with or without Shift", () => {
+    expect(presses(key("Backspace", { metaKey: true }), KEYMAP.clear)).toBe(true);
+    expect(presses(key("Backspace", { metaKey: true, shiftKey: true }), KEYMAP.clear)).toBe(true);
+    expect(presses(key("Backspace", { metaKey: true, altKey: true }), KEYMAP.clear)).toBe(false);
+  });
+
   it("takes Control for the writing tools as well as Command", () => {
     expect(presses(key("j", { ctrlKey: true }), KEYMAP.tools)).toBe(true);
     expect(presses(key("j", { metaKey: true }), KEYMAP.tools)).toBe(true);

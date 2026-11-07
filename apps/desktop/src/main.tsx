@@ -89,15 +89,19 @@ function followSetup(): void {
   });
 }
 
-/** Reads the settings once, mounts the app, then shows the panel. */
+/** Reads the settings once and mounts the app. */
 async function start(element: HTMLElement): Promise<void> {
   [lastPath] = await Promise.all([readLastPath(), loadSettings()]);
   followSetup();
   createRoot(element).render(<App router={router} queryClient={queryClient} />);
-  if (!isSetupDone(currentSetup())) await panelSetup(true);
-  await showPanel();
+  if (!isSetupDone(currentSetup())) await panelSetup(true).catch(report("change the window"));
 }
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing root element");
-start(root).catch(report("start"));
+start(root)
+  .catch((reason: unknown) => {
+    report("start")(reason);
+    root.textContent = "September could not start. Quit September and open it again.";
+  })
+  .finally(() => showPanel().catch(report("show the panel")));

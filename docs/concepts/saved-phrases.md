@@ -37,13 +37,13 @@ A phrase is a complete thought. A starter is a short sentence opening that moves
 
 A code is a 2–5 character shortcut. For example, `ty` can expand to “Thank you.”
 
-Codes are lowercase and unique in the current phrase set. The code rules reject common words to prevent an accidental expansion.
+Codes are lowercase and unique across all spaces. The code rules reject common words to prevent an accidental expansion.
 
 A user-set code pins its row. Generated codes remain unpinned until the user keeps the phrase.
 
-The space Agent can propose creating or editing a phrase, but it cannot choose
-the code. The application generates a valid, non-conflicting code after the
-user approves the proposal.
+The space Agent can create or edit a phrase, but it cannot choose the code.
+The application generates a valid, non-conflicting code when it applies the
+change.
 
 ## Suggestions
 
@@ -62,8 +62,8 @@ longer draft, each model row starts with the draft.
 History matches individual sentences, with newer messages first. Stored
 messages remain complete. Duplicate sentences appear once.
 
-Suggestion rows show at most six unaccepted words and stop at sentence
-boundaries. Punctuation does not count toward the limit. A word press inserts
+Suggestion rows show at most six unaccepted words, or four for switch and
+eyes, and stop at sentence boundaries. Punctuation does not count toward the limit. A word press inserts
 the suggestion through that word and reveals the next slice.
 
 An unfinished slice ends with an insert action. The final slice offers Speak
@@ -77,9 +77,9 @@ code reads the words only. See [audio tags and moods](audio-tags.md).
 
 ## Generation
 
-OpenRouter can generate phrases from the space context and recent messages. A generation call runs only when the user connected that service.
+The chosen writing service, OpenRouter or Apple Intelligence, can generate phrases from the space context and recent messages. A generation call runs only when a writing service is ready.
 
 `Space.phrases_synced_count` records the message count of the last successful generation. A failed generation keeps the prior rows and count.
 
-An approved Agent edit or deletion of a Talk message clears that count. The
+An Agent edit or deletion of a Talk message clears that count. The
 next phrase sync then reads the changed transcript.

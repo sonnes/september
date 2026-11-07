@@ -178,6 +178,43 @@ pub(crate) enum TrackerState {
     Stopped,
 }
 
+const MIN_CONFIDENCE: f32 = 0.5;
+
+#[derive(Clone, Copy)]
+struct FrameAnalysis {
+    point: Point,
+    confidence: f32,
+    face: NormalizedRect,
+}
+
+/// The state that one analyzed frame reports. A frame that Vision cannot
+/// analyze reports none, and the next frame decides.
+fn frame_state(analysis: &Result<Option<FrameAnalysis>, String>) -> Option<TrackerState> {
+    match analysis {
+        Err(_) => None,
+        Ok(Some(face)) if face.confidence >= MIN_CONFIDENCE => Some(TrackerState::Ready),
+        Ok(Some(_)) => Some(TrackerState::LowConfidence),
+        Ok(None) => Some(TrackerState::NoFace),
+    }
+}
+
+/// The number of frames in a row that Vision cannot analyze before the run
+/// ends. One frame is analyzed each 66 ms, so 30 frames take about 2 s.
+const FAILED_FRAME_LIMIT: u32 = 30;
+
+#[derive(Default)]
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+struct FailedFrames(u32);
+
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+impl FailedFrames {
+    /// Counts one analyzed frame. Returns true when the run must end.
+    fn record(&mut self, failed: bool) -> bool {
+        self.0 = if failed { self.0 + 1 } else { 0 };
+        self.0 >= FAILED_FRAME_LIMIT
+    }
+}
+
 #[derive(Clone, Serialize)]
 #[serde(tag = "event", content = "data", rename_all = "camelCase")]
 pub(crate) enum GazeEvent {
@@ -201,13 +238,27 @@ impl GazeState {
             .lock()
             .map_err(|_| "the eye-tracker state is unavailable".to_string())?
             .take();
-        if let Some(run) = run {
-            run.stop.store(true, Ordering::Release);
-            run.handle
-                .join()
-                .map_err(|_| "the eye-tracker camera stopped unexpectedly".to_string())?;
+        match run {
+            Some(run) => run.finish(),
+            None => Ok(()),
         }
-        Ok(())
+    }
+}
+
+impl GazeRun {
+    fn finish(self) -> Result<(), String> {
+        self.stop.store(true, Ordering::Release);
+        self.handle
+            .join()
+            .map_err(|_| "the eye-tracker camera stopped unexpectedly".to_string())
+    }
+}
+
+/// Sends one event. A send fails when the page that started the run is gone,
+/// and then the run stops.
+fn emit(channel: &Channel<GazeEvent>, stop: &AtomicBool, event: GazeEvent) {
+    if channel.send(event).is_err() {
+        stop.store(true, Ordering::Release);
     }
 }
 
@@ -220,19 +271,10 @@ pub(crate) fn gaze_start(
         .run
         .lock()
         .map_err(|_| "the eye-tracker state is unavailable".to_string())?;
-    // The camera thread ends by itself after an error, so a finished run
-    // does not block a new one.
-    if run
-        .as_ref()
-        .is_some_and(|current| !current.handle.is_finished())
-    {
-        return Err("the eye tracker is already running".to_string());
-    }
-    if let Some(finished) = run.take() {
-        finished
-            .handle
-            .join()
-            .map_err(|_| "the eye-tracker camera stopped unexpectedly".to_string())?;
+    // A page that reloads never sends its stop, so a new start replaces the
+    // run before it.
+    if let Some(previous) = run.take() {
+        previous.finish()?;
     }
 
     let stop = Arc::new(AtomicBool::new(false));
@@ -251,11 +293,15 @@ pub(crate) fn gaze_stop(state: State<'_, GazeState>) -> Result<(), String> {
 }
 
 #[cfg(not(target_os = "macos"))]
-fn capture_loop(channel: Channel<GazeEvent>, _stop: Arc<AtomicBool>) {
-    let _ = channel.send(GazeEvent::Status {
-        state: TrackerState::Unavailable,
-        detail: Some("eye tracking is available only on macOS".to_string()),
-    });
+fn capture_loop(channel: Channel<GazeEvent>, stop: Arc<AtomicBool>) {
+    emit(
+        &channel,
+        &stop,
+        GazeEvent::Status {
+            state: TrackerState::Unavailable,
+            detail: Some("eye tracking is available only on macOS".to_string()),
+        },
+    );
 }
 
 #[cfg(target_os = "macos")]
@@ -266,15 +312,19 @@ fn capture_loop(channel: Channel<GazeEvent>, stop: Arc<AtomicBool>) {
 #[cfg(target_os = "macos")]
 #[allow(clippy::useless_transmute)]
 mod native {
-    use std::{sync::mpsc, thread, time::Duration};
+    use std::{
+        sync::{mpsc, OnceLock},
+        thread,
+        time::Duration,
+    };
 
     use base64::{engine::general_purpose::STANDARD, Engine as _};
     use cidre::av::CaptureVideoDataOutputSampleBufDelegate;
     use cidre::{arc, av, blocks, cm, cv, define_obj_type, dispatch, ns, objc, vn};
 
     use super::{
-        downsample_bgra_crop, eye_position, face_crop, CropSmoother, GazeEvent, NormalizedRect,
-        Point, Smoother, TrackerState,
+        downsample_bgra_crop, emit, eye_position, face_crop, frame_state, CropSmoother,
+        FailedFrames, FrameAnalysis, GazeEvent, NormalizedRect, Point, Smoother, TrackerState,
     };
     use std::sync::{
         atomic::{AtomicBool, Ordering},
@@ -286,7 +336,6 @@ mod native {
     const ANALYSIS_INTERVAL: Duration = Duration::from_millis(66);
     const PREVIEW_INTERVAL: Duration = Duration::from_millis(200);
     const PREVIEW_WIDTH: usize = 320;
-    const MIN_CONFIDENCE: f32 = 0.5;
 
     define_obj_type!(DetectFaceLandmarksRequest(vn::ImageBasedRequest));
 
@@ -308,18 +357,15 @@ mod native {
 
     struct FrameProcessor {
         channel: Channel<GazeEvent>,
+        stop: Arc<AtomicBool>,
         last_analysis: Option<Instant>,
         last_preview: Option<Instant>,
-        last_status: Option<(TrackerState, Option<String>)>,
+        last_status: Option<TrackerState>,
         smoother: Smoother,
         crop_smoother: CropSmoother,
-    }
-
-    #[derive(Clone, Copy)]
-    struct FrameAnalysis {
-        point: Point,
-        confidence: f32,
-        face: NormalizedRect,
+        failed_frames: FailedFrames,
+        /// The reason the run ended, when the camera pictures cannot be read.
+        failure: Arc<OnceLock<String>>,
     }
 
     define_obj_type!(
@@ -355,27 +401,27 @@ mod native {
             self.last_analysis = Some(now);
             let _pool = objc::AutoreleasePoolPage::push();
 
-            let analysis = match analyze_frame(sample_buf) {
-                Ok(analysis) => analysis,
-                Err(detail) => {
-                    self.status(TrackerState::Error, Some(detail));
-                    return;
+            let analysis = analyze_frame(sample_buf);
+            if self.failed_frames.record(analysis.is_err()) {
+                if let Err(reason) = &analysis {
+                    let _ = self.failure.set(format!(
+                        "September could not read the pictures from the camera: {reason}"
+                    ));
                 }
+                self.stop.store(true, Ordering::Release);
+                return;
+            }
+            let Some(state) = frame_state(&analysis) else {
+                if let Err(reason) = analysis {
+                    eprintln!("[gaze] skipped a frame: {reason}");
+                }
+                return;
             };
-            let point = match analysis {
-                Some(analysis) if analysis.confidence >= MIN_CONFIDENCE => {
-                    self.status(TrackerState::Ready, None);
-                    Some(self.smoother.update(analysis.point))
-                }
-                Some(_) => {
-                    self.status(TrackerState::LowConfidence, None);
-                    None
-                }
-                None => {
-                    self.status(TrackerState::NoFace, None);
-                    None
-                }
-            };
+            self.status(state);
+            let analysis = analysis.ok().flatten();
+            let point = analysis
+                .filter(|_| state == TrackerState::Ready)
+                .map(|analysis| self.smoother.update(analysis.point));
             let crop = analysis
                 .map(|analysis| self.crop_smoother.update(face_crop(analysis.face)))
                 .or_else(|| self.crop_smoother.current())
@@ -401,26 +447,35 @@ mod native {
             };
 
             self.last_preview = Some(now);
-            let _ = self.channel.send(GazeEvent::Frame {
-                width,
-                height,
-                pixels_base64,
-                point,
-            });
+            emit(
+                &self.channel,
+                &self.stop,
+                GazeEvent::Frame {
+                    width,
+                    height,
+                    pixels_base64,
+                    point,
+                },
+            );
         }
 
-        fn status(&mut self, state: TrackerState, detail: Option<String>) {
-            let current = Some((state, detail.clone()));
-            if self.last_status == current {
+        fn status(&mut self, state: TrackerState) {
+            if self.last_status == Some(state) {
                 return;
             }
-            self.last_status = current;
-            let _ = self.channel.send(GazeEvent::Status { state, detail });
+            self.last_status = Some(state);
+            emit(
+                &self.channel,
+                &self.stop,
+                GazeEvent::Status {
+                    state,
+                    detail: None,
+                },
+            );
         }
     }
 
     /// The face in one frame, or `None` when the frame holds no single face.
-    /// A frame that Vision cannot analyze is an error.
     fn analyze_frame(sample_buf: &cm::SampleBuf) -> Result<Option<FrameAnalysis>, String> {
         let pixel_buf = sample_buf
             .image_buf()
@@ -560,45 +615,26 @@ mod native {
 
     pub(super) fn capture_loop(channel: Channel<GazeEvent>, stop: Arc<AtomicBool>) {
         let _pool = objc::AutoreleasePoolPage::push();
-        let _ = channel.send(GazeEvent::Status {
-            state: TrackerState::Starting,
-            detail: None,
-        });
-        match camera_permission(&stop) {
-            Ok(true) => {}
-            Ok(false) => {
-                let _ = channel.send(GazeEvent::Status {
-                    state: TrackerState::PermissionDenied,
-                    detail: Some(
-                        "Allow September to use the camera in System Settings, then try again."
-                            .to_string(),
-                    ),
-                });
-                return;
-            }
-            Err(detail) => {
-                let _ = channel.send(GazeEvent::Status {
-                    state: TrackerState::Error,
-                    detail: Some(detail),
-                });
-                return;
-            }
-        }
-
-        if let Err(detail) = run_camera(channel.clone(), &stop) {
-            let _ = channel.send(GazeEvent::Status {
-                state: TrackerState::Error,
-                detail: Some(detail),
-            });
-            return;
-        }
-        let _ = channel.send(GazeEvent::Status {
-            state: TrackerState::Stopped,
-            detail: None,
-        });
+        let status = |state, detail| emit(&channel, &stop, GazeEvent::Status { state, detail });
+        status(TrackerState::Starting, None);
+        let ended = match camera_permission(&stop) {
+            Ok(true) => run_camera(channel.clone(), stop.clone()).map_or_else(
+                |detail| (TrackerState::Error, Some(detail)),
+                |()| (TrackerState::Stopped, None),
+            ),
+            Ok(false) => (
+                TrackerState::PermissionDenied,
+                Some(
+                    "Allow September to use the camera in System Settings, then try again."
+                        .to_string(),
+                ),
+            ),
+            Err(detail) => (TrackerState::Error, Some(detail)),
+        };
+        status(ended.0, ended.1);
     }
 
-    fn run_camera(channel: Channel<GazeEvent>, stop: &AtomicBool) -> Result<(), String> {
+    fn run_camera(channel: Channel<GazeEvent>, stop: Arc<AtomicBool>) -> Result<(), String> {
         let device = av::CaptureDevice::default_with_media(av::MediaType::video())
             .ok_or_else(|| "September could not find a camera".to_string())?;
         let input = av::CaptureDeviceInput::with_device(&device)
@@ -613,13 +649,17 @@ mod native {
             .set_video_settings(Some(&video_settings))
             .map_err(|error| format!("the camera preview format is unavailable: {error:?}"))?;
         let frame_queue = dispatch::Queue::new();
+        let failure = Arc::new(OnceLock::new());
         let delegate = FrameDelegate::with(FrameProcessor {
             channel,
+            stop: stop.clone(),
             last_analysis: None,
             last_preview: None,
             last_status: None,
             smoother: Smoother::default(),
             crop_smoother: CropSmoother::default(),
+            failed_frames: FailedFrames::default(),
+            failure: failure.clone(),
         });
         output.set_sample_buf_delegate(Some(delegate.as_ref()), Some(&frame_queue));
 
@@ -647,7 +687,10 @@ mod native {
         }
         session.stop_running();
         output.set_sample_buf_delegate::<FrameDelegate>(None, None);
-        Ok(())
+        match failure.get() {
+            Some(detail) => Err(detail.clone()),
+            None => Ok(()),
+        }
     }
 }
 
@@ -671,6 +714,65 @@ mod tests {
             let name = serde_json::to_string(&state).unwrap();
             assert!(screen.contains(&format!("| {name}")), "{name}");
         }
+    }
+
+    fn face(confidence: f32) -> FrameAnalysis {
+        FrameAnalysis {
+            point: Point { x: 0.5, y: 0.5 },
+            confidence,
+            face: NormalizedRect::FULL,
+        }
+    }
+
+    #[test]
+    fn a_frame_that_vision_cannot_analyze_changes_no_state() {
+        assert_eq!(frame_state(&Err("no image".to_string())), None);
+    }
+
+    #[test]
+    fn a_run_ends_after_a_row_of_frames_that_vision_cannot_analyze() {
+        let mut failed = FailedFrames::default();
+        for _ in 1..FAILED_FRAME_LIMIT {
+            assert!(!failed.record(true));
+        }
+        assert!(!failed.record(false));
+        for _ in 1..FAILED_FRAME_LIMIT {
+            assert!(!failed.record(true));
+        }
+        assert!(failed.record(true));
+    }
+
+    #[test]
+    fn a_frame_reports_whether_it_holds_a_clear_face() {
+        assert_eq!(frame_state(&Ok(None)), Some(TrackerState::NoFace));
+        assert_eq!(
+            frame_state(&Ok(Some(face(0.2)))),
+            Some(TrackerState::LowConfidence)
+        );
+        assert_eq!(frame_state(&Ok(Some(face(0.9)))), Some(TrackerState::Ready));
+    }
+
+    fn status() -> GazeEvent {
+        GazeEvent::Status {
+            state: TrackerState::Ready,
+            detail: None,
+        }
+    }
+
+    #[test]
+    fn a_run_stops_when_its_page_is_gone() {
+        let stop = AtomicBool::new(false);
+        let gone = Channel::new(|_| Err(tauri::Error::WindowNotFound));
+        emit(&gone, &stop, status());
+        assert!(stop.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn a_run_goes_on_while_its_page_listens() {
+        let stop = AtomicBool::new(false);
+        let open = Channel::new(|_| Ok(()));
+        emit(&open, &stop, status());
+        assert!(!stop.load(Ordering::Acquire));
     }
 
     fn assert_close(actual: f64, expected: f64) {

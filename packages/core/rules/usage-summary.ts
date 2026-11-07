@@ -1,3 +1,5 @@
+import { DAY_MS } from "./time.ts";
+
 export type TimeRange = "day" | "week" | "month";
 export type CostSource = "measured" | "estimated" | "free" | "quota" | "unknown";
 
@@ -29,7 +31,7 @@ const isProviderCall = (event: UsageEvent) =>
   PROVIDER_CALLS.includes(event.event_type);
 
 /** How long a usage event stays. A store deletes older events. */
-export const USAGE_RETENTION_MS = 90 * 24 * 60 * 60 * 1_000;
+export const USAGE_RETENTION_MS = 90 * DAY_MS;
 
 /** The time before which a store deletes usage events. */
 export const usageSince = (now: number): number => now - USAGE_RETENTION_MS;

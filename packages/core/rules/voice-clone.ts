@@ -10,6 +10,15 @@ export const CLONE_LIMITS_TEXT = `up to ${megabytes(CLONE_LIMITS.sampleBytes)} p
 
 type VoiceSampleFile = { name: string; size: number; type: string };
 
+/** Why one file cannot be a voice sample, or null. */
+export function validateSampleFile(file: VoiceSampleFile): string | null {
+  if (file.type && !file.type.startsWith("audio/")) return `${file.name} is not an audio file.`;
+  if (file.size > CLONE_LIMITS.sampleBytes) {
+    return `${file.name} is larger than ${megabytes(CLONE_LIMITS.sampleBytes)}.`;
+  }
+  return null;
+}
+
 /** The one problem the form must fix before it calls ElevenLabs, or null. */
 export function validateVoiceClone({
   files,
@@ -22,12 +31,8 @@ export function validateVoiceClone({
   if (!name.trim()) return "Give this voice a name.";
 
   for (const file of files) {
-    if (file.type && !file.type.startsWith("audio/")) {
-      return `${file.name} is not an audio file.`;
-    }
-    if (file.size > CLONE_LIMITS.sampleBytes) {
-      return `${file.name} is larger than ${megabytes(CLONE_LIMITS.sampleBytes)}.`;
-    }
+    const problem = validateSampleFile(file);
+    if (problem) return problem;
   }
   const total = files.reduce((sum, file) => sum + file.size, 0);
   if (total > CLONE_LIMITS.totalBytes) {

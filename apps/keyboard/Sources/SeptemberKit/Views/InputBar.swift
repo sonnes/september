@@ -19,16 +19,10 @@ public struct InputBar: View {
 
     public var body: some View {
         HStack(spacing: Metrics.Input.spacing) {
-            Image(systemName: leadingSymbol)
-                .font(Typography.inputIcon)
-                .foregroundStyle(Color(Tokens.labelSecondary))
-
-            if let spokenWord, !controller.input.isEmpty {
-                SpokenText(controller.input.text, word: spokenWord)
-                Spacer(minLength: 0)
-            } else {
-                mirror
-            }
+            line
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(accessibilityLabel)
+                .accessibilityValue(controller.input.isEmpty ? "empty" : controller.input.text)
 
             if case .local(let text) = controller.input, !text.isEmpty {
                 Button {
@@ -52,9 +46,26 @@ public struct InputBar: View {
             RoundedRectangle(cornerRadius: Metrics.Input.cornerRadius, style: .continuous)
                 .strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1)
         )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityValue(controller.input.isEmpty ? "empty" : controller.input.text)
+        // The bar contains its elements, so Switch Control reaches the clear
+        // button. A combined element hides the button.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Input bar")
+    }
+
+    /// The leading symbol and the text, read as one element.
+    private var line: some View {
+        HStack(spacing: Metrics.Input.spacing) {
+            Image(systemName: leadingSymbol)
+                .font(Typography.inputIcon)
+                .foregroundStyle(Color(Tokens.labelSecondary))
+
+            if let spokenWord, !controller.input.isEmpty {
+                SpokenText(controller.input.text, word: spokenWord)
+                Spacer(minLength: 0)
+            } else {
+                mirror
+            }
+        }
     }
 
     /// The field with its caret and selection, the echo, or the notice of a

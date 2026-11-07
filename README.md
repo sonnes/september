@@ -171,24 +171,26 @@ september/
 │   ├── core/           Pure rules and autocomplete
 │   ├── ui/             Shared tokens and generic UI primitives
 │   └── app-ui/         Shared layouts, blocks, and application screens
-└── docs/               concepts, plans, research, notes, and screenshots
+└── docs/               concepts, mocks, notes, plans, and screenshots
 ```
 
 Read the instruction file in an application directory before you change that
-application. JavaScript dependencies use the root lockfile. Commands can still
+application. JavaScript dependencies use the root lockfile. The `catalog` in
+`pnpm-workspace.yaml` holds the one version of React, its types, the TanStack
+libraries, and `lucide-react`, and each package refers to it with `catalog:`.
+Commands can still
 run from an app directory.
 
 ## Web data migration
 
 The web app deploys to Vercel through `.github/workflows/production.yaml`.
-The former server module and its Makefile deployment commands have been removed.
-Removing local code does not decommission previously deployed infrastructure.
 
 The public `/privacy-policy` and `/terms-of-service` pages cover the supplied
 applications. They describe September as a personal open-source project in
 India. The terms follow the MIT License, and the privacy notice explains the
 actual data flows. See `apps/web/src/pages/legal.tsx` and
-`docs/research/2026-09-05-india-legal-review.md`.
+`docs/research/2026-09-05-india-legal-review.md` on the `archive/old-docs`
+branch.
 
 The browser app imports the old web databases one time. It validates the imported rows before it removes the old databases and local-storage keys.
 
@@ -196,11 +198,11 @@ If another tab blocks database removal, close the old tab and start September ag
 
 ## Tests
 
-Run the checks from the application directory:
+Run the checks of one application from the repository root:
 
 ```sh
 pnpm -C apps/web test
-pnpm -C apps/web lint
+pnpm lint
 pnpm -C apps/web build
 
 pnpm -C apps/desktop test
@@ -208,6 +210,10 @@ pnpm -C apps/desktop build
 
 make mac-test
 ```
+
+`pnpm -C apps/desktop test` runs the Vitest tests and then the Rust unit
+tests, which include the command contract in
+`apps/desktop/src-tauri/src/rpc/contract.rs`. It needs Rust.
 
 Tests cover current behavior at module boundaries. They do not pin page copy,
 visual styling, or the absence of retired code.

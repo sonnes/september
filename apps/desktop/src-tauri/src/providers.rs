@@ -11,9 +11,9 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use tokio_tungstenite::tungstenite::{self, client::IntoClientRequest, Message};
 
-use crate::speech::VoiceSettings;
+use crate::speech::{VoiceSettings, STREAM_SAMPLE_RATE};
 
-pub(crate) const OPEN_ROUTER: &str = "https://openrouter.ai";
+const OPEN_ROUTER: &str = "https://openrouter.ai";
 const ELEVEN_LABS: &str = "https://api.elevenlabs.io";
 
 /// An ElevenLabs file that does not arrive in this time does not answer. The
@@ -26,6 +26,9 @@ const FIRST_DIALOGUE_AUDIO: Duration = Duration::from_secs(10);
 /// The realtime Eleven v3 model. ElevenLabs serves it on the dialogue socket
 /// only.
 const CONVERSATIONAL_MODEL: &str = "eleven_v3_conversational";
+
+/// The answer to a voice request when no ElevenLabs key is stored.
+pub(crate) const NO_ELEVEN_LABS_KEY: &str = "Connect ElevenLabs in Settings first.";
 
 /// One Keychain service holds both accounts, so the Mac shows them together.
 const KEYCHAIN_SERVICE: &str = "com.september.desktop";
@@ -61,6 +64,8 @@ pub enum ProviderError {
     Rejected,
     #[error("This account has no characters left this month.")]
     QuotaEmpty,
+    #[error("The service is busy. Try again in a moment.")]
+    Busy,
     #[error("Could not reach the service. Check the internet and try again. ({0})")]
     Unreachable(#[from] reqwest::Error),
     #[error("The service sent a reply September could not read. ({0})")]
@@ -113,8 +118,8 @@ pub struct Voice {
     pub name: String,
     #[serde(default)]
     pub preview_url: Option<String>,
-    /// `cloned`, `professional`, `premade`, or `similar`. The Voice screen
-    /// groups the voices by it.
+    /// The ElevenLabs category. `packages/core/rules/voice.ts` groups the
+    /// voices by it.
     #[serde(default)]
     pub category: Option<String>,
     /// True for a voice the user made. A library voice they added is false.
@@ -250,6 +255,11 @@ impl Providers {
         self
     }
 
+    /// The OpenRouter address that every OpenRouter call of this app uses.
+    pub(crate) fn open_router(&self) -> &str {
+        &self.open_router
+    }
+
     /// The HTTP client every request of this app shares.
     pub(crate) fn client(&self) -> &reqwest::Client {
         &self.client
@@ -336,7 +346,8 @@ impl Providers {
     }
 
     /// Speaks the parts of one sentence in the Dialogue voice. Each chunk of
-    /// sound goes to `on_samples` as it arrives: 16-bit mono samples at 24 kHz.
+    /// sound goes to `on_samples` as it arrives: 16-bit mono samples at
+    /// `STREAM_SAMPLE_RATE`.
     pub async fn speak_dialogue(
         &self,
         key: &str,
@@ -381,7 +392,7 @@ impl Providers {
         messages.push(serde_json::json!({ "close_socket": true }));
         self.socket_stream(
             &format!(
-                "/v1/text-to-dialogue/stream-input?model_id={}&output_format=pcm_24000",
+                "/v1/text-to-dialogue/stream-input?model_id={}&output_format=pcm_{STREAM_SAMPLE_RATE}",
                 voice.model_id
             ),
             key,
@@ -490,7 +501,7 @@ impl Providers {
         let request = self
             .client
             .post(format!(
-                "{}/v1/text-to-dialogue/stream/with-timestamps?output_format=pcm_24000",
+                "{}/v1/text-to-dialogue/stream/with-timestamps?output_format=pcm_{STREAM_SAMPLE_RATE}",
                 self.eleven_labs
             ))
             .header("xi-api-key", key)
@@ -563,18 +574,33 @@ impl Providers {
         decode(response).await
     }
 
+    /// Every voice of the account and every stock voice, each with its
+    /// category.
     pub async fn voices(&self, key: &str) -> Result<Vec<Voice>> {
-        // The list holds the voices of the account and the stock voices,
-        // each with its category, so the screens can tell them apart. The v2
-        // list counts a page with `page_size`, and gives 10 without it.
-        let response = self
-            .client
-            .get(format!("{}/v2/voices?page_size=100", self.eleven_labs))
-            .header("xi-api-key", key)
-            .send()
-            .await?;
-        let body: VoiceList = decode(response).await?;
-        Ok(body.voices)
+        // The v2 list gives 10 voices a page without `page_size`, and at most
+        // 100 with it. `next_page_token` names the next page.
+        let mut voices = Vec::new();
+        let mut page: Option<String> = None;
+        loop {
+            let mut url = reqwest::Url::parse(&format!("{}/v2/voices", self.eleven_labs))
+                .map_err(unexpected)?;
+            url.query_pairs_mut().append_pair("page_size", "100");
+            if let Some(token) = &page {
+                url.query_pairs_mut().append_pair("next_page_token", token);
+            }
+            let response = self
+                .client
+                .get(url)
+                .header("xi-api-key", key)
+                .send()
+                .await?;
+            let body: VoiceList = decode(response).await?;
+            voices.extend(body.voices);
+            match body.next_page_token {
+                Some(token) if body.has_more => page = Some(token),
+                _ => return Ok(voices),
+            }
+        }
     }
 }
 
@@ -582,19 +608,29 @@ impl Providers {
 /// the error that says why, with the message of the service when it sent one.
 async fn accepted(response: reqwest::Response) -> Result<reqwest::Response> {
     let status = response.status();
-    if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
-        return Err(ProviderError::Rejected);
-    }
-    if status == StatusCode::TOO_MANY_REQUESTS {
-        return Err(ProviderError::QuotaEmpty);
-    }
     if status.is_success() {
         return Ok(response);
     }
+    if status == StatusCode::TOO_MANY_REQUESTS {
+        return Err(ProviderError::Busy);
+    }
 
     let bytes = response.bytes().await?;
-    let message = serde_json::from_slice::<Value>(&bytes)
-        .ok()
+    let body = serde_json::from_slice::<Value>(&bytes).ok();
+    // ElevenLabs answers a used-up quota with 401 and this status.
+    if body
+        .as_ref()
+        .and_then(|body| body.pointer("/detail/status"))
+        .and_then(Value::as_str)
+        == Some("quota_exceeded")
+    {
+        return Err(ProviderError::QuotaEmpty);
+    }
+    if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
+        return Err(ProviderError::Rejected);
+    }
+
+    let message = body
         .and_then(|body| {
             body.pointer("/detail/message")
                 .or_else(|| body.get("detail"))
@@ -669,6 +705,10 @@ pub struct ElevenLabsQuota {
 #[derive(Deserialize)]
 struct VoiceList {
     voices: Vec<Voice>,
+    #[serde(default)]
+    has_more: bool,
+    #[serde(default)]
+    next_page_token: Option<String>,
 }
 
 /// One object of the Dialogue stream. The timing fields are not read.
@@ -826,13 +866,6 @@ mod tests {
         .unwrap();
         assert_eq!(voice.id, "v1");
         assert_eq!(serde_json::to_value(&voice).unwrap()["id"], "v1");
-    }
-
-    #[test]
-    fn each_provider_owns_one_keychain_account() {
-        assert_eq!(Provider::OpenRouter.account(), "openrouter");
-        assert_eq!(Provider::ElevenLabs.account(), "elevenlabs");
-        assert_eq!(Provider::ALL.len(), 2);
     }
 
     #[test]

@@ -7,6 +7,8 @@
  */
 
 import { matchesWords } from "./pick.ts";
+import { SERVICE_NAMES } from "./services.ts";
+import { sentencesOf } from "./spoken-word.ts";
 
 export const DEFAULT_VOICE_MODEL = "eleven_flash_v2_5";
 
@@ -14,6 +16,30 @@ export const DEFAULT_VOICE_MODEL = "eleven_flash_v2_5";
 export const SPEECH_SERVICES = ["system", "elevenlabs", "dialogue"] as const;
 
 export type SpeechService = (typeof SPEECH_SERVICES)[number];
+
+/** One service that speaks, as a choice shows it. */
+export interface SpeechServiceChoice {
+  value: SpeechService;
+  label: string;
+  description: string;
+}
+
+/** The services that speak, in order. `systemVoice` describes the voice of this platform. */
+export function speechServices(systemVoice: string): readonly SpeechServiceChoice[] {
+  return [
+    { value: "system", label: SERVICE_NAMES.system, description: systemVoice },
+    {
+      value: "elevenlabs",
+      label: SERVICE_NAMES.elevenlabs,
+      description: "Cloud service. Natural voices, and you can clone a voice.",
+    },
+    {
+      value: "dialogue",
+      label: SERVICE_NAMES.dialogue,
+      description: "Eleven v3 voices that can laugh, sigh, and whisper. It needs your ElevenLabs key.",
+    },
+  ];
+}
 
 /** Everything that shapes the sound. All of it names the audio file. */
 export interface SpeechSettings {
@@ -26,6 +52,16 @@ export interface SpeechSettings {
   similarity: number;
   speed: number;
 }
+
+/** The settings before the user chooses a voice. */
+export const DEFAULT_SPEECH: SpeechSettings = {
+  provider: "system",
+  voiceId: null,
+  modelId: DEFAULT_VOICE_MODEL,
+  stability: 0.5,
+  similarity: 0.75,
+  speed: 1,
+};
 
 /**
  * The models of the Voice tab, fastest first. `credits` is the ElevenLabs
@@ -64,14 +100,13 @@ const DIALOGUE_LIMIT = 2000;
 /**
  * The text in parts that one dialogue request each can hold.
  *
- * A part ends at a sentence end. A sentence longer than the limit ends at the
- * last space before the limit, or at the limit when it has no space.
+ * A part ends at a sentence end. A sentence longer than the limit ends at the last space before the limit, or
+ * at the limit when it has no space.
  */
 export function dialogueParts(text: string, limit = DIALOGUE_LIMIT): string[] {
-  const sentences = text.trim().match(/[^.!?]*[.!?]+|[^.!?]+$/g) ?? [];
-  const pieces = sentences.flatMap((sentence) => {
+  const pieces = sentencesOf(text).flatMap((sentence) => {
     const out: string[] = [];
-    let rest = sentence.trim();
+    let rest = sentence;
     while (rest.length > limit) {
       const space = rest.lastIndexOf(" ", limit);
       const cut = space > 0 ? space : limit;
@@ -112,9 +147,9 @@ export function elevenLabsCredits(text: string, model: string): number | undefin
   return rate === undefined ? undefined : Math.ceil(text.length * rate);
 }
 
-/** Eleven v3 has no similarity setting. */
+/** The Eleven v3 models have no similarity setting. */
 export const hasSimilarity = (modelId: string): boolean =>
-  modelId !== "eleven_v3";
+  !DIALOGUE_MODELS.some((model) => model.id === modelId);
 
 /** The three stability modes of Eleven v3, in the words of ElevenLabs. */
 export const V3_STABILITY = [
@@ -123,7 +158,7 @@ export const V3_STABILITY = [
   { label: "Creative", value: 0 },
 ] as const;
 
-/** A stability value the model accepts. Eleven v3 takes one of three modes. */
+/** A stability value the model accepts. An Eleven v3 model takes one of three modes. */
 export function stabilityFor(modelId: string, stability: number): number {
   if (hasSimilarity(modelId)) return stability;
   return V3_STABILITY.reduce((near, mode) =>
@@ -131,6 +166,37 @@ export function stabilityFor(modelId: string, stability: number): number {
       ? mode
       : near,
   ).value;
+}
+
+/** The values that one cloud request carries. */
+export interface CloudSound {
+  modelId: string;
+  stability: number;
+  similarity: number;
+  speed: number;
+}
+
+/**
+ * The model and the values that a cloud voice speaks with.
+ *
+ * The Dialogue voice has no speed. It speaks live with its chosen model, and
+ * it makes a file with Eleven v3, because ElevenLabs serves Eleven v3
+ * Conversational only on the dialogue socket and a file comes from the
+ * text-to-speech endpoint.
+ */
+export function cloudSound(settings: SpeechSettings, use: "live" | "file"): CloudSound {
+  const dialogue = settings.provider === "dialogue";
+  const modelId = !dialogue
+    ? settings.modelId
+    : use === "file"
+      ? DIALOGUE_MODEL
+      : dialogueModelFrom(settings.dialogueModelId);
+  return {
+    modelId,
+    stability: stabilityFor(modelId, settings.stability),
+    similarity: settings.similarity,
+    speed: dialogue ? 1 : settings.speed,
+  };
 }
 
 export type ExpressionKey = "steady" | "natural" | "expressive";
@@ -280,14 +346,24 @@ export const SPEED_RANGE = { min: 0.7, max: 1.2 } as const;
 export const VOICE_SAMPLE_TEXT = "This is how I sound today.";
 
 /**
- * The voices a voice list shows for a search, once each.
+ * The rows that a voice list shows for a search, in the order of `voiceRows`.
  *
  * The list shows the voices of the account: every category except the
  * ElevenLabs stock voices (`premade`). A search also shows the stock voices
  * that match it. An account with no voices of its own shows the stock voices.
  * The chosen voice shows without a search, so the list never hides the choice.
+ * Each voice shows once.
  */
-export function shownVoices<V extends ListedVoice>(
+export function voiceList<V extends ListedVoice>(
+  voices: readonly V[],
+  heard: readonly string[],
+  query: string,
+  chosen?: string | null,
+): (VoiceRow & { voice: V })[] {
+  return voiceRows(shownVoices(voices, query, chosen), heard);
+}
+
+function shownVoices<V extends ListedVoice>(
   voices: readonly V[],
   query: string,
   chosen?: string | null,

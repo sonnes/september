@@ -4,18 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AGENT_MAX_WRITES } from '@september/core/rules/agent/loop';
 import { agentSystemPrompt } from '@september/core/rules/prompts/agent';
 
+import { textReply } from './model';
 import { rows } from './platform';
 import { addSpace, findButton, finishSetup, press, renderApp, typeInto } from './render';
-
-/** One streamed OpenAI-compatible reply that says `content`. */
-function reply(content: string): Response {
-  const chunk = (delta: object, finish: string | null) =>
-    JSON.stringify({ id: '1', model: 'test', choices: [{ index: 0, delta, finish_reason: finish }] });
-  const events = [chunk({ role: 'assistant', content }, null), chunk({}, 'stop'), '[DONE]'];
-  return new Response(events.map(event => `data: ${event}\n\n`).join(''), {
-    headers: { 'content-type': 'text/event-stream' },
-  });
-}
 
 /** A model that answers only when the test lets it. */
 function heldModel() {
@@ -23,7 +14,7 @@ function heldModel() {
   const request = vi.fn(
     (_url: string, _init: RequestInit) =>
       new Promise<Response>(done => {
-        waiting.push(() => done(reply('Done.')));
+        waiting.push(() => done(textReply('Done.')));
       }),
   );
   vi.stubGlobal('fetch', request);

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  cloudSound,
+  DEFAULT_SPEECH,
   DEFAULT_VOICE_MODEL,
   DIALOGUE_MODELS,
   dialogueModelFrom,
@@ -10,9 +12,10 @@ import {
   EXPRESSIONS,
   expressionSound,
   heardVoices,
-  shownVoices,
+  speechServices,
   stabilityFor,
   VOICE_MODELS,
+  voiceList,
   voiceModelFrom,
   voiceRows,
 } from "./voice.ts";
@@ -28,10 +31,6 @@ describe("voiceModelFrom", () => {
     expect(voiceModelFrom("eleven_multilingual_v2")).toBe(
       "eleven_multilingual_v2",
     );
-  });
-
-  it("uses Flash v2.5 by default", () => {
-    expect(DEFAULT_VOICE_MODEL).toBe("eleven_flash_v2_5");
   });
 });
 
@@ -89,8 +88,58 @@ describe("stabilityFor", () => {
     expect(stabilityFor("eleven_v3", 0.8)).toBe(1);
   });
 
+  it("snaps stability for Eleven v3 Conversational too", () => {
+    expect(stabilityFor("eleven_v3_conversational", 0.62)).toBe(0.5);
+  });
+
   it("keeps stability for the other models", () => {
     expect(stabilityFor("eleven_flash_v2_5", 0.42)).toBe(0.42);
+  });
+});
+
+describe("cloudSound", () => {
+  const dialogue = {
+    ...DEFAULT_SPEECH,
+    provider: "dialogue" as const,
+    dialogueModelId: "eleven_v3_conversational",
+    stability: 0.62,
+    speed: 0.8,
+  };
+
+  it("speaks the Dialogue voice live with its chosen model, a stability mode, and no speed", () => {
+    expect(cloudSound(dialogue, "live")).toEqual({
+      modelId: "eleven_v3_conversational",
+      stability: 0.5,
+      similarity: 0.75,
+      speed: 1,
+    });
+  });
+
+  it("makes a Dialogue file with Eleven v3 and the same stability mode", () => {
+    expect(cloudSound(dialogue, "file")).toEqual({
+      modelId: "eleven_v3",
+      stability: 0.5,
+      similarity: 0.75,
+      speed: 1,
+    });
+  });
+
+  it("keeps the model and the values of an ElevenLabs voice", () => {
+    const voice = { ...DEFAULT_SPEECH, provider: "elevenlabs" as const, stability: 0.42, speed: 1.1 };
+    expect(cloudSound(voice, "file")).toEqual({
+      modelId: DEFAULT_VOICE_MODEL,
+      stability: 0.42,
+      similarity: 0.75,
+      speed: 1.1,
+    });
+  });
+});
+
+describe("speechServices", () => {
+  it("offers each service once, with the system voice of the platform", () => {
+    const services = speechServices("Built into this device.");
+    expect(services.map((one) => one.value)).toEqual(["system", "elevenlabs", "dialogue"]);
+    expect(services[0].description).toBe("Built into this device.");
   });
 });
 
@@ -193,8 +242,14 @@ describe("dialogueParts", () => {
   });
 
   it("keeps punctuation at the start of a text", () => {
-    expect(dialogueParts("...I guess so")).toEqual(["... I guess so"]);
+    expect(dialogueParts("...I guess so")).toEqual(["...I guess so"]);
     expect(dialogueParts("?!")).toEqual(["?!"]);
+  });
+
+  it("keeps decimals and web addresses whole", () => {
+    const text = "It costs 3.50 today. Visit example.com now";
+    expect(dialogueParts(text)).toEqual([text]);
+    expect(dialogueParts(text, 25)).toEqual(["It costs 3.50 today.", "Visit example.com now"]);
   });
 
   it("gives nothing for empty text", () => {
@@ -233,31 +288,31 @@ describe("elevenLabsCredits", () => {
   });
 });
 
-describe("shownVoices", () => {
+describe("voiceList", () => {
   const voice = (id: string, name: string, category: string | null) => ({ id, name, category });
   const own = [voice("mine", "Maya clone", "cloned"), voice("lib", "Rachel library", "professional")];
   const stock = [voice("adam", "Adam - deep", "premade"), voice("rachel", "Rachel - calm", "premade")];
   const ids = (rows: { id: string }[]) => rows.map((row) => row.id);
 
   it("hides the stock voices of an account with its own voices", () => {
-    expect(ids(shownVoices([...own, ...stock], ""))).toEqual(["mine", "lib"]);
+    expect(ids(voiceList([...own, ...stock], [], ""))).toEqual(["mine", "lib"]);
   });
 
   it("adds the stock voices that match a search", () => {
-    expect(ids(shownVoices([...own, ...stock], "rachel"))).toEqual(["lib", "rachel"]);
+    expect(ids(voiceList([...own, ...stock], [], "rachel"))).toEqual(["lib", "rachel"]);
   });
 
   it("shows the stock voices of an account with no voices of its own", () => {
-    expect(ids(shownVoices(stock, ""))).toEqual(["adam", "rachel"]);
-    expect(ids(shownVoices(stock, "adam"))).toEqual(["adam"]);
+    expect(ids(voiceList(stock, [], ""))).toEqual(["adam", "rachel"]);
+    expect(ids(voiceList(stock, [], "adam"))).toEqual(["adam"]);
   });
 
   it("keeps the chosen voice", () => {
-    expect(ids(shownVoices([...own, ...stock], "", "adam"))).toEqual(["mine", "lib", "adam"]);
+    expect(ids(voiceList([...own, ...stock], [], "", "adam"))).toEqual(["mine", "lib", "adam"]);
   });
 
   it("shows each voice once and drops a voice with no id", () => {
-    const rows = shownVoices([voice("a", "A", null), voice("", "B", null), voice("a", "A", null)], "");
+    const rows = voiceList([voice("a", "A", null), voice("", "B", null), voice("a", "A", null)], [], "");
     expect(ids(rows)).toEqual(["a"]);
   });
 });

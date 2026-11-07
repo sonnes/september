@@ -48,9 +48,6 @@ public struct Modifiers: OptionSet, Sendable, Hashable {
     /// The held modifiers in this set, in press order.
     public var heldKeys: [Held] { Modifiers.held.filter { contains($0.modifier) } }
 
-    /// The key code posted to hold this single modifier, or nil for caps lock.
-    public var virtualKey: UInt16? { heldKeys.count == 1 ? heldKeys[0].virtualKey : nil }
-
     /// The hint drawn on a shortcut, such as "⇧⌘".
     public var symbols: String { heldKeys.map(\.symbol).joined() }
 

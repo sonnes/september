@@ -11,14 +11,17 @@ the root [CLAUDE.md](../../CLAUDE.md) (symlink of the root `AGENTS.md`) and
 make test       # tests — run before and after every change
 make run        # run unbundled, inheriting the terminal's Accessibility permission
 make dev        # same, detached; make stop to quit it
-make app        # build + sign Keyboard.app (needs its own permission grant)
-make dmg        # package Keyboard.app with an Applications shortcut
+make app        # build + sign September Keyboard.app (needs its own permission grant)
+make dmg        # package the app with an Applications shortcut
+make release    # Developer ID, notarize, staple, Gatekeeper check (reads ../../.envrc)
+make publish    # GitHub Release of the DMG — ask the user first
+make icon       # Resources/AppIcon.svg → AppIcon.icns (needs rsvg-convert)
 make open       # build, sign, launch
 make snapshots  # keyboard (Type, Talk, Write, Mine, Clipboard) + component library PNGs in .build/snapshots
 ```
 
 Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
-`mac-app` / `keyboard-dmg` / `mac-stop` from the repo root.
+`mac-app` / `keyboard-dmg` / `keyboard-release` / `mac-stop` from the repo root.
 
 ## Layout
 
@@ -50,7 +53,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
 
 ## Rules
 
-- **TDD, strictly.** Write the failing check first, then the smallest code that
+- **Anything testable lives in `SeptemberKit`.** `Keyboard` holds only what
+  needs a running app: the panel, the event sink, and the menu bar.
+- **TDD, strictly.** Write the failing test first, then the smallest code that
   passes it. Every model change lands with a test in `Tests/KitTests`.
 - **Tests are an executable, not `swift test`.** Add checks with
   `test("…") { expect(…) }` and register the suite in
@@ -67,7 +72,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
   colours or sizes.
 - **Every interactive element is an accessibility element** with a spoken label,
   `.isButton`, and an `accessibilityAction` wired to the same handler as the
-  tap. The `pressable` view modifier does all of this. Dwell, Switch Control
+  tap. The `pressable` view modifier does all of this. A container that holds
+  a button uses `.accessibilityElement(children: .contain)`, not `.combine`,
+  so that the button stays its own element. Dwell, Switch Control
   and Voice Control drive the app through `AXPress`; a control that only
   responds to `onTapGesture` is unusable for our users.
 - **Keys and panel buttons act when the button goes down.** Give them
@@ -123,19 +130,25 @@ only what needs a running app — the panel, the event sink, the menu bar.
   file, and no copy while the focused field is a password field or holds
   private text. Only `ClipboardWatcher.poll()` reads the clipboard for the
   history.
-- **Keep Swift 6 concurrency clean.** UI and controller are `@MainActor`; sinks
-  crossing into CoreGraphics are `@unchecked Sendable` with a comment saying
-  why. Do not silence warnings any other way.
+- **Keep Swift 6 concurrency clean.** UI, controller and keystroke sinks are
+  `@MainActor`. A type that holds an accessibility element and crosses actors
+  is `@unchecked Sendable`, with a comment that says why. Do not silence
+  warnings any other way.
 
 ## Gotchas
 
 - Accessibility permission is bound to *(bundle id, code signature)*. Ad-hoc
   signing revokes it on every rebuild — create the `Keyboard Dev` certificate
   (README) before wondering why keys stopped working.
+- The app is September Keyboard, bundle ID `app.september.keyboard`. The
+  Keychain services stay `com.september.keyboard` and
+  `com.september.keyboard.private`: they are storage names, and a new name
+  loses the saved key and the private text.
 - Never prompt for permission at launch. The banner and the menu item ask for
   Accessibility. The App Panels page of Settings asks for Input Monitoring.
 - Key code mapping goes through `UCKeyTranslate`, never a hardcoded US table,
-  and rebuilds when the input source changes.
+  and rebuilds when the input source changes. A shortcut letter that the
+  current layout lacks comes from the ASCII-capable layout, as macOS does.
 - `--snapshot` renders without opening a window; use it to check layout against
   the mocks instead of asking someone to look at their screen. `--ax` prints the
   focused field Keyboard would mirror — reach for it before guessing why an app

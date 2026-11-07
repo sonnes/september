@@ -6,7 +6,6 @@
  */
 
 import type { PhraseKind, SavedPhrase } from "../records.ts";
-import { generateCode } from "./codes.ts";
 
 /**
  * The AI texts with any case-insensitive match of a pinned text removed, and
@@ -48,36 +47,4 @@ export function topPhrases(rows: SavedPhrase[], n: number): string[] {
 export function isKept(text: string, rows: SavedPhrase[]): boolean {
   const key = text.trim().toLowerCase();
   return rows.some(r => r.pinned && r.text.trim().toLowerCase() === key);
-}
-
-/**
- * The row for a phrase the user keeps, or nothing when the space holds it.
- *
- * Talk and Notes both keep a row from the gutter of the stripe, and the two
- * must write the same row. The code comes from the generator here, so a model
- * never chooses one.
- */
-export function pinnedPhrase(
-  text: string,
-  spaceId: string,
-  rows: SavedPhrase[],
-  at: number = Date.now(),
-): SavedPhrase | null {
-  const key = text.trim().toLowerCase();
-  if (rows.some(r => r.text.trim().toLowerCase() === key)) return null;
-
-  return {
-    id: crypto.randomUUID(),
-    space_id: spaceId,
-    text,
-    kind: 'phrase',
-    code: generateCode(text, {
-      existingCodes: rows
-        .map(r => r.code)
-        .filter((code): code is string => Boolean(code)),
-    }),
-    pinned: true,
-    created_at: at,
-    updated_at: at,
-  };
 }

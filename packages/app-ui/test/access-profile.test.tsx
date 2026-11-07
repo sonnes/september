@@ -1,24 +1,20 @@
 import { act, useState } from 'react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApplyAccess } from '@september/app-ui/blocks/access';
 import { updateSetup } from '@september/app-ui/services/settings';
 import { parseAccess } from '@september/core/rules/access';
 
-import { findButton, press, renderPart } from './render';
+import { findButton, mockMedia, press, renderPart } from './render';
 
 let systemDark = false;
 
 beforeEach(() => {
   systemDark = false;
-  // jsdom has no matchMedia.
-  window.matchMedia = ((query: string) => ({
-    matches: query.includes('dark') && systemDark,
-    media: query,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-  })) as unknown as typeof window.matchMedia;
+  mockMedia(query => query.includes('dark') && systemDark);
 });
+
+afterEach(() => vi.restoreAllMocks());
 
 const html = () => document.documentElement;
 const saveAccess = (access: Record<string, unknown>) => updateSetup({ access: parseAccess(access) });

@@ -96,7 +96,7 @@ private struct Pressable: ViewModifier {
     let isSelected: Bool
     let trigger: PressTrigger
     let onPressing: (Bool) -> Void
-    let action: () -> Void
+    let action: @MainActor () -> Void
 
     @Environment(\.keyPresser) private var presser
     /// True while the gesture runs. A cancelled gesture resets it too, with
@@ -104,6 +104,9 @@ private struct Pressable: ViewModifier {
     @GestureState private var isTracking = false
     @State private var isDown = false
     @State private var press: Int?
+    /// The press of a control that acts when the button goes up.
+    @State private var tap = PressTracker()
+    @State private var size = CGSize.zero
 
     func body(content: Content) -> some View {
         gestures(content.contentShape(Rectangle()))
@@ -118,9 +121,22 @@ private struct Pressable: ViewModifier {
         switch trigger {
         case .up:
             content
-                .onTapGesture(perform: action)
-                .onLongPressGesture(
-                    minimumDuration: Metrics.holdDuration, pressing: onPressing, perform: {})
+                .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
+                // A drag with no minimum distance reports the pointer going
+                // down, moving, and coming up. The control acts only when the
+                // pointer comes up inside it.
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { drag in
+                            if !tap.down() { tap.moved(inside: contains(drag.location)) }
+                            onPressing(tap.isPressed)
+                        }
+                        .onEnded { drag in
+                            tap.up(inside: contains(drag.location), press: action)
+                            onPressing(false)
+                        }
+                )
+                .onDisappear { tap.cancel() }
         case .down(let hold):
             content
                 // The gesture calls begin and end at once. A very short click
@@ -138,6 +154,10 @@ private struct Pressable: ViewModifier {
                 .onChange(of: isTracking) { _, tracking in if !tracking { end() } }
                 .onDisappear(perform: end)
         }
+    }
+
+    private func contains(_ point: CGPoint) -> Bool {
+        CGRect(origin: .zero, size: size).contains(point)
     }
 
     private func begin(_ hold: KeyHold) {

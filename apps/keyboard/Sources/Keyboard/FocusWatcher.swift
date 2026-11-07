@@ -247,8 +247,7 @@ final class FocusWatcher {
     }
 
     /// The field's text, or a window of it around the caret when the field
-    /// holds a whole document. A windowed read moves the caret with it, so the
-    /// offsets stay relative to the text we hand back.
+    /// holds a whole document.
     private func readText(
         _ element: AXUIElement,
         selection: NSRange?
@@ -256,16 +255,13 @@ final class FocusWatcher {
         if let count = element.number(kAXNumberOfCharactersAttribute), count > windowThreshold,
             let selection
         {
-            let start = max(0, selection.location - windowRadius)
-            let length = min(count - start, selection.length + 2 * windowRadius)
+            let part = FocusedField.readWindow(
+                count: count, selection: selection, radius: windowRadius)
             if let window = element.string(
                 kAXStringForRangeParameterizedAttribute,
-                range: NSRange(location: start, length: length)
+                range: part.window
             ) {
-                return (
-                    window,
-                    NSRange(location: selection.location - start, length: selection.length)
-                )
+                return (window, part.selection)
             }
         }
         return (element.string(kAXValueAttribute), selection)

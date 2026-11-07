@@ -50,6 +50,18 @@ func panelTests() {
         expect((try? decode(bad)) == nil, "unknown action decoded anyway")
     }
 
+    test("an uppercase key letter is rejected, in a shortcut and in a sequence") {
+        for action in [
+            #"{"type": "shortcut", "modifiers": ["command"], "key": "T"}"#,
+            #"{"type": "sequence", "keys": [{"modifiers": ["command"], "key": "T"}]}"#,
+        ] {
+            let bad = """
+                {"title": "X", "columns": 1, "buttons": [{"id": "b", "label": "B", "action": \(action)}]}
+                """
+            expect((try? decode(bad)) == nil, "\(action) decoded anyway")
+        }
+    }
+
     test("two buttons with one id are rejected") {
         let bad = """
             {"title": "X", "columns": 1, "buttons": [
