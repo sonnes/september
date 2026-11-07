@@ -4,7 +4,10 @@ use std::time::Duration;
 
 use base64::Engine as _;
 use futures_util::{SinkExt, StreamExt};
-use september_desktop_lib::{providers::Providers, speech::VoiceSettings};
+use september_desktop_lib::{
+    providers::Providers,
+    speech::{FileSettings, VoiceSettings},
+};
 use serde_json::{json, Value};
 use tokio_tungstenite::tungstenite::{
     handshake::server::{Request, Response},
@@ -31,6 +34,13 @@ pub fn voice_settings() -> VoiceSettings {
         stability: 0.5,
         similarity: 0.75,
         speed: 1.0,
+        file_settings: FileSettings {
+            provider: "elevenlabs".into(),
+            model_id: "eleven_flash_v2_5".into(),
+            stability: 0.5,
+            similarity: 0.75,
+            speed: 1.0,
+        },
     }
 }
 
@@ -105,6 +115,13 @@ pub fn dialogue_settings() -> VoiceSettings {
     VoiceSettings {
         model_id: "eleven_v3".into(),
         stability: 0.0,
+        file_settings: FileSettings {
+            provider: "dialogue".into(),
+            model_id: "eleven_v3".into(),
+            stability: 0.1,
+            similarity: 0.75,
+            speed: 1.1,
+        },
         ..voice_settings()
     }
 }
@@ -184,9 +201,14 @@ pub async fn serve_dialogue(
 }
 
 pub fn conversational_settings() -> VoiceSettings {
+    let dialogue = dialogue_settings();
     VoiceSettings {
         model_id: "eleven_v3_conversational".into(),
-        ..dialogue_settings()
+        file_settings: FileSettings {
+            model_id: "eleven_v3_conversational".into(),
+            ..dialogue.file_settings.clone()
+        },
+        ..dialogue
     }
 }
 

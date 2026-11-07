@@ -30,9 +30,12 @@ import type {
 } from "@september/core/rules/records";
 import type { UsageEvent } from "@september/core/rules/usage-summary";
 
+import type { FileSettings } from "./rules/voice-file";
 import type { GazeEvent } from "./services/gaze";
 
 type Command<Args, Result> = { args: Args; result: Result };
+/** A cloud voice with the settings that name its voice file. */
+type NamedVoice = CloudVoice & { fileSettings: FileSettings };
 /** A command that takes its arguments under `request`. */
 type Request<Args, Result> = Command<{ request: Args }, Result>;
 
@@ -83,11 +86,11 @@ export interface Commands {
 
   speech_system: Request<{ text: string; speed: number }, void>;
   speech_stream: Request<
-    { text: string; voice: CloudVoice; dialogueParts?: string[] },
+    { text: string; voice: NamedVoice; dialogueParts?: string[] },
     { from_cache: boolean; latency_ms: number; interrupted: string | null }
   >;
   speech_synthesize: Request<
-    { text: string; voice: CloudVoice },
+    { text: string; voice: NamedVoice },
     { path: string }
   >;
   speech_native_stop: Command<undefined, void>;

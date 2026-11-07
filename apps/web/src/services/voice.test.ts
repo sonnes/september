@@ -3,7 +3,8 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { InterruptedSpeech, type CloudVoice } from '@september/app-ui/platform';
-import { dialogueParts } from '@september/core/rules/voice';
+import { SETTINGS } from '@september/core/rules/settings';
+import { DEFAULT_SPEECH, dialogueParts } from '@september/core/rules/voice';
 
 import { BrowserRepository, browserRepository } from './repository';
 import { synthesizeTimed, voice } from './voice';
@@ -18,7 +19,7 @@ const flash: CloudVoice = {
 
 /** Speaks one sentence as an MP3 file. */
 const speakFile = (text: string, signal = new AbortController().signal) =>
-  voice.stream(text, flash, undefined, signal);
+  voice.stream(text, flash, undefined, signal, DEFAULT_SPEECH);
 
 class FakeSocket {
   static opened: FakeSocket[] = [];
@@ -120,7 +121,24 @@ async function nextSocket(count: number): Promise<FakeSocket> {
   return socket;
 }
 
-const lastContext = () => FakeContext.made[FakeContext.made.length - 1];
+/** The cache key of a sentence as earlier builds wrote it: SHA-256 of the fields in this order. */
+async function speechKey(fields: {
+  text: string;
+  voiceId: string;
+  modelId: string;
+  stability: number;
+  similarity: number;
+  speed: number;
+}): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(JSON.stringify(fields))
+  );
+  const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+  return `speech:${hash}`;
+}
+
+const lastContext = () =>FakeContext.made[FakeContext.made.length - 1];
 
 beforeAll(async () => {
   await browserRepository.putSetting('provider-keys', { elevenlabs: 'secret' });
@@ -220,7 +238,7 @@ const speakDialogue = (
   text: string,
   chosen: CloudVoice = dialogue,
   signal = new AbortController().signal
-) => voice.stream(text, chosen, dialogueParts(text), signal);
+) => voice.stream(text, chosen, dialogueParts(text), signal, DEFAULT_SPEECH);
 
 /** One dialogue request: the reply stream that a test writes into. */
 interface DialogueCall {
@@ -440,6 +458,25 @@ describe('streamed dialogue speech', () => {
     await voice.stop();
   });
 
+  it('sends nothing when the sentence is stopped while the output is being chosen', async () => {
+    const { fetchDialogue } = fakeDialogue();
+    const request = new AbortController();
+    const getSetting = BrowserRepository.prototype.getSetting;
+    vi.spyOn(BrowserRepository.prototype, 'getSetting').mockImplementation(async function (
+      this: BrowserRepository,
+      key: string
+    ) {
+      if (key === SETTINGS.audioOutput) request.abort();
+      return getSetting.call(this, key);
+    } as typeof getSetting);
+
+    await expect(
+      speakDialogue('Stop while choosing the output.', dialogue, request.signal)
+    ).resolves.toEqual({ fromCache: false, latencyMs: 0 });
+    expect(fetchDialogue).not.toHaveBeenCalled();
+    expect(FakeContext.made).toHaveLength(0);
+  });
+
   it('does not play a kept sentence that was stopped before it played', async () => {
     const { calls } = fakeDialogue();
     const done = speakDialogue('Free this dialogue.');
@@ -546,14 +583,14 @@ describe('speech files', () => {
   it('reuses a kept file when the words and the voice match', async () => {
     const fetchSpeech = mp3Service();
 
-    const first = await voice.synthesize('Please open the door.', flash);
-    const second = await voice.synthesize('Please open the door.', flash);
+    const first = await voice.synthesize('Please open the door.', flash, DEFAULT_SPEECH);
+    const second = await voice.synthesize('Please open the door.', flash, DEFAULT_SPEECH);
 
     expect(first.size).toBe('mp3 bytes'.length);
     expect(second.size).toBe('mp3 bytes'.length);
     expect(fetchSpeech).toHaveBeenCalledTimes(1);
 
-    await voice.synthesize('Please open the door.', { ...flash, speed: 1.2 });
+    await voice.synthesize('Please open the door.', { ...flash, speed: 1.2 }, DEFAULT_SPEECH);
     expect(fetchSpeech).toHaveBeenCalledTimes(2);
   });
 
@@ -561,12 +598,58 @@ describe('speech files', () => {
     const fetchSpeech = mp3Service();
     const { voiceId, ...rest } = flash;
 
-    await voice.synthesize('Please close the door.', flash);
-    await voice.synthesize('Please close the door.', { ...rest, voiceId });
+    await voice.synthesize('Please close the door.', flash, DEFAULT_SPEECH);
+    await voice.synthesize('Please close the door.', { ...rest, voiceId }, DEFAULT_SPEECH);
     expect(fetchSpeech).toHaveBeenCalledTimes(1);
 
-    await voice.synthesize('Please close the door.', { ...flash, style: 0.3 } as CloudVoice);
+    await voice.synthesize('Please close the door.', { ...flash, style: 0.3 } as CloudVoice, DEFAULT_SPEECH);
     expect(fetchSpeech).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps a file under the key that earlier builds used for the same sentence', async () => {
+    mp3Service();
+    const putBlob = vi.spyOn(BrowserRepository.prototype, 'putBlob');
+    const { voiceId, modelId, stability, similarity, speed } = flash;
+    const text = 'Please find the key.';
+
+    await voice.synthesize(text, flash, DEFAULT_SPEECH);
+    expect(putBlob).toHaveBeenCalledWith(
+      await speechKey({ text, voiceId, modelId, stability, similarity, speed }),
+      expect.any(Blob)
+    );
+
+    putBlob.mockClear();
+    await voice.synthesize(text, { ...flash, style: 0.3 } as CloudVoice, DEFAULT_SPEECH);
+    expect(putBlob).toHaveBeenCalledTimes(1);
+    expect(putBlob).not.toHaveBeenCalledWith(
+      await speechKey({ text, voiceId, modelId, stability, similarity, speed }),
+      expect.any(Blob)
+    );
+  });
+
+  it('keeps a timed file and its timing under the keys that earlier builds used', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          audio_base64: btoa('mp3'),
+          alignment: {
+            characters: ['H'],
+            character_start_times_seconds: [0],
+            character_end_times_seconds: [0.1],
+          },
+        }),
+      }))
+    );
+    const putBlob = vi.spyOn(BrowserRepository.prototype, 'putBlob');
+    const { voiceId, modelId, stability, similarity, speed } = flash;
+    const text = 'Time the key.';
+
+    await synthesizeTimed(text, flash);
+    const key = await speechKey({ text, voiceId, modelId, stability, similarity, speed });
+    expect(putBlob).toHaveBeenCalledWith(`${key}:timed`, expect.any(Blob));
+    expect(putBlob).toHaveBeenCalledWith(`${key}:timed:alignment`, expect.any(Blob));
   });
 
   it('still gives the new file when the browser cannot keep it', async () => {
@@ -575,7 +658,7 @@ describe('speech files', () => {
     );
     mp3Service();
 
-    const file = await voice.synthesize('This file cannot be kept.', flash);
+    const file = await voice.synthesize('This file cannot be kept.', flash, DEFAULT_SPEECH);
     expect(file.size).toBe('mp3 bytes'.length);
   });
 

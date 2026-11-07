@@ -149,7 +149,7 @@ export function WritingSettings() {
                     : "Not connected yet."
               }
               selected={provider === option.value}
-              disabled={!ready[option.value]}
+              unready={!ready[option.value]}
             >
               {option.value === "openrouter" ? (
                 <ManageLink provider="openrouter" status={connections.openrouter} />
@@ -223,7 +223,6 @@ export function WritingSettings() {
           <SpeakingStyle
             value={setup.speakingStyle}
             onChange={(speakingStyle) => change({ speakingStyle })}
-            description="How September writes for you, in every feature."
           />
         </>
       )}

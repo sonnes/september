@@ -36,12 +36,22 @@ async function blobId(prefix: string, fields: object): Promise<string> {
   return `${prefix}:${hash}`;
 }
 
-/** Every value of the voice changes the sound, so every value is in the key. */
-const speechBlobId = (text: string, voice: CloudVoice) =>
-  blobId('speech', {
+/**
+ * Every value of the voice changes the sound, so every value is in the key.
+ * The first fields keep the order of earlier builds, so their kept files still match.
+ */
+const speechBlobId = (text: string, voice: CloudVoice) => {
+  const { voiceId, modelId, stability, similarity, speed, ...rest } = voice;
+  return blobId('speech', {
     text,
-    voice: Object.fromEntries(Object.entries(voice).sort(([a], [b]) => a.localeCompare(b))),
+    voiceId,
+    modelId,
+    stability,
+    similarity,
+    speed,
+    ...Object.fromEntries(Object.entries(rest).sort(([a], [b]) => a.localeCompare(b))),
   });
+};
 
 /** A kept file, or nothing when the store holds none or cannot be read. */
 async function keptBlob(id: string): Promise<Blob | null> {
@@ -325,6 +335,8 @@ async function playArriving(
 ): Promise<Heard | null> {
   stopStream?.();
   const output = await outputOrDefault();
+  // A stop during the wait fired before the listener below exists.
+  if (signal.aborted) return null;
   return new Promise((resolve, reject) => {
     const player = pcmPlayer(output, () => finishWhenPlayed());
     let final = false;

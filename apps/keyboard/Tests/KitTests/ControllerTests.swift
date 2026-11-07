@@ -56,6 +56,17 @@ private func key(_ id: String) -> KeyDefinition {
 
 @MainActor
 struct ControllerTests {
+    @Test func `the keyboard opens in Type mode and keeps the mode the user picks`() throws {
+        let (controller, sink) = try makeController()
+        #expect(controller.mode == .type)
+        controller.mode = .talk
+        #expect(controller.mode == .talk)
+        #expect(sink.posted.isEmpty)
+    }
+
+    @Test func `each mode has a spoken title`() {
+        #expect(KeyboardController.Mode.allCases.map(\.title) == ["Type", "Talk", "Write", "Settings"])
+    }
     @Test func `typing a letter posts that key and echoes it`() throws {
         let (controller, sink) = try makeController()
         controller.press(key("key-a"))

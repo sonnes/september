@@ -706,9 +706,14 @@ export function encodeBackup(backup: SeptemberBackup): string {
     [...rows].sort((left, right) =>
       left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
     );
+  const { setup, speech } = backup.settings;
+  // Older builds refuse a setup without its voice service, so the backup
+  // still names it. This build reads the voice from `speech`.
+  const voiceService = !speech || speech.provider === "system" ? "system" : "elevenlabs";
   return `${JSON.stringify(
     {
       ...backup,
+      settings: { ...backup.settings, setup: setup && { ...setup, voiceService } },
       spaces: byId(backup.spaces),
       messages: byId(backup.messages),
       agentMessages: byId(backup.agentMessages),

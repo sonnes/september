@@ -62,12 +62,17 @@ platform:
 | `player.ts`      | The preview player of a voice.                                                      |
 | `browser.ts`     | `downloadBlob` saves a file as a download. `warnBeforeUnload` guards a close.       |
 
-Each app awaits `loadSettings` once before the first render. It reads every
-held setting and the identity of the device. After that, a screen reads a
+Each app awaits `loadSettings` once before the first app page or setup step
+renders. A public page of the web app does not wait for it. It reads every
+held setting and the identity of the device. If the setup cannot be read,
+`loadSettings` rejects. A finished user who sees setup again can write over
+their data. If another setting cannot be read, it keeps its default and the
+error goes to the console. After that, a screen reads a
 setting at once. A change goes to the store first. The held value changes only
 after the write succeeds. `setting(key, from)` gives one held setting, and
-`useSetting` gives its value to a screen. `keep` writes a setting for a screen
-that does not wait, and logs a failed write.
+`useSetting` gives its value to a screen. `keep` is for a screen that does not
+wait. It changes the held value at once, then writes it. A failed write goes to
+the console, and the held value stays.
 
 Setup keeps the voice in the speech settings, not in the setup. A setup saved
 before setup wrote the speech settings names its voice service, and
@@ -102,6 +107,10 @@ Help, the pages, and the Settings sections. Each app gives what only it has:
 | `publicPages` | The legal pages                   | None                                                 |
 | `pages`       | `/dashboard`                      | `/eyetracker`                                        |
 | `sections`    | None                              | `/settings/panel`                                    |
+| `settingsReady` | Reads the settings once         | None, because the app reads them before it mounts    |
+
+The setup steps and the app pages await `settingsReady` before their guards
+read the setup.
 
 The keys of `pages` and `sections` are paths of `APP_PAGES` and
 `SETTINGS_SECTIONS`. They must be the paths that the capabilities of the

@@ -252,6 +252,7 @@ export function ServiceChoice({
   description,
   selected,
   disabled,
+  unready,
   badge,
   children,
 }: {
@@ -260,6 +261,11 @@ export function ServiceChoice({
   description: string;
   selected: boolean;
   disabled?: boolean;
+  /**
+   * The choice says it is not ready, and stays in the Tab and arrow order.
+   * The handler of the group ignores it.
+   */
+  unready?: boolean;
   badge?: ReactNode;
   children?: ReactNode;
 }) {
@@ -271,10 +277,10 @@ export function ServiceChoice({
         selected
           ? "border-brand ring-[3px] ring-indigo-500/30"
           : "border-border"
-      } ${disabled ? "border-input border-dashed" : ""}`}
+      } ${disabled || unready ? "border-input border-dashed" : ""}`}
     >
       <label className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] sm:gap-4">
-        <RadioGroupItem value={value} disabled={disabled} />
+        <RadioGroupItem value={value} disabled={disabled} aria-disabled={unready || undefined} />
         <Mark service={value} />
         <span>
           <span className="text-sm font-semibold">{label}</span>

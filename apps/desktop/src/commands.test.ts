@@ -71,7 +71,20 @@ const usage = {
   timestamp: 5,
   data: { characters: 9 },
 };
-const voice = { voiceId: "v1", modelId: "eleven_v3", stability: 0.5, similarity: 0.75, speed: 1 };
+const voice = {
+  voiceId: "v1",
+  modelId: "eleven_v3",
+  stability: 0.5,
+  similarity: 0.75,
+  speed: 1,
+  fileSettings: {
+    provider: "dialogue",
+    modelId: "eleven_v3_conversational",
+    stability: 0.45,
+    similarity: 0.75,
+    speed: 1.2,
+  },
+};
 const backup = {
   settings: { "dismissed-ideas": ["idea"] },
   spaces: [space],

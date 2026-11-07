@@ -609,7 +609,14 @@
           "modelId": "eleven_v3",
           "stability": 0.5,
           "similarity": 0.75,
-          "speed": 1
+          "speed": 1,
+          "fileSettings": {
+            "provider": "dialogue",
+            "modelId": "eleven_v3_conversational",
+            "stability": 0.45,
+            "similarity": 0.75,
+            "speed": 1.2
+          }
         },
         "dialogueParts": [
           "Hello"
@@ -631,7 +638,14 @@
           "modelId": "eleven_v3",
           "stability": 0.5,
           "similarity": 0.75,
-          "speed": 1
+          "speed": 1,
+          "fileSettings": {
+            "provider": "dialogue",
+            "modelId": "eleven_v3_conversational",
+            "stability": 0.45,
+            "similarity": 0.75,
+            "speed": 1.2
+          }
         }
       }
     },

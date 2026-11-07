@@ -21,6 +21,11 @@ struct KeyboardLayoutTests {
         #expect(names["key-q"] == "Q")
     }
 
+    @Test func `VoiceOver hears the shifted symbol of a number-row key`() throws {
+        let one = try #require(rows.flatMap(\.keys).first { $0.id == "key-1" })
+        #expect(one.accessibilityLabel == "1, shift for !")
+    }
+
     @Test func `every row fills the width it is given`() throws {
         for row in rows {
             let widths = KeyboardLayout.widths(for: row, totalWidth: 500, spacing: 4)

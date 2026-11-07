@@ -127,6 +127,7 @@ it('speaks a sample in the sound in use', async () => {
       expect.objectContaining({ voiceId: 'voice-1', speed: 1.2 }),
       undefined,
       expect.any(AbortSignal),
+      expect.objectContaining({ voiceId: 'voice-1', speed: 1.2 }),
     ),
   );
 });

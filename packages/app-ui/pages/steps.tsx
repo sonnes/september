@@ -1,13 +1,14 @@
-import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
 import { RadioGroup } from "@september/ui/components/radio-group";
+import { Textarea } from "@september/ui/components/textarea";
 
 import { useDraft } from "@september/app-ui/blocks/onboarding-draft";
 import { AccessForm } from "@september/app-ui/blocks/access-form";
-import { Section, SpeakingStyle } from "@september/app-ui/blocks/setup-fields";
+import { Section } from "@september/app-ui/blocks/setup-fields";
 import { VoicePicker } from "@september/app-ui/blocks/voice-picker";
 import {
   CloudStatus,
@@ -177,7 +178,9 @@ export function ProfileStep() {
   const { draft, setDraft } = useDraft();
   const [name, setName] = useState(draft.name);
   const [speakingStyle, setSpeakingStyle] = useState(draft.speakingStyle);
+  const selected = SPEAKING_STYLES.find((option) => option.value === speakingStyle);
   const nameId = useId();
+  const styleId = useId();
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -222,11 +225,37 @@ export function ProfileStep() {
             />
           </Section>
 
-          <SpeakingStyle
-            value={speakingStyle}
-            onChange={setSpeakingStyle}
-            description="Choose a style, or write a brief note about how you speak."
-          />
+          <Section
+            title="Speaking style"
+            description="Choose a style or write a brief note about how you speak."
+            htmlFor={styleId}
+          >
+            <div className="flex flex-wrap gap-2">
+              {SPEAKING_STYLES.map((option) => (
+                <Button
+                  key={option.label}
+                  type="button"
+                  variant={speakingStyle === option.value ? "default" : "outline"}
+                  aria-pressed={speakingStyle === option.value}
+                  onClick={() => setSpeakingStyle(option.value)}
+                  className="h-11 rounded-full px-4"
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {selected?.description ?? "Edit the note below any time."}
+            </p>
+            <Textarea
+              id={styleId}
+              value={speakingStyle}
+              onChange={(event) => setSpeakingStyle(event.target.value)}
+              rows={4}
+              maxLength={1000}
+              className="leading-relaxed"
+            />
+          </Section>
         </div>
       </Step>
     </form>
@@ -321,9 +350,12 @@ export function ConnectStep() {
   const [problem, setProblem] = useState("");
   const voiceOptions = setupVoices(platform.voice.systemDescription);
 
-  // The step answers itself, so a supported Mac needs no action.
+  // The step answers itself once, so a supported Mac needs no action. A
+  // service that connects later does not undo a choice the person made.
+  const defaulted = useRef(false);
   useEffect(() => {
-    if (checking) return;
+    if (checking || defaulted.current) return;
+    defaulted.current = true;
     setDraft((current) =>
       defaultServices(current, { appleAvailable, openrouterConnected, elevenlabsConnected }),
     );

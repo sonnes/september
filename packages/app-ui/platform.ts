@@ -13,7 +13,7 @@ import type { Capabilities } from "@september/core/rules/navigation";
 import type { PresentToneKey } from "@september/core/rules/present/stage";
 import type { Message, Note, SavedPhrase, Space } from "@september/core/rules/records";
 import type { UsageEvent } from "@september/core/rules/usage-summary";
-import type { CloudSound, ListedVoice } from "@september/core/rules/voice";
+import type { CloudSound, ListedVoice, SpeechSettings } from "@september/core/rules/voice";
 
 export type { Capabilities };
 
@@ -57,7 +57,9 @@ export interface PlatformVoice {
   speakSystem(text: string, speed: number, onWord?: (charIndex: number) => void): Promise<void>;
   /**
    * Speaks one sentence in a cloud voice and resolves when the sound stops.
-   * `dialogueParts` holds the parts for the Dialogue voice. It rejects with
+   * `dialogueParts` holds the parts for the Dialogue voice. `settings` are
+   * the speech settings that the voice comes from. The Mac names its voice
+   * files with them. It rejects with
    * `InterruptedSpeech` when the sound broke after it began.
    */
   stream(
@@ -65,11 +67,15 @@ export interface PlatformVoice {
     voice: CloudVoice,
     dialogueParts: string[] | undefined,
     signal: AbortSignal,
+    settings: SpeechSettings,
   ): Promise<{ fromCache: boolean; latencyMs: number }>;
   /** Stops every voice now. */
   stop(): Promise<void>;
-  /** The sound of one sentence in a cloud voice, as a file. */
-  synthesize(text: string, voice: CloudVoice): Promise<Blob>;
+  /**
+   * The sound of one sentence in a cloud voice, as a file. `settings` are the
+   * speech settings that the voice comes from, as for `stream`.
+   */
+  synthesize(text: string, voice: CloudVoice, settings: SpeechSettings): Promise<Blob>;
 }
 
 export type Provider = "openrouter" | "elevenlabs";

@@ -174,6 +174,28 @@ async fn a_complete_dialogue_is_kept_as_a_wav_file_and_played_again() {
 }
 
 #[tokio::test]
+async fn a_dialogue_sentence_plays_a_kept_mp3_file_with_its_name() {
+    let directory = voice_folder();
+    let kept = directory.join(file_name(&dialogue_settings(), "Hello"));
+    std::fs::write(&kept, b"pretend audio").unwrap();
+
+    let found = speech::stream(
+        &directory,
+        &dialogue_settings(),
+        "Hello",
+        Some(&parts("Hello")),
+        None,
+        &unreachable(),
+        |_| panic!("a kept sentence needs no request"),
+    )
+    .await
+    .unwrap();
+
+    assert!(matches!(found, Streamed::File { ref path, from_cache: true } if *path == kept));
+    std::fs::remove_dir_all(&directory).ok();
+}
+
+#[tokio::test]
 async fn a_dialogue_that_ends_without_sound_has_not_started() {
     let directory = voice_folder();
     let (base, _requests) = serve_dialogue("200 OK", Vec::new(), 1, false).await;

@@ -22,7 +22,11 @@ export const panelFloat = () => call("panel_float");
 
 export const setPanelFloat = (on: boolean) => call("panel_set_float", { request: { on } });
 
-/** The screen the user left last, or nothing. */
-export const readLastPath = () => platform.store.getSetting<string>(SETTINGS.lastPath);
+/** The screen the user left last, or nothing. A failed read is nothing. */
+export const readLastPath = () =>
+  platform.store.getSetting<string>(SETTINGS.lastPath).catch((reason: unknown) => {
+    console.error("September could not read the screen the user left last.", reason);
+    return null;
+  });
 
 export const saveLastPath = (path: string) => platform.store.putSetting(SETTINGS.lastPath, path);

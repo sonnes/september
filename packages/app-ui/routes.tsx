@@ -48,6 +48,11 @@ export interface AppRoutes {
   pages?: Partial<Record<AppPath, RouteComponent>>;
   /** The Settings sections that only this platform has. */
   sections?: Partial<Record<SettingsPath, RouteComponent>>;
+  /**
+   * Resolves once the settings are read. The setup steps and the app pages
+   * wait for it, so a platform can draw its public pages before it reads them.
+   */
+  settingsReady?: () => Promise<void>;
 }
 
 /** Throws when the capabilities of the platform name other pages than the app gives. */
@@ -80,6 +85,7 @@ export function createAppRoutes({
   publicPages = {},
   pages = {},
   sections = {},
+  settingsReady = async () => {},
 }: AppRoutes) {
   checkPages([...Object.keys(pages), ...Object.keys(sections)]);
   const rootRoute = createRootRoute();
@@ -87,7 +93,8 @@ export function createAppRoutes({
   const setupRoute = createRoute({
     getParentRoute: () => rootRoute,
     id: "setup",
-    beforeLoad: () => {
+    beforeLoad: async () => {
+      await settingsReady();
       if (finished()) throw redirect({ to: APP_NAV[0].path });
     },
     component: OnboardingLayout,
@@ -102,7 +109,8 @@ export function createAppRoutes({
   const appRoute = createRoute({
     getParentRoute: () => shellRoute,
     id: "app",
-    beforeLoad: () => {
+    beforeLoad: async () => {
+      await settingsReady();
       if (!finished()) throw redirect({ to: STEPS[0].path });
     },
   });

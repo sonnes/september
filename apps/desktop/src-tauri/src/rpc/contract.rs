@@ -183,6 +183,15 @@ fn the_requests_name_every_field() {
         (voice.stability, voice.similarity, voice.speed),
         (0.5, 0.75, 1.0)
     );
+    let file = &voice.file_settings;
+    assert_eq!(
+        (file.provider.as_str(), file.model_id.as_str()),
+        ("dialogue", "eleven_v3_conversational")
+    );
+    assert_eq!(
+        (file.stability, file.similarity, file.speed),
+        (0.45, 0.75, 1.2)
+    );
 
     let connect: ProviderConnectRequest = request("provider_connect");
     assert_eq!(

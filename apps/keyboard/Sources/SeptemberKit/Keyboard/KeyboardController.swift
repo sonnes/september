@@ -5,7 +5,24 @@ import Foundation
 /// sink turns the result into real events (or records them, in tests).
 @MainActor
 public final class KeyboardController: ObservableObject {
+    /// The mode buttons beside the input bar. Only Type does anything yet.
+    public enum Mode: String, CaseIterable, Sendable {
+        case type, talk, write, settings
+
+        public var symbol: String {
+            switch self {
+            case .type: "keyboard"
+            case .talk: "speaker.wave.2"
+            case .write: "square.and.pencil"
+            case .settings: "gearshape"
+            }
+        }
+
+        public var title: String { rawValue.capitalized }
+    }
+
     @Published public var style: KeyboardStyle = .rainbow
+    @Published public var mode: Mode = .type
     @Published public private(set) var modifiers = ModifierState()
     /// What we have typed since the last Return. Only shown when the app in
     /// front exposes no text of its own.

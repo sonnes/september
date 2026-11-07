@@ -155,6 +155,25 @@ describe("the portable September backup", () => {
     });
   });
 
+  it.each([
+    ["system", "system"],
+    ["elevenlabs", "elevenlabs"],
+    ["dialogue", "elevenlabs"],
+  ] as const)(
+    "names the voice service of a %s voice in the setup, for older builds that require it",
+    (provider, voiceService) => {
+      const backup = validBackup();
+      backup.settings.speech!.provider = provider;
+      const written = JSON.parse(encodeBackup(backup)) as {
+        settings: { setup: Record<string, unknown> };
+      };
+      expect(written.settings.setup.voiceService).toBe(voiceService);
+      expect(parseBackup(encodeBackup(backup)).backup.settings.setup).toEqual(
+        backup.settings.setup,
+      );
+    },
+  );
+
   it("preserves the ElevenLabs Dialogue voice", () => {
     const backup = validBackup();
     backup.settings.speech!.provider = "dialogue";

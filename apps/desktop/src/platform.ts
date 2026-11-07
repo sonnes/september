@@ -14,9 +14,11 @@ import {
 } from "@september/app-ui/platform";
 import { PORTABLE_SETTING_KEYS } from "@september/core/rules/settings";
 import { usageSince } from "@september/core/rules/usage-summary";
+import type { SpeechSettings } from "@september/core/rules/voice";
 
 import packageMetadata from "../package.json";
 import { call, callRaw } from "./commands";
+import { fileSettings } from "./rules/voice-file";
 
 const store: PlatformStore = {
   getSetting: async <T,>(key: string) =>
@@ -80,16 +82,22 @@ export const platform: Platform = {
     // The native voice does not report its words, so `onWord` is never called.
     speakSystem: (text, speed) => call("speech_system", { request: { text, speed } }),
     // Rust plays the sound, and a stop goes through `stop`, so the signal is not sent.
-    async stream(text, voice, dialogueParts) {
+    async stream(text, voice, dialogueParts, _signal, settings: SpeechSettings) {
       const heard = await call("speech_stream", {
-        request: { text, voice, ...(dialogueParts ? { dialogueParts } : {}) },
+        request: {
+          text,
+          voice: { ...voice, fileSettings: fileSettings(settings, "live") },
+          ...(dialogueParts ? { dialogueParts } : {}),
+        },
       });
       if (heard.interrupted) throw new InterruptedSpeech(heard.interrupted);
       return { fromCache: heard.from_cache, latencyMs: heard.latency_ms };
     },
     stop: () => call("speech_native_stop"),
-    async synthesize(text, voice) {
-      const { path } = await call("speech_synthesize", { request: { text, voice } });
+    async synthesize(text, voice, settings: SpeechSettings) {
+      const { path } = await call("speech_synthesize", {
+        request: { text, voice: { ...voice, fileSettings: fileSettings(settings, "file") } },
+      });
       return (await fetch(convertFileSrc(path))).blob();
     },
   },
@@ -135,9 +143,17 @@ export const platform: Platform = {
     },
   },
   device: {
+    // A name that cannot be read is no name. The rows then belong to the local user.
     async identity() {
-      const [name, userId] = await Promise.all([call("user_name"), call("user_id")]);
-      return { name, userId };
+      const unread = (reason: unknown) => {
+        console.error("September could not read the name of the Mac user.", reason);
+        return null;
+      };
+      const [name, userId] = await Promise.all([
+        call("user_name").catch(unread),
+        call("user_id").catch(unread),
+      ]);
+      return { name: name ?? "", userId };
     },
     openInBrowser: (url) =>
       openUrl(url).catch((reason: unknown) =>

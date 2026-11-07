@@ -181,7 +181,7 @@ export function VoiceCloneScreen() {
       provider: current.provider === "dialogue" ? "dialogue" : "elevenlabs",
       voiceId: created.id,
     });
-    await keepCreatedVoice(created);
+    keepCreatedVoice(created);
     await navigate({ to: "/voice", replace: true });
   };
 

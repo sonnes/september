@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { wordRow } from '../rules/audio-tags.ts';
 import { MAX_SUGGESTIONS, applySuggestion, createEngine, suggestionsFor } from './index.ts';
 
 describe('suggestionsFor', () => {
@@ -46,6 +47,21 @@ describe('suggestionsFor', () => {
     expect(found).toContain('[laughs]');
     const words = found.filter((word) => !word.startsWith('['));
     expect(found.slice(0, words.length)).toEqual(words);
+  });
+
+  it('offers at most two learned tags, within one stripe, so a mood tag keeps a tile', () => {
+    const engine = createEngine();
+    for (const word of ['tea', 'water', 'soup', 'bread', 'juice']) {
+      for (let time = 0; time < 10; time++) engine.observe(`please bring ${word}`);
+    }
+    for (const tag of ['[laughs]', '[giggles]', '[sighs]']) engine.observe(`please bring ${tag}`);
+
+    const found = suggestionsFor(engine, 'please bring ');
+
+    expect(found.length).toBeLessThanOrEqual(MAX_SUGGESTIONS);
+    expect(found.filter((word) => word.startsWith('[')).length).toBeLessThanOrEqual(2);
+    const row = wordRow(found, { tags: true, examples: ['whispers'], draft: 'please bring ' });
+    expect(row).toContain('[whispers]');
   });
 
   it('never completes a part-written word into a tag', () => {

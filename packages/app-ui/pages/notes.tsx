@@ -154,6 +154,7 @@ function Notes({
               />
             ) : (
               <EmptyState
+                fill
                 icon={FileText}
                 body="A note holds long text. Write it now, and hear it in your voice when you are ready."
                 action={

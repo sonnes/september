@@ -647,7 +647,7 @@ export function SourceMark({
       <Pin
         className={cn("text-brand size-4 shrink-0", kept && "fill-current")}
         role="img"
-        aria-label="A kept phrase"
+        aria-label={kept ? "You keep this phrase" : "A saved phrase"}
       />
     );
   }

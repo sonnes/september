@@ -9,6 +9,9 @@ public enum Typography {
     public static let inputIcon = Font.system(size: 15)
     public static let inputPlaceholder = Font.system(size: 14)
 
+    public static let modeIcon = Font.system(size: 16)
+    public static let modeTitle = Font.system(size: 9)
+
     public static let bannerText = Font.system(size: 12)
     public static let bannerAction = Font.system(size: 12, weight: .medium)
 

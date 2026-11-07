@@ -92,11 +92,14 @@ export function useVoices(enabled: boolean) {
   return useQuery({ ...voicesQuery, enabled });
 }
 
-/** Puts a voice made a moment ago into the held list, before ElevenLabs lists it. */
+/**
+ * Puts a voice made a moment ago into the held list, before ElevenLabs lists it.
+ * It reads no voices, so a failed read cannot hide a voice that was made.
+ */
 export function useKeepCreatedVoice() {
   const client = useQueryClient();
-  return async (created: CreatedVoice) => {
-    const held = await client.ensureQueryData(voicesQuery);
+  return (created: CreatedVoice) => {
+    const held = client.getQueryData<Voice[]>(voicesKey) ?? [];
     if (held.some((voice) => voice.id === created.id)) return;
     client.setQueryData<Voice[]>(voicesKey, [
       { ...created, preview_url: null, category: "cloned", is_owner: true },

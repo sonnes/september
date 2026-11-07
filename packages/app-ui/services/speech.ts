@@ -101,6 +101,7 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
         cloudVoiceOf(settings, "live"),
         settings.provider === "dialogue" ? dialogueParts(text) : undefined,
         signal,
+        settings,
       );
     } catch (reason) {
       recordTtsUsage({

@@ -72,7 +72,9 @@ leaving the current step or changing its answers. An unknown guide slug returns
 to `/help`.
 
 Before the first render, `src/main.tsx` awaits `loadSettings` and reads the
-`lastPath` setting. Setup runs one time. During setup, the panel is a normal
+`lastPath` setting. If `lastPath` cannot be read, the app opens on the first
+screen. If the login name cannot be read, the rows belong to `local-user`. Setup
+runs one time. During setup, the panel is a normal
 window with a Dock icon. See
 [Show and hide the panel](../../docs/concepts/desktop-floating-panel.md#show-and-hide-the-panel).
 The last step keeps its answers in the `setup` setting, then opens the first
@@ -632,6 +634,12 @@ audio/<sha256 of the settings and the words>.wav
 
 The MP3 file comes from the text-to-speech endpoint, which Speak and exports
 use. The WAV file holds the samples of a complete Dialogue sentence.
+
+The settings in the name are the file settings that `fileSettings` in
+`src/rules/voice-file.ts` gives: the service, the model, the stability, the
+similarity, and the speed. A live Dialogue sentence uses the saved stability
+and speed, and ElevenLabs gets a stability mode and no speed. A live Dialogue
+sentence plays a kept WAV file or a kept MP3 file with its name.
 
 The words lose the spaces at their ends, and each run of spaces becomes one
 space. Case and punctuation stay, because both change how a voice reads a

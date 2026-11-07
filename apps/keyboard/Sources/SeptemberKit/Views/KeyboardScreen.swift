@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The whole floating surface: the input bar above, the keypads and the
-/// keyboard below.
+/// The whole floating surface: the input bar and the mode buttons above, the
+/// keypads and the keyboard below.
 public struct KeyboardScreen: View {
     @ObservedObject private var controller: KeyboardController
     @ObservedObject private var permission: AccessibilityPermission
@@ -18,8 +18,12 @@ public struct KeyboardScreen: View {
                     .padding(.leading, Metrics.keyboardLeadingInset)
             }
 
-            InputBar()
-                .padding(.leading, Metrics.keyboardLeadingInset)
+            HStack(alignment: .center, spacing: Metrics.sectionSpacing) {
+                InputBar()
+                ModeButtons()
+                Spacer(minLength: 0)
+            }
+            .padding(.leading, Metrics.keyboardLeadingInset)
 
             keys
         }

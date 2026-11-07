@@ -156,10 +156,13 @@ action, a bookmark, and the back button all land a returning user in the app.
 `src/routes.test.ts` holds both directions, and opens every page and section of
 the navigation.
 
-`src/main.tsx` awaits `loadSettings` from `@september/app-ui/services/settings`
-once, then mounts the app. The guards read the held setup and do not wait. If
-the browser denies storage, the error goes to the console, and the landing
-page and Help still open.
+`settingsReady` in `src/router.tsx` calls `loadSettings` from
+`@september/app-ui/services/settings` once. A public page of `PUBLIC_PAGES`
+mounts at once and does not open the database. For any other path,
+`src/main.tsx` awaits `settingsReady` before it mounts the app. The setup steps
+and the app pages also await it, so a move from a public page into the app
+reads the settings first. If the browser denies storage, the error goes to the
+console, and the app still opens.
 
 The application routes are:
 

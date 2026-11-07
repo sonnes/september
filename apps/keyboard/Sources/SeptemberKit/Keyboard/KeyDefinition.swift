@@ -73,11 +73,20 @@ public struct KeyDefinition: Sendable, Hashable, Identifiable {
         self.secondaryLabel = secondaryLabel
         self.weight = weight
         self.action = action
-        self.accessibilityLabel = accessibilityLabel ?? Self.spokenName(of: action, label: label)
+        self.accessibilityLabel = accessibilityLabel
+            ?? Self.spokenName(of: action, label: label, secondaryLabel: secondaryLabel)
     }
 
     /// The name of the key the action posts, or the label for caps lock and
-    /// a character.
+    /// a character. A key with a shifted symbol also names that symbol:
+    /// "1, shift for !".
+    private static func spokenName(
+        of action: KeyAction, label: String, secondaryLabel: String?
+    ) -> String {
+        let name = spokenName(of: action, label: label)
+        return secondaryLabel.map { "\(name), shift for \($0)" } ?? name
+    }
+
     private static func spokenName(of action: KeyAction, label: String) -> String {
         switch action {
         case .virtual(let virtual): virtual.spokenName

@@ -2,8 +2,8 @@
  * The settings that both apps keep, held in memory after one read.
  *
  * `loadSettings` reads them once, before the first screen. A screen then
- * reads a value at once, and a change goes to the store first and to the
- * memory after the write succeeds.
+ * reads a value at once. A change with `set` goes to the store first and to
+ * the memory after the write succeeds. A change with `keep` shows at once.
  */
 
 import { useSyncExternalStore } from "react";
@@ -28,7 +28,10 @@ export interface Setting<T> {
   get(): T;
   /** Writes the value. The held value changes only after the write succeeds. */
   set(value: T): Promise<void>;
-  /** Writes the value for a caller that does not wait, and logs a failed write. */
+  /**
+   * Holds the value at once and writes it, for a caller that does not wait.
+   * A failed write is logged, and the held value stays.
+   */
   keep(value: T): void;
   subscribe(listener: () => void): () => void;
   load(): Promise<void>;
@@ -38,16 +41,19 @@ export interface Setting<T> {
 export function setting<T>(key: string, from: (saved: unknown) => T): Setting<T> {
   let value = from(null);
   const listeners = new Set<() => void>();
-  const set = async (next: T) => {
-    await platform.store.putSetting(key, next);
+  const show = (next: T) => {
     value = next;
     for (const listener of listeners) listener();
   };
   return {
     get: () => value,
-    set,
+    async set(next) {
+      await platform.store.putSetting(key, next);
+      show(next);
+    },
     keep(next) {
-      set(next).catch((reason: unknown) =>
+      show(next);
+      platform.store.putSetting(key, next).catch((reason: unknown) =>
         console.error(`September did not keep the setting ${key}.`, reason),
       );
     },
@@ -87,8 +93,8 @@ export const savedSpeech = setting<SpeechSettings | null>(
   (saved) => (saved as SpeechSettings | null) ?? null,
 );
 
-const loaded: Setting<unknown>[] = [
-  setup,
+/** The held settings besides the setup. A failed read keeps the default. */
+const withDefaults: Setting<unknown>[] = [
   panel,
   present,
   dismissedIdeas,
@@ -99,15 +105,28 @@ const loaded: Setting<unknown>[] = [
 
 let identity = { name: "", userId: LOCAL_USER };
 
-/** Reads every held setting. The bootstrap awaits this once before it renders. */
+/**
+ * Reads every held setting. The bootstrap awaits this once before it renders.
+ *
+ * A setup that cannot be read stops the start, because a finished user who
+ * sees setup again can write over their data. Each other setting that cannot
+ * be read takes its default.
+ */
 export async function loadSettings(): Promise<void> {
+  const unread = new Set<Setting<unknown>>();
   const [found] = await Promise.all([
     platform.device.identity(),
-    ...loaded.map((held) => held.load()),
+    setup.load(),
+    ...withDefaults.map((held) =>
+      held.load().catch((reason: unknown) => {
+        unread.add(held);
+        console.error("September could not read a setting, so it uses the default.", reason);
+      }),
+    ),
   ]);
   identity = { name: found.name, userId: found.userId ?? LOCAL_USER };
   await keySpaceModesById();
-  await keepOlderSetupVoice();
+  if (!unread.has(savedSpeech)) await keepOlderSetupVoice();
 }
 
 /** Moves the voice of a setup saved before setup wrote the speech settings. */

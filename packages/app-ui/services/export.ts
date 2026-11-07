@@ -33,7 +33,7 @@ export async function saveNoteAudio(
   content: string,
 ): Promise<void> {
   const { text, voice } = soundFile(markdownToVoiceText(content));
-  const sound = await platform.voice.synthesize(text, voice);
+  const sound = await platform.voice.synthesize(text, voice, speechSettings());
   downloadBlob(sound, exportFileName(name, "audio"));
   recordExportUsage("audio");
 }

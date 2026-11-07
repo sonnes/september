@@ -10,6 +10,8 @@ export type { Autocomplete };
 export const MAX_SUGGESTIONS = 6;
 /** How deep the search for learned audio tags goes. */
 const TAG_SEARCH = 50;
+/** The most learned tags in one suggestion stripe. */
+const MAX_TAGS = 2;
 const NEXT_WORDS = 5;
 const COMPLETIONS = 10;
 
@@ -31,7 +33,9 @@ export function isWordComplete(text: string): boolean {
 
 /**
  * The stripe suggestions for the composer text. After a finished word, the
- * learned tags follow the words. `wordRow` decides how many tags show.
+ * learned tags follow the words. At most two tags come, and the stripe holds at
+ * most `MAX_SUGGESTIONS`, so a full row of words leaves `wordRow` a tile for
+ * a tag of the mood.
  */
 export function suggestionsFor(
   engine: Autocomplete,
@@ -50,8 +54,9 @@ export function suggestionsFor(
   const found = engine.nextWords(written.slice(-3).join(' '), TAG_SEARCH, spaceId);
   // A learned tag is rarer than a word, so the search for tags goes further
   // down the list.
+  const tags = found.filter(isTag).slice(0, MAX_TAGS);
   const nextWords = found.slice(0, NEXT_WORDS).filter((word) => !isTag(word));
-  return [...nextWords, ...found.filter(isTag)];
+  return [...nextWords, ...tags].slice(0, MAX_SUGGESTIONS);
 }
 
 /**

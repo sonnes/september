@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "@september/ui/components/button";
 import { Label } from "@september/ui/components/label";
@@ -51,18 +51,15 @@ export function Section({
 export function SpeakingStyle({
   value,
   onChange,
-  description,
 }: {
   value: string;
   onChange: (value: string) => void;
-  description: string;
 }) {
   const preset = SPEAKING_STYLES.find((option) => option.value === value);
   const [custom, setCustom] = useState(!preset);
-  const fieldId = useId();
 
   return (
-    <Section title="Speaking style" description={description}>
+    <Section title="Speaking style" description="How September writes for you, in every feature.">
       <div className="flex flex-wrap gap-2">
         {SPEAKING_STYLES.map((option) => {
           const on = !custom && preset?.label === option.label;
@@ -93,23 +90,54 @@ export function SpeakingStyle({
         </Button>
       </div>
       {custom ? (
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={fieldId} className="text-sm font-medium">
-            Your instructions
-          </Label>
-          <Textarea
-            id={fieldId}
-            value={value}
-            rows={4}
-            maxLength={1000}
-            className="leading-relaxed"
-            onChange={(event) => onChange(event.target.value)}
-          />
-        </div>
+        <SavedText label="Your instructions" value={value} onSave={onChange} />
       ) : (
         <p className="text-muted-foreground text-sm">{preset?.value}</p>
       )}
     </Section>
+  );
+}
+
+/**
+ * A text field that keeps itself. It waits half a second after the last
+ * keystroke, so one sentence is one write, not thirty.
+ */
+function SavedText({
+  label,
+  value,
+  onSave,
+}: {
+  label: string;
+  value: string;
+  onSave: (value: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const fieldId = useId();
+
+  // The buttons above can change the style, so the field follows the answer.
+  useEffect(() => setText(value), [value]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={fieldId} className="text-sm font-medium">
+        {label}
+      </Label>
+      <Textarea
+        id={fieldId}
+        value={text}
+        rows={4}
+        maxLength={1000}
+        className="leading-relaxed"
+        onChange={(event) => {
+          const next = event.target.value;
+          setText(next);
+          clearTimeout(timer.current);
+          timer.current = setTimeout(() => onSave(next), 500);
+        }}
+      />
+    </div>
   );
 }
 

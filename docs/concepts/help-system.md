@@ -65,8 +65,10 @@ An unknown guide slug returns to `/help`. Stable slugs let a feature or error
 link directly to one recovery task.
 
 Help routes use the application shell but remain outside the finished-setup
-guard. The web app reads the saved setup with `loadSettings` before it mounts,
-so a guide that opens first still shows the access profile of the person. During setup, the onboarding sidebar opens **Set up September** in an
+guard. `/help` is a public page, so the web app draws it without a read of
+the saved setup. The web app reads the saved setup before it mounts a guide
+at `/help/$guideSlug`, so a guide that opens first shows the access profile of
+the person. During setup, the onboarding sidebar opens **Set up September** in an
 inline sheet. Opening and closing that sheet does not navigate, complete setup,
 or change the saved setup answers.
 

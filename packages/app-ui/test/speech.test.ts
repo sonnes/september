@@ -246,6 +246,15 @@ describe('speaking', () => {
     );
   });
 
+  it('gives the platform the settings in use, which name its voice file', async () => {
+    await chooseSpeech({ provider: 'dialogue', stability: 0.45, speed: 1.2 });
+    stream.mockResolvedValue({ fromCache: false, latencyMs: 300 });
+
+    await say('hello');
+
+    expect(stream.mock.calls[0]![4]).toEqual(speechSettings());
+  });
+
   it('streams Eleven v3 Conversational with a stability mode, and records that model', async () => {
     await chooseSpeech({ provider: 'dialogue', dialogueModelId: 'eleven_v3_conversational', stability: 0.62 });
     stream.mockResolvedValue({ fromCache: false, latencyMs: 200 });

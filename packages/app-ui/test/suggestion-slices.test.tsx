@@ -2,7 +2,7 @@ import { act, useState } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { InputLayer } from '@september/app-ui/blocks/input-layer';
-import { Suggestions } from '@september/app-ui/blocks/suggestions';
+import { SourceMark, Suggestions } from '@september/app-ui/blocks/suggestions';
 import { usePinPhrase } from '@september/app-ui/services/data';
 import { updateSpeech } from '@september/app-ui/services/speech';
 import { updateSetup } from '@september/app-ui/services/settings';
@@ -345,4 +345,15 @@ it('keeps a word that the word row clips out of the tab order', async () => {
   await vi.waitFor(() => expect(words().at(-1)!.hasAttribute('inert')).toBe(true));
   expect(words()[0]!.hasAttribute('inert')).toBe(false);
   rects.mockRestore();
+});
+
+it('names the pin of a saved phrase by whether the person keeps it, where it cannot be pressed', async () => {
+  const { container } = await renderPart(
+    <>
+      <SourceMark source="md" />
+      <SourceMark source="md" kept />
+    </>,
+  );
+  const names = [...container.querySelectorAll('[role="img"]')].map(mark => mark.getAttribute('aria-label'));
+  expect(names).toEqual(['A saved phrase', 'You keep this phrase']);
 });
