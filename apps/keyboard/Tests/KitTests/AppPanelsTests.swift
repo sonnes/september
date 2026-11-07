@@ -112,6 +112,13 @@ private func panelFileTests() {
         }
     }
 
+    test("System quits the app in front with Command Q") {
+        let store = try PanelStore.bundled()
+        expectEqual(
+            store.system.buttons.first { $0.id == "quit" }?.action,
+            .shortcut(Shortcut(modifiers: .command, key: .character("q"))))
+    }
+
     test("each new app has a panel of 12 slots or fewer") {
         let store = try PanelStore.bundled()
         let ids = [

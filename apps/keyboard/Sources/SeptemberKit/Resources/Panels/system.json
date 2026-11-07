@@ -17,6 +17,8 @@
     { "id": "full-screen", "label": "Full Screen",
       "action": {"type": "shortcut", "modifiers": ["control", "command"], "key": "f"} },
     { "id": "screenshot", "label": "Screenshot",
-      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "4"} }
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "4"} },
+    { "id": "quit", "label": "Quit",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "q"} }
   ]
 }
