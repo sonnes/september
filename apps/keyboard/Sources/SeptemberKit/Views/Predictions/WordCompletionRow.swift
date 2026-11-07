@@ -15,15 +15,20 @@ public struct WordCompletionRow: View {
 
     public var body: some View {
         if engine.wordsEnabled {
-            HStack(spacing: Metrics.Predictions.wordSpacing) {
-                ForEach(0..<Metrics.Predictions.wordSlots, id: \.self) { index in
-                    if engine.words.indices.contains(index) {
-                        WordButton(completion: engine.words[index], isBest: index == 0, onPick: onPick)
-                    } else {
-                        EmptyWordSlot()
+            GeometryReader { geometry in
+                let words = engine.words
+                let fit = WordRowFit(words: words.map(\.word), width: geometry.size.width, measure: Typography.wordWidth)
+                HStack(spacing: Metrics.Predictions.wordSpacing) {
+                    ForEach(Array(zip(fit.indices, fit.widths)), id: \.0) { index, width in
+                        WordButton(completion: words[index], isBest: index == 0, onPick: onPick)
+                            .frame(width: width)
+                    }
+                    if let empty = fit.emptyWidth, empty > 0 {
+                        EmptyWordSlot().frame(width: empty)
                     }
                 }
             }
+            .frame(height: Metrics.Predictions.wordHeight)
             .padding(.bottom, Metrics.Predictions.wordRowLinePadding)
             .overlay(alignment: .bottom) {
                 Rectangle()

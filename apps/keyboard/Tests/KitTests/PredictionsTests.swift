@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import SeptemberKit
 
@@ -220,7 +221,41 @@ private func wordTests() {
             for: PredictionContext(text: "Cu", caret: 2, mode: .type, said: []))
         expectEqual(
             words.map(\.word),
-            ["Cup", "Cut", "Cute", "Custom", "Current", "Customer", "Cuddle", "Curious"])
+            ["Cup", "Cut", "Cute", "Custom", "Current", "Customer", "Cuddle", "Curious", "Curry", "Culture"])
+    }
+
+    test("the word row gives each word its own width and leaves the rest empty") {
+        let fit = WordRowFit(words: ["cup", "customer", "cut"], width: 400, measure: { word, _ in CGFloat(word.count * 10) })
+        let padding = Metrics.Predictions.wordPadding * 2
+        expectEqual(fit.indices, [0, 1, 2])
+        expectEqual(fit.widths, [30 + padding, 80 + padding, 30 + padding])
+        let used = fit.widths.reduce(0, +) + Metrics.Predictions.wordSpacing * 3
+        expectEqual(fit.emptyWidth, 400 - used)
+    }
+
+    test("a word that does not fit is left out, a shorter one after it can fit, and a full row fills its width") {
+        let fit = WordRowFit(
+            words: ["cup", "customer", "currently", "cut"], width: 260, measure: { word, _ in CGFloat(word.count * 10) })
+        expectEqual(fit.indices, [0, 1, 3])
+        expect(fit.emptyWidth == nil)
+        let total = fit.widths.reduce(0, +) + Metrics.Predictions.wordSpacing * CGFloat(fit.widths.count - 1)
+        expectEqual(total, 260)
+    }
+
+    test("a short word keeps the least width of a button, and the best word is measured in its own font") {
+        var bestFlags: [Bool] = []
+        let fit = WordRowFit(words: ["a", "I"], width: 400) { _, isBest in
+            bestFlags.append(isBest)
+            return 8
+        }
+        expectEqual(fit.widths, [Metrics.Predictions.wordMinWidth, Metrics.Predictions.wordMinWidth])
+        expectEqual(bestFlags, [true, false])
+    }
+
+    test("a row with no words is one empty slot") {
+        let fit = WordRowFit(words: [], width: 400, measure: { _, _ in 0 })
+        expect(fit.indices.isEmpty)
+        expectEqual(fit.emptyWidth, 400)
     }
 
     test("between words, the candidates become next words with the space they ask for") {
@@ -677,9 +712,10 @@ private func candidateTests() async {
         expect(found.allSatisfy { $0.lowercased().hasPrefix("cu") })
     }
 
-    await asyncTest("the system candidates fill every slot of the word row for a common start") {
+    await asyncTest("the system candidates give more words than a row of eight for a common start") {
         let found = await words("th")
-        expectEqual(found.count, Metrics.Predictions.wordSlots)
+        expect(found.count > 8, "\(found.count) words")
+        expect(found.count <= Metrics.Predictions.wordLimit)
     }
 
     await asyncTest("the system candidates give the next word after a space") {

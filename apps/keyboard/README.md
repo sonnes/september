@@ -65,7 +65,7 @@ macOS resets its Accessibility permission after the next build.
 ## The windows
 
 The keyboard window holds the sentence predictions, the input bar, and the
-keys. A row of up to eight word completions sits on top of the keys. Speak, Type, Talk,
+keys. A row of word completions sits on top of the keys. Speak, Type, Talk,
 Write, and Settings are at the right of the input bar. In Type mode, Arrange
 is between Write and Settings.
 
@@ -73,6 +73,11 @@ The word row shows the candidates of macOS, the words of the QuickType bar.
 The candidates use the words before the caret. In a word, they complete the
 word. At the start of the text, after a space, or after a mark, they give the
 next word. After a mark with no space, a press types a space before the word.
+
+The keyboard asks for up to 20 words. Each button is as wide as its word, and
+the row shows the words that fit, best first. A word that does not fit is left
+out, and a shorter word after it can take its place. A full row shares the
+space at its end among the buttons. `WordRowFit` holds the rule.
 
 When you press Return, or Speak in Talk mode, the keyboard tells macOS which
 picked words the text still holds. macOS learns from these responses. Private

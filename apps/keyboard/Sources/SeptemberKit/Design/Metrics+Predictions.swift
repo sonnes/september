@@ -29,7 +29,14 @@ extension Metrics {
         public static let noticeCornerRadius: CGFloat = 14
         public static let noticeSpacing: CGFloat = 12
 
-        public static let wordSlots = 8
+        /// The most words that the word row asks for. The row shows the
+        /// words that fit.
+        public static let wordLimit = 20
+        /// The space at each side of a word in its button.
+        public static let wordPadding: CGFloat = 14
+        /// The least width of a word button, so a short word is easy to hit.
+        public static let wordMinWidth: CGFloat = 52
+        public static let wordFontSize: CGFloat = 17
         public static let wordHeight: CGFloat = 40
         public static let wordSpacing: CGFloat = 6
         public static let wordCornerRadius: CGFloat = 8

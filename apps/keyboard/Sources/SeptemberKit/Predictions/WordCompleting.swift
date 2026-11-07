@@ -72,7 +72,7 @@ public struct WordCompletion: Equatable, Hashable, Sendable {
 @MainActor
 public final class CandidateCompleter: WordCompleting {
     /// The most completions in the word row.
-    public static let limit = Metrics.Predictions.wordSlots
+    public static let limit = Metrics.Predictions.wordLimit
 
     private let checker = NSSpellChecker.shared
     private let tag = NSSpellChecker.uniqueSpellDocumentTag()
