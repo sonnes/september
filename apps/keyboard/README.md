@@ -138,8 +138,8 @@ When you press Return, or Speak in Talk mode, the keyboard tells macOS which
 picked words the text still holds. macOS learns from these responses. Private
 text and password fields send nothing.
 
-The Text and System keypads and the app panel float in windows of their
-own. By default they sit beside the keys. To move the keyboard window or a
+The Text, System, and Rectangle keypads and the app panel float in windows
+of their own. By default they sit beside the keys. To move the keyboard window or a
 panel, drag it by the grip at its top. A drag does not take focus from the app
 in front. The keyboard keeps the place of each window for the next launch. If
 a saved place is on no screen, the window goes back to its default place. The
@@ -147,8 +147,8 @@ keyboard window and the panels never take focus.
 
 Arrange moves the panels back beside the keys, at the place where the keyboard
 is now. The menu bar item has the same command, Arrange Panels. System and the
-app panel go to the left of the keys, with System nearest the keys. Text goes
-to the right. If a panel does not fit on
+app panel go to the left of the keys, with System nearest the keys. Text and
+Rectangle go to the right, with Text nearest the keys. If a panel does not fit on
 its side, it goes to the other side. Each panel stays on the screen.
 `PanelPlacement.arrangedFrames` holds the rule.
 
@@ -162,6 +162,15 @@ The System keypad has three columns. It holds Undo, Redo, Select All, Save,
 New, Open, Print, and Close, and then Find, Mission Control, Page Up, Page
 Down, the zoom keys, Full Screen, Screenshot, and Quit. No keypad repeats
 Cut, Copy, or Paste.
+
+The Rectangle keypad presses the shortcuts of
+[Rectangle](https://rectangleapp.com), the window manager. It shows only when
+Rectangle is installed. It has three columns: the halves and Maximize, the
+thirds, the two thirds and Center, the top corners and Top Half, the bottom
+corners and Bottom Half, and then Smaller, Restore, and Larger. The keys are
+the recommended shortcuts of Rectangle (Control Option and a key). If the user
+chose the Spectacle shortcuts or changed a shortcut in Rectangle, a button
+presses the wrong keys.
 
 The app panel has two tabs. The first tab shows the panel of the app in front.
 The second tab, Mine, shows the buttons that the user made on the My Panel page

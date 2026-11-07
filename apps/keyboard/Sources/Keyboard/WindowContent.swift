@@ -37,6 +37,7 @@ struct WindowContent {
         case .text: view = AnyView(KeypadCard(panel: controller.panels.text))
         case .system: view = AnyView(KeypadCard(panel: controller.panels.system))
         case .app: view = AnyView(AppPanelCard(session: session, appIcon: appIcon))
+        case .rectangle: view = AnyView(KeypadCard(panel: controller.panels.rectangle))
         }
         return AnyView(view.environmentObject(controller).environment(\.keyPresser, presser))
     }

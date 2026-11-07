@@ -7,7 +7,8 @@ package: keyboard
 # Shortcut panels (macOS)
 
 Panels are on each side of the macOS keyboard. SYSTEM and the app panel are on
-the left. TEXT is on the right. Cut, Copy, and Paste are buttons at the left
+the left. TEXT and RECTANGLE are on the right. RECTANGLE shows only when the
+Rectangle window manager is installed (`DetachedPanel.shown(rectangleInstalled:)`). Cut, Copy, and Paste are buttons at the left
 of the input bar, so no keypad has them. The shortcuts of the app in front are
 also a panel. Each panel is a grid of buttons in a JSON file that the app loads at
 launch.
@@ -41,6 +42,7 @@ Z"), so a button never has to repeat itself in JSON.
 Sources/SeptemberKit/Resources/Panels/
 ├── text.json                        # right of the keys
 ├── system.json                      # left of the keys, nearest
+├── rectangle.json                   # right of TEXT, the shortcuts of Rectangle
 └── Apps/
     ├── generic.json                 # fallback for unknown apps
     └── com.microsoft.VSCode.json    # one file per known app, named by bundle id

@@ -5,22 +5,33 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
     case text
     case system
     case app
+    /// The shortcuts of Rectangle, the window manager.
+    case rectangle
 
     public var id: Self { self }
 
     /// The name of the saved frame in `UserDefaults`.
     public var frameName: String { "September Keyboard Panel \(rawValue)" }
+
+    /// The bundle ID of Rectangle.
+    public static let rectangleBundleID = "com.knollsoft.Rectangle"
+
+    /// The panels that show. The Rectangle panel shows only when Rectangle
+    /// is installed, because its shortcuts do nothing without it.
+    public static func shown(rectangleInstalled: Bool) -> [DetachedPanel] {
+        allCases.filter { $0 != .rectangle || rectangleInstalled }
+    }
 }
 
 /// Where the panels sit until the user drags them: System and the app panel
-/// at the left of the keys, and Text at the right, with their tops
+/// at the left of the keys, and Text and Rectangle at the right, with their tops
 /// in line with the top of the keys. Frames use the coordinates of AppKit, with
 /// the origin at the bottom left.
 public enum PanelPlacement {
     /// The panels at the left of the keys, from the keys out.
     static let left: [DetachedPanel] = [.system, .app]
     /// The panels at the right of the keys, from the keys out.
-    static let right: [DetachedPanel] = [.text]
+    static let right: [DetachedPanel] = [.text, .rectangle]
 
     public static func defaultFrames(
         keys: CGRect, sizes: [DetachedPanel: CGSize]

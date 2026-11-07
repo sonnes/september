@@ -120,6 +120,21 @@ private func panelFileTests() {
         }
     }
 
+    test("the Rectangle panel presses the recommended shortcuts of Rectangle") {
+        let store = try PanelStore.bundled()
+        let panel = store.rectangle
+        expectEqual(panel.columns, 3)
+        expectEqual(panel.buttons.count, 18)
+        func action(_ id: String) -> PanelAction? { panel.buttons.first { $0.id == id }?.action }
+        expectEqual(
+            action("left-half"), .shortcut(Shortcut(modifiers: [.control, .option], key: .virtual(.left))))
+        expectEqual(
+            action("first-third"), .shortcut(Shortcut(modifiers: [.control, .option], key: .character("d"))))
+        expectEqual(
+            action("restore"), .shortcut(Shortcut(modifiers: [.control, .option], key: .virtual(.delete))))
+        expect(panel.shortcuts.isSubset(of: store.keypadShortcuts), "the app panel learns a Rectangle chord")
+    }
+
     test("System quits the app in front with Command Q") {
         let store = try PanelStore.bundled()
         expectEqual(

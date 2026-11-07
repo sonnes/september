@@ -4,12 +4,14 @@ import Foundation
 /// know shortcuts for, and a generic panel for every other app.
 ///
 /// File names are the identity: `text.json`, `system.json`,
-/// `Apps/generic.json`, and `Apps/<bundle id>.json`. The Claude Code panel is
+/// `rectangle.json`, `Apps/generic.json`, and `Apps/<bundle id>.json`. The Claude Code panel is
 /// `Apps/claude-code.json`, because it belongs to a tool in a terminal, not to
 /// an app.
 public struct PanelStore: Sendable {
     public let text: PanelDefinition
     public let system: PanelDefinition
+    /// The recommended shortcuts of Rectangle, the window manager.
+    public let rectangle: PanelDefinition
     /// The panel of an app with no panel file.
     public let generic: PanelDefinition
     private let byBundleID: [String: PanelDefinition]
@@ -17,11 +19,13 @@ public struct PanelStore: Sendable {
     public init(
         text: PanelDefinition,
         system: PanelDefinition,
+        rectangle: PanelDefinition,
         generic: PanelDefinition,
         byBundleID: [String: PanelDefinition]
     ) {
         self.text = text
         self.system = system
+        self.rectangle = rectangle
         self.generic = generic
         self.byBundleID = byBundleID
     }
@@ -43,10 +47,10 @@ public struct PanelStore: Sendable {
             .sorted { $0.panel.title.localizedStandardCompare($1.panel.title) == .orderedAscending }
     }
 
-    /// The chords of the Text and System keypads and of the clipboard
-    /// buttons.
+    /// The chords of the Text, System, and Rectangle keypads and of the
+    /// clipboard buttons.
     public var keypadShortcuts: Set<Shortcut> {
-        text.shortcuts.union(system.shortcuts).union(ClipboardShortcut.all)
+        text.shortcuts.union(system.shortcuts).union(rectangle.shortcuts).union(ClipboardShortcut.all)
     }
 
     /// Loads the panels from `Resources/Panels`. Throws when a fixed panel is
@@ -78,6 +82,7 @@ public struct PanelStore: Sendable {
         return PanelStore(
             text: try load("text"),
             system: try load("system"),
+            rectangle: try load("rectangle"),
             generic: try load("generic", in: apps),
             byBundleID: byBundleID
         )
