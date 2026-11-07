@@ -26,7 +26,7 @@ public struct AccessibilitySettingsPage: View {
                 }
             } footer: {
                 Text(
-                    "Keyboard needs Accessibility access to type into other apps and to read the text field that you type into."
+                    "September Keyboard needs Accessibility access to type into other apps and to read the text field that you type into."
                 )
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)

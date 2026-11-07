@@ -500,7 +500,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = NSImage(
             systemSymbolName: "keyboard",
-            accessibilityDescription: "Keyboard"
+            accessibilityDescription: "September Keyboard"
         )
 
         let menu = NSMenu()
@@ -550,7 +550,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             keyEquivalent: ""
         ).target = self
         menu.addItem(
-            withTitle: "Quit Keyboard",
+            withTitle: "Quit September Keyboard",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
@@ -613,7 +613,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func fail(loadingPanels error: any Error) {
         let alert = NSAlert()
-        alert.messageText = "Keyboard could not load its shortcut panels."
+        alert.messageText = "September Keyboard could not load its shortcut panels."
         alert.informativeText = String(describing: error)
         NSApp.activate()
         alert.runModal()

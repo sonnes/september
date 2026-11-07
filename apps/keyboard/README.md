@@ -36,8 +36,10 @@ make run        # run unbundled in the foreground
 make dev        # same, detached
 make stop       # quit a running Keyboard
 make test       # run the test suite
-make app        # build and sign Keyboard.app
-make dmg        # package Keyboard.app in an installable DMG
+make app        # build and sign September Keyboard.app
+make dmg        # package the app in an installable DMG
+make release    # sign with Developer ID, notarize, staple, and check the app and the DMG
+make publish    # upload the DMG of make release to a GitHub Release
 make open       # build, sign and launch
 make snapshots  # render the keyboard and component library to .build/snapshots
 ```
@@ -50,17 +52,53 @@ inherits the terminal's Accessibility permission — keys type into other apps
 with nothing to grant. The signed bundle from `make app` is a separate identity
 and needs its own grant (below).
 
-The app bundle uses `com.september.keyboard` as its identifier.
+The app is September Keyboard, with the bundle identifier
+`app.september.keyboard`. The version is `CFBundleShortVersionString` in
+`Resources/Info.plist`. The icon `Resources/AppIcon.icns` comes from the
+September mark in `apps/desktop/public/logo.svg`.
 
 ## Build the DMG
 
 Run `make dmg` to build the signed app and create
-`.build/release/Keyboard.dmg`. The disk image contains `Keyboard.app` and an
-`Applications` shortcut.
+`.build/release/September-Keyboard-<version>.dmg`. The disk image contains
+`September Keyboard.app` and an `Applications` shortcut.
 
 The build uses the `Keyboard Dev` signing identity when it is available. If
 the identity is missing, the app is signed ad hoc for local installation and
 macOS resets its Accessibility permission after the next build.
+
+## Release
+
+A release is a DMG that anyone can open. The app and the DMG are signed with
+a Developer ID, notarized by Apple, and stapled. Each one has its own ticket,
+so the app opens without a network connection after the user copies it out of
+the DMG.
+
+`make release` reads the credentials of the desktop release from the `.envrc`
+file in the repository root: `APPLE_SIGNING_IDENTITY`, `APPLE_API_KEY`,
+`APPLE_API_ISSUER`, and `APPLE_API_KEY_PATH`. The file is not in git.
+
+1. Set the new version in `CFBundleShortVersionString`, and increase
+   `CFBundleVersion`, in `Resources/Info.plist`.
+2. Add a `## <version>` section to `CHANGELOG.md`.
+3. Run `make release`. In a worktree, which has no `.envrc`, run
+   `make release ENVRC=<path to .envrc>`.
+4. Open the DMG on a second Mac, or in a new user account, and do the checks in
+   "Check a release" below.
+5. Run `make publish`. It creates the GitHub Release `keyboard-v<version>` on
+   `sonnes/september` with the DMG and the notes of `CHANGELOG.md`.
+
+Notarization takes from 2 to 15 minutes for each of the two uploads. If Apple
+rejects an upload, `make release` stops. Then run
+`xcrun notarytool log <submission id>` with the same key to read the reason.
+
+### Check a release
+
+- Gatekeeper opens the app with no warning.
+- The first launch shows the Accessibility banner. After you allow September
+  Keyboard in System Settings, the keys type into another app.
+- Settings opens, and Speak reads the input bar aloud.
+- The Write window opens and saves a document.
 
 ## The windows
 

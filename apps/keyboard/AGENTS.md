@@ -11,14 +11,16 @@ the root [CLAUDE.md](../../CLAUDE.md) (symlink of the root `AGENTS.md`) and
 make test       # tests — run before and after every change
 make run        # run unbundled, inheriting the terminal's Accessibility permission
 make dev        # same, detached; make stop to quit it
-make app        # build + sign Keyboard.app (needs its own permission grant)
-make dmg        # package Keyboard.app with an Applications shortcut
+make app        # build + sign September Keyboard.app (needs its own permission grant)
+make dmg        # package the app with an Applications shortcut
+make release    # Developer ID, notarize, staple, Gatekeeper check (reads ../../.envrc)
+make publish    # GitHub Release of the DMG — ask the user first
 make open       # build, sign, launch
 make snapshots  # keyboard (Type, Talk, Write, Mine) + component library PNGs in .build/snapshots
 ```
 
 Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
-`mac-app` / `keyboard-dmg` / `mac-stop` from the repo root.
+`mac-app` / `keyboard-dmg` / `keyboard-release` / `mac-stop` from the repo root.
 
 ## Layout
 
@@ -126,6 +128,10 @@ only what needs a running app — the panel, the event sink, the menu bar.
 - Accessibility permission is bound to *(bundle id, code signature)*. Ad-hoc
   signing revokes it on every rebuild — create the `Keyboard Dev` certificate
   (README) before wondering why keys stopped working.
+- The app is September Keyboard, bundle ID `app.september.keyboard`. The
+  Keychain services stay `com.september.keyboard` and
+  `com.september.keyboard.private`: they are storage names, and a new name
+  loses the saved key and the private text.
 - Never prompt for permission at launch. The banner and the menu item ask for
   Accessibility. The App Panels page of Settings asks for Input Monitoring.
 - Key code mapping goes through `UCKeyTranslate`, never a hardcoded US table,

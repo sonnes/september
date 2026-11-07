@@ -3,17 +3,19 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>Keyboard</string>
+	<string>September Keyboard</string>
 	<key>CFBundleDisplayName</key>
-	<string>Keyboard</string>
+	<string>September Keyboard</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.september.keyboard</string>
+	<string>app.september.keyboard</string>
 	<key>CFBundleExecutable</key>
 	<string>Keyboard</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>1.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>LSMinimumSystemVersion</key>
@@ -21,8 +23,8 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAccessibilityUsageDescription</key>
-	<string>Keyboard types into the app you are using, so it needs Accessibility access to send keystrokes.</string>
+	<string>September Keyboard types into the app you are using, so it needs Accessibility access to send keystrokes.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Keyboard</string>
+	<string>© 2026 Ravi Atluri</string>
 </dict>
 </plist>
