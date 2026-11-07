@@ -2,14 +2,6 @@
   "title": "Text",
   "columns": 2,
   "buttons": [
-    { "id": "up", "label": "Up",
-      "action": {"type": "shortcut", "modifiers": [], "key": "up"} },
-    { "id": "down", "label": "Down",
-      "action": {"type": "shortcut", "modifiers": [], "key": "down"} },
-    { "id": "left", "label": "Left",
-      "action": {"type": "shortcut", "modifiers": [], "key": "left"} },
-    { "id": "right", "label": "Right",
-      "action": {"type": "shortcut", "modifiers": [], "key": "right"} },
     { "id": "word-left", "label": "Word Left",
       "action": {"type": "shortcut", "modifiers": ["option"], "key": "left"} },
     { "id": "word-right", "label": "Word Right",
@@ -26,5 +18,22 @@
       "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "left"} },
     { "id": "select-line-end", "label": "Select to Line End",
       "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "right"} }
-  ]
+  ],
+  "arrows": {
+    "columns": 3,
+    "buttons": [
+      { "id": "page-up", "label": "Page Up",
+        "action": {"type": "shortcut", "modifiers": [], "key": "pageUp"} },
+      { "id": "up", "label": "Up",
+        "action": {"type": "shortcut", "modifiers": [], "key": "up"} },
+      { "id": "page-down", "label": "Page Down",
+        "action": {"type": "shortcut", "modifiers": [], "key": "pageDown"} },
+      { "id": "left", "label": "Left",
+        "action": {"type": "shortcut", "modifiers": [], "key": "left"} },
+      { "id": "down", "label": "Down",
+        "action": {"type": "shortcut", "modifiers": [], "key": "down"} },
+      { "id": "right", "label": "Right",
+        "action": {"type": "shortcut", "modifiers": [], "key": "right"} }
+    ]
+  }
 }

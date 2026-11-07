@@ -6,9 +6,9 @@ package: keyboard
 
 # Shortcut panels (macOS)
 
-Panels are on each side of the macOS keyboard. EDIT is on the left. NAVIGATE
-and SYSTEM are on the right. The shortcuts of the app in front are also a
-panel. Each panel is a grid of buttons in a JSON file that the app loads at
+Panels are on each side of the macOS keyboard. SYSTEM and the app panel are on
+the left. TEXT and EDIT are on the right. The shortcuts of the app in front are
+also a panel. Each panel is a grid of buttons in a JSON file that the app loads at
 launch.
 
 The Apple Accessibility Keyboard uses the same model: `.ascconfig` bundles of
@@ -17,10 +17,14 @@ buttons with actions. September has no absolute layout and no modal editor.
 ## The model
 
 ```
-PanelDefinition   title, columns, buttons
+PanelDefinition   title, columns, buttons, arrows
   PanelButton     id, label, symbol (SF Symbol), action
     PanelAction   .shortcut(Shortcut) | .text(String)
+  PanelBlock      columns, buttons
 ```
+
+`arrows` is an optional `PanelBlock` below the grid, with columns of its own.
+The Text keypad uses it for an inverted T of arrow keys, in three columns.
 
 A button presses a key combination or types a phrase. A text button uses up
 the latched modifiers, the same as a text key.
@@ -32,9 +36,9 @@ Z"), so a button never has to repeat itself in JSON.
 
 ```
 Sources/SeptemberKit/Resources/Panels/
-├── edit.json                        # left keypad
-├── navigate.json                    # right keypad, top
-├── system.json                      # right keypad, bottom
+├── edit.json                        # right of the keys, outside
+├── text.json                        # right of the keys, nearest
+├── system.json                      # left of the keys, nearest
 └── Apps/
     ├── generic.json                 # fallback for unknown apps
     └── com.microsoft.VSCode.json    # one file per known app, named by bundle id
@@ -46,7 +50,8 @@ necessary.
 
 `PanelStore.bundled()` throws if a panel is missing, if a file does not
 decode, or if two buttons in a panel have the same id. The app then shows the
-error and quits.
+error and quits. The buttons of `arrows` count as buttons of the panel for this
+check.
 
 ## Following the frontmost app
 

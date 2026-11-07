@@ -13,15 +13,15 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
     public var frameName: String { "September Keyboard Panel \(rawValue)" }
 }
 
-/// Where the panels sit until the user drags them: Text, System, and the app
-/// panel at the left of the keys, and Edit at the right, with their tops in
-/// line with the top of the keys. Frames use the coordinates of AppKit, with
+/// Where the panels sit until the user drags them: System and the app panel
+/// at the left of the keys, and Text and Edit at the right, with their tops
+/// in line with the top of the keys. Frames use the coordinates of AppKit, with
 /// the origin at the bottom left.
 public enum PanelPlacement {
     /// The panels at the left of the keys, from the keys out.
-    static let left: [DetachedPanel] = [.text, .system, .app]
+    static let left: [DetachedPanel] = [.system, .app]
     /// The panels at the right of the keys, from the keys out.
-    static let right: [DetachedPanel] = [.edit]
+    static let right: [DetachedPanel] = [.text, .edit]
 
     public static func defaultFrames(
         keys: CGRect, sizes: [DetachedPanel: CGSize]

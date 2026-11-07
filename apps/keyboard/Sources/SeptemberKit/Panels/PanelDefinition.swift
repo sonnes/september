@@ -69,22 +69,37 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
     public var isLearned: Bool { id.hasPrefix(PanelButton.learnedPrefix) }
 }
 
+/// A block of buttons below the grid of a keypad, with columns of its own.
+/// The Text keypad puts its arrows in one, as an inverted T.
+public struct PanelBlock: Sendable, Hashable {
+    public let columns: Int
+    public let buttons: [PanelButton]
+
+    public init(columns: Int, buttons: [PanelButton]) {
+        self.columns = columns
+        self.buttons = buttons
+    }
+}
+
 /// A grid of shortcut buttons: the Edit, Text, and System keypads, or the
 /// shortcuts for the app in front.
 public struct PanelDefinition: Sendable, Hashable {
     public let title: String
     public let columns: Int
     public let buttons: [PanelButton]
+    /// The arrow keys below the grid, if the keypad has them.
+    public let arrows: PanelBlock?
 
-    public init(title: String, columns: Int, buttons: [PanelButton]) {
+    public init(title: String, columns: Int, buttons: [PanelButton], arrows: PanelBlock? = nil) {
         self.title = title
         self.columns = columns
         self.buttons = buttons
+        self.arrows = arrows
     }
 
-    /// The chords that the buttons press on their own.
+    /// The chords that the buttons and the arrows press on their own.
     public var shortcuts: Set<Shortcut> {
-        Set(buttons.compactMap { button in
+        Set((buttons + (arrows?.buttons ?? [])).compactMap { button in
             if case .shortcut(let shortcut) = button.action { return shortcut }
             return nil
         })
@@ -96,33 +111,37 @@ public struct PanelDefinition: Sendable, Hashable {
         let ids = Set(buttons.map(\.id))
         return PanelDefinition(
             title: title, columns: columns,
-            buttons: buttons + extra.filter { !ids.contains($0.id) })
+            buttons: buttons + extra.filter { !ids.contains($0.id) }, arrows: arrows)
     }
 
     /// The same panel with these buttons.
     public func with(buttons: [PanelButton]) -> PanelDefinition {
-        PanelDefinition(title: title, columns: columns, buttons: buttons)
+        PanelDefinition(title: title, columns: columns, buttons: buttons, arrows: arrows)
     }
 }
 
 // MARK: - Decoding
 
+extension PanelBlock: Decodable {}
+
 extension PanelDefinition: Decodable {
     enum CodingKeys: String, CodingKey {
-        case title, columns, buttons
+        case title, columns, buttons, arrows
     }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let buttons = try container.decode([PanelButton].self, forKey: .buttons)
+        let arrows = try container.decodeIfPresent(PanelBlock.self, forKey: .arrows)
         var seen: Set<String> = []
-        for button in buttons where !seen.insert(button.id).inserted {
+        for button in buttons + (arrows?.buttons ?? []) where !seen.insert(button.id).inserted {
             throw PanelDecodingError.duplicateButton(button.id)
         }
         self.init(
             title: try container.decode(String.self, forKey: .title),
             columns: try container.decode(Int.self, forKey: .columns),
-            buttons: buttons
+            buttons: buttons,
+            arrows: arrows
         )
     }
 }

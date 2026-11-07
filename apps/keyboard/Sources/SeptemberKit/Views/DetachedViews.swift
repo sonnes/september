@@ -104,7 +104,10 @@ public struct KeypadCard: View {
 
     public var body: some View {
         PanelCard {
-            PanelGridView(panel: panel) { controller.perform($0) }
+            PanelGridView(
+                panel: panel,
+                width: panel.arrows == nil ? Metrics.AppPanel.width : Metrics.AppPanel.arrowsWidth
+            ) { controller.perform($0) }
         }
     }
 }

@@ -16,7 +16,8 @@ struct SectionLabel: View {
 }
 
 /// A keypad: the Edit, Text, and System keypads. Each button takes one cell
-/// of the grid.
+/// of the grid. The arrows of a keypad, if it has them, sit below the grid
+/// in columns of their own.
 public struct PanelGridView: View {
     private let panel: PanelDefinition
     private let width: CGFloat
@@ -33,30 +34,35 @@ public struct PanelGridView: View {
     }
 
     public var body: some View {
-        let spacing = Metrics.AppPanel.gap
-        let columns = max(panel.columns, 1)
-        let buttonWidth = (width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
-
         VStack(alignment: .leading, spacing: Metrics.Panel.titleSpacing) {
             SectionLabel(text: panel.title)
                 .frame(height: Metrics.Panel.titleHeight)
-            LazyVGrid(
-                columns: Array(
-                    repeating: GridItem(.fixed(buttonWidth), spacing: spacing),
-                    count: columns
-                ),
-                spacing: spacing
-            ) {
-                ForEach(panel.buttons) { button in
-                    ShortcutButtonView(button: button, width: buttonWidth) {
-                        press(button.action)
-                    }
+            VStack(spacing: Metrics.AppPanel.gap) {
+                grid(panel.buttons, columns: panel.columns)
+                if let arrows = panel.arrows {
+                    grid(arrows.buttons, columns: arrows.columns)
                 }
             }
         }
         .frame(width: width)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(panel.title) shortcuts")
+    }
+
+    private func grid(_ buttons: [PanelButton], columns: Int) -> some View {
+        let spacing = Metrics.AppPanel.gap
+        let columns = max(columns, 1)
+        let buttonWidth = (width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
+        return LazyVGrid(
+            columns: Array(repeating: GridItem(.fixed(buttonWidth), spacing: spacing), count: columns),
+            spacing: spacing
+        ) {
+            ForEach(buttons) { button in
+                ShortcutButtonView(button: button, width: buttonWidth) {
+                    press(button.action)
+                }
+            }
+        }
     }
 }
 

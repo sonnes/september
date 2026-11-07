@@ -97,15 +97,23 @@ private func sequenceTests() {
 
 @MainActor
 private func panelFileTests() {
-    test("the Text keypad replaces Navigate, and System holds the moved keys") {
+    test("the Text keypad has its moves above an inverted T of arrows, and System holds the moved keys") {
         let store = try PanelStore.bundled()
-        expectEqual(store.text.buttons.count, 12)
+        expectEqual(store.text.buttons.count, 8)
         expectEqual(
             store.text.buttons.first?.action,
-            .shortcut(Shortcut(modifiers: [], key: .virtual(.up))))
+            .shortcut(Shortcut(modifiers: .option, key: .virtual(.left))))
         expectEqual(
             store.text.buttons.last?.action,
             .shortcut(Shortcut(modifiers: [.shift, .command], key: .virtual(.right))))
+        let arrows = try expectValue(store.text.arrows)
+        expectEqual(arrows.columns, 3)
+        expectEqual(
+            arrows.buttons.map(\.action),
+            [VirtualKey.pageUp, .up, .pageDown, .left, .down, .right].map {
+                .shortcut(Shortcut(modifiers: [], key: .virtual($0)))
+            })
+        expect(store.keypadShortcuts.contains(Shortcut(modifiers: [], key: .virtual(.up))))
         let system = Set(store.system.buttons.map(\.id))
         for id in ["find", "mission-control", "page-up", "page-down", "zoom-out", "zoom-in"] {
             expect(system.contains(id), "System has no \(id)")
@@ -144,6 +152,16 @@ private func panelFileTests() {
         expect(heading.hint == "#")
         expect(AppPanelLayout.slots([clear]) == 2)
         expect(clear.hint == nil)
+    }
+
+    test("an arrow block may not reuse the ID of a button") {
+        let json = Data(#"""
+            {"title": "T", "columns": 2,
+             "buttons": [{"id": "up", "label": "Up", "action": {"type": "shortcut", "key": "up"}}],
+             "arrows": {"columns": 3,
+                        "buttons": [{"id": "up", "label": "Up", "action": {"type": "shortcut", "key": "up"}}]}}
+            """#.utf8)
+        expect((try? JSONDecoder().decode(PanelDefinition.self, from: json)) == nil)
     }
 
     test("every bundled panel fits the two-column grid") {

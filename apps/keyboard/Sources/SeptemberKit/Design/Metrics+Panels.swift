@@ -9,6 +9,8 @@ extension Metrics {
         public static let buttonHeight: CGFloat = 44
         /// One column: half the width, less half the gap.
         public static let buttonWidth: CGFloat = (width - gap) / 2
+        /// A keypad with arrows: three buttons of the standard width in a row.
+        public static let arrowsWidth: CGFloat = buttonWidth * 3 + gap * 2
         public static let cornerRadius: CGFloat = 8
         /// The rows of the app panel grid.
         public static let rows = 6
