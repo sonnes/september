@@ -91,7 +91,8 @@ file in the repository root: `APPLE_SIGNING_IDENTITY`, `APPLE_API_KEY`,
 4. Open the DMG on a second Mac, or in a new user account, and do the checks in
    "Check a release" below.
 5. Run `make publish`. It creates the GitHub Release `keyboard-v<version>` on
-   `sonnes/september` with the DMG and the notes of `CHANGELOG.md`.
+   `sonnes/september` with the DMG and the notes of `CHANGELOG.md`. A 0.x
+   version is a pre-release, as the desktop releases are.
 
 Notarization takes from 2 to 15 minutes for each of the two uploads. If Apple
 rejects an upload, `make release` stops. Then run

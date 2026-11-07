@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0
+## 0.1.0
 
 The first public release of September Keyboard. It is a floating keyboard for people with ALS, MND, or other speech and motor difficulties. It types into the app in front, and it can speak for you.
 

@@ -110,7 +110,9 @@ dmg-only:
 	echo "built $(DMG)"
 
 # Uploads the DMG of `make release` to a GitHub Release of sonnes/september,
-# with the notes of this version from CHANGELOG.md.
+# with the notes of this version from CHANGELOG.md. A 0.x version is a
+# pre-release, as the desktop releases are, so it does not become the latest
+# release of the repository.
 publish:
 	@set -eu; \
 	test -f "$(DMG)" || { echo "Run make release first."; exit 1; }; \
@@ -119,7 +121,8 @@ publish:
 	trap 'rm -f "$$notes"' EXIT; \
 	awk '/^## /{p = ($$2 == "$(VERSION)")} p' CHANGELOG.md > "$$notes"; \
 	test -s "$$notes" || { echo "CHANGELOG.md has no section for $(VERSION)."; exit 1; }; \
-	gh release create "keyboard-v$(VERSION)" "$(DMG)" \
+	case "$(VERSION)" in 0.*) prerelease=--prerelease ;; *) prerelease= ;; esac; \
+	gh release create "keyboard-v$(VERSION)" "$(DMG)" $$prerelease \
 		--repo sonnes/september \
 		--title "September Keyboard $(VERSION)" \
 		--notes-file "$$notes"
