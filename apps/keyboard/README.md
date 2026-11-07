@@ -75,7 +75,9 @@ keyboard window and the panels never take focus.
 
 The app panel has two tabs. The first tab shows the panel of the app in front.
 The second tab, Mine, shows the buttons that the user made on the My Panel page
-of Settings.
+of Settings. In each app and in Mine, the app panel is as tall as the Edit
+keypad. The tabs are taller than the title of a keypad, so the buttons under
+the tabs are 2.5 points lower than the buttons of the keypads.
 
 In Talk mode, the keys type into the input bar of the keyboard, and other apps
 get no keys. The shortcut panels hide. Phrases show at the left of the keys,

@@ -110,7 +110,8 @@ public struct KeypadCard: View {
 }
 
 /// The app panel in a window of its own, with two tabs: the panel of the app
-/// in front, and Mine.
+/// in front, and Mine. The panel is as tall as the Edit keypad, in each app
+/// and in Mine.
 public struct AppPanelCard: View {
     @EnvironmentObject private var controller: KeyboardController
     @ObservedObject private var session: KeyboardSession
@@ -137,14 +138,18 @@ public struct AppPanelCard: View {
                 }
                 .frame(width: Metrics.AppPanel.width)
 
-                switch session.appPanelTab {
-                case .app:
-                    AppShortcutsView(panel: appPanels.panel, appName: nil, showsHeader: false) {
-                        session.pressAppPanel($0)
+                Group {
+                    switch session.appPanelTab {
+                    case .app:
+                        AppShortcutsView(panel: appPanels.panel, appName: nil, showsHeader: false) {
+                            session.pressAppPanel($0)
+                        }
+                    case .mine:
+                        mine
                     }
-                case .mine:
-                    mine
                 }
+                .environment(\.panelButtonHeight, Metrics.Detached.tabbedButtonHeight)
+                .frame(height: Metrics.Detached.tabbedGridHeight, alignment: .top)
             }
         }
     }
@@ -166,7 +171,8 @@ public struct AppPanelCard: View {
             .foregroundStyle(Color(Tokens.labelSecondary))
             .multilineTextAlignment(.leading)
             .frame(
-                width: Metrics.AppPanel.width, height: Metrics.AppPanel.gridHeight, alignment: .topLeading)
+                width: Metrics.AppPanel.width, height: Metrics.Detached.tabbedGridHeight,
+                alignment: .topLeading)
     }
 
     private var title: String {

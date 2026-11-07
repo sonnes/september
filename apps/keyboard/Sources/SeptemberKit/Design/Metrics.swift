@@ -77,6 +77,8 @@ public enum Metrics {
 
     /// The keypads and the app shortcuts list.
     public enum Panel {
+        /// The title of a keypad, such as "EDIT".
+        public static let titleHeight: CGFloat = 11
         public static let titleSpacing: CGFloat = 8
         public static let appSpacing: CGFloat = 6
         public static let appHeaderBottom: CGFloat = 2

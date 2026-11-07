@@ -39,6 +39,7 @@ public struct PanelGridView: View {
 
         VStack(alignment: .leading, spacing: Metrics.Panel.titleSpacing) {
             SectionLabel(text: panel.title)
+                .frame(height: Metrics.Panel.titleHeight)
             LazyVGrid(
                 columns: Array(
                     repeating: GridItem(.fixed(buttonWidth), spacing: spacing),

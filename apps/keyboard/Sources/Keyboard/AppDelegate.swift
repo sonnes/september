@@ -227,8 +227,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             session.appChanged(name: app?.localizedName, bundleID: app?.bundleIdentifier, windowTitle: title)
             startChordTap()
         }
-        // Panels of different apps differ in height. The top of the panel
-        // stays in line with the top of the keys.
+        // The new panel gets the icon of the app. The top of the panel stays
+        // in line with the top of the keys.
         if let window = panels[.app] {
             let top = window.frame.maxY
             window.update(root: content.panel(.app, appIcon: appIcon), contentSize: panelSize(.app))

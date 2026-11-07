@@ -21,9 +21,11 @@ public struct ShortcutButtonView: View {
         self.press = press
     }
 
+    @Environment(\.panelButtonHeight) private var height
+
     public var body: some View {
         label
-            .frame(width: width, height: Metrics.AppPanel.buttonHeight)
+            .frame(width: width, height: height)
             .background(shape.fill(Color(fill)))
             .overlay(shape.strokeBorder(Color(stroke), lineWidth: 1))
             .overlay(alignment: .topTrailing) { learnedDot }
@@ -135,11 +137,18 @@ private struct TipArrow: Shape {
 /// An empty slot of the app panel grid, drawn with a dashed border.
 struct EmptySlotView: View {
     let width: CGFloat
+    @Environment(\.panelButtonHeight) private var height
 
     var body: some View {
         RoundedRectangle(cornerRadius: Metrics.AppPanel.cornerRadius, style: .continuous)
             .strokeBorder(Color(Tokens.strokeStandard), style: StrokeStyle(lineWidth: 1, dash: [Metrics.AppPanel.emptySlotDash]))
-            .frame(width: width, height: Metrics.AppPanel.buttonHeight)
+            .frame(width: width, height: height)
             .accessibilityHidden(true)
     }
+}
+
+extension EnvironmentValues {
+    /// The height of a button in a panel grid. The app panel sets a lower
+    /// height under its tabs, so that it is as tall as the Edit keypad.
+    @Entry public var panelButtonHeight: CGFloat = Metrics.AppPanel.buttonHeight
 }

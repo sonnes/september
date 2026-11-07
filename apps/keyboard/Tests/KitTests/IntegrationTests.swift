@@ -1,6 +1,8 @@
+import AppKit
 import CoreGraphics
 import Foundation
 import SeptemberKit
+import SwiftUI
 
 /// The wiring between the tracks: the session that joins the controller, the
 /// predictions, the voice, the app panel, and My Panel, and the small types
@@ -12,6 +14,7 @@ func integrationTests() async {
     placementTests()
     inputBarTests()
     await sessionTests()
+    await panelHeightTests()
 }
 
 // MARK: - The input bar
@@ -567,5 +570,40 @@ private func asyncTest(_ name: String, _ body: () async throws -> Void) async {
         try await body()
     } catch {
         Run.failures.append("\(name) — threw \(error)")
+    }
+}
+
+// MARK: - The height of the panels
+
+/// The height that a view asks for, as the app measures a panel window.
+@MainActor
+private func height(_ view: some View, controller: KeyboardController) -> CGFloat {
+    let probe = NSHostingView(rootView: view.environmentObject(controller))
+    probe.layoutSubtreeIfNeeded()
+    return probe.fittingSize.height
+}
+
+@MainActor
+private func panelHeightTests() async {
+    await asyncTest("each app panel and Mine are as tall as the Edit keypad") {
+        let parts = try makeSession()
+        let controller = parts.controller
+        let edit = height(KeypadCard(panel: controller.panels.edit), controller: controller)
+        let card = AppPanelCard(session: parts.session, appIcon: nil)
+        let apps = controller.panels.appPanels.map(\.bundleID) + ["com.example.none"]
+        for bundleID in apps {
+            parts.session.appChanged(name: nil, bundleID: bundleID, windowTitle: nil)
+            expectEqual(height(card, controller: controller), edit, bundleID)
+        }
+        parts.session.appPanelTab = .mine
+        expectEqual(height(card, controller: controller), edit, "an empty Mine")
+        let store = try expectValue(parts.userPanel)
+        for index in 0..<14 {
+            try store.add(NewButton(
+                name: "Key \(index)", action: .shortcut(Shortcut(modifiers: .command, key: .character("k")))))
+        }
+        try store.add(NewButton(name: "Hello", action: .text("Hello")))
+        await parts.session.settle()
+        expectEqual(height(card, controller: controller), edit, "a full Mine")
     }
 }
