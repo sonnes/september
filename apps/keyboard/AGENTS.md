@@ -76,7 +76,8 @@ only what needs a running app — the panel, the event sink, the menu bar.
   text fields to them, do not set `canBecomeKey`, and do not activate the app
   from them. Everything the user types goes to the app in front. Only the
   Write and Settings windows take focus. To open one of them, call
-  `AppActivation.bringToFront()`.
+  `AppActivation.bringToFront(_:)`, and call `AppActivation.windowClosed(_:)`
+  when it closes.
 - **A floating window has no title bar.** `FloatingPanel` is borderless. A
   title bar gives the hosting view a safe area, and then the content jumps up
   and down as it changes.
@@ -140,8 +141,11 @@ only what needs a running app — the panel, the event sink, the menu bar.
 - `ImageRenderer` puts a grey layer over the whole view when the view holds
   an app icon from `NSWorkspace`. Draw the icon into a small bitmap first
   with `tabIcon()`.
-- Keyboard is an accessory app. A press through `AXPress` does not activate
-  it, so `NSApp.activate()` alone leaves a new window behind the app in front.
+- Keyboard is an accessory app. Activation is cooperative since macOS 14,
+  and macOS refuses `NSApp.activate()` after a press through `AXPress`. Then
+  `WindowActivation` shows the window on top with `orderFrontRegardless()`,
+  and the window takes the focus when the app becomes active. Do not use
+  `activate(ignoringOtherApps:)`.
 - `make run` and `make dev` show the keyboard on the screen of the user. Stop
   it with `make stop` when the check is done.
 - Do not test with the pointer of the user. To read the keyboard or press

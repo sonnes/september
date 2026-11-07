@@ -66,10 +66,9 @@ final class WriteWindowController: NSWindowController, NSWindowDelegate, NSToolb
             page.send(.theme(.september))
             model.start()
         }
-        AppActivation.bringToFront()
-        showWindow(nil)
-        window?.makeKeyAndOrderFront(nil)
-        window?.makeFirstResponder(page.webView)
+        guard let window else { return }
+        AppActivation.bringToFront(window)
+        window.makeFirstResponder(page.webView)
     }
 
     /// True while the Write window is the key window.
@@ -139,6 +138,7 @@ final class WriteWindowController: NSWindowController, NSWindowDelegate, NSToolb
     }
 
     func windowWillClose(_ notification: Notification) {
+        if let window { AppActivation.windowClosed(window) }
         Task { await flush() }
     }
 

@@ -121,6 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        AppActivation.appBecameActive()
         session?.predictions.refreshAvailability()
     }
 

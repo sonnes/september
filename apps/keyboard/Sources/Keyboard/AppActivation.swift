@@ -1,25 +1,32 @@
 import AppKit
+import SeptemberKit
 
 /// Brings Keyboard to the front for its normal windows: Write and Settings.
 ///
-/// Keyboard is an accessory app, and its panels never take focus. A press on
-/// a panel, and each press that Dwell or Switch Control makes through
-/// `AXPress`, is no activation of the app in the eyes of macOS, so
-/// `NSApp.activate()` alone leaves the window behind the app in front.
+/// Keyboard is an accessory app, and its panels never take focus. Since
+/// macOS 14, activation is cooperative, and macOS refuses `NSApp.activate()`
+/// after a press through `AXPress`, because the press is no input to the
+/// keyboard. The window then shows on top of the app in front with
+/// `orderFrontRegardless()`, and it takes the focus when the app becomes
+/// active, for example after a click on the window. `WindowActivation`
+/// holds the rule.
 @MainActor
 enum AppActivation {
-    static func bringToFront() {
-        NSApp.activate()
-        // The older call still brings the app forward when the cooperative
-        // one is refused. A protocol call keeps its deprecation out of the
-        // build log.
-        (NSApp as any ForcedActivation).activate(ignoringOtherApps: true)
+    private static let activation = WindowActivation(app: NSApp)
+
+    static func bringToFront(_ window: NSWindow) {
+        activation.bringToFront(window)
+    }
+
+    /// Call it from `applicationDidBecomeActive(_:)`.
+    static func appBecameActive() {
+        activation.appBecameActive(keyWindow: NSApp.keyWindow)
+    }
+
+    static func windowClosed(_ window: NSWindow) {
+        activation.windowClosed(window)
     }
 }
 
-@MainActor
-private protocol ForcedActivation {
-    func activate(ignoringOtherApps flag: Bool)
-}
-
-extension NSApplication: ForcedActivation {}
+extension NSApplication: ActivatingApp {}
+extension NSWindow: FocusWindow {}

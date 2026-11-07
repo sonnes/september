@@ -87,8 +87,13 @@ the Said list.
 Write opens the Write window, a normal macOS window with a Markdown editor.
 In the Write window, Speak reads the selection. If nothing is selected, Speak
 reads the whole document without the Markdown marks. `MarkdownSpeech` holds
-the rule. Settings opens the Settings window. Both windows take focus. The menu bar item
-also opens them.
+the rule.
+
+Settings opens the Settings window. Both windows take focus. The menu bar item
+also opens them. After a press through `AXPress`, macOS refuses to activate
+the keyboard. Then the window shows on top of the app in front, and it takes
+the focus when the keyboard becomes active, for example after a click on the
+window.
 
 ## Pressing and holding keys
 

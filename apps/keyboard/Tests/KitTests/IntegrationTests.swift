@@ -15,6 +15,7 @@ func integrationTests() async {
     inputBarTests()
     await sessionTests()
     await panelHeightTests()
+    activationTests()
 }
 
 // MARK: - The input bar
@@ -640,5 +641,71 @@ private func panelHeightTests() async {
         try store.add(NewButton(name: "Hello", action: .text("Hello")))
         await parts.session.settle()
         expectEqual(height(card, controller: controller), edit, "a full Mine")
+    }
+}
+
+// MARK: - Bringing a window to the front
+
+@MainActor
+private final class FakeApp: ActivatingApp {
+    var isActive = false
+    /// True when macOS grants the activation at once.
+    var grants = false
+    var requests = 0
+
+    func activate() {
+        requests += 1
+        if grants { isActive = true }
+    }
+}
+
+@MainActor
+private final class FakeWindow: FocusWindow {
+    var events: [String] = []
+
+    func orderFrontRegardless() { events.append("front") }
+    func makeKeyAndOrderFront(_ sender: Any?) { events.append("key") }
+}
+
+@MainActor
+private func activationTests() {
+    test("an active app gives the window the focus at once") {
+        let app = FakeApp()
+        app.grants = true
+        let window = FakeWindow()
+        WindowActivation(app: app).bringToFront(window)
+        expectEqual(app.requests, 1)
+        expectEqual(window.events, ["key"])
+    }
+
+    test("a refused activation shows the window on top, and the focus follows the activation") {
+        let app = FakeApp()
+        let activation = WindowActivation(app: app)
+        let window = FakeWindow()
+        activation.bringToFront(window)
+        expectEqual(app.requests, 1)
+        expectEqual(window.events, ["front"])
+        activation.appBecameActive(keyWindow: nil)
+        expectEqual(window.events, ["front", "key"])
+        activation.appBecameActive(keyWindow: nil)
+        expectEqual(window.events, ["front", "key"], "the focus goes to the window once")
+    }
+
+    test("a window that the user chose keeps the focus") {
+        let activation = WindowActivation(app: FakeApp())
+        let write = FakeWindow()
+        let settings = FakeWindow()
+        activation.bringToFront(write)
+        activation.appBecameActive(keyWindow: settings)
+        expectEqual(write.events, ["front"])
+    }
+
+    test("a closed window does not take the focus") {
+        let activation = WindowActivation(app: FakeApp())
+        let window = FakeWindow()
+        activation.bringToFront(window)
+        activation.windowClosed(window)
+        activation.appBecameActive(keyWindow: nil)
+        expectEqual(window.events, ["front"])
     }
 }

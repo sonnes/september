@@ -5,8 +5,8 @@ import SwiftUI
 /// The Settings window: a normal window that takes focus, unlike the floating
 /// keyboard. A second `show()` brings the same window to the front.
 ///
-/// Keyboard is an accessory app, so `show()` activates it. When the window
-/// closes, the app that was in front before gets the focus back.
+/// Keyboard is an accessory app, so `show()` asks to activate it. When the
+/// window closes, the app that was in front before gets the focus back.
 @MainActor
 final class SettingsWindowController: NSObject, NSWindowDelegate {
     private let pages: SettingsPages
@@ -23,11 +23,11 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         if !NSApp.isActive {
             previousApp = NSWorkspace.shared.frontmostApplication
         }
-        AppActivation.bringToFront()
-        window.makeKeyAndOrderFront(nil)
+        AppActivation.bringToFront(window)
     }
 
     func windowWillClose(_ notification: Notification) {
+        if let window { AppActivation.windowClosed(window) }
         previousApp?.activate()
         previousApp = nil
     }
