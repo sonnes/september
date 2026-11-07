@@ -250,7 +250,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard isWriteInFront else { return }
         Task {
             guard let caret = await writeWindow.caret(), isWriteInFront else { return }
-            controller.focusChanged(to: caret.focusedField)
+            session.writeCaretRead(caret)
         }
     }
 

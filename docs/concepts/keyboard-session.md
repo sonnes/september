@@ -64,7 +64,7 @@ An update does these steps in this order:
 2. If the speech ended after the last update, it tells Talk mode. Talk mode
    then empties the bar.
 3. It sets `speakMode`. In Type mode, Speak is on when the field has text to
-   read, or when the Write window is in front.
+   read. In the Write window, Speak is on when the document has text.
 4. It sets `spokenWord`.
 
 The input bar does not wait for the turn. The session takes the focused field,
@@ -108,9 +108,11 @@ panel when its window title names Claude Code.
 ### The Write window
 
 The Write window is in the keyboard process, and the keyboard cannot read its
-own window through the accessibility API. When the window becomes the key window, the app calls `appChanged` with
-`WritePanel.id`. Then a timer reads the paragraph at the caret from the editor
-page every 0.5 seconds and gives it to `controller.focusChanged(to:)`.
+own window through the accessibility API. When the window becomes the key
+window, the app calls `appChanged` with `WritePanel.id`. Then a timer reads
+the paragraph at the caret from the editor page every 0.5 seconds. The app
+gives it to `writeCaretRead(_:)`. The session sends the paragraph to
+`controller.focusChanged(to:)` and records if the document has text.
 
 ## Calls from the views
 

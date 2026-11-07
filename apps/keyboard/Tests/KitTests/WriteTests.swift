@@ -205,6 +205,14 @@ func writeTests() {
         expectEqual(field.role, "AXTextArea")
         expect(field.isEditable && !field.isSecure, "an editable text field")
         expectEqual(field.display, .mirrored(text: "Who checks it at ni", caret: 19, selectionLength: 0))
+        expect(!caret.documentIsEmpty, "a page that does not say tells of a document with text")
+    }
+
+    test("the caret read tells when the document has no text") {
+        expect(EditorCall.caretScript.contains("empty"), "the script reads the whole editor")
+        let caret = try JSONDecoder().decode(
+            EditorCaret.self, from: Data(#"{"text":"","caret":0,"length":0,"empty":true}"#.utf8))
+        expect(caret.documentIsEmpty)
     }
 
     // MARK: Speak

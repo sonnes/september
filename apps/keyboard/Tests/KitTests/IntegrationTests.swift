@@ -456,9 +456,10 @@ private func sessionTests() async {
         let parts = try makeSession(voiceHolds: true)
         parts.session.writeSpeech = { EditorSpeech(selection: "", markdown: "# Plan\n\nSee **the roses**.") }
         parts.session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
-        parts.controller.focusChanged(to: EditorCaret(text: "", caret: 0, length: 0).focusedField)
+        parts.session.writeCaretRead(EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: false))
         await parts.session.settle()
         expectEqual(parts.session.speakMode, .speak, "an empty paragraph at the caret leaves Speak on")
+        expectEqual(parts.controller.input, .mirrored(text: "", caret: 0, selectionLength: 0))
         parts.session.speakPressed()
         await parts.session.settle()
         expectEqual(parts.voice.spoken, ["Plan.\n\nSee the roses."])
@@ -466,10 +467,22 @@ private func sessionTests() async {
         expectEqual(parts.session.spokenWord, nil, "the bar does not hold the document")
     }
 
+    await asyncTest("Speak in the Write window is off while the document has no text") {
+        let parts = try makeSession()
+        parts.session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
+        parts.session.writeCaretRead(EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: true))
+        await parts.session.settle()
+        expectEqual(parts.session.speakMode, .off)
+        parts.session.writeCaretRead(EditorCaret(text: "Hi", caret: 2, length: 0, documentIsEmpty: false))
+        await parts.session.settle()
+        expectEqual(parts.session.speakMode, .speak)
+    }
+
     await asyncTest("Speak in the Write window reads the selection") {
         let parts = try makeSession()
         parts.session.writeSpeech = { EditorSpeech(selection: "the roses", markdown: "See **the roses**.") }
         parts.session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
+        parts.session.writeCaretRead(EditorCaret(text: "See the roses.", caret: 4, length: 9, documentIsEmpty: false))
         parts.session.speakPressed()
         await parts.session.settle()
         expectEqual(parts.voice.spoken, ["the roses"])

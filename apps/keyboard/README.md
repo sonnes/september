@@ -87,7 +87,7 @@ the Said list.
 Write opens the Write window, a normal macOS window with a Markdown editor.
 In the Write window, Speak reads the selection. If nothing is selected, Speak
 reads the whole document without the Markdown marks. `MarkdownSpeech` holds
-the rule.
+the rule. If the document has no text, Speak is off.
 
 Settings opens the Settings window. Both windows take focus. The menu bar item
 also opens them. After a press through `AXPress`, macOS refuses to activate

@@ -101,7 +101,8 @@ public enum EditorCall: Equatable, Sendable {
 
     /// Returns the paragraph at the caret as an `EditorCaret`, or null when
     /// the editor has no selection. The keyboard cannot read its own web view
-    /// through the accessibility API, so the input bar reads it here.
+    /// through the accessibility API, so the input bar reads it here. `empty`
+    /// is true when the whole document has no text.
     public static let caretScript = """
         (() => {
           const selection = document.getSelection();
@@ -122,7 +123,10 @@ public enum EditorCall: Equatable, Sendable {
           const anchor = offset(selection.anchorNode, selection.anchorOffset);
           const start = anchor === null ? focus : Math.min(anchor, focus);
           const end = anchor === null ? focus : Math.max(anchor, focus);
-          return { text: block.textContent, caret: start, length: end - start };
+          return {
+            text: block.textContent, caret: start, length: end - start,
+            empty: editor.textContent.trim() === ""
+          };
         })()
         """
 
@@ -221,11 +225,27 @@ public struct EditorCaret: Decodable, Equatable, Sendable {
     public let text: String
     public let caret: Int
     public let length: Int
+    /// True when the whole document has no text.
+    public let documentIsEmpty: Bool
 
-    public init(text: String, caret: Int, length: Int) {
+    public init(text: String, caret: Int, length: Int, documentIsEmpty: Bool = false) {
         self.text = text
         self.caret = caret
         self.length = length
+        self.documentIsEmpty = documentIsEmpty
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case text, caret, length
+        case documentIsEmpty = "empty"
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        text = try container.decode(String.self, forKey: .text)
+        caret = try container.decode(Int.self, forKey: .caret)
+        length = try container.decode(Int.self, forKey: .length)
+        documentIsEmpty = try container.decodeIfPresent(Bool.self, forKey: .documentIsEmpty) ?? false
     }
 
     /// The paragraph as a focused field, for `KeyboardController.focusChanged(to:)`.

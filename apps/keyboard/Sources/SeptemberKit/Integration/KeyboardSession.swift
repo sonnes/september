@@ -41,6 +41,8 @@ public final class KeyboardSession: ObservableObject {
     /// Shows the input bar and the suggestions only when there is text input.
     public let inputBar: InputBarVisibility
     @Published private var isWriteInFront = false
+    /// False while the document of the Write window has no text.
+    private var writeHasText = false
     /// Gives the name of a chord in the menu bar of the app in front.
     public var menuName: (Shortcut) -> String? = { _ in nil }
     /// Reads what Speak reads in the Write window: the selection and the
@@ -162,6 +164,15 @@ public final class KeyboardSession: ObservableObject {
         controller.focusMoved()
     }
 
+    /// The editor of the Write window reported the paragraph at the caret.
+    /// The paragraph goes to the input bar. An empty document turns Speak
+    /// off.
+    public func writeCaretRead(_ caret: EditorCaret) {
+        writeHasText = !caret.documentIsEmpty
+        controller.focusChanged(to: caret.focusedField)
+        scheduleUpdate()
+    }
+
     /// A chord from the hardware keyboard or from the keys.
     public func chordPressed(_ chord: Shortcut) {
         guard !controller.isFieldPrivate else { return }
@@ -275,7 +286,8 @@ public final class KeyboardSession: ObservableObject {
             // the caret can be empty.
             canSpeak =
                 isWriteInFront
-                || SpeakText(input: controller.input, isPrivate: controller.isFieldPrivate) != nil
+                ? writeHasText
+                : SpeakText(input: controller.input, isPrivate: controller.isFieldPrivate) != nil
         }
         let speakMode = SpeakButton.Mode(isSpeaking: isSpeaking, canSpeak: canSpeak)
         if speakMode != self.speakMode { self.speakMode = speakMode }
