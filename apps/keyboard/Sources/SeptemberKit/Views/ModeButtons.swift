@@ -25,7 +25,7 @@ public struct ModeButtons: View {
     }
 
     public var body: some View {
-        HStack(spacing: Metrics.TopRow.modeSpacing) {
+        HStack(alignment: .barCenter, spacing: Metrics.TopRow.modeSpacing) {
             ModeButton(title: "Type", symbol: "keyboard", isOn: mode == .type, label: "Type mode") {
                 setMode(.type)
             }

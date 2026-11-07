@@ -1,7 +1,22 @@
 import SwiftUI
 
+extension VerticalAlignment {
+    private enum BarCenter: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat {
+            context[VerticalAlignment.center]
+        }
+    }
+
+    /// The line through the centre of the input bar. The row of the bar and
+    /// each group of round buttons align on it.
+    static let barCenter = VerticalAlignment(BarCenter.self)
+}
+
 /// A round button with a label under it, in the row of the input bar. The
 /// mode buttons and the clipboard buttons use it.
+///
+/// The centre of the circle is the vertical centre of the button, so the
+/// circles line up with the input bar and Speak.
 struct ModeButton: View {
     let title: String
     let symbol: String
@@ -35,6 +50,7 @@ struct ModeButton: View {
             if isEnabled { action() }
         }
         .disabled(!isEnabled)
+        .alignmentGuide(.barCenter) { _ in Metrics.TopRow.modeCircle / 2 }
     }
 
     private var iconColor: ThemeColor {

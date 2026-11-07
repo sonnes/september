@@ -12,7 +12,7 @@ public struct ClipboardButtons: View {
     }
 
     public var body: some View {
-        HStack(spacing: Metrics.TopRow.modeSpacing) {
+        HStack(alignment: .barCenter, spacing: Metrics.TopRow.modeSpacing) {
             ModeButton(
                 title: "Cut", symbol: "scissors", isOn: false, label: "Cut",
                 isEnabled: session.canCutOrCopy, trigger: .down(.once), action: session.cut)
@@ -26,7 +26,6 @@ public struct ClipboardButtons: View {
                 title: "History", symbol: "clock.arrow.circlepath", isOn: session.isHistoryOpen,
                 label: "Clipboard history", action: session.toggleHistory)
         }
-        .frame(width: Metrics.Clipboard.buttonsWidth)
         .accessibilityElement(children: .contain)
     }
 }

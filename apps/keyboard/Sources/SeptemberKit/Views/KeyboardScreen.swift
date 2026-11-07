@@ -75,7 +75,7 @@ public struct KeyboardScreen: View {
                 .padding(.leading, inset)
                 .padding(.bottom, Metrics.TopRow.stackBottom)
 
-            HStack(spacing: Metrics.TopRow.spacing) {
+            HStack(alignment: .barCenter, spacing: Metrics.TopRow.spacing) {
                 // Copy works with no text field, for example on a web page,
                 // so the buttons always show.
                 ClipboardButtons(session: session)
