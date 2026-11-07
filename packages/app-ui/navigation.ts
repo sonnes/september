@@ -51,3 +51,7 @@ export const APP_NAV: readonly (AppPage & { icon: LucideIcon })[] = appNav(
 export const SETTINGS_NAV: readonly (SettingsSection & { icon: LucideIcon })[] = settingsNav(
   platform.capabilities,
 ).map((section) => ({ ...section, icon: SETTINGS_ICONS[section.path] }));
+
+/** The page that a path belongs to, such as Settings for a section. */
+export const pageOf = (path: string) =>
+  APP_NAV.find((page) => path === page.path || path.startsWith(`${page.path}/`));

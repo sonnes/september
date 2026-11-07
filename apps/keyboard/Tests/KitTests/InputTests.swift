@@ -99,10 +99,10 @@ func keystrokeTests() {
         expectEqual(events.filter(\.isDown).count, 3)
 
         let downKeys = events.filter(\.isDown).map(\.virtualKey)
-        expectEqual(downKeys, [Modifiers.shift.virtualKey!, Modifiers.command.virtualKey!, z])
+        expectEqual(downKeys, [56, 55, z])
 
         let upKeys = events.filter { !$0.isDown }.map(\.virtualKey)
-        expectEqual(upKeys, [z, Modifiers.command.virtualKey!, Modifiers.shift.virtualKey!])
+        expectEqual(upKeys, [z, 55, 56])
     }
 
     test("the key itself carries the modifier flags so apps see the combination") {
@@ -113,7 +113,7 @@ func keystrokeTests() {
 
     test("caps lock is never posted as part of a combination") {
         let events = Keystroke.events(virtualKey: 0, modifiers: [.capsLock, .shift])
-        expectEqual(events.filter(\.isDown).map(\.virtualKey), [Modifiers.shift.virtualKey!, 0])
+        expectEqual(events.filter(\.isDown).map(\.virtualKey), [56, 0])
     }
 }
 

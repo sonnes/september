@@ -51,6 +51,22 @@ public struct FocusedField: Equatable, Sendable {
         return isSecure || isEditable || Self.textRoles.contains(role)
     }
 
+    /// The part of a long field to read: `radius` UTF-16 units on each side of
+    /// the selection, inside a field of `count` units. `selection` is the
+    /// selection measured from the start of that part.
+    public static func readWindow(
+        count: Int,
+        selection: NSRange,
+        radius: Int
+    ) -> (window: NSRange, selection: NSRange) {
+        let start = max(0, selection.location - radius)
+        let length = min(count - start, selection.length + 2 * radius)
+        return (
+            NSRange(location: start, length: length),
+            NSRange(location: selection.location - start, length: selection.length)
+        )
+    }
+
     /// How the input bar should show this field, or `nil` when the field gives
     /// us nothing to show and our own echo has to stand in.
     public var display: InputMirror? {

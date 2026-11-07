@@ -208,11 +208,10 @@ if (
   });
 
   const titledLogoSvg = logoSvg.replace(/(<svg[^>]*>)/, '$1<title>September</title>');
-  const logoSvgPath = `${publicDir}/logo.svg`;
+  const logoSvgPath = fileURLToPath(new URL('../../../packages/app-ui/public/logo.svg', import.meta.url));
   await writeFile(logoSvgPath, titledLogoSvg);
 
   const targets = [
-    ['logo.png', 500],
     ['favicon-16x16.png', 16],
     ['favicon-32x32.png', 32],
     ['apple-touch-icon.png', 180],

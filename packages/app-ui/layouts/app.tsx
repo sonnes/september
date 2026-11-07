@@ -16,7 +16,7 @@ import {
 } from "@september/ui/components/sidebar";
 
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
-import { APP_NAV } from "@september/app-ui/navigation";
+import { APP_NAV, pageOf } from "@september/app-ui/navigation";
 import { ApplyAccess } from "@september/app-ui/blocks/access";
 import { EditorProvider } from "@september/app-ui/blocks/chrome";
 import { InputLayer, ScanPauseKey } from "@september/app-ui/blocks/input-layer";
@@ -112,7 +112,7 @@ function AppSidebar() {
             <SidebarMenu>
               {APP_NAV.map((item) => {
                 const Icon = item.icon;
-                const current = pathname.startsWith(item.path);
+                const current = pageOf(pathname)?.path === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton

@@ -5,20 +5,20 @@
  */
 
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { open } from "@tauri-apps/plugin-shell";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 import {
   InterruptedSpeech,
   type Platform,
   type PlatformStore,
 } from "@september/app-ui/platform";
-import { downloadBlob, warnBeforeUnload } from "@september/app-ui/services/browser";
 import { PORTABLE_SETTING_KEYS } from "@september/core/rules/settings";
 import { usageSince } from "@september/core/rules/usage-summary";
+import type { SpeechSettings } from "@september/core/rules/voice";
 
 import packageMetadata from "../package.json";
 import { call, callRaw } from "./commands";
+import { fileSettings } from "./rules/voice-file";
 
 const store: PlatformStore = {
   getSetting: async <T,>(key: string) =>
@@ -80,19 +80,24 @@ export const platform: Platform = {
     systemName: "macOS system voice",
     systemDescription: "Built into macOS. Free, and it works without a network.",
     // The native voice does not report its words, so `onWord` is never called.
-    speakSystem: (text, { voiceId, speed }) =>
-      call("speech_system", { request: { text, voice_id: voiceId, speed } }),
+    speakSystem: (text, speed) => call("speech_system", { request: { text, speed } }),
     // Rust plays the sound, and a stop goes through `stop`, so the signal is not sent.
-    async stream(text, voice, dialogueParts) {
+    async stream(text, voice, dialogueParts, _signal, settings: SpeechSettings) {
       const heard = await call("speech_stream", {
-        request: { text, voice, ...(dialogueParts ? { dialogueParts } : {}) },
+        request: {
+          text,
+          voice: { ...voice, fileSettings: fileSettings(settings, "live") },
+          ...(dialogueParts ? { dialogueParts } : {}),
+        },
       });
       if (heard.interrupted) throw new InterruptedSpeech(heard.interrupted);
       return { fromCache: heard.from_cache, latencyMs: heard.latency_ms };
     },
     stop: () => call("speech_native_stop"),
-    async synthesize(text, voice) {
-      const { path } = await call("speech_synthesize", { request: { text, voice } });
+    async synthesize(text, voice, settings: SpeechSettings) {
+      const { path } = await call("speech_synthesize", {
+        request: { text, voice: { ...voice, fileSettings: fileSettings(settings, "file") } },
+      });
       return (await fetch(convertFileSrc(path))).blob();
     },
   },
@@ -103,13 +108,13 @@ export const platform: Platform = {
       signal.throwIfAborted();
       const requestId = crypto.randomUUID();
       const cancel = () => {
-        call("openrouter_cancel", { requestId }).catch((reason: unknown) =>
+        call("openrouter_cancel", { request: { requestId } }).catch((reason: unknown) =>
           console.warn("September could not cancel the OpenRouter sign-in.", reason),
         );
       };
       signal.addEventListener("abort", cancel, { once: true });
       try {
-        return await call("openrouter_connect", { requestId });
+        return await call("openrouter_connect", { request: { requestId } });
       } finally {
         signal.removeEventListener("abort", cancel);
       }
@@ -119,7 +124,7 @@ export const platform: Platform = {
     quota: () => call("provider_quota"),
     async cloneVoice(form) {
       const { bytes, contentType } = await rawForm(form);
-      return callRaw<{ id: string }>("provider_clone_voice", bytes, {
+      return callRaw("provider_clone_voice", bytes, {
         "content-type": contentType,
       });
     },
@@ -138,30 +143,28 @@ export const platform: Platform = {
     },
   },
   device: {
+    // A name that cannot be read is no name. The rows then belong to the local user.
     async identity() {
-      const [name, userId] = await Promise.all([call("user_name"), call("user_id")]);
-      return { name, userId };
-    },
-    openInBrowser: (url) => open(url),
-    guardUnsavedChanges() {
-      const release = warnBeforeUnload();
-      let active = true;
-      const native = getCurrentWindow().onCloseRequested((event) => {
-        if (active) event.preventDefault();
-      });
-      return () => {
-        release();
-        active = false;
-        void native.then((unlisten) => unlisten());
+      const unread = (reason: unknown) => {
+        console.error("September could not read the name of the Mac user.", reason);
+        return null;
       };
+      const [name, userId] = await Promise.all([
+        call("user_name").catch(unread),
+        call("user_id").catch(unread),
+      ]);
+      return { name: name ?? "", userId };
     },
-    save: downloadBlob,
+    openInBrowser: (url) =>
+      openUrl(url).catch((reason: unknown) =>
+        console.error("September could not open the address in the browser.", reason),
+      ),
     outputs: {
       list: () => call("audio_outputs"),
       current: () => call("audio_output"),
       choose: (uid) => call("audio_output_set", { request: { uid } }),
     },
-    fullScreen: (on) => call("panel_present", { on }),
+    fullScreen: (on) => call("panel_present", { request: { on } }),
     virtualMicrophone: {
       status: () => call("virtual_microphone_status"),
       start: () => call("virtual_microphone_start"),

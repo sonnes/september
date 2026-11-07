@@ -3,6 +3,7 @@
  * without a renderer.
  */
 
+import { endingTagStart } from "./audio-tags.ts";
 import type { SpaceMode } from "./records.ts";
 import { DAY_MS } from "./time.ts";
 
@@ -359,7 +360,7 @@ export function recentThatFit(heights: readonly number[], space: number): number
 export function deleteLastWord(text: string): string {
   const trimmed = text.replace(/\s+$/, "");
   // An audio tag can hold a space, and it goes as one word.
-  const tag = trimmed.search(/\[[^[\]]+\]$/);
+  const tag = endingTagStart(trimmed);
   const start = tag >= 0 ? tag : trimmed.search(/\S+$/);
   return start > 0 ? trimmed.slice(0, start) : "";
 }

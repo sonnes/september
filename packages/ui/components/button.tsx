@@ -21,14 +21,10 @@ const buttonVariants = cva(
         link: "text-brand underline-offset-4 hover:underline",
       },
       size: {
-        // Every size keeps the reach target of the access profile, 48 px at
-        // the smallest. The sizes differ only in padding.
-        default: "min-h-[max(3rem,var(--reach-target,3rem))] px-4 py-2 has-[>svg]:px-3",
-        sm: "min-h-[max(3rem,var(--reach-target,3rem))] gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "min-h-[max(3rem,var(--reach-target,3rem))] px-6 has-[>svg]:px-4",
-        icon: "min-h-[max(3rem,var(--reach-target,3rem))] min-w-[max(3rem,var(--reach-target,3rem))]",
-        "icon-sm": "min-h-[max(3rem,var(--reach-target,3rem))] min-w-[max(3rem,var(--reach-target,3rem))]",
-        "icon-lg": "min-h-[max(3rem,var(--reach-target,3rem))] min-w-[max(3rem,var(--reach-target,3rem))]",
+        default: "min-h-reach px-4 py-2 has-[>svg]:px-3",
+        sm: "min-h-reach gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "min-h-reach px-6 has-[>svg]:px-4",
+        icon: "min-h-reach min-w-reach",
       },
     },
     defaultVariants: {

@@ -4,7 +4,6 @@
  */
 
 import type { Platform } from '@september/app-ui/platform';
-import { downloadBlob, warnBeforeUnload } from '@september/app-ui/services/browser';
 import { OPENROUTER_BASE } from '@september/core/rules/model-config';
 
 import packageMetadata from '../package.json';
@@ -29,8 +28,6 @@ export const platform: Platform = {
     openInBrowser: async url => {
       window.open(url, '_blank', 'noopener,noreferrer');
     },
-    guardUnsavedChanges: warnBeforeUnload,
-    save: downloadBlob,
     outputs: {
       async list() {
         if (!navigator.mediaDevices?.enumerateDevices) return [];

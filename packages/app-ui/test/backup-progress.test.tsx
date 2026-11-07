@@ -4,12 +4,19 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import type { StoredBackup } from '@september/core/rules/backup';
 
 import backupFixture from '../../core/rules/fixtures/backup-v1.json';
+import { downloadBlob } from '../services/browser';
 import { platform } from './platform';
 import { findButton, finishSetup, press, renderApp } from './render';
+
+vi.mock('../services/browser', async original => ({
+  ...(await original<typeof import('../services/browser')>()),
+  downloadBlob: vi.fn(),
+}));
 
 let container: HTMLElement;
 
 beforeEach(async () => {
+  vi.mocked(downloadBlob).mockClear();
   await finishSetup();
   ({ container } = await renderApp('/settings/data'));
   await findButton('Download backup', container);
@@ -49,7 +56,7 @@ it('announces download progress and the finished download without moving focus',
   const progress = log().textContent!;
   expect(progress.length).toBeGreaterThan(0);
   expect(document.activeElement).toBe(download);
-  expect(platform.device.save).not.toHaveBeenCalled();
+  expect(downloadBlob).not.toHaveBeenCalled();
 
   await act(async () =>
     pending.resolve({
@@ -62,8 +69,8 @@ it('announces download progress and the finished download without moving focus',
       usageEvents: [],
     }),
   );
-  expect(platform.device.save).toHaveBeenCalledOnce();
-  const [file] = vi.mocked(platform.device.save).mock.calls[0];
+  expect(downloadBlob).toHaveBeenCalledOnce();
+  const [file] = vi.mocked(downloadBlob).mock.calls[0];
   expect(JSON.parse(await textOf(file))).toMatchObject({ format: backupFixture.format });
   expect(log().textContent).toContain(progress);
   expect(log().textContent!.length).toBeGreaterThan(progress.length);

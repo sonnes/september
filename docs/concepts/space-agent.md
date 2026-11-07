@@ -1,6 +1,6 @@
 ---
 title: Space agents
-description: Each space has a separately stored Agent conversation whose scoped tools read immediately and require approval before changing space data.
+description: Each space has a separately stored Agent conversation whose scoped tools run at once, except a delete or an invalid call, which waits for approval.
 package: core, app-ui, desktop, web
 ---
 
@@ -40,8 +40,9 @@ Everything else the agent writes is visible in the space the moment it lands
 and can be changed again by asking, so a press for each one buys nothing and
 costs the keystrokes this app exists to save.
 
-A pending proposal is not only a delete, though. A turn that spends its whole
-budget asks before the next write too, whatever it is, and an unpin proposal
+A pending proposal is not only a delete, though. A call whose arguments are
+not valid waits too, so the user sees it and its reason. A turn that spends
+its whole budget asks before the next write too, whatever it is, and an unpin proposal
 explains that a later generation can replace the phrase.
 
 ## Show the work as a footnote
@@ -49,8 +50,8 @@ explains that a later generation can replace the phrase.
 Anything the user must act on is a card. Everything else is a line. There is
 no third weight.
 
-A tool call is one row, 44 pixels tall, in the gutter of the reply it
-produced. Tools that ran one after another with the same outcome share a
+A tool call is one row in the gutter of the reply it produced. The row is
+at least 44 pixels tall, and 48 pixels when it folds. Tools that ran one after another with the same outcome share a
 single row: a user asked one question, and the reads behind the answer — or
 the phrases written into a new space — are one act, not six. A change still
 waiting for a press is always its own piece, and so is one that failed,
@@ -93,8 +94,8 @@ the conversation.
 A space exists from the press that asked for it. Nothing is asked first: a
 user who types slowly should not have to write a paragraph before September
 will give them somewhere to write it. The space is made empty, named `Untitled`
-— and `Untitled 1`, `Untitled 2` for the ones after it — and opens in Agent — or in Talk, when no writing service is connected and
-there is nothing that could ask.
+— and `Untitled 1`, `Untitled 2` for the ones after it — and opens in Agent — or in Talk, when no writing service is connected or the
+agent is turned off.
 
 A space with no description and an empty transcript has still to be set up.
 `spaceNeedsSetup` is that state, and Agent wears it: the empty transcript shows

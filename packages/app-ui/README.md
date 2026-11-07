@@ -19,7 +19,7 @@ different in the browser and on the Mac:
 | `voice`        | The system voice, the cloud voice stream, stop, and a sound file of a sentence.      |
 | `providers`    | The status, the keys, the OpenRouter sign-in, the voices, the quota, and the clones. |
 | `writing`      | The endpoint and the key of OpenRouter, and of Apple Intelligence where it runs.     |
-| `device`       | The identity, the browser, the close guard, file saves, and the sound outputs.       |
+| `device`       | The identity, the browser, and the sound outputs.                                    |
 | `capabilities` | The flags `dashboard`, `eyeTracker`, and `floatingPanel`.                            |
 
 An optional member is a capability. A platform that cannot do the work has no
@@ -50,7 +50,7 @@ platform:
 | `speech.ts`      | The speech settings, `speak`, `stopSpeaking`, and the fallback to the system voice. |
 | `sound.ts`       | The sound outputs and the virtual microphone.                                       |
 | `data.ts`        | The query hooks of the spaces, messages, notes, phrases, and Agent rows, and `spacesQuery`. |
-| `connections.ts` | The state of every service, the voices of the account, and forgetting a key.        |
+| `connections.ts` | The state of every service, the voices of the account, a new clone in that list, and forgetting a key. |
 | `ai.ts`          | `generate` and the Agent writer, through `@earendil-works/pi-ai`.                   |
 | `agent.ts`       | `askAgent` and `resolveAgentProposal`.                                              |
 | `suggest.ts`     | The local word completion, and the suggestions of AI Assistance.                    |
@@ -60,13 +60,23 @@ platform:
 | `export.ts`      | A note saved as text, audio, or video.                                              |
 | `cloning.ts`     | The recorder and the clone of a voice.                                              |
 | `player.ts`      | The preview player of a voice.                                                      |
-| `browser.ts`     | `downloadBlob` and `warnBeforeUnload`, the WebView work that both platforms use.    |
+| `browser.ts`     | `downloadBlob` saves a file as a download. `warnBeforeUnload` guards a close.       |
 
-Each app awaits `loadSettings` once before the first render. It reads every
-held setting and the identity of the device. After that, a screen reads a
+Each app awaits `loadSettings` once before the first app page or setup step
+renders. A public page of the web app does not wait for it. It reads every
+held setting and the identity of the device. If the setup cannot be read,
+`loadSettings` rejects. A finished user who sees setup again can write over
+their data. If another setting cannot be read, it keeps its default and the
+error goes to the console. After that, a screen reads a
 setting at once. A change goes to the store first. The held value changes only
 after the write succeeds. `setting(key, from)` gives one held setting, and
-`useSetting` gives its value to a screen.
+`useSetting` gives its value to a screen. `keep` is for a screen that does not
+wait. It changes the held value at once, then writes it. A failed write goes to
+the console, and the held value stays.
+
+Setup keeps the voice in the speech settings, not in the setup. A setup saved
+before setup wrote the speech settings names its voice service, and
+`loadSettings` moves that voice to the speech settings.
 
 If the store holds no setup, the owner of the rows is the login name of the
 system. If the system knows no login name, the owner is `local-user`. Setup
@@ -74,8 +84,9 @@ keeps the owner in the saved setup.
 
 ## Saving as the Person Types
 
-The Talk draft, a note, the About text of a space, and the speech settings
-save on each edit. There is no Save button. `useAutosave` does the save for
+The Talk draft, a note, the About text of a space, the sound of the voice in
+the rail, and the Access and AI Assistance sections of Settings save on each
+edit. There is no Save button. `useAutosave` does the save for
 all of them:
 
 - The screen shows each edit at once, and the saves run one at a time, in order.
@@ -96,6 +107,10 @@ Help, the pages, and the Settings sections. Each app gives what only it has:
 | `publicPages` | The legal pages                   | None                                                 |
 | `pages`       | `/dashboard`                      | `/eyetracker`                                        |
 | `sections`    | None                              | `/settings/panel`                                    |
+| `settingsReady` | Reads the settings once         | None, because the app reads them before it mounts    |
+
+The setup steps and the app pages await `settingsReady` before their guards
+read the setup.
 
 The keys of `pages` and `sections` are paths of `APP_PAGES` and
 `SETTINGS_SECTIONS`. They must be the paths that the capabilities of the
@@ -162,7 +177,8 @@ presses a key after a dwell. For Switch, it scans the screen. The scan steps
 through the elements marked `data-scan-group`, then through their keys.
 `data-housing` marks an indigo surface, where the scan band is an amber ring.
 
-The input layer reads markers that `@september/ui` puts on its parts:
+The input layer reads these markers. `@september/ui` puts the first three on
+its parts, and the skip link of `Screen` sets `data-access-skip`:
 
 | Marker              | Meaning                                                           |
 | ------------------- | ----------------------------------------------------------------- |
@@ -251,9 +267,9 @@ move under a dwell. See all shows when older messages do not fit. See all
 shows pages of 8 messages in place of the suggestions. Back to suggestions or
 Escape closes the pages. A press on a message speaks it again.
 
-While Speak plays a sentence, Talk shows a speaking card, and the field stays.
-Stop or Escape stops the voice. Write next, or a typed letter, moves the focus
-to the field while the voice goes on. While the browser system voice reads a
+While Speak plays a sentence, Talk shows a speaking card, and the focus stays
+in the field. Stop or Escape stops the voice. If the focus is on the card, Write
+next or a typed letter moves the focus to the field while the voice goes on. While the browser system voice reads a
 message, the word that it reads is indigo. See `docs/concepts/spoken-word.md`.
 
 The composer has Undo, Delete, Clear, five mood keys, the sound output, and
@@ -271,16 +287,20 @@ Microphone is on.
 
 Each suggestion row is a group named by its number, its source, and its words.
 A mark at the start of a row shows its source: a past message, a phrase, an
-opening, a typed code, or AI Assistance. The pin of a row is a key with
-`aria-pressed`. A row shows at most six words at a time. The insert key takes
+opening, a typed code, or AI Assistance. In Talk and Notes, the pin of a
+saved phrase is a key with `aria-pressed`. A press of the key keeps the phrase.
+In Agent, the pin is only a mark. A row shows at most six words at a time. The insert key takes
 the shown words and shows the next ones. The last slice offers Speak for the
 whole suggestion.
 
 The word row completes the word being typed from local words, on each letter.
 It shows two lines at most. A word that the row clips is `inert`.
 
+The local words come from the messages the user sent. When a message is
+deleted or changed, its old words stop showing.
+
 AI suggestions ask the writing service after an edit that ends in a space, a
-new line, or `. , ! ? ; :`, then a pause of 200 ms. A restored draft waits for
+new line, `. , ! ? ; :`, or the `]` of an audio tag, then a pause of 200 ms. A restored draft waits for
 an edit. A space change, a newer edit, or a change of the settings cancels the
 open request. While a request is open, a Writing status shows. If the service
 does not answer, a status line says so.
@@ -310,7 +330,8 @@ run without a stop. A delete stops for Approve and Reject, and then asks to
 confirm. A turn that spends its whole write budget stops the same way.
 
 Everything that the person must act on is a card, and everything else is a
-line. A tool line is a folded `details` row. A proposal card shows what a
+line. A run of several tools, or a row with a note, folds into a `details`
+row. A proposal card shows what a
 change replaces beside what it writes. The transcript has one live region. It
 says `Working…` during a turn, then the newest reply. The words of an answer
 that is still being written are `aria-hidden`.

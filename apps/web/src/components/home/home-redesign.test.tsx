@@ -6,13 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HomePage } from '../../pages/home';
 import { AGENT_DEMO_ASKS, AgentSection } from './agent-section';
-import { HeroSection } from './hero-section';
 import { ExpressionSection } from './expression-section';
 import { Footer } from './footer';
 import { LiveDemoSection } from './live-demo-section';
 import { NOTE_SENTENCES, NotesSection, PRESENT_CHUNKS } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
-import { PlatformSection } from './platform-section';
 import { VoiceSection } from './voice-section';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -185,7 +183,9 @@ describe('phrase and space demo', () => {
   it('offers a two-letter code in the placeholder on load', () => {
     render(<PhraseCodesSection />);
 
-    expect(container.querySelector('textarea')?.placeholder).toBe('Try: cm');
+    const offered = container.querySelector('textarea')?.placeholder.split(' ').at(-1) ?? '';
+    expect(offered).toHaveLength(2);
+    expect(matchDemoCode(offered)).toBeDefined();
   });
 
   it('shares the Friends phrases with the Talk demo', () => {
@@ -337,8 +337,6 @@ describe('Agent demo', () => {
     const result = container.querySelector('[role="region"][aria-label="Customized space"]')!;
 
     expect(result.textContent).not.toContain('Questions for the doctor');
-    expect(AGENT_DEMO_ASKS[0].label).toBe('Set up a space for my doctor calls');
-    expect(AGENT_DEMO_ASKS[0].ask).toMatch(/^Set up this space/);
   });
 
   it('switches the transcript to the selected request', () => {
@@ -358,15 +356,6 @@ describe('landing navigation', () => {
 
     expect(container.querySelector('a[href="/privacy-policy"]')).toBeTruthy();
     expect(container.querySelector('a[href="/terms-of-service"]')).toBeTruthy();
-  });
-
-  it('names the platform section after both apps', () => {
-    render(<HeroSection />);
-    const link = [...container.querySelectorAll<HTMLAnchorElement>('a[href="#apps"]')][0];
-    expect(link?.textContent).toBe('Browser & Mac');
-
-    render(<PlatformSection />);
-    expect(container.querySelector('#apps')).toBeTruthy();
   });
 
   it('provides a target for every in-page navigation link', async () => {

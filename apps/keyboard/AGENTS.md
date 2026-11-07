@@ -52,7 +52,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
 
 ## Rules
 
-- **TDD, strictly.** Write the failing check first, then the smallest code that
+- **Anything testable lives in `SeptemberKit`.** `Keyboard` holds only what
+  needs a running app: the panel, the event sink, and the menu bar.
+- **TDD, strictly.** Write the failing test first, then the smallest code that
   passes it. Every model change lands with a test in `Tests/KitTests`.
 - **Tests are an executable, not `swift test`.** Add checks with
   `test("…") { expect(…) }` and register the suite in
@@ -69,7 +71,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
   colours or sizes.
 - **Every interactive element is an accessibility element** with a spoken label,
   `.isButton`, and an `accessibilityAction` wired to the same handler as the
-  tap. The `pressable` view modifier does all of this. Dwell, Switch Control
+  tap. The `pressable` view modifier does all of this. A container that holds
+  a button uses `.accessibilityElement(children: .contain)`, not `.combine`,
+  so that the button stays its own element. Dwell, Switch Control
   and Voice Control drive the app through `AXPress`; a control that only
   responds to `onTapGesture` is unusable for our users.
 - **Keys and panel buttons act when the button goes down.** Give them
@@ -120,9 +124,10 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `PredictionEngine.screenEnabled` is true, only in Type mode, and never for a
   password field or private text. Never log or print it. The probe prints
   shapes only.
-- **Keep Swift 6 concurrency clean.** UI and controller are `@MainActor`; sinks
-  crossing into CoreGraphics are `@unchecked Sendable` with a comment saying
-  why. Do not silence warnings any other way.
+- **Keep Swift 6 concurrency clean.** UI, controller and keystroke sinks are
+  `@MainActor`. A type that holds an accessibility element and crosses actors
+  is `@unchecked Sendable`, with a comment that says why. Do not silence
+  warnings any other way.
 
 ## Gotchas
 
@@ -136,7 +141,8 @@ only what needs a running app — the panel, the event sink, the menu bar.
 - Never prompt for permission at launch. The banner and the menu item ask for
   Accessibility. The App Panels page of Settings asks for Input Monitoring.
 - Key code mapping goes through `UCKeyTranslate`, never a hardcoded US table,
-  and rebuilds when the input source changes.
+  and rebuilds when the input source changes. A shortcut letter that the
+  current layout lacks comes from the ASCII-capable layout, as macOS does.
 - `--snapshot` renders without opening a window; use it to check layout against
   the mocks instead of asking someone to look at their screen. `--ax` prints the
   focused field Keyboard would mirror — reach for it before guessing why an app

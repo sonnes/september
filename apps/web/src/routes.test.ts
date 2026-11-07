@@ -1,10 +1,11 @@
 import { createMemoryHistory } from '@tanstack/react-router';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { loadSettings, saveSetup } from '@september/app-ui/services/settings';
+import { saveSetup } from '@september/app-ui/services/settings';
 import { APP_NAV, SETTINGS_NAV } from '@september/app-ui/navigation';
 import { DEFAULT_DRAFT, STEPS } from '@september/core/rules/onboarding';
 
+import { OWN_PARAMETER_ROUTES } from './rules/analytics';
 import { getRouter } from './router';
 
 /** Where the router settles when it is asked for a path, or null when no route matches. */
@@ -14,8 +15,6 @@ async function lands(at: string): Promise<string | null> {
   const found = router.state.matches.at(-1)?.routeId !== '__root__';
   return found ? router.state.location.pathname : null;
 }
-
-beforeEach(() => loadSettings());
 
 describe('the setup flow', () => {
   it('holds an unfinished setup at the step it asks for, and sends an app page to the start', async () => {
@@ -38,6 +37,11 @@ describe('the setup flow', () => {
 });
 
 describe('the routes', () => {
+  it('hold every route that analytics reports by its address', () => {
+    const router = getRouter(createMemoryHistory());
+    for (const pattern of OWN_PARAMETER_ROUTES) expect(router.routesByPath).toHaveProperty([pattern]);
+  });
+
   it('open every step before setup ends', async () => {
     for (const step of STEPS) expect(await lands(step.path)).toBe(step.path);
   });

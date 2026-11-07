@@ -1,12 +1,16 @@
 import type { ReactNode } from 'react';
 
 import { BrandMark, BrandWordmark } from '@september/app-ui/blocks/brand';
+import { DAY_MS } from '@september/core/rules/time';
+import { documentTitle } from '@september/core/rules/titles';
+import { USAGE_RETENTION_MS } from '@september/core/rules/usage-summary';
 import { Footer } from '@/components/home/footer';
+import { DEFAULT_BLOB_CACHE_BYTES } from '@/services/repository';
 
 function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <title>{`${title} · September`}</title>
+      <title>{documentTitle(title)}</title>
       <header className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <a
           href="/"
@@ -254,8 +258,8 @@ export function PrivacyPolicy() {
         <p>
           Local content remains until you delete it or your browser or device removes it. Browser
           eviction, device loss, and storage failure can remove it sooner. Local usage events older
-          than 90 days are removed when the app performs its retention cleanup. The browser speech
-          cache is limited to 100 MiB and evicts older, less-used files. Mac audio files can remain
+          than {USAGE_RETENTION_MS / DAY_MS} days are removed when the app performs its retention cleanup. The browser speech
+          cache is limited to {DEFAULT_BLOB_CACHE_BYTES / (1024 * 1024)} MiB and evicts older, less-used files. Mac audio files can remain
           in application storage until removed. Exported backups remain wherever you save them and
           are not automatically encrypted by September.
         </p>

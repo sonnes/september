@@ -30,7 +30,6 @@ import { systemName } from "@september/app-ui/services/settings";
 
 const SETUP_GUIDE = helpGuide("set-up-september")!;
 
-// ponytail: the draft stays in memory until account persistence is ported.
 export function OnboardingLayout() {
   const [draft, setDraft] = useState<OnboardingDraft>({
     ...DEFAULT_DRAFT,
@@ -54,9 +53,7 @@ export function OnboardingLayout() {
       {/* Below `md` the indigo panel is a bar across the top; from `md` up it
           is the sidebar. DESIGN.md moves the app sidebar at the same width. */}
       <div className="flex h-dvh flex-col gap-2 bg-zinc-100 p-2 md:flex-row dark:bg-zinc-950">
-        {/* ponytail: the sidebar uses indigo utilities directly. DESIGN.md's
-            --sidebar tokens are worth adding once a second screen needs them. */}
-        <aside data-housing className="flex shrink-0 flex-row items-center gap-3 rounded-xl bg-indigo-600 px-3 py-3 text-white shadow-sm md:w-72 md:flex-col md:items-stretch md:gap-8 md:overflow-y-auto md:px-6 md:py-8">
+        <aside data-housing className="flex shrink-0 flex-row items-center gap-3 rounded-xl bg-sidebar px-3 py-3 text-sidebar-foreground shadow-sm md:w-72 md:flex-col md:items-stretch md:gap-8 md:overflow-y-auto md:px-6 md:py-8">
           <div className="flex shrink-0 items-center gap-2">
             <BrandMark
               alt="September"

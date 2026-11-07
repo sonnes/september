@@ -359,7 +359,7 @@ private func menuItem(
     modifiers: Int = 0, children: [AXNode] = []
 ) -> AXNode {
     AXNode(
-        id: id, role: "AXMenuItem", label: title,
+        id: id, role: "AXMenuItem", title: title,
         menuKeys: char == nil && virtualKey == nil
             ? nil : AXMenuKeys(character: char, virtualKey: virtualKey, modifiers: modifiers),
         children: children)
@@ -371,7 +371,7 @@ private func menuIndexTests() {
         id: 0, role: "AXMenuBar",
         children: [
             AXNode(
-                id: 1, role: "AXMenuBarItem", label: "File",
+                id: 1, role: "AXMenuBarItem", title: "File",
                 children: [
                     AXNode(
                         id: 2, role: "AXMenu",

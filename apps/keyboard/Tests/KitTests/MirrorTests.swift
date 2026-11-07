@@ -3,6 +3,23 @@ import SeptemberKit
 
 @MainActor
 func mirrorTests() {
+    test("a long field is read in a window around the selection") {
+        let middle = FocusedField.readWindow(
+            count: 10_000, selection: NSRange(location: 5_000, length: 3), radius: 200)
+        expectEqual(middle.window, NSRange(location: 4_800, length: 403))
+        expectEqual(middle.selection, NSRange(location: 200, length: 3))
+
+        let start = FocusedField.readWindow(
+            count: 10_000, selection: NSRange(location: 50, length: 0), radius: 200)
+        expectEqual(start.window, NSRange(location: 0, length: 400))
+        expectEqual(start.selection, NSRange(location: 50, length: 0))
+
+        let end = FocusedField.readWindow(
+            count: 10_000, selection: NSRange(location: 9_990, length: 0), radius: 200)
+        expectEqual(end.window, NSRange(location: 9_790, length: 210))
+        expectEqual(end.selection, NSRange(location: 200, length: 0))
+    }
+
     func field(
         text: String? = "hello",
         selection: NSRange? = NSRange(location: 5, length: 0),

@@ -51,7 +51,6 @@ public final class KeyboardController: ObservableObject {
     /// the same thing after the latched modifiers are used up.
     private var lastPress: (id: String, modifiers: ModifierState)?
     private var keyCodeMap: KeyCodeMap
-    private var observers: [any NSObjectProtocol] = []
 
     public init(
         sink: any KeystrokeSink,
@@ -64,7 +63,12 @@ public final class KeyboardController: ObservableObject {
         self.panels = panels
         self.keyCodeMap = keyCodeMap
         appPanel = panels.appPanel(forBundleID: nil)
-        observe()
+    }
+
+    /// Called when the user switches input source, with the map of the new
+    /// layout.
+    public func layoutChanged(to map: KeyCodeMap) {
+        keyCodeMap = map
     }
 
     // MARK: - Pressing keys
@@ -108,8 +112,7 @@ public final class KeyboardController: ObservableObject {
     public func chooseAccent(_ choice: String) {
         accentChoices = []
         if mode == .talk { return talk.replaceLast(with: choice) }
-        var none = ModifierState()
-        post(.delete, modifiers: &none)
+        post(.delete, modifiers: [])
         send(text: choice)
         append(choice)
     }
@@ -122,8 +125,13 @@ public final class KeyboardController: ObservableObject {
         case .character(let character):
             type(character, secondary: key.secondaryLabel, modifiers: &modifiers)
         case .virtual(let virtual):
-            if virtual == .return, modifiers.active.subtracting(.capsLock).isEmpty { onSubmit?() }
-            post(virtual, modifiers: &modifiers)
+            let flags = modifiers.active.subtracting(.capsLock)
+            if virtual == .return, flags.isEmpty { onSubmit?() }
+            post(virtual, modifiers: flags)
+            if !flags.subtracting(.shift).isEmpty {
+                onChord?(Shortcut(modifiers: flags, key: .virtual(virtual)))
+            }
+            modifiers.consume()
         }
     }
 
@@ -132,9 +140,11 @@ public final class KeyboardController: ObservableObject {
         if mode == .talk { return talk.perform(action, modifiers: &modifiers) }
         switch action {
         case .shortcut(let shortcut):
-            post(shortcut)
+            guard post(shortcut) else { return }
         case .sequence(let steps):
-            steps.forEach(post)
+            for step in steps {
+                guard post(step) else { return }
+            }
         case .text(let text):
             sink.type(text)
             append(text)
@@ -226,15 +236,8 @@ public final class KeyboardController: ObservableObject {
             // way a hardware keyboard would.
             var flags = chord
             if modifiers.active.contains(.shift) { flags.insert(.shift) }
-            if let resolved = keyCodeMap.keystroke(for: base) {
-                sink.post(
-                    Keystroke.events(
-                        virtualKey: resolved.virtualKey,
-                        modifiers: flags.union(resolved.modifiers)
-                    )
-                )
-                onChord?(Shortcut(modifiers: flags, key: .character(base.lowercased())))
-            }
+            guard post(shortcut: base, modifiers: flags) else { return }
+            onChord?(Shortcut(modifiers: flags, key: .character(base.lowercased())))
         }
         modifiers.consume()
     }
@@ -250,51 +253,43 @@ public final class KeyboardController: ObservableObject {
         }
     }
 
-    private func post(_ virtual: VirtualKey, modifiers: inout ModifierState) {
-        let flags = modifiers.active.subtracting(.capsLock)
-        sink.post(Keystroke.events(virtualKey: virtual.rawValue, modifiers: flags))
-        if !flags.subtracting(.shift).isEmpty {
-            onChord?(Shortcut(modifiers: flags, key: .virtual(virtual)))
+    /// Posts a named key. Without a chord, the echo follows what the key
+    /// does to the text.
+    private func post(_ virtual: VirtualKey, modifiers: Modifiers) {
+        sink.post(Keystroke.events(virtualKey: virtual.rawValue, modifiers: modifiers))
+        guard !isMirroring, !isFieldPrivate, modifiers.subtracting(.shift).isEmpty else { return }
+        switch virtual {
+        case .delete: echo = String(echo.dropLast())
+        case .return: echo = ""
+        case .space: echo += " "
+        default: break
         }
-        if !isMirroring, !isFieldPrivate {
-            switch virtual {
-            case .delete: echo = String(echo.dropLast())
-            case .return: echo = ""
-            case .space: echo += " "
-            default: break
-            }
-        }
-        modifiers.consume()
     }
 
-    private func post(_ shortcut: Shortcut) {
+    /// Returns false, and beeps, when no layout has a key for `character`.
+    /// macOS uses the ASCII-capable layout for a shortcut on a layout without
+    /// Latin letters.
+    private func post(shortcut character: String, modifiers: Modifiers) -> Bool {
+        guard let resolved = keyCodeMap.shortcutKeystroke(for: character) else {
+            sink.beep()
+            return false
+        }
+        sink.post(
+            Keystroke.events(
+                virtualKey: resolved.virtualKey,
+                modifiers: modifiers.union(resolved.modifiers)
+            )
+        )
+        return true
+    }
+
+    private func post(_ shortcut: Shortcut) -> Bool {
         switch shortcut.key {
         case .virtual(let virtual):
-            sink.post(
-                Keystroke.events(virtualKey: virtual.rawValue, modifiers: shortcut.modifiers)
-            )
+            post(virtual, modifiers: shortcut.modifiers)
+            return true
         case .character(let character):
-            guard let resolved = keyCodeMap.keystroke(for: character) else { return }
-            sink.post(
-                Keystroke.events(
-                    virtualKey: resolved.virtualKey,
-                    modifiers: shortcut.modifiers.union(resolved.modifiers)
-                )
-            )
+            return post(shortcut: character, modifiers: shortcut.modifiers)
         }
-    }
-
-    // MARK: - Following the input source
-
-    private func observe() {
-        observers.append(
-            DistributedNotificationCenter.default().addObserver(
-                forName: SystemKeyboardLayout.inputSourceChanged,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                Task { @MainActor in self?.keyCodeMap = SystemKeyboardLayout.currentMap() }
-            }
-        )
     }
 }

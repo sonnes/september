@@ -25,3 +25,15 @@ export function wordsOf(text: string): { text: string; word: number | null }[] {
   }
   return parts;
 }
+
+/**
+ * The text cut into sentences, each with the mark that ends it. A sentence ends
+ * at a . ! or ? before a space, so a decimal or a web address stays whole.
+ */
+export function sentencesOf(text: string): string[] {
+  return text
+    .trim()
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+}

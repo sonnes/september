@@ -13,7 +13,7 @@ import { EXPORT_ARTIFACTS, type ExportKind } from "@september/core/rules/present
 import { PRESENT_TONES, type PresentToneKey } from "@september/core/rules/present/stage";
 import { exportUnavailable, saveNoteAudio, saveNoteText, saveNoteVideo } from "@september/app-ui/services/export";
 import type { VideoStage } from "@september/app-ui/platform";
-import { present } from "@september/app-ui/services/settings";
+import { present, useSetting } from "@september/app-ui/services/settings";
 import { speak, stopSpeaking, useSpeaking, useVoiceFallback } from "@september/app-ui/services/speech";
 import { ariaShortcut, keyLabel, KEYMAP } from "@september/core/rules/keymap";
 
@@ -188,16 +188,13 @@ function ExportDialog({
   open: boolean;
   onClose: () => void;
 }) {
-  const [tone, setTone] = useState<PresentToneKey>(() => present.get().tone);
+  const { tone } = useSetting(present);
   const [busy, setBusy] = useState<ExportKind | null>(null);
   const [stage, setStage] = useState<VideoStage | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
 
-  const chooseTone = (next: PresentToneKey) => {
-    setTone(next);
-    // One tone for the stage and the film, so a note looks the same either way.
-    void present.set({ ...present.get(), tone: next });
-  };
+  // One tone for the stage and the film, so a note looks the same either way.
+  const chooseTone = (next: PresentToneKey) => present.keep({ ...present.get(), tone: next });
 
   const run = (kind: ExportKind) => {
     if (busy || exportUnavailable(kind)) return;

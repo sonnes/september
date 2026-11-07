@@ -118,9 +118,10 @@ writes nothing at all, and the desktop app never loads a tracker.
 
 ## What holds it together
 
-- `apps/web/src/prerender.test.tsx` renders `/`, `/help`, and a guide without a
-  browser; checks the markup is static; checks the landing page carries no
-  application screen; and holds `PRERENDERED_PATHS` to pages that read no
-  browser storage.
-- The same suite checks that both legal notices render before setup and link
-  to each other. The removed server module no longer supplies routing tests.
+- `apps/web/src/prerender.test.tsx` renders `/`, `/help`, a guide, and both
+  legal notices without a browser. It checks that each guide gets its own
+  title, and that the title moves into the head of the shell.
+- The same suite checks that `PRERENDERED_PATHS` holds Help and every guide
+  once, that `/` is the root file and every other page is a folder index, and
+  that the analytics tag turns automatic tracking off, uses CORS, and is absent
+  when the build has no analytics configured.

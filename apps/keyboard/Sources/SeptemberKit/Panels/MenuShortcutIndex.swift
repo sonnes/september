@@ -9,7 +9,7 @@ public struct MenuShortcutIndex: Sendable {
         var names: [Shortcut: String] = [:]
         var stack = [menuBar]
         while let node = stack.popLast() {
-            if let shortcut = node.menuKeys?.shortcut, let label = node.subtitle,
+            if let shortcut = node.menuKeys?.shortcut, let label = node.label,
                 names[shortcut] == nil
             {
                 names[shortcut] = label

@@ -9,6 +9,8 @@ import {
   previousStep,
   type SavedSetup,
   savedSetupFrom,
+  setupVoices,
+  speechFromOlderSetup,
   stepIndex,
 } from "./onboarding.ts";
 
@@ -68,6 +70,11 @@ describe("a saved setup", () => {
     expect(read.id).toBe("ravi");
   });
 
+  it("drops the voice service of an older setup, which the speech settings hold", () => {
+    const older = { ...DEFAULT_DRAFT, id: "ravi", name: "Ravi" } as unknown as SavedSetup;
+    expect(savedSetupFrom(older)).not.toHaveProperty("voiceService");
+  });
+
   it("keeps a feature the user turned off", () => {
     const saved = { ...DEFAULT_DRAFT, id: "ravi", name: "Ravi", autoPhrases: false };
     expect(savedSetupFrom(saved)!.autoPhrases).toBe(false);
@@ -90,5 +97,17 @@ describe("defaultServices", () => {
 
   it("speaks with ElevenLabs once it is connected", () => {
     expect(defaultServices(DEFAULT_DRAFT, { ...none, elevenlabsConnected: true }).voiceService).toBe("elevenlabs");
+  });
+});
+
+describe("the voice of setup", () => {
+  it("offers the system voice and ElevenLabs, not the Dialogue voice", () => {
+    expect(setupVoices("Built in.").map((one) => one.value)).toEqual(["system", "elevenlabs"]);
+  });
+
+  it("gives an older setup that named ElevenLabs the ElevenLabs voice", () => {
+    expect(speechFromOlderSetup({ voiceService: "elevenlabs" })?.provider).toBe("elevenlabs");
+    expect(speechFromOlderSetup({ voiceService: "system" })).toBeNull();
+    expect(speechFromOlderSetup(null)).toBeNull();
   });
 });

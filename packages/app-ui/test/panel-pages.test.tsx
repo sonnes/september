@@ -1,18 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { PanelShell } from '@september/app-ui/layouts/panel';
 import { SETTINGS_NAV } from '@september/app-ui/navigation';
 
 import { platform } from './platform';
-import { findButton, finishSetup, press, renderApp } from './render';
-
-function Panel() {
-  return <PanelShell onHide={() => {}} />;
-}
+import { findButton, finishSetup, PanelWindow, press, renderApp } from './render';
 
 async function renderPanel(path: string) {
   await finishSetup();
-  return renderApp(path, { shell: Panel });
+  return renderApp(path, { shell: PanelWindow });
 }
 
 const sections = () =>

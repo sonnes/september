@@ -4,6 +4,24 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@tanstack/react-query':
+      specifier: ^5.102.2
+      version: 5.102.2
+    '@tanstack/react-router':
+      specifier: ^1.170.32
+      version: 1.170.32
+    lucide-react:
+      specifier: ^0.556.0
+      version: 0.556.0
+    react:
+      specifier: 19.2.1
+      version: 19.2.1
+    react-dom:
+      specifier: 19.2.1
+      version: 19.2.1
+
 overrides:
   '@types/react': 19.2.7
   '@types/react-dom': 19.2.3
@@ -67,25 +85,25 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@tanstack/react-query':
-        specifier: ^5.102.2
+        specifier: 'catalog:'
         version: 5.102.2(react@19.2.1)
       '@tanstack/react-router':
-        specifier: ^1.170.32
+        specifier: 'catalog:'
         version: 1.170.32(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
-      '@tauri-apps/plugin-shell':
-        specifier: ^2.3.5
-        version: 2.3.5
+      '@tauri-apps/plugin-opener':
+        specifier: ~2.5.5
+        version: 2.5.5
       lucide-react:
-        specifier: ^0.556.0
+        specifier: 'catalog:'
         version: 0.556.0(react@19.2.1)
       react:
-        specifier: 19.2.1
+        specifier: 'catalog:'
         version: 19.2.1
       react-dom:
-        specifier: 19.2.1
+        specifier: 'catalog:'
         version: 19.2.1(react@19.2.1)
     devDependencies:
       '@tauri-apps/cli':
@@ -119,19 +137,19 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@tanstack/react-query':
-        specifier: ^5.102.2
+        specifier: 'catalog:'
         version: 5.102.2(react@19.2.1)
       '@tanstack/react-router':
-        specifier: ^1.170.32
+        specifier: 'catalog:'
         version: 1.170.32(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       lucide-react:
-        specifier: ^0.556.0
+        specifier: 'catalog:'
         version: 0.556.0(react@19.2.1)
       react:
-        specifier: 19.2.1
+        specifier: 'catalog:'
         version: 19.2.1
       react-dom:
-        specifier: 19.2.1
+        specifier: 'catalog:'
         version: 19.2.1(react@19.2.1)
     devDependencies:
       '@fontsource/lexend':
@@ -146,9 +164,6 @@ importers:
       '@types/react-dom':
         specifier: 19.2.3
         version: 19.2.3(@types/react@19.2.7)
-      axe-core:
-        specifier: ^4.14.0
-        version: 4.14.0
       fake-indexeddb:
         specifier: ^6.2.5
         version: 6.2.5
@@ -192,7 +207,7 @@ importers:
         specifier: ^1.170.32
         version: 1.170.32(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       lucide-react:
-        specifier: ^0.556.0
+        specifier: 'catalog:'
         version: 0.556.0(react@19.2.1)
     devDependencies:
       '@types/react':
@@ -205,10 +220,10 @@ importers:
         specifier: ^4.14.0
         version: 4.14.0
       react:
-        specifier: 19.2.1
+        specifier: 'catalog:'
         version: 19.2.1
       react-dom:
-        specifier: 19.2.1
+        specifier: 'catalog:'
         version: 19.2.1(react@19.2.1)
 
   packages/core:
@@ -229,7 +244,7 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       lucide-react:
-        specifier: ^0.556.0
+        specifier: 'catalog:'
         version: 0.556.0(react@19.2.1)
       radix-ui:
         specifier: ^1.6.7
@@ -248,10 +263,10 @@ importers:
         specifier: 19.2.3
         version: 19.2.3(@types/react@19.2.7)
       react:
-        specifier: 19.2.1
+        specifier: 'catalog:'
         version: 19.2.1
       react-dom:
-        specifier: 19.2.1
+        specifier: 'catalog:'
         version: 19.2.1(react@19.2.1)
       tailwindcss:
         specifier: ^4.3.3
@@ -1916,6 +1931,9 @@ packages:
   '@tauri-apps/api@2.11.1':
     resolution: {integrity: sha512-M2FPuYND2m+wh5hfW9ZpSdxMPdEJovPBWwoHJmwUpysTYNHaOkVFN419m/K0LIgjb/7KU2vBgsUepJWugQCvAA==}
 
+  '@tauri-apps/api@2.12.4':
+    resolution: {integrity: sha512-pVmfis+4zT8H0Qhp3xPZx9Ju7kpzvA6rr/PSJPyuwfvucTQ8sVt61NYU9KMkK703UFlYadFmjKA4HhybOtN0gg==}
+
   '@tauri-apps/cli-darwin-arm64@2.11.4':
     resolution: {integrity: sha512-1ryOF3ZhpZ/nemHV5zVwBQBz9jDGKmKPvWPADOhc83ig0P4bMc2iER4NbC6r9sjeIZ6RVQ4g3RZIYvezhcl4TQ==}
     engines: {node: '>= 10'}
@@ -1987,8 +2005,8 @@ packages:
     engines: {node: '>= 10'}
     hasBin: true
 
-  '@tauri-apps/plugin-shell@2.3.5':
-    resolution: {integrity: sha512-jewtULhiQ7lI7+owCKAjc8tYLJr92U16bPOeAa472LHJdgaibLP83NcfAF2e+wkEcA53FxKQAZ7byDzs2eeizg==}
+  '@tauri-apps/plugin-opener@2.5.5':
+    resolution: {integrity: sha512-xvzGai5aQds8j8R8RsUK/lW6pGG50YgOYIPLzvkqmkwAj7dfySOD7sGtejRzvVdMmv1EQfKVEFh1MvmDp8QR0g==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -5095,6 +5113,8 @@ snapshots:
 
   '@tauri-apps/api@2.11.1': {}
 
+  '@tauri-apps/api@2.12.4': {}
+
   '@tauri-apps/cli-darwin-arm64@2.11.4':
     optional: true
 
@@ -5142,9 +5162,9 @@ snapshots:
       '@tauri-apps/cli-win32-ia32-msvc': 2.11.4
       '@tauri-apps/cli-win32-x64-msvc': 2.11.4
 
-  '@tauri-apps/plugin-shell@2.3.5':
+  '@tauri-apps/plugin-opener@2.5.5':
     dependencies:
-      '@tauri-apps/api': 2.11.1
+      '@tauri-apps/api': 2.12.4
 
   '@types/chai@5.2.3':
     dependencies:

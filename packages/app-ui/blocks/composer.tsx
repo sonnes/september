@@ -23,6 +23,7 @@ import { useActiveEditor, usePanel, type EditorHandle } from "@september/app-ui/
 import { Suggestions } from "@september/app-ui/blocks/suggestions";
 import { draftParts, tagBefore } from "@september/core/rules/audio-tags";
 import { MOODS, type MoodKey } from "@september/core/rules/moods";
+import { moodKeyLabel } from "@september/core/rules/panel";
 import { composerAction, deleteLastWord, type ComposerMode } from "@september/core/rules/spaces";
 import { insertAtEnd } from "@september/core/rules/stripes";
 import { countsAsTypedKey } from "@september/core/rules/usage-summary";
@@ -53,7 +54,7 @@ export function Composer({
   onAction: (text: string) => void;
   /** Counts direct keyboard work. Inserted suggestions do not call it. */
   onTypedKey?: () => void;
-  onPin: (phrase: string) => void;
+  onPin?: (phrase: string) => void;
   pending?: boolean;
   /** A line under the field, for example why a voice did not answer. */
   note?: string;
@@ -343,7 +344,7 @@ function MoodMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-56 rounded-surface p-1.5">
         <DropdownMenuRadioGroup value={mood ?? ""}>
-          {MOODS.map((one, at) => (
+          {MOODS.map((one) => (
             <DropdownMenuRadioItem
               key={one.key}
               value={one.key}
@@ -355,7 +356,7 @@ function MoodMenu({
               </span>
               <span className="flex-1">{one.label}</span>
               {keys ? (
-                <DropdownMenuShortcut>⌃{at + 1}</DropdownMenuShortcut>
+                <DropdownMenuShortcut>{moodKeyLabel(one.key)}</DropdownMenuShortcut>
               ) : null}
             </DropdownMenuRadioItem>
           ))}
@@ -366,7 +367,7 @@ function MoodMenu({
             onSelect={() => onMood(null)}
           >
             <span className="text-muted-foreground flex-1">No mood</span>
-            {keys ? <DropdownMenuShortcut>⌃0</DropdownMenuShortcut> : null}
+            {keys ? <DropdownMenuShortcut>{moodKeyLabel(null)}</DropdownMenuShortcut> : null}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>

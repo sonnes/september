@@ -5,7 +5,7 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    AppHandle, Manager, Runtime, WebviewWindow, WebviewWindowBuilder,
+    AppHandle, Manager, RunEvent, Runtime, State, WebviewWindow, WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -76,6 +76,29 @@ pub fn show_panel<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     panel.set_focus()
 }
 
+/// Hides the panel instead of closing it, so the app keeps running.
+pub(crate) fn on_window_event<R: Runtime>(window: &tauri::Window<R>, event: &WindowEvent) {
+    if let WindowEvent::CloseRequested { api, .. } = event {
+        if window.label() == PANEL {
+            api.prevent_close();
+            if let Err(error) = window.hide() {
+                eprintln!("[window] could not hide the panel: {error}");
+            }
+        }
+    }
+}
+
+/// A click on the Dock icon shows the panel.
+#[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
+pub(crate) fn on_run_event<R: Runtime>(app: &AppHandle<R>, event: &RunEvent) {
+    #[cfg(target_os = "macos")]
+    if let RunEvent::Reopen { .. } = event {
+        if let Err(error) = show_panel(app) {
+            eprintln!("[window] could not show the panel: {error}");
+        }
+    }
+}
+
 /// Shows the panel, or hides it when it is the key window.
 pub fn toggle_panel<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let window = panel(app)?;
@@ -96,14 +119,8 @@ pub fn float_on(saved: Option<&Value>) -> bool {
     saved.and_then(Value::as_bool).unwrap_or(true)
 }
 
-/// The saved float choice. An app with no storage, such as a window test,
-/// floats.
-fn saved_float<R: Runtime>(app: &AppHandle<R>) -> Result<bool, String> {
-    let saved = match app.try_state::<BackendState>() {
-        Some(state) => state.setting(PANEL_FLOAT_SETTING)?,
-        None => None,
-    };
-    Ok(float_on(saved.as_ref()))
+fn saved_float(state: &BackendState) -> Result<bool, String> {
+    Ok(float_on(state.setting(PANEL_FLOAT_SETTING)?.as_ref()))
 }
 
 /// Keeps the panel above other apps, an app in full screen, and each Space, or
@@ -136,6 +153,21 @@ fn apply_float<R: Runtime>(app: &AppHandle<R>, setup: bool, float: bool) -> taur
 #[cfg(target_os = "macos")]
 const BUTTONS: (f64, f64) = (20.0, 32.0);
 
+/// Accepts each download of the panel. When WebKit asks the navigation
+/// delegate about a download, wry cancels it unless a handler exists. Wry saves the file in the Downloads folder under the suggested
+/// name and adds " (1)" when a file of that name exists. The log leaves out
+/// the name, because a file name can hold the words of the user.
+fn on_download<R: Runtime>(_: tauri::Webview<R>, event: tauri::webview::DownloadEvent<'_>) -> bool {
+    if let tauri::webview::DownloadEvent::Finished { success, .. } = event {
+        if success {
+            eprintln!("[window] saved a download to the Downloads folder");
+        } else {
+            eprintln!("[window] a download failed");
+        }
+    }
+    true
+}
+
 /// Makes the panel from its entry in `tauri.conf.json`. The title bar is an
 /// overlay, and the window buttons sit at the middle of the 64-point indigo
 /// header. Only the builder passes this position to the webview, so the
@@ -148,7 +180,7 @@ pub fn create_panel(app: &tauri::App) -> tauri::Result<()> {
         .iter()
         .find(|window| window.label == PANEL)
         .ok_or(tauri::Error::WindowNotFound)?;
-    let builder = WebviewWindowBuilder::from_config(app.handle(), config)?;
+    let builder = WebviewWindowBuilder::from_config(app.handle(), config)?.on_download(on_download);
     #[cfg(target_os = "macos")]
     let builder = builder.traffic_light_position(tauri::LogicalPosition::new(BUTTONS.0, BUTTONS.1));
     builder.build()?;
@@ -159,7 +191,8 @@ pub fn create_panel(app: &tauri::App) -> tauri::Result<()> {
 /// and the global key.
 pub(crate) fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     create_panel(app)?;
-    apply_float(app.handle(), false, saved_float(app.handle())?)?;
+    let float = saved_float(&app.state::<BackendState>())?;
+    apply_float(app.handle(), false, float)?;
 
     let menu = Menu::with_items(
         app,
@@ -218,16 +251,18 @@ pub(crate) fn panel_hide(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command(async)]
-pub(crate) fn panel_float(app: AppHandle) -> Result<bool, String> {
-    saved_float(&app)
+pub(crate) fn panel_float(state: State<'_, BackendState>) -> Result<bool, String> {
+    saved_float(&state)
 }
 
 /// Saves the float choice and applies it to the panel now.
 #[tauri::command(async)]
-pub(crate) fn panel_set_float(app: AppHandle, on: bool) -> Result<(), String> {
-    let state = app
-        .try_state::<BackendState>()
-        .ok_or("September is not ready.")?;
+pub(crate) fn panel_set_float(
+    app: AppHandle,
+    state: State<'_, BackendState>,
+    request: crate::rpc::SwitchRequest,
+) -> Result<(), String> {
+    let on = request.on;
     state.put_setting(PANEL_FLOAT_SETTING, &Value::Bool(on))?;
     apply_float(&app, false, on).map_err(|error| error.to_string())
 }
@@ -235,17 +270,25 @@ pub(crate) fn panel_set_float(app: AppHandle, on: bool) -> Result<(), String> {
 /// With `on`, makes the panel a normal window for setup. The saved float
 /// choice does not change. Without it, applies the saved float choice.
 #[tauri::command(async)]
-pub(crate) fn panel_setup(app: AppHandle, on: bool) -> Result<(), String> {
-    let float = saved_float(&app)?;
+pub(crate) fn panel_setup(
+    app: AppHandle,
+    state: State<'_, BackendState>,
+    request: crate::rpc::SwitchRequest,
+) -> Result<(), String> {
+    let on = request.on;
+    let float = saved_float(&state)?;
     apply_float(&app, on, float).map_err(|error| error.to_string())
 }
 
 /// Fills the screen with the panel while Present shows, without a new macOS
 /// desktop, or gives the panel back its size.
 #[tauri::command]
-pub(crate) fn panel_present(app: AppHandle, on: bool) -> Result<(), String> {
+pub(crate) fn panel_present(
+    app: AppHandle,
+    request: crate::rpc::SwitchRequest,
+) -> Result<(), String> {
     panel(&app)
-        .and_then(|panel| panel.set_simple_fullscreen(on))
+        .and_then(|panel| panel.set_simple_fullscreen(request.on))
         .map_err(|error| error.to_string())
 }
 

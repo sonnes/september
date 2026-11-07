@@ -7,10 +7,10 @@ dependencies.
 
 ```
 Sources/
-  SeptemberKit/     models, design tokens, views — everything testable
-    Accessibility/  another app's tree as a snapshot, the Accessibility permission
-    Design/         tokens, metrics, typography, rainbow/mono styles
-    Keyboard/       key definitions, the QWERTY layout, the controller
+  SeptemberKit/     models, design tokens, views: everything testable
+    Accessibility/  AXNode and AXTree (a snapshot of the tree of another app), AccessibilityPermission
+    Design/         tokens, metrics, typography, rainbow and mono styles
+    Keyboard/       key definitions, the QWERTY layout, KeyboardController, PressTracker
     Input/          modifiers, keystrokes, layout-aware key code map
     Integration/    the session that joins the parts, panel placement, the app in front
     Panels/         panel model, JSON loading, app panel ranking and learning
@@ -47,6 +47,10 @@ make snapshots  # render the keyboard and component library to .build/snapshots
 `make run` and `make dev` show the keyboard on your screen. When you are done,
 run `make stop`.
 
+Run them from `apps/keyboard/`. From the repo root, use `make mac-run`,
+`mac-dev`, `mac-stop`, `mac-test`, `mac-app`, `keyboard-dmg`, or
+`keyboard-release`.
+
 `make run` and `make dev` launch Keyboard as a child of your shell, so it
 inherits the terminal's Accessibility permission — keys type into other apps
 with nothing to grant. The signed bundle from `make app` is a separate identity
@@ -57,7 +61,7 @@ The app is September Keyboard, with the bundle identifier
 `Resources/Info.plist`.
 
 The icon is a keyboard in the frame of the September mark
-(`apps/desktop/public/logo.svg`), so that it differs from the icon of the
+(`packages/app-ui/public/logo.svg`), so that it differs from the icon of the
 desktop app. Its source is `Resources/AppIcon.svg`. After you change the SVG,
 run `make icon` to make `Resources/AppIcon.icns`. The command needs
 `rsvg-convert` (`brew install librsvg`).
@@ -220,6 +224,7 @@ swift run Keyboard --snapshot out.png --talk     # Talk mode during speech
 swift run Keyboard --snapshot out.png --write    # the Write window in front
 swift run Keyboard --snapshot out.png --mine     # the Mine tab of the app panel
 swift run Keyboard --snapshot out.png --mono     # mono variant
+swift run Keyboard --snapshot out.png --light    # light appearance
 swift run Keyboard --snapshot out.png --gallery  # the component library
 swift run Keyboard --snapshot out.png --viewer   # the tree viewer, reading the app in front
 ```
@@ -308,9 +313,9 @@ A second window sits at the right edge of the screen, the same height as the
 keyboard, showing the accessibility tree of whatever app is in front — the tree
 Keyboard itself reads to find the field it types into.
 
-It opens collapsed: only the branch leading to the focused element is unfolded,
-and everything else shows as a shut row with a count of what it is holding, so
-the element being typed into is always the deepest thing on screen. It follows
+The viewer reads and opens only the branch that leads to the focused element.
+Every other element shows as a shut row with a count of its children. The
+element that gets the keystrokes is always the deepest row on screen. It follows
 along as focus moves, as the frontmost app changes, on a slow timer, and from
 its own refresh button.
 

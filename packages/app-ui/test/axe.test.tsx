@@ -1,17 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PresentOverlay } from '@september/app-ui/blocks/present';
-import { PanelShell } from '@september/app-ui/layouts/panel';
 
 import { axeViolations } from './axe';
-import { addSpace, finishSetup, renderApp, renderPart } from './render';
-
-function Panel() {
-  return <PanelShell onHide={() => {}} />;
-}
+import { addSpace, finishSetup, PanelWindow, renderApp, renderPart } from './render';
 
 /** The container, once its screen shows a heading. */
-async function settled(path: string, shell?: typeof Panel) {
+async function settled(path: string, shell?: typeof PanelWindow) {
   const { container } = await renderApp(path, shell ? { shell } : undefined);
   await vi.waitFor(() => expect(container.querySelector('h1, h2')).not.toBeNull());
   return container;
@@ -42,7 +37,7 @@ describe('the app', () => {
   });
 
   it('passes the axe rules that jsdom can run in the panel', async () => {
-    expect(await axeViolations(await settled('/spaces/family/talk', Panel))).toEqual([]);
+    expect(await axeViolations(await settled('/spaces/family/talk', PanelWindow))).toEqual([]);
   });
 });
 

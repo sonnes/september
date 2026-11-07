@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   currentSetup,
   currentUserId,
+  dismissedIdeas,
   heardVoices,
   loadSettings,
   saveSetup,
@@ -81,7 +82,66 @@ describe('the owner of the rows', () => {
   });
 });
 
+/** A store that cannot read the setting `key`, and reads every other one. */
+function failToRead(key: string): void {
+  vi.mocked(platform.store.getSetting).mockImplementation(async <T>(read: string) => {
+    if (read === key) throw new Error('Storage unavailable');
+    return (rows.settings.get(read) as T | undefined) ?? null;
+  });
+}
+
+describe('a setting that cannot be read', () => {
+  it('takes its default and lets the app start with the other settings', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await saveSetup({ ...DEFAULT_DRAFT, name: 'Meera' });
+    rows.settings.set(SETTINGS.heardVoices, ['v1']);
+    failToRead(SETTINGS.heardVoices);
+
+    await loadSettings();
+
+    expect(heardVoices.get()).toEqual([]);
+    expect(currentSetup()).toMatchObject({ name: 'Meera' });
+    expect(logged).toHaveBeenCalled();
+    logged.mockRestore();
+  });
+
+  it('stops the start when it is the saved setup, so a finished user never sees setup again', async () => {
+    failToRead(SETTINGS.setup);
+
+    await expect(loadSettings()).rejects.toThrow('Storage unavailable');
+  });
+
+  it('does not write a voice over the saved voice it could not read', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const chosen = { provider: 'elevenlabs', voiceId: 'voice-1' };
+    rows.settings.set(SETTINGS.setup, { ...DEFAULT_DRAFT, id: 'person', voiceService: 'elevenlabs' });
+    rows.settings.set(SETTINGS.speech, chosen);
+    failToRead(SETTINGS.speech);
+
+    await loadSettings();
+
+    expect(rows.settings.get(SETTINGS.speech)).toEqual(chosen);
+    logged.mockRestore();
+  });
+});
+
 describe('the device settings', () => {
+  it('show a kept value before its write ends, and keep it when the write fails', async () => {
+    let fail!: (reason: Error) => void;
+    vi.mocked(platform.store.putSetting).mockImplementationOnce(
+      () => new Promise<void>((_, reject) => (fail = reject)),
+    );
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    dismissedIdeas.keep(['call mum']);
+    expect(dismissedIdeas.get()).toEqual(['call mum']);
+
+    fail(new Error('Storage unavailable'));
+    await vi.waitFor(() => expect(logged).toHaveBeenCalled());
+    expect(dismissedIdeas.get()).toEqual(['call mum']);
+    logged.mockRestore();
+  });
+
   it('keep the voices heard lately', async () => {
     await heardVoices.set(['v2', 'v1']);
     await loadSettings();

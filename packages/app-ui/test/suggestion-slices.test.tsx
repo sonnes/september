@@ -2,37 +2,26 @@ import { act, useState } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { InputLayer } from '@september/app-ui/blocks/input-layer';
-import { Suggestions } from '@september/app-ui/blocks/suggestions';
+import { SourceMark, Suggestions } from '@september/app-ui/blocks/suggestions';
+import { usePinPhrase } from '@september/app-ui/services/data';
 import { updateSpeech } from '@september/app-ui/services/speech';
 import { updateSetup } from '@september/app-ui/services/settings';
 import { DEFAULT_ACCESS } from '@september/core/rules/access';
 import type { MoodKey } from '@september/core/rules/moods';
 import type { PhraseKind } from '@september/core/rules/records';
 
+import { bodyOf, jsonReply } from './model';
 import { rows } from './platform';
 import { finishSetup, press, renderPart, typeInto } from './render';
 
-/** One streamed OpenAI-compatible reply with `suggestions` as its JSON. */
-function reply(suggestions: string[]): Response {
-  const chunk = (delta: object, finish: string | null) =>
-    JSON.stringify({ id: '1', model: 'test', choices: [{ index: 0, delta, finish_reason: finish }] });
-  const content = JSON.stringify({ suggestions });
-  const events = [chunk({ role: 'assistant', content }, null), chunk({}, 'stop'), '[DONE]'];
-  return new Response(events.map(event => `data: ${event}\n\n`).join(''), {
-    headers: { 'content-type': 'text/event-stream' },
-  });
-}
-
 /** The writing service, answering each request with the rows `answer` holds then. */
 function model(answer: { rows: string[] }) {
-  const request = vi.fn(async (_url: string, _init: RequestInit) => reply(answer.rows));
+  const request = vi.fn(async (_url: string, _init: RequestInit) => jsonReply({ suggestions: answer.rows }));
   vi.stubGlobal('fetch', request);
-  const systemPrompt = (call = 0) => {
-    const body = JSON.parse(String(request.mock.calls[call]![1].body)) as {
-      messages: { role: string; content: unknown }[];
-    };
-    return JSON.stringify(body.messages.find(one => one.role === 'system' || one.role === 'developer')?.content);
-  };
+  const systemPrompt = (call = 0) =>
+    JSON.stringify(
+      bodyOf(request, call).messages.find(one => one.role === 'system' || one.role === 'developer')?.content,
+    );
   return { request, systemPrompt };
 }
 
@@ -56,6 +45,7 @@ const onSpeak = vi.fn();
 /** A composer that holds the draft and shows the rows for it. */
 function Composer({ initial, history = [], mood = null }: { initial: string; history?: string[]; mood?: MoodKey | null }) {
   const [text, setText] = useState(initial);
+  const { pin } = usePinPhrase('space');
   return (
     <>
       <input aria-label="Draft" value={text} onChange={event => setText(event.target.value)} />
@@ -68,7 +58,7 @@ function Composer({ initial, history = [], mood = null }: { initial: string; his
         mood={mood}
         onTake={setText}
         onSpeak={onSpeak}
-        onPin={() => {}}
+        onPin={pin}
       />
     </>
   );
@@ -162,6 +152,18 @@ it('names a chip by its phrase, then by where it came from', async () => {
   expect(button(container, 'Thanks. Suggested phrase.')).toBeDefined();
   await press(button(container, 'Yes. Kept phrase.'));
   expect(draftOf(container)?.trim()).toBe('Yes');
+});
+
+it('keeps a suggested phrase when the person presses its pin key', async () => {
+  phrase('Could I get a glass of water', '', { pinned: false });
+  const { container } = await renderPart(<Composer initial="Could" />);
+
+  await vi.waitFor(() => expect(button(container, 'Keep this phrase').getAttribute('aria-pressed')).toBe('false'));
+  await press(button(container, 'Keep this phrase'));
+
+  await vi.waitFor(() => expect(rows.phrases.get('p-Could I get a glass of water')?.pinned).toBe(true));
+  await vi.waitFor(() => expect(button(container, 'Keep this phrase').getAttribute('aria-pressed')).toBe('true'));
+  expect([...rows.phrases.values()]).toHaveLength(1);
 });
 
 it('says on the pin key whether the person keeps the row', async () => {
@@ -343,4 +345,15 @@ it('keeps a word that the word row clips out of the tab order', async () => {
   await vi.waitFor(() => expect(words().at(-1)!.hasAttribute('inert')).toBe(true));
   expect(words()[0]!.hasAttribute('inert')).toBe(false);
   rects.mockRestore();
+});
+
+it('names the pin of a saved phrase by whether the person keeps it, where it cannot be pressed', async () => {
+  const { container } = await renderPart(
+    <>
+      <SourceMark source="md" />
+      <SourceMark source="md" kept />
+    </>,
+  );
+  const names = [...container.querySelectorAll('[role="img"]')].map(mark => mark.getAttribute('aria-label'));
+  expect(names).toEqual(['A saved phrase', 'You keep this phrase']);
 });

@@ -1,3 +1,4 @@
+import { act } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 
 import { setup } from '@september/app-ui/services/settings';
@@ -5,7 +6,7 @@ import { AGENT_MODELS, SUGGESTIONS_MODELS } from '@september/core/rules/model-co
 import type { SavedSetup } from '@september/core/rules/onboarding';
 
 import { platform } from './platform';
-import { finishSetup, press, renderApp } from './render';
+import { finishSetup, press, renderApp, typeInto } from './render';
 
 const saved = (): SavedSetup => setup.get()!;
 
@@ -82,6 +83,25 @@ it('keeps the saved switch value and reports a failed save', async () => {
   expect(saved().autoSuggestions).toBe(true);
 });
 
+it('keeps a switch that changes while a model choice is still saving', async () => {
+  const container = await open();
+  const put = vi.mocked(platform.store.putSetting);
+  const write = put.getMockImplementation()!;
+  let release!: () => void;
+  put.mockImplementationOnce(
+    (key, value) => new Promise<void>(done => (release = () => void write(key, value).then(done))),
+  );
+  await press(row(section('Agent and phrases', container), AGENT_MODELS[0].name));
+  await press(switches(container)[0]);
+  await press(row(section('Agent and phrases', container), AGENT_MODELS[1].name));
+  release();
+
+  await vi.waitFor(() =>
+    expect(saved().defaultModel).toEqual({ service: 'openrouter', model: AGENT_MODELS[1].id }),
+  );
+  expect(saved().autoSuggestions).toBe(false);
+});
+
 it('saves the suggestions model without changing the agent model', async () => {
   const container = await open();
   const model = SUGGESTIONS_MODELS[0];
@@ -136,6 +156,22 @@ it('moves both models to a new provider', async () => {
   expect(switches(container)).toHaveLength(0);
 });
 
+it('keeps a provider that is not connected in the focus order, marked as unavailable', async () => {
+  vi.mocked(platform.providers.status).mockResolvedValue([
+    { provider: 'openrouter', connected: false, label: null, detail: null },
+    { provider: 'elevenlabs', connected: false, label: null, detail: null },
+  ]);
+  const container = await open();
+  const openrouter = await vi.waitFor(() => {
+    const found = [
+      ...(section('Provider', container)?.querySelectorAll<HTMLButtonElement>('[role="radio"]') ?? []),
+    ].find(radio => radio.closest('label')?.textContent?.includes('OpenRouter'));
+    if (found?.getAttribute('aria-disabled') !== 'true') throw new Error('OpenRouter is not marked unavailable');
+    return found;
+  });
+  expect(openrouter.disabled).toBe(false);
+});
+
 it('does not move to a provider that is not connected', async () => {
   vi.mocked(platform.providers.status).mockResolvedValue([
     { provider: 'openrouter', connected: false, label: null, detail: null },
@@ -157,4 +193,25 @@ it('shows the instructions field only for a custom speaking style', async () => 
   expect(container.querySelector('textarea')).not.toBeNull();
   await press(row(section('Speaking style', container), 'Plain'));
   expect(container.querySelector('textarea')).toBeNull();
+});
+
+it('saves custom instructions half a second after the last key', async () => {
+  const container = await open();
+  await press(row(section('Speaking style', container), 'Custom'));
+  const field = container.querySelector('textarea')!;
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  try {
+    await typeInto(field, 'Be brief');
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    await typeInto(field, 'Be brief and warm');
+    await act(() => vi.advanceTimersByTimeAsync(499));
+    expect(saved().speakingStyle).not.toBe('Be brief');
+    expect(saved().speakingStyle).not.toBe('Be brief and warm');
+    expect(field.value).toBe('Be brief and warm');
+
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(saved().speakingStyle).toBe('Be brief and warm');
+  } finally {
+    vi.useRealTimers();
+  }
 });

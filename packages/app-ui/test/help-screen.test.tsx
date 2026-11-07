@@ -2,10 +2,8 @@ import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HelpGuideContent } from '@september/app-ui/blocks/help-guide';
-import { HelpScreen } from '@september/app-ui/pages/help';
 import { HELP_CATEGORIES, HELP_GUIDES } from '@september/core/rules/help/catalog';
 import { groupHelpGuides, helpGuide, searchHelpGuides } from '@september/core/rules/help/search';
-import { SidebarProvider } from '@september/ui/components/sidebar';
 
 import { findButton, press, renderApp, renderPart, typeInto } from './render';
 
@@ -183,16 +181,5 @@ describe('a Help guide', () => {
     const { router } = await renderApp('/help/not-a-guide');
 
     await vi.waitFor(() => expect(router!.state.location.pathname).toBe('/help'));
-  });
-
-  it('links back to Help from a guide it does not know', async () => {
-    await renderPart(
-      <SidebarProvider>
-        <HelpScreen guideSlug="not-a-guide" />
-      </SidebarProvider>,
-    );
-
-    const back = [...document.querySelectorAll('a')].find(one => one.textContent?.includes('Return to Help'));
-    expect(back?.getAttribute('href')).toBe('/help');
   });
 });

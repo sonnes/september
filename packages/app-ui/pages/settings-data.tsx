@@ -3,8 +3,9 @@ import { Download, Upload } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@september/ui/components/alert-dialog";
 import { Button } from "@september/ui/components/button";
 import { downloadBackup, importBackup } from "@september/app-ui/services/backup";
-import { backupProblem, type BackupSummary, backupSummary, parseBackup, type SeptemberBackup } from "@september/core/rules/backup";
+import { BACKUP_SOURCE_LABELS, backupProblem, type BackupSummary, backupSummary, parseBackup, type SeptemberBackup } from "@september/core/rules/backup";
 import { Section, SettingsTitle } from "@september/app-ui/blocks/setup-fields";
+import { sectionFor } from "@september/core/rules/navigation";
 
 function BackupPreview({
   fileName,
@@ -15,7 +16,6 @@ function BackupPreview({
   summary: BackupSummary;
   skipped: number;
 }) {
-  const source = summary.source === "desktop" ? "Desktop app" : "Web app";
   const counts = [
     ["Spaces", summary.spaces],
     ["Messages", summary.messages],
@@ -30,7 +30,7 @@ function BackupPreview({
       <div className="flex flex-col gap-1">
         <p className="text-sm font-semibold break-all">{fileName}</p>
         <p className="text-muted-foreground text-sm">
-          {source} · {new Date(summary.exportedAt).toLocaleString()}
+          {BACKUP_SOURCE_LABELS[summary.source]} · {new Date(summary.exportedAt).toLocaleString()}
         </p>
       </div>
       {skipped > 0 ? (
@@ -129,7 +129,7 @@ export function DataSettings() {
   return (
     <div className="flex flex-col gap-8">
       <SettingsTitle
-        title="Data"
+        title={sectionFor("/settings/data").title}
         description="Keep a private copy of your September settings and data."
       />
 

@@ -1,6 +1,6 @@
 # September Desktop
 
-The current prerelease is `v0.6.0`. The signed DMG targets Apple Silicon and macOS 14.2 or later.
+The signed DMG targets Apple Silicon and macOS 14.2 or later.
 
 September Desktop is the Tauri edition of September, in one floating window,
 the panel. It renders the workspace's shared application UI and supplies
@@ -16,12 +16,12 @@ and the services that connect that UI to macOS.
 
 | Directory                  | Holds                                                                                                                                                      | Rule                                                 |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `packages/app-ui/layouts/` | `onboarding.tsx`, `app.tsx`, `panel.tsx`, `settings.tsx`                                                                                                   | The component renders an `<Outlet/>`.                |
-| `packages/app-ui/pages/`   | Route screens: `steps` `spaces` `talk` `agent` `notes` `voice` `settings` `usage`                                                                          | `packages/app-ui/routes.tsx` names it.               |
-| `packages/app-ui/blocks/`  | `screen` `chrome` `panel-header` `present` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it.                 |
-| `packages/app-ui/services/` | `settings` `data` `speech` `ai` `agent` `usage` `connections` `backup` `export` `cloning` `phrase-sync` `suggest` `player` `browser`                     | Both apps share it, over the platform.               |
+| `packages/app-ui/layouts/` | Layouts | The component renders an `<Outlet/>`. |
+| `packages/app-ui/pages/` | Route screens | `packages/app-ui/routes.tsx` names it. |
+| `packages/app-ui/blocks/` | Parts that two or more pages or layouts use | Two or more pages or layouts use it. |
+| `packages/app-ui/services/` | The services that both apps share | Both apps share it, over the platform. |
 | `src/platform.ts`          | The Mac platform: `store`, `voice`, `providers`, `writing`, `device`, `capabilities`                                                                       | It speaks to Rust.                                   |
-| `src/commands.ts`          | Every Tauri command, with its arguments and its answer, and `call`                                                                                         | Every call to Rust goes through `call`.              |
+| `src/commands.ts`          | Every Tauri command, with its arguments and its answer, `call`, and `callRaw`                                                                              | Every call to Rust goes through it.                  |
 | `src/window.ts`            | The panel window and the saved path                                                                                                                        | Only the desktop has it.                             |
 | `src/services/gaze.ts`     | The camera session of the eye tracker                                                                                                                      | Only the desktop has it.                             |
 | `packages/core/`           | autocomplete and platform-independent rules                                                                                                                | Both web and desktop import the same implementation. |
@@ -72,14 +72,13 @@ leaving the current step or changing its answers. An unknown guide slug returns
 to `/help`.
 
 Before the first render, `src/main.tsx` awaits `loadSettings` and reads the
-`lastPath` setting. Setup runs one time. Before setup is done, `src/main.tsx`
-calls `panel_setup(true)`, then shows the panel. The panel is then a normal
-window, and September has a Dock icon. The last step keeps its answers in the
-`setup` setting, then opens the first page of `APP_NAV`, `/spaces`.
-
-When setup becomes done, the bootstrap calls `panel_setup(false)`, which
-applies the saved float choice. If setup goes back to
-not done, the bootstrap calls `panel_setup(true)` again.
+`lastPath` setting. If `lastPath` cannot be read, the app opens on the first
+screen. If the login name cannot be read, the rows belong to `local-user`. Setup
+runs one time. During setup, the panel is a normal
+window with a Dock icon. See
+[Show and hide the panel](../../docs/concepts/desktop-floating-panel.md#show-and-hide-the-panel).
+The last step keeps its answers in the `setup` setting, then opens the first
+page of `APP_NAV`, `/spaces`.
 
 The app comes back where it was. The router keeps each arrival in the
 `lastPath` setting, and `/` reads it. `openingPath(saved, spaces, capabilities)`
@@ -130,16 +129,8 @@ The space sheet with the model and the sliders is named Voice controls. This
 name keeps it apart from the Voice page. With no spaces, a space-mode path
 shows `No spaces yet` and New space. The other pages show as usual.
 
-The layout of a screen follows the width of the panel:
-
-| Tier    | Width                | Layout                                                                                                                                                                                                              |
-| ------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Compact | Less than 560 points | One mood menu key replaces the five mood keys. Clear moves into the More menu. Phrases and Voice controls open as sheets. |
-| Regular | 560 to 899 points    | The composer and the history are the same as in the web app. Phrases and Voice controls open as sheets below the panel header.                                                                                       |
-| Wide    | 900 points and more  | Phrases and Voice open in the right rail.                                                                                                                                                                           |
-
-`PanelShell` measures the width of the whole panel for the tier. The composer reads
-that tier.
+The layout of a screen follows the width of the panel. See
+[Width tiers](../../docs/concepts/desktop-floating-panel.md#width-tiers).
 
 ### Keys
 
@@ -156,23 +147,13 @@ that tier.
 | Escape                            | Panel               | Stops the voice. Else closes the open sheet or menu. Else, with an empty draft, hides the panel. |
 | Control-1 to Control-5, Control-0 | Panel, compact tier | Sets the mood. Control-0 clears it.                                                              |
 
-`PanelShell` binds the panel keys. Rust registers Control-Option-Space. If
-another app owns that key, the registration fails with no error. The menu bar
-item still shows the panel.
+`PanelShell` binds the panel keys. Rust registers Control-Option-Space.
 
 ### The Dock and the menu bar
 
-The Dock icon follows the float choice. `policy(setup, float)` in
-`src-tauri/src/window.rs` gives the macOS activation policy:
-
-| State             | Policy      | Dock icon                           |
-| ----------------- | ----------- | ----------------------------------- |
-| Setup is not done | `Regular`   | Yes                                 |
-| Float on          | `Accessory` | No. September is not in Command-Tab. |
-| Float off         | `Regular`   | Yes                                 |
-
-A click on the Dock icon shows the panel. The menu bar item shows the
-September keycap. Its menu holds Show Panel and Quit September.
+The float choice decides the Dock icon. See
+[Show and hide the panel](../../docs/concepts/desktop-floating-panel.md#show-and-hide-the-panel).
+The menu bar item shows the September keycap.
 
 The close button of the panel hides the panel. The app keeps running, and the
 draft stays. Quit September in the menu bar item quits the app.
@@ -257,7 +238,7 @@ The slug is the title of the space, and it holds no identifier. A stale slug
 goes back to the list. A new title moves the address with it. Two spaces cannot
 share a title, because one slug must name one space.
 
-The Talk screen has three parts, from the top:
+The Talk screen has four parts, from the top:
 
 1. The panel header. It holds the space button, the mode switch, and the More
    menu.
@@ -274,9 +255,9 @@ The Talk screen has three parts, from the top:
    `talk-mood:<id>` setting. See `docs/concepts/audio-tags.md`.
 
 While Speak plays a sentence, the speaking card shows below the messages, and
-the field stays. Stop, or Escape, stops the voice. Write next, or a typed
-letter, moves the focus to the field while the voice goes on. Under the composer, a line shows the keys
-that work now.
+the focus stays in the field. Stop, or Escape, stops the voice. If the focus is
+on the card, Write next or a typed letter moves the focus to the field while
+the voice goes on. Under the composer, a line shows the keys that work now.
 
 In the compact tier, the composer folds. See [The panel header](#the-panel-header).
 
@@ -328,7 +309,7 @@ a separate conversation that can read the space and propose changes.
 panel header moves between all three. The space switcher opens the chosen space
 in the mode the user is in.
 
-September keeps the mode of each space, by slug, in the `space-modes` setting.
+September keeps the mode of each space, by space id, in the `space-modes` setting.
 The space list opens each space the way the user left it. A new space starts
 in Agent, where it is set up, unless no writing service is connected.
 
@@ -354,13 +335,12 @@ editor, and the line rules are in `packages/core/rules/note-document.ts`.
 The word engine reads the note in Notes mode, not the spoken messages, so the
 words it offers follow what the user is writing.
 
-The note starts saving text and title edits immediately. Pending or failed
-saves keep the normal close guard active. There is no Save button, because a user who types
+The note starts saving text and title edits immediately. There is no Save button, because a user who types
 slowly must never lose words to a button they did not press.
 
-The note has two writers: the field and the console. The field takes the new
-text whenever it holds nothing unsaved, so words added from the console show
-at once and are never written over.
+The note has two writers: the field and the agent. The field takes the new
+text whenever it holds nothing unsaved, so words from the agent show at once
+and are never written over.
 
 The first save gives the note a name, from its first six words. A name the
 user typed is never replaced. A new name makes a new slug, so the address
@@ -380,14 +360,13 @@ The store of `src/platform.ts` reads and writes a note through `note_list`, `not
 `useUpdateNote` reads the row first and changes only the fields it carries.
 Deleting a space deletes its notes, in the same transaction as its messages.
 
-The desktop note is a plain text field, not the rich editor of the web app.
 Both apps keep markdown in the same `content` column, so the rows stay the
 same.
 
 ### Present and export
 
-A row above the note carries four actions: Read aloud, Present, Export, and
-Delete.
+The reading bar below the note holds Read aloud, Present, Suggestions, and a
+More menu with Export and Delete note.
 
 Present opens `PresentOverlay` from `packages/app-ui/blocks/present.tsx` over
 the panel. When the overlay opens, it calls `fullScreen(true)`, and the panel
@@ -404,20 +383,23 @@ Thirds of the stage move back, hold, and on. The keys are `←` `→` `Space`
 `present` setting.
 
 Export saves the note as `.md` always, and as `.mp3` with an ElevenLabs voice.
-`packages/app-ui/services/export.ts` writes both through the WebView download support, so
-the file is made on the Mac and goes nowhere else. Audio reuses the speech file
+`packages/app-ui/services/export.ts` saves both with `downloadBlob`. The panel
+accepts each download and saves it in the Downloads folder of the user. A
+name that is taken gets " (1)". The file is made on the Mac and goes nowhere
+else. Audio reuses the speech file
 that a voice-over already made.
 
 Video is made in the browser app for now, and the row says so instead of
 hiding. The Mac platform has no `renderVideo`: `ffmpeg.wasm` reaches its core
-through a blob URL, and the script policy of this window allows `'self'` only.
+through a blob URL, and the script policy of this window allows no script from
+a blob URL.
 
 `packages/core/rules/present/` owns the chunking, the tones, the font fit,
 and the caption timing. See `docs/concepts/note-present-export.md`.
 
 ### The note of the space
 
-The first tab of the console is About. It opens the note of the space, which
+The first row of the notes list is About. It opens the note of the space, which
 says who the user speaks to here and why. Every suggestion and every phrase of
 the space reads it, so a change here changes the words that the app offers.
 
@@ -425,10 +407,9 @@ A model writes this note one time, on the first turn of the space, from the
 words the user gave it. `space_patch` keeps it in the `context` column. A note that the
 user wrote is never replaced. A title that the user typed stays.
 
-The About tab saves with no Save button. It saves when the field loses focus,
-and again when the tab closes with words unsaved. The console writes here too,
-so a user who cannot type fills this note with the word tiles. The console
-writes only after the field blurs, so the two writers cannot race.
+The About note saves on each edit, with no Save button. The writing tools under
+the caret write here too, so a user who cannot type fills this note with the
+word tiles.
 
 The tab is state, and not an address. The app cannot open on it, and a reload
 returns to the last note. Give the tab an address when a user asks to link to
@@ -474,9 +455,8 @@ rail a card of its own.
 A person with ALS types slowly. Each word that the app offers is a word that
 the user does not type. This is the first measure of the app.
 
-`packages/core/autocomplete/` holds the engine. It is a copy of the engine in the web
-app, so a correction in one app can move to the other one. It reads no file
-and calls no service.
+`packages/core/autocomplete/` holds the engine, and both apps import it. It
+reads no file and calls no service.
 
 The engine blends three models of the words that come next:
 
@@ -655,6 +635,12 @@ audio/<sha256 of the settings and the words>.wav
 The MP3 file comes from the text-to-speech endpoint, which Speak and exports
 use. The WAV file holds the samples of a complete Dialogue sentence.
 
+The settings in the name are the file settings that `fileSettings` in
+`src/rules/voice-file.ts` gives: the service, the model, the stability, the
+similarity, and the speed. A live Dialogue sentence uses the saved stability
+and speed, and ElevenLabs gets a stability mode and no speed. A live Dialogue
+sentence plays a kept WAV file or a kept MP3 file with its name.
+
 The words lose the spaces at their ends, and each run of spaces becomes one
 space. Case and punctuation stay, because both change how a voice reads a
 sentence. The three numbers are written with three decimal places, so `0.5`
@@ -704,8 +690,8 @@ IPC. Rust adds the cached ElevenLabs key and forwards
 the form to the fixed `/v1/voices/add` endpoint. Audio does not become JSON or
 base64, and the key never reaches the WebView.
 
-After creation, the screen selects ElevenLabs and the new voice. It keeps the
-current speech model and refreshes the account voice list. A stale provider
+After creation, the screen selects the new voice. It selects ElevenLabs, or
+keeps Dialogue when Dialogue is in use. It keeps the current speech model and refreshes the account voice list. A stale provider
 list cannot hide the new row while ElevenLabs updates the account. The form
 keeps its fields and samples after an error, and clears them after success.
 Success returns to `/voice`. Leaving the cloning page before success removes
@@ -733,11 +719,37 @@ or later and does not install an audio driver.
 
 ## Release the desktop app
 
-Set `APPLE_TEAM_ID`, `APPLE_SIGNING_IDENTITY`, and
-`APPLE_PROVISIONING_PROFILE` for a signed build. Run `make desktop-release`
-from the repository root to create the distribution DMG. The command loads the
-Apple credentials from the ignored root `.envrc`, notarizes and staples the
+Set these variables in the ignored root `.envrc`:
+
+- `APPLE_TEAM_ID`
+- `APPLE_SIGNING_IDENTITY`
+- `APPLE_PROVISIONING_PROFILE`, the path of the Developer ID provisioning profile
+- `APPLE_API_ISSUER`
+- `APPLE_API_KEY`, the ID of the App Store Connect API key
+- `APPLE_API_KEY_PATH`, the path of that key file
+
+Run `make desktop-release` from the repository root to create the distribution
+DMG. The command loads the Apple credentials from `.envrc`, notarizes and staples the
 DMG, checks it with Gatekeeper, and prints its SHA-256 checksum.
+
+The download link on the web home page points to
+`releases/download/v<version>/September_<version>_aarch64.dmg`, built in
+`apps/web/src/components/home/platform-section.tsx`. The site deploys again
+when the version in `package.json` changes. Publish a release in this order:
+
+1. Run `make desktop-release` on an Apple silicon Mac.
+2. Tag the commit `v<version>` and push the tag.
+3. Create the GitHub release for the tag and upload the DMG.
+4. Merge the version change to `main`.
+
+`pnpm tauri:build` signs the app when `APPLE_TEAM_ID` and
+`APPLE_SIGNING_IDENTITY` are set. Then it adds `src-tauri/tauri.signed.conf.json`,
+which puts the provisioning profile in the bundle. Without them, it builds an
+unsigned app.
+
+`package.json` holds the app version. `src-tauri/tauri.conf.json` reads it for
+the bundle, and the DMG name uses it. The crate version in `Cargo.toml` does
+not go into the bundle.
 
 ## Measure saved typing and service use
 
@@ -778,25 +790,24 @@ A failed record goes to the console.
 
 ## Walk through setup
 
-Each step is a route: `/welcome`, `/profile`, `/connect`, and
+Each step is a route: `/welcome`, `/choose`, `/profile`, `/connect`, and
 `/finish`.
-Everyone follows the same four steps. Connecting cloud services is optional.
+Everyone follows the same five steps. Connecting cloud services is optional.
 `STEPS` in `packages/core/rules/onboarding.ts` owns the sequence, and the sidebar, the
 guards, and both navigation directions all read it. The router uses hash history,
 because Tauri serves the built files from the asset protocol. A step opens only
-after the answers it needs exist. The answers stay in memory until account
-persistence is ported.
+after the answers it needs exist. The answers stay in memory until the
+last step writes them to the `setup` setting.
 
 The brand, the setup title, and the step list are in a left indigo sidebar.
 Each step opens as an inset white card beside it. All sections on a step stay
 open. There are no collapsible groups.
 
 The setup sidebar shows the brand mark. `packages/app-ui/blocks/brand.tsx` reads it from
-`public/logo.svg`, the file the brand publishes.
+`packages/app-ui/public/logo.svg`, the file the brand publishes.
 
 The name field starts with the name from the operating system. The user can
-change it. In a browser the field starts empty, because the Tauri backend does
-not exist there.
+change it.
 
 ## Connect a service
 
@@ -859,9 +870,10 @@ section list beside the open section, ported from the web app.
 
 | Section       | Route               | Holds                                                   |
 | ------------- | ------------------- | ------------------------------------------------------- |
-| Setup         | `/settings`         | The state of each service, its key, and its model       |
+| Services      | `/settings`         | The state of each service, its key, and its model       |
+| Access        | `/settings/access`  | How you choose things, the text size, and the theme     |
 | AI Assistance | `/settings/writing` | Who writes, and what the model knows about you          |
-| Usage         | `/settings/usage`   | Typing saved, service use, quota, recent calls, and CSV |
+| Usage         | `/settings/usage`   | Service use, quota, recent calls, and CSV               |
 | Panel         | `/settings/panel`   | Float on top, for the panel                             |
 | Data          | `/settings/data`    | A portable backup download and restore                  |
 
@@ -873,8 +885,8 @@ model and the sound moved to the rail of a space.
 open section, and the guide for each cloud service. `packages/app-ui/layouts/settings.tsx`
 holds the section list, and the `packages/app-ui/pages/settings*.tsx` files hold the screens.
 
-The Data section downloads the portable settings and every domain row as one
-JSON file. It does not include Keychain keys, the selected audio output, cached
+The Data section saves the portable settings and every domain row as one JSON
+file in the Downloads folder. It does not include Keychain keys, the selected audio output, cached
 audio paths, or internal state. Version 2 includes the separate Agent
 transcripts. Import also accepts version 1 with no Agent messages, validates
 the complete file, previews its counts, and replaces the portable SQLite rows
@@ -912,8 +924,9 @@ and phrases section has two switches and one model list. Each list is a
 A Frontier group and an Open models group follow. A saved model that is not on
 a list shows as the first row, "Current: <id>".
 
-**Automatic** is the first row, and the default. The app sends
-`openrouter/free`, and OpenRouter picks a free model that answers.
+**Automatic** is the first row, and the default. Suggestions and phrases send
+the `FREE_MODELS` list, and OpenRouter uses the first free model that answers.
+The agent sends `openrouter/free`.
 The agent and phrases model goes into `setup.defaultModel`. The suggestions
 model goes into `setup.suggestionsModel`. If `suggestionsModel` is null,
 Suggestions use `defaultModel`. A provider change writes the new service into
@@ -954,14 +967,13 @@ border. A caller with no room for two columns sends `columns={1}`, as the
 A search field appears above the rows when the list holds more than eight.
 Each word of the query must be in the name, through `matchesWords` in
 `packages/core/rules/pick.ts`. A caller with another rule sends `filter`. A caller with a control for each row sends `after`,
-and the voice list sends the play button. The voice list sends
-`layout="list"`: a card for each row with a radio mark, the name, a detail
-line, and the play button inside the card. The cards of each group fill two
+and the voice list sends the play button. Each row shows a radio mark, the
+name, and a detail line when the row has one. The rows of each group fill the
 columns under the group heading.
 
 Every change is kept at once, as the Voice card of the rail does. There is no
-Save button to forget. A text field waits half a second after the last keystroke, so one
-sentence is one write.
+Save button to forget. A text field saves on each edit, and the writes run one
+at a time, in order.
 
 The setup steps ask how September runs. Settings does not ask again, because
 one answer in two places lets the two disagree.
@@ -1039,10 +1051,13 @@ pnpm test
 pnpm build
 ```
 
-The Vitest tests cover the eye-tracker calibration and the Panel section of
-Settings. The shared routes, screens, and rules have their tests in
-`apps/web`, `packages/ui`, and `packages/core`. Rust
-tests cover native services, persistence, providers, and process boundaries.
+`pnpm test` runs the Vitest tests, then the Rust unit tests with
+`cargo test --lib`. The Vitest tests cover the eye-tracker calibration, the
+Panel section of Settings, and the command contract. The Rust contract tests
+in `src-tauri/src/rpc/contract.rs` read the same examples. The shared routes,
+screens, and rules have their tests in `apps/web`, `packages/app-ui`,
+`packages/ui`, and `packages/core`. Rust tests cover native services,
+persistence, providers, and process boundaries.
 
 Run the Rust checks from `src-tauri/`:
 
@@ -1070,22 +1085,22 @@ A successful message save clears only the draft that was sent; later edits
 remain. Pending or failed saves show their state and offer retry on failure.
 
 Note text and titles start saving on each edit. Writes through the note-update
-hook run in order within a space. Browser close/reload warns while a save is
-pending or failed. The close button of the panel hides the panel, so those
-edits continue to save.
+hook run in order within a space. The close button of the panel hides the
+panel, so pending edits continue to save.
 A forced quit, crash, or power loss before a write finishes can still lose it.
 
 The Welcome screen includes a Terms & privacy summary before personal details
 or service connections. It summarizes local storage, optional providers, and
 the MIT terms. Full policies open in the browser while setup stays in place.
-Get started advances to About you; it does not record consent to optional processing.
+Get started advances to How you choose. It does not record consent to optional processing.
 
 OpenRouter connects through browser authorization in setup and Settings. Rust
 uses PKCE and a temporary loopback callback on a free port. It exchanges and
 checks the key before saving it to Keychain; the WebView receives only status.
 Cancel closes the attempt, and an unanswered attempt expires after five minutes.
 
-Help screenshots live in `public/help/` and ship in both apps. Browser captures
+Help screenshots live in `packages/app-ui/public/help/`, and both apps serve
+them through `appConfig` in `vite.shared.ts`. Browser captures
 use the 1376 × 1032 iPad landscape viewport at 2× pixel density. Captions
 identify the browser UI. The shared guides place close-ups beside steps and
 open screenshots in a keyboard-accessible dialog. The catalog records capture

@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { platform } from "@platform/adapter";
-import { pinnedPhrase } from "@september/core/rules/phrases/rows";
 import { STARTER_PACK } from "@september/core/rules/phrases/starter-pack";
 import type { Message, SavedPhrase, Space, SpacePatch } from "@september/core/rules/records";
 
@@ -90,7 +89,7 @@ export function useUpdateSpace() {
 }
 
 export function useDeleteSpace() {
-  const refresh = useRefresh(spacesKey);
+  const refresh = useRefresh(spacesKey, ["messages"], ["phrases"], ["notes"], ["agent-messages"]);
   return useMutation({
     mutationFn: (id: string) => store.deleteSpace(id),
     onSuccess: refresh,
@@ -131,8 +130,10 @@ export function useSendMessage(spaceId: string) {
         type: "user",
         created_at: Date.now(),
       }),
-    onSuccess: (message) =>
-      client.setQueryData<Message[]>(messagesKey(spaceId), (rows = []) => [...rows, message]),
+    onSuccess: (message) => {
+      for (const key of [messagesKey(spaceId), messagesKey("all")])
+        client.setQueryData<Message[]>(key, (rows) => rows && [...rows, message]);
+    },
   });
 }
 
@@ -141,7 +142,7 @@ export function useRefreshAgentSpace(spaceId: string) {
   return useRefresh(
     agentMessagesKey(spaceId),
     spacesKey,
-    messagesKey(spaceId),
+    ["messages"],
     notesKey(spaceId),
     ["phrases"],
   );
@@ -225,14 +226,19 @@ export function usePhrases(spaceId?: string) {
   });
 }
 
-/** Keeps a row of the stripe, so a regeneration cannot take it away. */
+/**
+ * Keeps a saved phrase of the stripe, so a regeneration cannot take it away.
+ * `failed` is true when the store refused the last pin.
+ */
 export function usePinPhrase(spaceId: string) {
   const { data: phrases } = usePhrases(spaceId);
   const put = usePutPhrase();
-  return (text: string) => {
-    const row = pinnedPhrase(text, spaceId, phrases ?? []);
-    if (row) put.mutate(row);
+  const pin = (text: string) => {
+    const key = text.trim().toLowerCase();
+    const row = phrases?.find((one) => one.text.trim().toLowerCase() === key);
+    if (row && !row.pinned) put.mutate({ ...row, pinned: true });
   };
+  return { pin, failed: put.isError };
 }
 
 export function usePutPhrase() {

@@ -124,16 +124,16 @@ support. Applicable statutory rights remain intact. The privacy notice covers
 local storage, optional providers, and website metadata. GitHub issues are the
 public contact route; users must not post private information there.
 
-`docs/research/2026-09-05-india-legal-review.md` records the legal sources and
-limits of this review. A software licence does not supply privacy consent or
+`docs/research/2026-09-05-india-legal-review.md` on the `archive/old-docs`
+branch records the legal sources and limits of this review. A software licence does not supply privacy consent or
 exempt a personal project from applicable law.
 
 
 ## Brand assets
 
 `pnpm brand:generate` draws the mark and the share card with `satori`, then
-writes them to `public/`: `logo.svg`, the favicons, the app icons, and
-`og.png`. Run it after a change to the mark, to the landing hero, or to the
+writes `logo.svg` to `packages/app-ui/public/`, and the favicons, the app
+icons, and `og.png` to `public/`. Run it after a change to the mark, to the landing hero, or to the
 words on the card, and commit what it writes.
 
 The share card is 1200x630, the size every link preview expects. `index.html`
@@ -156,10 +156,13 @@ action, a bookmark, and the back button all land a returning user in the app.
 `src/routes.test.ts` holds both directions, and opens every page and section of
 the navigation.
 
-`src/main.tsx` awaits `loadSettings` from `@september/app-ui/services/settings`
-once, then mounts the app. The guards read the held setup and do not wait. If
-the browser denies storage, the error goes to the console, and the landing
-page and Help still open.
+`settingsReady` in `src/router.tsx` calls `loadSettings` from
+`@september/app-ui/services/settings` once. A public page of `PUBLIC_PAGES`
+mounts at once and does not open the database. For any other path,
+`src/main.tsx` awaits `settingsReady` before it mounts the app. The setup steps
+and the app pages also await it, so a move from a public page into the app
+reads the settings first. If the browser denies storage, the error goes to the
+console, and the app still opens.
 
 The application routes are:
 
@@ -202,8 +205,10 @@ expandable panels with keyboard support. Privacy and the founder story follow
 the demos. Compact browser and Mac choices provide the final calls to action.
 
 The Mac section presents the full desktop app with Apple Intelligence and an
-alpha download. Its direct DMG link targets `v0.2.0` for Apple Silicon
-and macOS 14.2 or later. Apple Intelligence requires macOS 26 or later. Update this link when a new desktop alpha ships.
+alpha download. Its direct DMG link takes the version from
+`apps/desktop/package.json`, so the link follows each desktop release. The DMG
+is for Apple Silicon and macOS 14.2 or later. Apple Intelligence requires macOS
+26 or later.
 
 The landing sections demonstrate the real feature machinery on marketing-only
 data: the phrase chapter runs `matchCode`, the Present chapter runs
@@ -279,7 +284,8 @@ Suggestions use it.
 
 AI Assistance settings have independent switches for automatic suggestions and
 phrase generation. Both default to on. AI suggestions wait for an edit that
-ends in whitespace or `. , ! ? ; :`, then wait 200 ms. Local word completion
+ends in whitespace, `. , ! ? ; :`, or the `]` that ends an audio tag, then
+wait 200 ms. Local word completion
 still responds to each letter. Setup writes run in order and notify mounted
 generation hooks after a successful save. Portable backups preserve both switches.
 
@@ -290,14 +296,16 @@ the published rates of the models it lists, which is where a recorded cost
 comes from; a model it does not list still runs, and records no cost rather
 than a wrong one.
 
-Automatic text-generation requests send `model: "openrouter/free"`, including
-Suggestions overrides that select Automatic. Named model selections retain
+Automatic suggestion and phrase requests send the `FREE_MODELS` list as
+`models`, with no `model`, including Suggestions overrides that select
+Automatic. OpenRouter uses the first model in the list that answers. Named model selections retain
 their model ID. Requests preserve JSON response settings.
 
 The space Agent uses OpenRouter's tool-calling request shape.
 When the model choice is Automatic, the Agent uses `openrouter/free` so
 OpenRouter selects a currently available free model that supports the tools.
-Its tool definitions are fixed by core, every write waits for approval, and its
+Its tool definitions are fixed by core. A delete or an invalid call waits for
+approval, and every other write runs at once. Its
 transcript never enters Talk history or speech. An Agent turn streams: its
 words reach the screen as they arrive, and the stored row replaces them when
 the turn ends.
@@ -346,8 +354,8 @@ remain. Pending or failed saves show their state and offer retry on failure.
 
 Note text and titles start saving on each edit. Writes through the note-update
 hook run in order within a space. Browser close/reload warns while a save is
-pending or failed; the Mac window close action waits until those edits save.
-A forced quit, crash, or power loss before a write finishes can still lose it.
+pending or failed. Closing the Mac panel only hides it, so a pending save goes
+on. Quitting the Mac app does not wait for a save. A forced quit, crash, or power loss before a write finishes can still lose it.
 
 The Welcome screen includes a Terms & privacy summary before personal details
 or service connections. It summarizes local storage, optional providers, and
@@ -367,9 +375,10 @@ The callback must be served as a static file on the same origin as the app.
 Vercel adds no-store and no-referrer headers for `/oauth/*`.
 
 The application sidebar starts collapsed at every desktop width. The toggle
-or Ctrl/Command-B expands it; resizing preserves that choice.
+expands it; resizing preserves that choice.
 
-Help screenshots live in `public/help/` and ship in both apps. Browser captures
+Help screenshots live in `packages/app-ui/public/help/`, and both apps serve
+them through `appConfig` in `vite.shared.ts`. Browser captures
 use the 1376 × 1032 iPad landscape viewport at 2× pixel density. Captions
 identify the browser UI. The shared guides place close-ups beside steps and
 open screenshots in a keyboard-accessible dialog. The catalog records capture

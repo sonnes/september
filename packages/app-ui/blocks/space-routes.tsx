@@ -66,9 +66,7 @@ export const shownModes = () =>
 export function useRememberMode(space: Space, mode: SpaceMode) {
   useEffect(() => {
     if (spaceModeFrom(spaceModes.get(), space.id) === mode) return;
-    spaceModes.set(rememberSpaceMode(spaceModes.get(), space.id, mode)).catch((error: unknown) => {
-      console.error("September did not keep the mode of the space.", error);
-    });
+    spaceModes.keep(rememberSpaceMode(spaceModes.get(), space.id, mode));
   }, [space.id, mode]);
 }
 

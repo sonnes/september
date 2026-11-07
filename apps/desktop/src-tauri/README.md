@@ -68,7 +68,8 @@ Run `pnpm apfel:prepare` from `apps/desktop` to prepare only the sidecar.
 
 ## Show the panel
 
-`tauri.conf.json` creates one window, `panel`. It starts hidden, and the UI
+The app has one window, `panel`. `tauri.conf.json` holds its settings with
+`create: false`, and `create_panel` builds it. It starts hidden, and the UI
 shows it at boot.
 
 | Label   | Size     | Minimum | Other                                                                     |
@@ -84,15 +85,16 @@ panel commands:
 | `panel_hide`      | none       | Hides the panel.                                                                                                             |
 | `panel_float`     | none       | Returns `false` only when the user turned the float off.                                                                     |
 | `panel_set_float` | `on: bool` | Saves the choice, then applies it to the panel and to the activation policy.                                                 |
-| `panel_setup`     | `on: bool` | On: a normal window with the `Regular` policy. The saved choice does not change. Off: applies the saved float choice.        |
+| `panel_setup`     | `on: bool` | On: a normal window for setup. Off: applies the saved float choice.                                                          |
 | `panel_present`   | `on: bool` | On: `set_simple_fullscreen(true)`. Off: `set_simple_fullscreen(false)`.                                                      |
 
 `window.rs` reads and writes the `panel-float` setting through
 `BackendState::setting` and `BackendState::put_setting`.
 
-`lib.rs` handles `WindowEvent::CloseRequested` for `panel`. It prevents the
-close and hides the panel, so the draft and the close guard stay. Quit still
-stops speech, the microphone, and gaze on `RunEvent::Exit`.
+`on_window_event` in `src/window.rs` handles `WindowEvent::CloseRequested` for
+`panel`. It prevents the close and hides the panel, so the draft stays and
+pending saves finish. Quit still stops speech, the microphone, and gaze on
+`RunEvent::Exit`.
 
 On macOS, `RunEvent::Reopen` comes from a click on the Dock icon. The handler
 shows the panel.
@@ -100,18 +102,8 @@ shows the panel.
 ### The Dock icon
 
 `policy(setup, float)` is a pure rule with its own `Policy` enum. A unit test
-reads it.
-
-| Setup  | Float | Policy      | Result                                       |
-| ------ | ----- | ----------- | -------------------------------------------- |
-| On     | Any   | `Regular`   | A Dock icon and a place in Command-Tab       |
-| Off    | On    | `Accessory` | No Dock icon and no place in Command-Tab     |
-| Off    | Off   | `Regular`   | A Dock icon and a place in Command-Tab       |
-
-`apply_float` maps `Policy` to the Tauri `ActivationPolicy` on macOS. It sets
-the float on the panel only when the float is on and setup is off. As a
-result, `panel_setup(true)` also turns off always-on-top, all desktops, and the
-floating level.
+reads it. The policy table is in
+[Show and hide the panel](../../../docs/concepts/desktop-floating-panel.md#show-and-hide-the-panel).
 
 ### The menu bar item and the global key
 
@@ -122,10 +114,10 @@ menu holds Show Panel and Quit September. The `tauri` crate needs the
 
 The same setup registers Control-Option-Space through
 `tauri-plugin-global-shortcut`. The crate is pinned to `~2.3`, because 2.4
-needs a newer `tauri`. A press shows the panel. If the panel is visible and is
-the key window, the press hides it. `panel_toggle` holds this rule, and a unit
-test reads it. If another app owns the key, the registration fails and the
-app logs the reason.
+needs a newer `tauri`. `panel_toggle` holds the
+rule of a press, and a unit test reads it. See
+[Show and hide the panel](../../../docs/concepts/desktop-floating-panel.md#show-and-hide-the-panel)
+for what a press does and for a key that another app owns.
 
 ### Float over a full-screen app
 
@@ -211,46 +203,10 @@ Agent messages have their own table and API. `agent_tool_state` resolves a
 pending tool record only when its current state matches `expected`, so a second
 approval cannot apply the same proposal again.
 
-The objects use the same snake-case fields as the SQLite columns:
-
-```ts
-type Space = {
-  id: string;
-  user_id: string;
-  title?: string;
-  context?: string;
-  phrases_synced_count?: number;
-  created_at: number;
-  updated_at: number;
-};
-
-type SpacePatch = {
-  id: string;
-  title?: string;
-  context?: string;
-  phrases_synced_count?: number;
-  reset_phrases_synced_count?: boolean;
-  updated_at: number;
-};
-
-type Message = {
-  id: string;
-  space_id?: string;
-  user_id: string;
-  text: string;
-  type: string;
-  created_at: number;
-};
-
-type Note = {
-  id: string;
-  space_id?: string;
-  name?: string;
-  content: string;
-  created_at: number;
-  updated_at: number;
-};
-```
+The objects use the same snake-case fields as the SQLite columns.
+`packages/core/rules/records.ts` holds their TypeScript types. The contract in
+`contract/commands.json` holds one example of each request and answer, and
+`src/rpc/contract.rs` reads each example into the Rust types.
 
 `space_list` returns one user's spaces from most recently updated to least
 recently updated. Message lists use conversation order. Note lists use most
@@ -262,7 +218,7 @@ values of each field.
 
 - An ID, a user ID, and a setting key contain 1 to 256 bytes.
 - A message type, an agent role, a phrase kind, and phrase text are not empty.
-- A timestamp and `phrases_synced_count` are not negative.
+- A timestamp is not negative.
 - A scoped row refers to a space that exists.
 
 Deleting a space also deletes its scoped Talk messages, Agent messages, and
@@ -270,9 +226,9 @@ notes. Global Talk messages and notes remain. For example, this call creates
 or replaces a space:
 
 ```ts
-import { invoke } from "@tauri-apps/api/core";
+import { call } from "./commands";
 
-const space = await invoke<Space>("space_put", {
+const space = await call("space_put", {
   request: {
     id: crypto.randomUUID(),
     user_id: "local-user",
@@ -294,15 +250,8 @@ inclusive timestamp range, newest first.
 | `analytics_put`  | `AnalyticsEvent`                       | `AnalyticsEvent`   |
 | `analytics_list` | `{ user_id, start_at, end_at, since }` | `AnalyticsEvent[]` |
 
-```ts
-type AnalyticsEvent = {
-  id: string;
-  user_id: string;
-  event_type: string;
-  timestamp: number;
-  data: Record<string, unknown>;
-};
-```
+`AnalyticsEvent` has the fields of `UsageEvent` in
+`packages/core/rules/usage-summary.ts`.
 
 The WebView sets `since` from `USAGE_RETENTION_MS` in
 `packages/core/rules/usage-summary.ts`. The timestamp index keeps cleanup and
@@ -326,19 +275,8 @@ Each command accepts a `request` object.
 | `backup_export` | `{ settingKeys, usageSince }`   | `BackupContents` |
 | `backup_import` | `{ contents, settingKeys }`     | none             |
 
-`BackupContents` holds the rows of each table and the portable settings:
-
-```ts
-type BackupContents = {
-  settings: Record<string, unknown>;
-  spaces: Space[];
-  messages: Message[];
-  agentMessages: AgentMessage[];
-  notes: Note[];
-  savedPhrases: SavedPhrase[];
-  usageEvents: AnalyticsEvent[];
-};
-```
+`BackupContents` holds the rows of each table and the portable settings.
+`StoredBackup` in `packages/core/rules/backup.ts` is its TypeScript type.
 
 `settings` uses the stored setting names as keys, for example `panel-open`.
 The WebView passes `PORTABLE_SETTING_KEYS` from
@@ -406,15 +344,17 @@ fails is not stored, and the command rejects its promise.
 fail in August, so a stored key that now fails reports `connected: false` with
 the reason in `detail`.
 
-`provider_voices` returns an empty list when no ElevenLabs key is stored. Each
-voice carries `id`, `name`, and `preview_url`. The preview URL is public, so
-the UI can play a sample without a key.
+`provider_voices` returns an empty list when no ElevenLabs key is stored. It
+reads every page of the ElevenLabs voice list. Each voice carries `id`, `name`,
+`preview_url`, `category`, and `is_owner`. The preview URL is public, so the UI
+can play a sample without a key.
 
 `provider_clone_voice` accepts only a raw `multipart/form-data` body with its
 boundary in the `content-type` IPC header. The command rejects an empty body,
-a JSON body, and a body over 100 MB. It adds the cached ElevenLabs key and
-forwards the bytes to the fixed `/v1/voices/add` endpoint. Rust does not parse
-or copy the audio into JSON.
+a JSON body, and a body over 101 MB. That is the 100 MB of samples that
+`packages/core/rules/voice-clone.ts` allows, and room for the multipart
+headers. It adds the cached ElevenLabs key and forwards the bytes to the fixed
+`/v1/voices/add` endpoint. Rust does not parse or copy the audio into JSON.
 
 `provider_quota` returns the account tier, used characters, character limit,
 and reset time. It returns `null` when no ElevenLabs key is stored. The API key
@@ -435,7 +375,7 @@ space.
 
 The WebView writes with a typed model client, so Rust serves it rather than
 calling for it. `writing_proxy` starts a loopback proxy on the first call and
-answers with `{ baseUrl, token }`. The proxy binds `127.0.0.1` on a free port
+answers with `{ baseUrl, appleUrl, token }`. The proxy binds `127.0.0.1` on a free port
 and serves `POST /v1/chat/completions`. It requires the run token in
 `Authorization`, swaps that token for the OpenRouter key from the Keychain,
 and forwards the body to OpenRouter unchanged. The reply goes back byte for
@@ -460,7 +400,7 @@ not null, Suggestions use it.
 ## Speak a sentence
 
 The `speech_synthesize` command takes `{ text, voice }` and returns
-`{ path, from_cache }`:
+`{ path }`:
 
 ```ts
 type VoiceSettings = {
@@ -497,7 +437,7 @@ their sound. Voice-list previews stay in the WebView and do not enter the tap.
 | `audio_outputs`      | none                         | `{ uid, name }[]`      |
 | `audio_output`       | none                         | The UID September uses |
 | `audio_output_set`   | `{ uid }`                    | none                   |
-| `speech_system`      | `{ text, voice_id?, speed }` | none                   |
+| `speech_system`      | `{ text, speed }`            | none                   |
 | `speech_stream`      | `{ text, voice, dialogueParts? }` | `{ from_cache, latency_ms, interrupted }` |
 | `speech_native_stop` | none                         | none, or rejects       |
 
@@ -591,7 +531,8 @@ refused tap is silent and reports nothing. The message names the one setting
 that mends it.
 
 Both native voices wait for the audio engine to play their final buffer, not on
-a clock. `speech_native_stop` stops the engine and releases that wait.
+a clock. `speech_native_stop` stops the player node, keeps the engine, and releases that
+wait.
 
 ## Stream the eye-tracker test bed
 
@@ -613,13 +554,22 @@ more than five frames per second. Each frame includes the current smoothed
 point when both eyes are valid. The WebView takes median samples at four box
 corners and fits one linear mapping for each axis. It clips the mapped point to
 the camera box. It does not convert it to a window or operating-system pointer.
-A frame that Vision cannot analyze sends the `error` state with the reason.
+Rust skips a frame that Vision cannot analyze and logs the reason. That frame
+sends no state and no preview. After 30 such frames in a row, about 2 seconds,
+Rust ends the run with `error`.
+
+The `error` state is final. Rust sends it only when the run ends, for example
+when the camera does not open. The WebView then stops the camera.
 
 Neither side saves the preview, point, or calibration. `gaze_stop` joins the
-capture thread. The capture thread stops by itself after an error, and the
-next `gaze_start` starts a new one. Leaving the page and application exit use the same stop path.
+capture thread. The capture thread stops by itself after a final error, or when a
+send on its channel fails, for example after the page reloads. A new
+`gaze_start` stops the run before it. Leaving the page and application exit use
+the same stop path.
 The app requests camera access only after `gaze_start`; `Info.plist` explains
-the use and the signed app has the camera entitlement.
+the use and the signed app has the camera entitlement. The signed app also has
+the audio-input entitlement, because the hardened runtime blocks the microphone
+that voice cloning records with.
 
 ## Use the apfel API
 
@@ -650,7 +600,9 @@ through `APFEL_TOKEN`, not through a command argument.
 
 The WebView cannot start shell commands or call the server directly. Rust
 checks the current process before each use and replaces it when the health
-request fails. It stops the child process when the backend exits.
+request fails. The exit handler in `src/lib.rs` stops the running server. A
+server that is still starting at exit is not stopped. When a new
+process does not answer, the error carries the last line it wrote to stderr.
 
 The bundle contains apfel v1.12.0 and its MIT license. The preparation script
 makes sure that the downloaded archive and extracted binary match pinned

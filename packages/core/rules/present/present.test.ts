@@ -35,6 +35,17 @@ describe("the chunks of a note", () => {
     ]);
   });
 
+  it("keeps a decimal and a web address inside their sentence", () => {
+    const chunks = presentChunks(
+      "It costs 3.50 today. See example.com for more.",
+    );
+
+    expect(chunks.map((chunk) => chunk.text)).toEqual([
+      "It costs 3.50 today.",
+      "See example.com for more.",
+    ]);
+  });
+
   it("splits a long sentence at its clauses", () => {
     const long =
       "I have known Maya for thirty years, since the summer we shared a house by the river, " +
@@ -169,6 +180,14 @@ describe("what a note exports to", () => {
     expect(exportReason("audio", ready)).toBe(null);
     expect(exportReason("video", ready)).toBe(null);
     expect(exportReason("video", { ...ready, video: false })).not.toBe(null);
+  });
+
+  it("exports audio and video in the Dialogue voice", () => {
+    const dialogue = { provider: "dialogue" as const, voiceId: "v1", video: true };
+
+    expect(exportReason("audio", dialogue)).toBe(null);
+    expect(exportReason("video", dialogue)).toBe(null);
+    expect(exportReason("audio", { ...dialogue, voiceId: null })).not.toBe(null);
   });
 });
 

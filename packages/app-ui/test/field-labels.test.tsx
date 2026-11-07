@@ -26,6 +26,6 @@ it('gives the search of a long list a visible label', async () => {
 });
 
 it('gives the key of a service a visible label', async () => {
-  const { container } = await renderPart(<KeyPanel provider="elevenlabs" name="ElevenLabs" />);
+  const { container } = await renderPart(<KeyPanel provider="elevenlabs" />);
   expect(labels(container)).toEqual(['ElevenLabs key']);
 });

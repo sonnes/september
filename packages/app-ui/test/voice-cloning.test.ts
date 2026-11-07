@@ -2,11 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   cloneVoice,
-  keepCreatedVoice,
   MediaRecorderManager,
-  recentCreatedVoice,
   recordingFile,
-  rememberCreatedVoice,
   SamplePlayer,
 } from '@september/app-ui/services/cloning';
 
@@ -45,26 +42,6 @@ describe('a voice clone', () => {
     await expect(cloneVoice({ files: [], name: 'Voice' })).rejects.toThrow();
     await expect(cloneVoice({ files: [audio('voice.wav')], name: '   ' })).rejects.toThrow();
     expect(platform.providers.cloneVoice).not.toHaveBeenCalled();
-  });
-});
-
-describe('a created voice', () => {
-  it('stays in the list when an older account refresh arrives', () => {
-    const created: { id: string; name: string; preview_url: string | null } = {
-      id: 'new',
-      name: 'My voice',
-      preview_url: null,
-    };
-    const old = { id: 'old', name: 'Old voice', preview_url: 'https://example.com/old.mp3' };
-
-    expect(keepCreatedVoice([old], created)).toEqual([created, old]);
-    expect(keepCreatedVoice([created, old], created)).toEqual([created, old]);
-    expect(keepCreatedVoice([old], null)).toEqual([old]);
-  });
-
-  it('is remembered for the Voice page', () => {
-    rememberCreatedVoice({ id: 'new', name: 'My voice' });
-    expect(recentCreatedVoice()).toEqual({ id: 'new', name: 'My voice' });
   });
 });
 

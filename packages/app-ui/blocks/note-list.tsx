@@ -160,10 +160,7 @@ export function DeleteNoteDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onClose}>Keep it</AlertDialogCancel>
-          <AlertDialogAction
-            className="bg-destructive hover:bg-destructive/90 text-white"
-            onClick={onConfirm}
-          >
+          <AlertDialogAction variant="destructive" onClick={onConfirm}>
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>

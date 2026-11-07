@@ -57,6 +57,23 @@ describe('the Access section of Settings', () => {
     expect(saved()?.input).toBe('touch');
   });
 
+  it('says so when a change is not kept, and keeps it on a retry', async () => {
+    await openAccess();
+    vi.mocked(platform.store.putSetting).mockRejectedValueOnce(new Error('disk full'));
+    await press(await choice('Theme', 'Dark'));
+
+    const alert = await vi.waitFor(() => {
+      const found = document.querySelector('[role="alert"]');
+      if (!found) throw new Error('No alert');
+      return found;
+    });
+    expect(saved()?.theme).toBe('light');
+
+    await press(await findButton('Retry saving', alert));
+    await vi.waitFor(() => expect(saved()?.theme).toBe('dark'));
+    expect(document.querySelector('[role="alert"]')).toBeNull();
+  });
+
   it('saves the theme the person chooses', async () => {
     await openAccess();
     await press(await choice('Theme', 'Dark'));
@@ -134,5 +151,24 @@ describe('the How you choose step of setup', () => {
     await vi.waitFor(() =>
       expect(rows.settings.get(SETTINGS.setup)).toMatchObject({ name: 'Meera', access: { input: 'switch' } }),
     );
+  });
+});
+
+describe('the Finish step of setup', () => {
+  it('stays on the step and says so when the setup did not save', async () => {
+    vi.mocked(platform.device.identity).mockResolvedValue({ name: 'Meera', userId: null });
+    await loadSettings();
+    const { container, router } = await renderApp('/choose');
+    const path = () => router!.state.location.pathname;
+    for (const step of ['/choose', '/profile', '/connect'] as const) {
+      await press(await findButton(stepFor(step).action, container));
+    }
+    await vi.waitFor(() => expect(path()).toBe('/finish'));
+
+    vi.mocked(platform.store.putSetting).mockRejectedValue(new Error('Storage unavailable'));
+    await press(await findButton(stepFor('/finish').action, container));
+
+    await vi.waitFor(() => expect(container.querySelector('[role="alert"]')?.textContent).toBe('Storage unavailable'));
+    expect(path()).toBe('/finish');
   });
 });

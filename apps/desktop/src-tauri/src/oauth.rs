@@ -1,7 +1,7 @@
 //! OpenRouter PKCE: browser authorization, loopback callback, Keychain storage.
-use crate::providers::{Provider, ProviderKeys, ProviderStatus, Providers, OPEN_ROUTER};
+use crate::providers::{Provider, ProviderKeys, ProviderStatus, Providers};
 use axum::{
-    http::{StatusCode, Uri},
+    http::Uri,
     response::{Html, IntoResponse},
     routing::get,
     Router,
@@ -13,44 +13,77 @@ use std::{
     time::Duration,
 };
 use tauri::{AppHandle, State};
-use tauri_plugin_shell::ShellExt;
+use tauri_plugin_opener::OpenerExt;
 use tokio::sync::oneshot;
 
-type Attempt = (String, oneshot::Sender<()>);
-static ACTIVE: Mutex<Option<Attempt>> = Mutex::new(None);
+/// The OpenRouter sign-in that runs now, with the sender that cancels it.
+#[derive(Default)]
+pub(crate) struct SignIns(Mutex<Option<(String, oneshot::Sender<()>)>>);
+
+const LOCK_LOST: &str = "Could not reach the sign-in. Quit and open the app again.";
+
+impl SignIns {
+    /// Starts the sign-in `id` and cancels the one before it.
+    fn begin(&self, id: &str) -> Result<oneshot::Receiver<()>, String> {
+        let (cancel, cancelled) = oneshot::channel();
+        let mut active = self.0.lock().map_err(|_| LOCK_LOST)?;
+        if let Some((_, previous)) = active.replace((id.to_owned(), cancel)) {
+            let _ = previous.send(());
+        }
+        Ok(cancelled)
+    }
+
+    /// Cancels the sign-in `id`, and leaves a newer one running.
+    fn cancel(&self, id: &str) -> Result<(), String> {
+        let mut active = self.0.lock().map_err(|_| LOCK_LOST)?;
+        if active.as_ref().is_some_and(|(current, _)| current == id) {
+            if let Some((_, cancel)) = active.take() {
+                let _ = cancel.send(());
+            }
+        }
+        Ok(())
+    }
+
+    /// Ends the sign-in `id` and runs `keep` under the lock, so a cancel
+    /// cannot come between the check and the write. A cancelled or newer
+    /// sign-in keeps nothing.
+    fn finish<T>(&self, id: &str, keep: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+        let mut active = self.0.lock().map_err(|_| LOCK_LOST)?;
+        if active.as_ref().is_none_or(|(current, _)| current != id) {
+            return Err("Connection cancelled. Try again.".into());
+        }
+        active.take();
+        keep()
+    }
+}
 
 fn challenge(verifier: &str) -> String {
     URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes()))
 }
 
-fn callback_code(uri: &str, path: &str) -> Option<Result<String, String>> {
-    let url = reqwest::Url::parse(&format!("http://localhost{uri}")).ok()?;
-    if url.path() != path {
-        return None;
-    }
-    let codes: Vec<_> = url.query_pairs().filter(|(key, _)| key == "code").collect();
+/// The one authorization code in the query of the callback.
+fn callback_code(query: &str) -> Result<String, String> {
+    let url = reqwest::Url::parse(&format!("http://localhost/?{query}"))
+        .map_err(|error| format!("OpenRouter sent an invalid callback. ({error})"))?;
+    let pairs: Vec<_> = url.query_pairs().collect();
+    let codes: Vec<_> = pairs.iter().filter(|(key, _)| key == "code").collect();
     if codes.len() == 1
         && !codes[0].1.is_empty()
         && codes[0].1.len() <= 4096
-        && !url.query_pairs().any(|(key, _)| key == "error")
+        && !pairs.iter().any(|(key, _)| key == "error")
     {
-        Some(Ok(codes[0].1.to_string()))
+        Ok(codes[0].1.to_string())
     } else {
-        Some(Err(
-            "OpenRouter did not authorize the connection. Try again.".into(),
-        ))
+        Err("OpenRouter did not authorize the connection. Try again.".into())
     }
 }
 
 #[tauri::command]
-pub(crate) fn openrouter_cancel(request_id: String) {
-    if let Ok(mut active) = ACTIVE.lock() {
-        if active.as_ref().is_some_and(|(id, _)| id == &request_id) {
-            if let Some((_, cancel)) = active.take() {
-                let _ = cancel.send(());
-            }
-        }
-    }
+pub(crate) fn openrouter_cancel(
+    sign_ins: State<'_, SignIns>,
+    request: crate::rpc::SignInRequest,
+) -> Result<(), String> {
+    sign_ins.cancel(&request.request_id)
 }
 
 #[tauri::command]
@@ -58,35 +91,22 @@ pub(crate) async fn openrouter_connect(
     app: AppHandle,
     keys: State<'_, ProviderKeys>,
     providers: State<'_, Providers>,
-    request_id: String,
+    sign_ins: State<'_, SignIns>,
+    request: crate::rpc::SignInRequest,
 ) -> Result<ProviderStatus, String> {
-    let (cancel, cancelled) = oneshot::channel();
-    {
-        let mut active = ACTIVE
-            .lock()
-            .map_err(|_| "Could not start authorization. Quit and open the app again.")?;
-        if let Some((_, previous)) = active.replace((request_id.clone(), cancel)) {
-            let _ = previous.send(());
-        }
-    }
+    let request_id = request.request_id;
+    let cancelled = sign_ins.begin(&request_id)?;
     let result = tokio::select! {
         _ = cancelled => Err("Connection cancelled. Try again.".into()),
         result = tokio::time::timeout(Duration::from_secs(300), authorize(&app, &providers)) =>
             result.unwrap_or_else(|_| Err("Connection timed out. Try again.".into())),
     };
-    // A cancelled or superseded attempt must not persist a late result.
-    // Keep this lock through the synchronous Keychain write.
-    let mut active = ACTIVE
-        .lock()
-        .map_err(|_| "Could not finish authorization. Quit and open the app again.")?;
-    if active.as_ref().is_none_or(|(id, _)| id != &request_id) {
-        return Err("Connection cancelled. Try again.".into());
-    }
-    active.take();
-    let (key, status) = result?;
-    keys.store(Provider::OpenRouter, &key)
-        .map_err(|error| error.to_string())?;
-    Ok(status)
+    sign_ins.finish(&request_id, || {
+        let (key, status) = result?;
+        keys.store(Provider::OpenRouter, &key)
+            .map_err(|error| error.to_string())?;
+        Ok(status)
+    })
 }
 
 async fn authorize(
@@ -106,20 +126,20 @@ async fn authorize(
         uuid::Uuid::new_v4().simple(),
         uuid::Uuid::new_v4().simple()
     );
-    let mut auth = reqwest::Url::parse(&format!("{OPEN_ROUTER}/auth"))
+    let open_router = providers.open_router();
+    let mut auth = reqwest::Url::parse(&format!("{open_router}/auth"))
         .map_err(|error| format!("Invalid authorization address. ({error})"))?;
     auth.query_pairs_mut()
         .append_pair("callback_url", &format!("http://localhost:{port}{path}"))
         .append_pair("code_challenge", &challenge(&verifier))
         .append_pair("code_challenge_method", "S256");
-    #[allow(deprecated)]
-    app.shell()
-        .open(auth.as_str(), None)
+    app.opener()
+        .open_url(auth.as_str(), None::<&str>)
         .map_err(|error| format!("Could not open your browser. ({error})"))?;
     let code = receive_code(listener, path).await?;
     let response = providers
         .client()
-        .post(format!("{OPEN_ROUTER}/api/v1/auth/keys"))
+        .post(format!("{open_router}/api/v1/auth/keys"))
         .json(&serde_json::json!({ "code": code, "code_verifier": verifier, "code_challenge_method": "S256" }))
         .send()
         .await
@@ -152,12 +172,10 @@ async fn authorize(
 async fn receive_code(listener: tokio::net::TcpListener, path: String) -> Result<String, String> {
     let (send, receive) = oneshot::channel();
     let sender = Arc::new(Mutex::new(Some(send)));
-    let callback_path = path.clone();
     let router = Router::new().route(&path, get(move |uri: Uri| {
         let sender = sender.clone();
-        let path = callback_path.clone();
         async move {
-            let Some(result) = callback_code(&uri.to_string(), &path) else { return StatusCode::NOT_FOUND.into_response(); };
+            let result = callback_code(uri.query().unwrap_or_default());
             if let Ok(mut sender) = sender.lock() {
                 if let Some(sender) = sender.take() { let _ = sender.send(result); }
             }
@@ -186,7 +204,7 @@ mod tests {
             .send()
             .await
             .unwrap();
-        assert_eq!(wrong.status(), StatusCode::NOT_FOUND);
+        assert_eq!(wrong.status(), axum::http::StatusCode::NOT_FOUND);
         let response = client
             .get(format!("http://{address}/callback/nonce?code=authorized"))
             .send()
@@ -202,17 +220,45 @@ mod tests {
     }
 
     #[test]
-    fn cancellation_only_stops_the_matching_attempt() {
-        let (send, mut receive) = oneshot::channel();
-        *ACTIVE.lock().unwrap() = Some(("current".into(), send));
-        openrouter_cancel("stale".into());
+    fn a_cancel_stops_only_the_sign_in_it_names() {
+        let sign_ins = SignIns::default();
+        let mut cancelled = sign_ins.begin("current").unwrap();
+
+        sign_ins.cancel("stale").unwrap();
         assert!(matches!(
-            receive.try_recv(),
+            cancelled.try_recv(),
             Err(oneshot::error::TryRecvError::Empty)
         ));
-        openrouter_cancel("current".into());
-        assert_eq!(receive.try_recv(), Ok(()));
-        assert!(ACTIVE.lock().unwrap().is_none());
+
+        sign_ins.cancel("current").unwrap();
+        assert_eq!(cancelled.try_recv(), Ok(()));
+        assert!(sign_ins.finish("current", || Ok(())).is_err());
+    }
+
+    #[test]
+    fn a_new_sign_in_cancels_the_one_before_it() {
+        let sign_ins = SignIns::default();
+        let mut first = sign_ins.begin("first").unwrap();
+        sign_ins.begin("second").unwrap();
+
+        assert_eq!(first.try_recv(), Ok(()));
+        assert!(sign_ins.finish("first", || Ok(())).is_err());
+        assert_eq!(sign_ins.finish("second", || Ok(7)), Ok(7));
+    }
+
+    #[test]
+    fn a_lost_lock_is_an_error() {
+        let sign_ins = std::sync::Arc::new(SignIns::default());
+        let poisoner = sign_ins.clone();
+        std::thread::spawn(move || {
+            let _held = poisoner.0.lock().unwrap();
+            panic!("poison the lock");
+        })
+        .join()
+        .unwrap_err();
+
+        assert!(sign_ins.begin("one").is_err());
+        assert!(sign_ins.cancel("one").is_err());
     }
 
     #[test]
@@ -224,21 +270,11 @@ mod tests {
     }
 
     #[test]
-    fn callback_is_bound_to_its_random_path() {
-        assert!(callback_code("/other?code=foreign", "/callback/nonce").is_none());
-        assert_eq!(
-            callback_code("/callback/nonce?code=authorized", "/callback/nonce"),
-            Some(Ok("authorized".into()))
-        );
-        assert!(
-            callback_code("/callback/nonce?error=denied", "/callback/nonce")
-                .unwrap()
-                .is_err()
-        );
-        assert!(
-            callback_code("/callback/nonce?code=a&code=b", "/callback/nonce")
-                .unwrap()
-                .is_err()
-        );
+    fn a_callback_holds_exactly_one_code_and_no_error() {
+        assert_eq!(callback_code("code=authorized"), Ok("authorized".into()));
+        assert!(callback_code("error=denied").is_err());
+        assert!(callback_code("code=authorized&error=denied").is_err());
+        assert!(callback_code("code=a&code=b").is_err());
+        assert!(callback_code("").is_err());
     }
 }

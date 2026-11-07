@@ -16,7 +16,7 @@ Completions come from the word counts. The dictionary adds to the word counts on
 
 ## Stripe
 
-`createEngine()` trains the engine on the corpus and the dictionary. `suggestionsFor()` returns at most `MAX_SUGGESTIONS` (6) words for the composer text. After a finished word, learned audio tags come after the words.
+`createEngine()` trains the engine on the corpus and the dictionary. `suggestionsFor()` returns at most `MAX_SUGGESTIONS` (6) words for the composer text. After a finished word, the learned audio tags come after the words. `wordRow` in `rules/audio-tags.ts` decides how many tags show.
 
 `applySuggestion()` replaces the partial word and adds a trailing space. A tag never replaces a word.
 

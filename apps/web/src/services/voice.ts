@@ -36,15 +36,22 @@ async function blobId(prefix: string, fields: object): Promise<string> {
   return `${prefix}:${hash}`;
 }
 
-const speechBlobId = (text: string, voice: CloudVoice) =>
-  blobId('speech', {
+/**
+ * Every value of the voice changes the sound, so every value is in the key.
+ * The first fields keep the order of earlier builds, so their kept files still match.
+ */
+const speechBlobId = (text: string, voice: CloudVoice) => {
+  const { voiceId, modelId, stability, similarity, speed, ...rest } = voice;
+  return blobId('speech', {
     text,
-    voiceId: voice.voiceId,
-    modelId: voice.modelId,
-    stability: voice.stability,
-    similarity: voice.similarity,
-    speed: voice.speed,
+    voiceId,
+    modelId,
+    stability,
+    similarity,
+    speed,
+    ...Object.fromEntries(Object.entries(rest).sort(([a], [b]) => a.localeCompare(b))),
   });
+};
 
 /** A kept file, or nothing when the store holds none or cannot be read. */
 async function keptBlob(id: string): Promise<Blob | null> {
@@ -328,6 +335,8 @@ async function playArriving(
 ): Promise<Heard | null> {
   stopStream?.();
   const output = await outputOrDefault();
+  // A stop during the wait fired before the listener below exists.
+  if (signal.aborted) return null;
   return new Promise((resolve, reject) => {
     const player = pcmPlayer(output, () => finishWhenPlayed());
     let final = false;
@@ -617,17 +626,11 @@ export const voice: PlatformVoice = {
   systemName: 'browser system voice',
   systemDescription: 'Built into this browser. Free, and it works without an account.',
 
-  async speakSystem(text, chosen, onWord) {
+  async speakSystem(text, speed, onWord) {
     if (!('speechSynthesis' in window)) throw new Error('This browser has no system voice.');
     await new Promise<void>((resolve, reject) => {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = chosen.speed;
-      if (chosen.voiceId) {
-        utterance.voice =
-          speechSynthesis
-            .getVoices()
-            .find(one => one.voiceURI === chosen.voiceId || one.name === chosen.voiceId) ?? null;
-      }
+      utterance.rate = speed;
       utterance.onboundary = event => {
         if (event.name === 'word') onWord?.(event.charIndex);
       };

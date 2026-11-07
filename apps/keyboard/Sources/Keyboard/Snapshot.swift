@@ -31,8 +31,7 @@ enum Snapshot {
             let model = AXTreeModel()
             model.tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
             view = AnyView(
-                AXTreeView(model: model, height: 460, scrolls: false)
-                    .environmentObject(permission)
+                AXTreeView(model: model, permission: permission, height: 460, scrolls: false)
                     .padding(16))
         } else {
             do {
@@ -198,9 +197,10 @@ enum Snapshot {
     }
 }
 
-private final class SilentSink: KeystrokeSink, @unchecked Sendable {
+private final class SilentSink: KeystrokeSink {
     func post(_ events: [Keystroke]) {}
     func type(_ text: String) {}
+    func beep() {}
 }
 
 /// The sentences of frames 1, 4, and 5 of the mock.

@@ -11,7 +11,7 @@ const SENTENCE = 'Thursday is the physio appointment.';
 
 /** The system voice reads `text` up to the word at `charIndex` and keeps playing. */
 async function readUpTo(charIndex: number, id: string) {
-  vi.mocked(platform.voice.speakSystem).mockImplementation((_text, _settings, onWord) => {
+  vi.mocked(platform.voice.speakSystem).mockImplementation((_text, _speed, onWord) => {
     onWord?.(charIndex);
     return new Promise(() => {});
   });

@@ -1,16 +1,16 @@
-import { useState } from "react";
 import { Label } from "@september/ui/components/label";
 import { RadioGroup } from "@september/ui/components/radio-group";
 import { Switch } from "@september/ui/components/switch";
-import { DEFAULT_DRAFT, type OnboardingDraft, WRITING_SERVICES } from "@september/core/rules/onboarding";
+import { DEFAULT_ANSWERS, type SetupAnswers } from "@september/core/rules/onboarding";
 import { useConnections } from "@september/app-ui/services/connections";
-import { updateSetup, useSetup } from "@september/app-ui/services/settings";
+import { useSetup } from "@september/app-ui/services/settings";
 import { AGENT_MODELS, type CuratedModel, modelChoices, SUGGESTIONS_MODELS, withProvider } from "@september/core/rules/model-config";
 import { PickList } from "@september/app-ui/blocks/pick-list";
-import { appleState, ManageLink, ServiceChoice } from "@september/app-ui/blocks/services";
-import { Section, SettingsTitle, SpeakingStyle, useSetupDraft } from "@september/app-ui/blocks/setup-fields";
+import { appleState, ManageLink, offeredWritingServices, ServiceChoice, writingServiceOf } from "@september/app-ui/blocks/services";
+import { SaveFailed, Section, SettingsTitle, SpeakingStyle, useSetupAnswers } from "@september/app-ui/blocks/setup-fields";
+import { sectionFor } from "@september/core/rules/navigation";
 
-type WritingServiceId = OnboardingDraft["defaultModel"]["service"];
+type WritingServiceId = SetupAnswers["defaultModel"]["service"];
 type SwitchField = "autoSuggestions" | "autoPhrases" | "agentEnabled";
 
 /**
@@ -22,56 +22,38 @@ type SwitchField = "autoSuggestions" | "autoPhrases" | "agentEnabled";
  */
 function SetupSwitch({
   field,
+  asked,
+  onChange,
   label,
   description,
 }: {
   field: SwitchField;
+  /** The value of the last change, which the store can still be writing. */
+  asked: boolean;
+  onChange: (value: boolean) => void;
   label: string;
   description: string;
 }) {
-  const setup = useSetup() ?? DEFAULT_DRAFT;
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState("");
+  const saved = (useSetup() ?? DEFAULT_ANSWERS)[field] !== false;
   const id = `setting-${field}`;
 
-  const toggle = async () => {
-    if (pending) return;
-    setPending(true);
-    setError("");
-    try {
-      await updateSetup({ [field]: !setup[field] });
-    } catch {
-      setError("September did not save the setting. Try again.");
-    } finally {
-      setPending(false);
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex min-h-12 items-center justify-between gap-4 rounded-xl border px-4 py-3">
-        <Label htmlFor={id} className="flex flex-1 cursor-pointer flex-col items-start gap-1">
-          <span className="text-sm font-medium">{label}</span>
-          <span
-            id={`${id}-description`}
-            className="text-muted-foreground text-xs leading-relaxed font-normal"
-          >
-            {description}
-          </span>
-        </Label>
-        <Switch
-          id={id}
-          checked={setup[field] !== false}
-          aria-describedby={`${id}-description`}
-          aria-disabled={pending}
-          onCheckedChange={() => void toggle()}
-        />
-      </div>
-      {error ? (
-        <p role="alert" className="text-destructive text-sm">
-          {error}
-        </p>
-      ) : null}
+    <div className="flex min-h-12 items-center justify-between gap-4 rounded-xl border px-4 py-3">
+      <Label htmlFor={id} className="flex flex-1 cursor-pointer flex-col items-start gap-1">
+        <span className="text-sm font-medium">{label}</span>
+        <span
+          id={`${id}-description`}
+          className="text-muted-foreground text-xs leading-relaxed font-normal"
+        >
+          {description}
+        </span>
+      </Label>
+      <Switch
+        id={id}
+        checked={saved}
+        aria-describedby={`${id}-description`}
+        onCheckedChange={() => onChange(!asked)}
+      />
     </div>
   );
 }
@@ -118,7 +100,7 @@ function AppleModel() {
  * both, so a feature can never point at a provider the user left.
  */
 export function WritingSettings() {
-  const [setup, change] = useSetupDraft();
+  const { setup, change, failed, retry } = useSetupAnswers();
   const { connections } = useConnections();
   const provider = setup.defaultModel.service;
 
@@ -129,7 +111,7 @@ export function WritingSettings() {
   };
 
   const chooseProvider = (value: string) => {
-    const service = WRITING_SERVICES.find((option) => option.value === value)?.value;
+    const service = writingServiceOf(value);
     if (!service || !ready[service] || service === provider) return;
     change(withProvider(setup, service));
   };
@@ -139,9 +121,10 @@ export function WritingSettings() {
   return (
     <div className="flex flex-col gap-8">
       <SettingsTitle
-        title="AI Assistance"
+        title={sectionFor("/settings/writing").title}
         description="September finishes your sentences while you type."
       />
+      {failed ? <SaveFailed retry={retry} /> : null}
 
       <Section
         title="Provider"
@@ -153,10 +136,7 @@ export function WritingSettings() {
           value={provider}
           onValueChange={chooseProvider}
         >
-          {WRITING_SERVICES.filter(
-            // A Mac that cannot run it never shows a control it must disable.
-            (option) => option.value !== "apple" || connections.apple.supported,
-          ).map((option) => (
+          {offeredWritingServices(connections).map((option) => (
             <ServiceChoice
               key={option.value}
               value={option.value}
@@ -169,7 +149,7 @@ export function WritingSettings() {
                     : "Not connected yet."
               }
               selected={provider === option.value}
-              disabled={!ready[option.value]}
+              unready={!ready[option.value]}
             >
               {option.value === "openrouter" ? (
                 <ManageLink provider="openrouter" status={connections.openrouter} />
@@ -191,6 +171,8 @@ export function WritingSettings() {
           >
             <SetupSwitch
               field="autoSuggestions"
+              asked={setup.autoSuggestions !== false}
+              onChange={(autoSuggestions) => change({ autoSuggestions })}
               label="Suggest as I type"
               description="Off waits for a press of Suggest."
             />
@@ -213,11 +195,15 @@ export function WritingSettings() {
           >
             <SetupSwitch
               field="autoPhrases"
+              asked={setup.autoPhrases !== false}
+              onChange={(autoPhrases) => change({ autoPhrases })}
               label="Phrases"
               description="Phrases and starters for each space, made in the background."
             />
             <SetupSwitch
               field="agentEnabled"
+              asked={setup.agentEnabled !== false}
+              onChange={(agentEnabled) => change({ agentEnabled })}
               label="Agent"
               description="Changes a space when you ask. Off hides Agent in every space."
             />
@@ -237,7 +223,6 @@ export function WritingSettings() {
           <SpeakingStyle
             value={setup.speakingStyle}
             onChange={(speakingStyle) => change({ speakingStyle })}
-            description="How September writes for you, in every feature."
           />
         </>
       )}

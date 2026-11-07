@@ -217,6 +217,11 @@ describe("markdownToVoiceText", () => {
   it("does not say the box of a task line", () => {
     expect(markdownToVoiceText("- [ ] Read\n- [x] Write")).toBe("Read Write");
   });
+
+  it("says the words of an image, not its address", () => {
+    expect(markdownToVoiceText("Look ![a cat](cat.png) here")).toBe("Look a cat here");
+    expect(markdownToVoiceText("![](cat.png) Hello")).toBe("Hello");
+  });
 });
 
 describe("notePreview", () => {

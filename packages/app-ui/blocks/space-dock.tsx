@@ -17,12 +17,7 @@ import { useChrome } from "@september/app-ui/blocks/chrome";
 import { shownModes, spaceParams, useNewSpace } from "@september/app-ui/blocks/space-routes";
 import type { Space, SpaceMode } from "@september/core/rules/records";
 
-/**
- * The bottom dock. It holds one tab for each space, and it makes a new one.
- *
- * ponytail: the row scrolls when the tabs no longer fit. The web app collapses
- * them into a menu — port that when a user keeps more spaces than fit.
- */
+/** The bottom dock. It holds one tab for each space, and it makes a new one. */
 export function SpaceDock(props: DockProps) {
   // The panel header holds the space button and the mode switch instead.
   return useChrome() === "panel" ? null : <Dock {...props} />;

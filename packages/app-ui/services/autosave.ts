@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { platform } from "@platform/adapter";
+import { warnBeforeUnload } from "./browser";
 
 export type SaveState = "saved" | "saving" | "failed";
 
@@ -66,7 +66,7 @@ export function useAutosave<T>(
 
   useEffect(() => {
     if (state === "saved") return;
-    return platform.device.guardUnsavedChanges();
+    return warnBeforeUnload();
   }, [state]);
 
   return {

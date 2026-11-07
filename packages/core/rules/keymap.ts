@@ -18,8 +18,8 @@ export const KEYMAP = {
   phrases: { key: "p", meta: true, shift: false },
   voice: { key: "v", meta: true, shift: true },
   output: { key: "o", meta: true, shift: true },
-  clear: { key: "backspace", meta: true, shift: false },
-  // Most layouts need Shift to type "?", so the binding accepts either.
+  // Clear and Help accept either. Most layouts need Shift to type "?".
+  clear: { key: "backspace", meta: true },
   help: { key: "?", meta: true },
   tools: { key: "j", meta: true, orControl: true, shift: false },
 } as const satisfies Record<string, Binding>;

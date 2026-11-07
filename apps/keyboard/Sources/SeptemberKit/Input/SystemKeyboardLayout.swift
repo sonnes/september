@@ -5,10 +5,15 @@ import Foundation
 /// selected, so Keyboard types the right characters on AZERTY, Dvorak, etc.
 public enum SystemKeyboardLayout {
     public static func currentMap() -> KeyCodeMap {
-        guard let data = currentLayoutData() else {
-            return KeyCodeMap { _, _ in nil }
-        }
-        return KeyCodeMap { code, modifiers in
+        KeyCodeMap(
+            probe: probe(TISCopyCurrentKeyboardLayoutInputSource()),
+            shortcutProbe: probe(TISCopyCurrentASCIICapableKeyboardLayoutInputSource())
+        )
+    }
+
+    private static func probe(_ source: Unmanaged<TISInputSource>?) -> KeyLayoutProbe {
+        guard let data = layoutData(source) else { return { _, _ in nil } }
+        return { code, modifiers in
             translate(keyCode: code, modifiers: modifiers, layoutData: data)
         }
     }
@@ -16,8 +21,7 @@ public enum SystemKeyboardLayout {
     /// What the current layout types for a key code. The import of My Panel
     /// reads recorded key codes with it.
     public static func currentProbe() -> KeyLayoutProbe {
-        guard let data = currentLayoutData() else { return { _, _ in nil } }
-        return { code, modifiers in translate(keyCode: code, modifiers: modifiers, layoutData: data) }
+        probe(TISCopyCurrentKeyboardLayoutInputSource())
     }
 
     /// Fires whenever the user switches input source; the caller rebuilds.
@@ -25,8 +29,8 @@ public enum SystemKeyboardLayout {
         kTISNotifySelectedKeyboardInputSourceChanged as String
     )
 
-    private static func currentLayoutData() -> Data? {
-        guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
+    private static func layoutData(_ source: Unmanaged<TISInputSource>?) -> Data? {
+        guard let source = source?.takeRetainedValue(),
             let pointer = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData)
         else { return nil }
         return Unmanaged<CFData>.fromOpaque(pointer).takeUnretainedValue() as Data

@@ -26,20 +26,20 @@ needs no account and no network. A broken key can never stop speech.
 | Value                                   | Home                                                  |
 | --------------------------------------- | ----------------------------------------------------- |
 | An API key                              | The macOS Keychain, then process memory after startup |
-| The chosen services and the voice id    | SQLite settings, key `services`                       |
+| The chosen services and the voice id    | SQLite settings, keys `setup` and `speech`            |
 | A key status, an account label, a quota | Memory, for the length of one screen                  |
-| Apple Intelligence availability         | Memory, for the life of the process                   |
+| Apple Intelligence availability         | Asked of the sidecar on each status read              |
 
 OpenRouter authorization and key exchange happen in Rust through PKCE and a
 temporary loopback callback. Its key never enters the WebView. An ElevenLabs
 key crosses from its input field to Rust once and never comes back. Rust also sends the ElevenLabs request of Speak, and the Text to Dialogue stream of the Dialogue voice, with this key. See [streaming voice](streaming-voice.md). `src-tauri/src/providers.rs` owns the Keychain and the
 network. `apps/desktop/src/platform.ts` owns the only provider calls from React, through
-`call` in `src/commands.ts`.
+`call` and `callRaw` in `src/commands.ts`.
 
 The WebView writes with a typed model client, and a typed model client wants
 an address and a key. September gives it the address of a loopback proxy and a
 token that lasts one run. `src-tauri/src/proxy.rs` binds `127.0.0.1` on a free
-port, serves one path, and swaps the run token for the real key before it
+port, serves the OpenRouter path and the Apple path, and swaps the run token for the real key before it
 forwards. A page that guesses the port still needs a token it was never given,
 and a key still never reaches the WebView.
 
@@ -93,8 +93,9 @@ OpenRouter models. Each list starts with **Automatic**, and each row reads
 [writing model settings](writing-model-settings.md).
 
 `VOICE_MODELS` and `DIALOGUE_MODELS` in `rules/voice.ts` hold the ElevenLabs
-models. The list appears once, under Custom in the Voice tab of the space
-rail. A user hears the result there without leaving the conversation. The
+models. The list appears under Voice model in the voice controls of a space:
+the Voice tab of the space rail, and the Voice controls sheet of the panel. A
+user hears the result there without leaving the conversation. The
 choice goes into the `speech` setting.
 
 The model lists and the voice list use the same control, `PickList`. It is a
@@ -112,7 +113,7 @@ A page gives 10 voices without `page_size`. The web app gets the list from
 `GET /v1/voices`, in the browser. Both lists hold the voices of the account
 and the stock voices of ElevenLabs, each with its category.
 
-`shownVoices` in `@september/core/rules/voice` decides the rows. The Voice
+`voiceList` in `@september/core/rules/voice` decides the rows. The Voice
 screen and the Connect step of setup both use it:
 
 - The list shows the voices of the account. These are the voices of every
@@ -138,14 +139,15 @@ the generated `content-type` boundary through raw Tauri IPC. The native
 command adds the cached key and forwards the same body to the fixed
 `/v1/voices/add` endpoint.
 
-The UI rejects an encoded request over 100 MB before it crosses IPC. Rust
-enforces the same limit at the native boundary.
+The UI rejects samples over 100 MB in total before they cross IPC. Rust
+rejects a body over 101 MiB, which leaves room for the multipart headers.
 
 This boundary avoids a base64 copy and keeps both the key and an arbitrary
 provider URL out of the WebView. The samples stay in memory. Leaving the
 cloning page or quitting the app removes them.
 
-After a successful clone, the screen selects ElevenLabs and the new voice. It
+After a successful clone, the screen selects the new voice. It selects
+ElevenLabs, or keeps Dialogue when Dialogue is in use. It
 does not replace the current model. It then returns to `/voice`. The voice list
 there keeps the new row visible while ElevenLabs catches up. A failed request
 keeps the user on the cloning page with the draft intact.

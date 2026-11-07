@@ -31,7 +31,6 @@ function Talk({
         draft={draft}
         onDraft={setDraft}
         onAction={() => {}}
-        onPin={() => {}}
         suggestions={false}
         mood={mood}
         onMood={onMood}

@@ -1,20 +1,23 @@
-import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
 import { RadioGroup } from "@september/ui/components/radio-group";
+import { Textarea } from "@september/ui/components/textarea";
 
 import { useDraft } from "@september/app-ui/blocks/onboarding-draft";
 import { AccessForm } from "@september/app-ui/blocks/access-form";
-import { PickList } from "@september/app-ui/blocks/pick-list";
-import { Section, SpeakingStyle } from "@september/app-ui/blocks/setup-fields";
+import { Section } from "@september/app-ui/blocks/setup-fields";
+import { VoicePicker } from "@september/app-ui/blocks/voice-picker";
 import {
   CloudStatus,
   ElevenLabsImpactLink,
   KeyPanel,
+  offeredWritingServices,
   ServiceChoice,
   Status,
+  writingServiceOf,
 } from "@september/app-ui/blocks/services";
 import { INPUT_METHODS } from "@september/core/rules/access";
 import { withProvider } from "@september/core/rules/model-config";
@@ -23,12 +26,11 @@ import {
   nextStep,
   previousStep,
   SPEAKING_STYLES,
+  setupVoices,
   stepFor,
-  voiceServices,
-  WRITING_SERVICES,
   type StepPath,
 } from "@september/core/rules/onboarding";
-import { shownVoices, voiceRows } from "@september/core/rules/voice";
+import { voiceList } from "@september/core/rules/voice";
 import { documentTitle } from "@september/core/rules/titles";
 import { platform } from "@platform/adapter";
 import { APP_NAV } from "@september/app-ui/navigation";
@@ -176,7 +178,9 @@ export function ProfileStep() {
   const { draft, setDraft } = useDraft();
   const [name, setName] = useState(draft.name);
   const [speakingStyle, setSpeakingStyle] = useState(draft.speakingStyle);
+  const selected = SPEAKING_STYLES.find((option) => option.value === speakingStyle);
   const nameId = useId();
+  const styleId = useId();
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -221,11 +225,37 @@ export function ProfileStep() {
             />
           </Section>
 
-          <SpeakingStyle
-            value={speakingStyle}
-            onChange={setSpeakingStyle}
-            description="Choose a style, or write a brief note about how you speak."
-          />
+          <Section
+            title="Speaking style"
+            description="Choose a style or write a brief note about how you speak."
+            htmlFor={styleId}
+          >
+            <div className="flex flex-wrap gap-2">
+              {SPEAKING_STYLES.map((option) => (
+                <Button
+                  key={option.label}
+                  type="button"
+                  variant={speakingStyle === option.value ? "default" : "outline"}
+                  aria-pressed={speakingStyle === option.value}
+                  onClick={() => setSpeakingStyle(option.value)}
+                  className="h-11 rounded-full px-4"
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {selected?.description ?? "Edit the note below any time."}
+            </p>
+            <Textarea
+              id={styleId}
+              value={speakingStyle}
+              onChange={(event) => setSpeakingStyle(event.target.value)}
+              rows={4}
+              maxLength={1000}
+              className="leading-relaxed"
+            />
+          </Section>
         </div>
       </Step>
     </form>
@@ -235,6 +265,7 @@ export function ProfileStep() {
 export function FinishStep() {
   const { draft } = useDraft();
   const navigate = useNavigate();
+  const [problem, setProblem] = useState("");
   const style = SPEAKING_STYLES.find(
     (option) => option.value === draft.speakingStyle,
   );
@@ -248,13 +279,23 @@ export function FinishStep() {
           size="lg"
           className={ACTION}
           onClick={() => {
-            saveSetup(draft).then(() => navigate({ to: APP_NAV[0].path }));
+            setProblem("");
+            saveSetup(draft).then(
+              () => navigate({ to: APP_NAV[0].path }),
+              (reason: unknown) =>
+                setProblem(reason instanceof Error ? reason.message : String(reason)),
+            );
           }}
         >
           {stepFor("/finish").action}
         </Button>
       }
     >
+      {problem ? (
+        <p role="alert" className="text-destructive mb-4 text-sm">
+          {problem}
+        </p>
+      ) : null}
       <div className="grid gap-5 rounded-xl border border-indigo-200 bg-indigo-50 p-4 sm:grid-cols-[auto_1fr] sm:p-8">
         <span
           aria-hidden="true"
@@ -301,17 +342,20 @@ export function ConnectStep() {
   const openrouterConnected = connections.openrouter.connected;
   const elevenlabsConnected = connections.elevenlabs.connected;
   const voices = useVoices(elevenlabsConnected);
-  const voiceList = elevenlabsConnected ? (voices.data ?? []) : [];
+  const listed = elevenlabsConnected ? (voices.data ?? []) : [];
   const [picked, setPicked] = useState("");
-  const voiceId = voiceList.some((voice) => voice.id === picked)
+  const voiceId = listed.some((voice) => voice.id === picked)
     ? picked
-    : (voiceRows(shownVoices(voiceList, ""), [])[0]?.id ?? "");
+    : (voiceList(listed, [], "")[0]?.id ?? "");
   const [problem, setProblem] = useState("");
-  const voiceOptions = voiceServices(platform.voice.systemDescription);
+  const voiceOptions = setupVoices(platform.voice.systemDescription);
 
-  // The step answers itself, so a supported Mac needs no action.
+  // The step answers itself once, so a supported Mac needs no action. A
+  // service that connects later does not undo a choice the person made.
+  const defaulted = useRef(false);
   useEffect(() => {
-    if (checking) return;
+    if (checking || defaulted.current) return;
+    defaulted.current = true;
     setDraft((current) =>
       defaultServices(current, { appleAvailable, openrouterConnected, elevenlabsConnected }),
     );
@@ -362,14 +406,11 @@ export function ConnectStep() {
             className="gap-3"
             value={draft.defaultModel.service}
             onValueChange={(value) => {
-              const service = WRITING_SERVICES.find((option) => option.value === value)?.value;
+              const service = writingServiceOf(value);
               if (service) setDraft((current) => ({ ...current, ...withProvider(current, service) }));
             }}
           >
-            {WRITING_SERVICES.filter(
-              // A Mac that cannot run it never shows a control it must disable.
-              (option) => option.value !== "apple" || connections.apple.supported,
-            ).map((option) => (
+            {offeredWritingServices(connections).map((option) => (
               <ServiceChoice
                 key={option.value}
                 value={option.value}
@@ -394,7 +435,7 @@ export function ConnectStep() {
                   </p>
                 ) : null}
                 {option.value === "openrouter" ? (
-                  <KeyPanel provider="openrouter" name="OpenRouter" />
+                  <KeyPanel provider="openrouter" />
                 ) : null}
               </ServiceChoice>
             ))}
@@ -428,39 +469,21 @@ export function ConnectStep() {
               >
                 {option.value === "elevenlabs" ? (
                   <>
-                    <KeyPanel provider="elevenlabs" name="ElevenLabs" />
+                    <KeyPanel provider="elevenlabs" />
                     <ElevenLabsImpactLink />
                     {voices.error ? (
                       <p role="alert" className="text-destructive text-sm">
                         {voices.error.message}
                       </p>
                     ) : null}
-                    {voiceList.length > 0 ? (
-                      <PickList
-                        rows={voiceRows(voiceList, [])}
-                        filter={(rows, query) => {
-                          const shown = shownVoices(voiceList, query, voiceId);
-                          return rows.filter((row) => shown.includes(row.voice));
-                        }}
+                    {listed.length > 0 ? (
+                      <VoicePicker
+                        voices={listed}
                         value={voiceId}
                         onPick={setPicked}
-                        label="Search voices"
+                        onHear={(voice) => hear(voice.preview_url!)}
                         name="Voice"
-                        columns={1}
-                        fixedHeight
-                        after={(row) =>
-                          row.voice.preview_url ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="h-11 px-4"
-                              aria-label={`Hear ${row.name}`}
-                              onClick={() => hear(row.voice.preview_url!)}
-                            >
-                              ▶ Hear it
-                            </Button>
-                          ) : null
-                        }
+                        compact
                       />
                     ) : null}
                   </>

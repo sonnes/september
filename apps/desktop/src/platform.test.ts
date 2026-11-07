@@ -5,8 +5,8 @@ import { USAGE_RETENTION_MS } from "@september/core/rules/usage-summary";
 
 const invoke = vi.hoisted(() => vi.fn<(name: string, args?: unknown) => Promise<unknown>>());
 vi.mock("@tauri-apps/api/core", () => ({ invoke, convertFileSrc: (path: string) => path }));
-vi.mock("@tauri-apps/api/window", () => ({ getCurrentWindow: vi.fn() }));
-vi.mock("@tauri-apps/plugin-shell", () => ({ open: vi.fn() }));
+const openUrl = vi.hoisted(() => vi.fn<(url: string) => Promise<void>>());
+vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl }));
 
 const { platform } = await import("./platform");
 
@@ -20,7 +20,10 @@ const stored = {
   usageEvents: [],
 };
 
-beforeEach(() => invoke.mockReset());
+// A block body, because Vitest calls a function that a hook returns after the test.
+beforeEach(() => {
+  invoke.mockReset();
+});
 
 const argsOf = (name: string) => invoke.mock.calls.find(([called]) => called === name)?.[1];
 
@@ -63,6 +66,65 @@ describe("the Mac store", () => {
   });
 });
 
+describe("the Mac voice", () => {
+  const settings = {
+    provider: "dialogue" as const,
+    voiceId: "v1",
+    modelId: "eleven_flash_v2_5",
+    stability: 0.45,
+    similarity: 0.75,
+    speed: 1.2,
+  };
+  const voice = { voiceId: "v1", modelId: "eleven_v3", stability: 0.5, similarity: 0.75, speed: 1 };
+
+  it("names a live sentence with the saved settings", async () => {
+    invoke.mockResolvedValue({ from_cache: true, latency_ms: 1, interrupted: null });
+
+    await platform.voice.stream("Hi", voice, ["Hi"], new AbortController().signal, settings);
+
+    expect(argsOf("speech_stream")).toEqual({
+      request: {
+        text: "Hi",
+        voice: {
+          ...voice,
+          fileSettings: {
+            provider: "dialogue",
+            modelId: "eleven_v3",
+            stability: 0.45,
+            similarity: 0.75,
+            speed: 1.2,
+          },
+        },
+        dialogueParts: ["Hi"],
+      },
+    });
+  });
+
+  it("names a file with the settings it is made with", async () => {
+    invoke.mockResolvedValue({ path: "/audio/a.mp3" });
+    vi.stubGlobal("fetch", async () => new Response("sound"));
+
+    await platform.voice.synthesize("Hi", voice, settings);
+
+    expect(argsOf("speech_synthesize")).toEqual({
+      request: {
+        text: "Hi",
+        voice: {
+          ...voice,
+          fileSettings: {
+            provider: "dialogue",
+            modelId: "eleven_v3",
+            stability: 0.5,
+            similarity: 0.75,
+            speed: 1,
+          },
+        },
+      },
+    });
+    vi.unstubAllGlobals();
+  });
+});
+
 describe("the Mac identity", () => {
   it("passes on a Mac with no login name as no user", async () => {
     invoke.mockImplementation(async (name) => (name === "user_name" ? "Ravi" : null));
@@ -70,12 +132,31 @@ describe("the Mac identity", () => {
     expect(await platform.device.identity()).toEqual({ name: "Ravi", userId: null });
   });
 
-  it("rejects when the login name cannot be read", async () => {
-    invoke.mockImplementation(async (name) => {
-      if (name === "user_id") throw "IPC is down";
-      return "Ravi";
-    });
+  it("passes on a login name or a full name it cannot read as none", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    invoke.mockRejectedValue("IPC is down");
 
-    await expect(platform.device.identity()).rejects.toThrow("IPC is down");
+    expect(await platform.device.identity()).toEqual({ name: "", userId: null });
+    expect(logged).toHaveBeenCalled();
+    logged.mockRestore();
+  });
+});
+
+describe("the Mac browser", () => {
+  it("opens an address in the default browser", async () => {
+    openUrl.mockResolvedValue();
+
+    await platform.device.openInBrowser("https://september.to");
+
+    expect(openUrl).toHaveBeenCalledWith("https://september.to");
+  });
+
+  it("logs an address it cannot open, so a link press never rejects", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    openUrl.mockRejectedValue("not allowed");
+
+    await expect(platform.device.openInBrowser("https://september.to")).resolves.toBeUndefined();
+    expect(logged).toHaveBeenCalled();
+    logged.mockRestore();
   });
 });

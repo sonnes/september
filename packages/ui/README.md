@@ -14,11 +14,14 @@ import { Card, CardContent } from "@september/ui/components/card";
 
 The package root exports `cn` and `useIsMobile`.
 
-Each app's CSS entry point imports the shared theme and scans this package:
+Each app's CSS entry point imports the shared theme and scans this package and
+`packages/app-ui`. The paths are relative to the CSS file. The desktop entry
+point is:
 
 ```css
 @import "@september/ui/theme.css";
 @source "../../../packages/ui";
+@source "../../../packages/app-ui";
 ```
 
 `Switch` is 32 by 56px, with its thumb 2px from each edge, and the thumb
@@ -31,10 +34,12 @@ owns the reach tokens: `--reach-target`, `--reach-gap`, `--reach-word`, and
 `--reach-scale`. Every text role grows with `--reach-scale`. No text role is
 smaller than 14px.
 
-`cn` knows the radius roles and `text-title`, so a later role replaces an
-earlier one. `Button`, `Input`, the menu rows,
-and the close key of `Sheet` and `Dialog` take their height from
-`--reach-target`, 48px at the smallest.
+`--spacing-reach` is `--reach-target`, 48px at the smallest. It gives the
+`min-h-reach`, `min-w-reach`, and `size-reach` utilities. `Button`, `Input`,
+the menu rows, and the close key of `Sheet` and `Dialog` use them.
+
+`cn` knows the radius roles, `reach`, and `text-title`, so a later role
+replaces an earlier one.
 
 A focusable primitive shows focus with the `focus-attention` class: a 2px ink
 outline inside a 5px amber ring. A menu item uses
@@ -59,7 +64,7 @@ Three attributes mark popups and controls for the access layer. Dialog and
 sheet content has `data-modal`. Menu content has `data-menu`. The
 sidebar rail has `data-pointer-only`, because only a pointer uses it.
 
-Every `Sidebar` menu row, sub row, and row action is 48px. The rows use
+Every `Sidebar` menu row is 48px. The rows use
 `focus-attention-inset`, because the sidebar clips a ring outside a row. The
 current row shows a bar at its start edge. `SidebarTrigger` is named Menu and
 has `aria-expanded`. `SidebarRail` is a pointer strip only: it has

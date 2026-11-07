@@ -7,7 +7,7 @@
 
 import type { Message, SavedPhrase } from "../records.ts";
 import { DAY_MS, halfLifeWeight } from "../time.ts";
-import { generateCode } from "./codes.ts";
+import { codesInUse, generateCode } from "./codes.ts";
 
 export interface MinedShortcut {
   /** Surface form of the phrase (most recent occurrence, trailing punctuation stripped). */
@@ -116,7 +116,7 @@ export function mineShortcuts(messages: Pick<Message, "type" | "text" | "created
     .sort((a, b) => b.words - a.words);
 
   const existingTexts = new Set(existingPhrases.map(p => normalizeMinedText(p.text)));
-  const existingCodes = existingPhrases.filter(p => p.code).map(p => p.code as string);
+  const existingCodes = codesInUse(existingPhrases);
 
   const kept: Candidate[] = [];
   const proposals: Array<MinedShortcut & { score: number }> = [];

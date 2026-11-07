@@ -28,7 +28,7 @@ export function play(url: string): Promise<void> {
   });
 }
 
-export function stop(): void {
+function stop(): void {
   element?.pause();
   if (element) clear(element);
 }

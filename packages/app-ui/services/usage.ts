@@ -14,14 +14,13 @@ import {
   type UsageEvent,
 } from "@september/core/rules/usage-summary";
 
+import { downloadBlob } from "./browser";
 import { currentUserId } from "./settings";
 
 export interface AIUsage {
   generation_type: GenerationFeature;
   provider: "apple" | "openrouter";
   model: string;
-  input_length: number;
-  output_length: number;
   input_tokens: number;
   output_tokens: number;
   latency_ms: number;
@@ -38,7 +37,6 @@ export interface TtsUsage {
   voice_id?: string;
   text_length: number;
   credits?: number;
-  duration_seconds: number;
   latency_ms: number;
   success: boolean;
   cached: boolean;
@@ -123,7 +121,7 @@ export function useElevenLabsQuota() {
 }
 
 export function downloadUsageCsv(calls: ReturnType<typeof toRecentCalls>): void {
-  platform.device.save(
+  downloadBlob(
     new Blob([usageCallsToCsv(calls)], { type: "text/csv;charset=utf-8" }),
     `september-usage-${new Date().toISOString().slice(0, 10)}.csv`,
   );

@@ -4,7 +4,7 @@
  * `./platform`, and a test sets its rows and answers first.
  */
 
-import { act, type ReactNode } from 'react';
+import { act, StrictMode, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -21,6 +21,7 @@ import { afterEach, vi } from 'vitest';
 
 import { createQueryClient } from '@september/app-ui/app';
 import { AppShell } from '@september/app-ui/layouts/app';
+import { PanelShell } from '@september/app-ui/layouts/panel';
 import { createAppRoutes } from '@september/app-ui/routes';
 import { saveSetup } from '@september/app-ui/services/settings';
 import { DEFAULT_DRAFT } from '@september/core/rules/onboarding';
@@ -63,28 +64,40 @@ export function renderPart(node: ReactNode): Promise<Rendered> {
   return renderRouter(router);
 }
 
-/** The whole app at `path`, in the shell of the browser app or another shell. */
+/** The panel window of the Mac app, as a shell. */
+export function PanelWindow() {
+  return <PanelShell onHide={() => {}} />;
+}
+
+/**
+ * The whole app at `path`, in the shell of the browser app or another shell.
+ * `dashboard` draws the page at `/dashboard`, and `strict` runs it in StrictMode.
+ */
 export function renderApp(
   path: string,
-  { shell = AppShell }: { shell?: RouteComponent } = {},
+  {
+    shell = AppShell,
+    dashboard = () => <h1>Today</h1>,
+    strict = false,
+  }: { shell?: RouteComponent; dashboard?: RouteComponent; strict?: boolean } = {},
 ): Promise<Rendered> {
   const routeTree = createAppRoutes({
     shell,
     home: { component: () => <p>Home</p> },
-    pages: { '/dashboard': () => <h1>Today</h1> },
+    pages: { '/dashboard': dashboard },
   });
   const router = createRouter({ routeTree, history: createMemoryHistory({ initialEntries: [path] }) });
-  return renderRouter(router);
+  return renderRouter(router, strict);
 }
 
-async function renderRouter(router: AnyRouter): Promise<Rendered> {
+async function renderRouter(router: AnyRouter, strict = false): Promise<Rendered> {
   const client = createQueryClient();
-  const rendered = await mount(
+  const app = (
     <QueryClientProvider client={client}>
       <RouterProvider router={router} />
-    </QueryClientProvider>,
-    router,
+    </QueryClientProvider>
   );
+  const rendered = await mount(strict ? <StrictMode>{app}</StrictMode> : app, router);
   await act(async () => router.load());
   return rendered;
 }
@@ -129,6 +142,19 @@ export async function typeInto(field: HTMLInputElement | HTMLTextAreaElement, te
     Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(field, text);
     field.dispatchEvent(new Event('input', { bubbles: true }));
   });
+}
+
+/** Answers each media query with `matches`. `vi.restoreAllMocks` puts the jsdom answer back. */
+export function mockMedia(matches: (query: string) => boolean): void {
+  vi.spyOn(window, 'matchMedia').mockImplementation(
+    query =>
+      ({
+        matches: matches(query),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }) as unknown as MediaQueryList,
+  );
 }
 
 /** Presses a button inside `act`. */

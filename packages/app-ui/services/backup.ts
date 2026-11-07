@@ -10,12 +10,13 @@ import {
   type SeptemberBackup,
 } from "@september/core/rules/backup";
 
+import { downloadBlob } from "./browser";
 import { currentUserId } from "./settings";
 
 export async function downloadBackup(): Promise<void> {
   const at = new Date();
   const contents = backupContentsFrom(await platform.store.exportBackup(), currentUserId());
-  platform.device.save(
+  downloadBlob(
     new Blob(
       [
         encodeBackup({

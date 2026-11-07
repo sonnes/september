@@ -29,7 +29,9 @@ The editor starts saving text and titles on each edit. Note-update writes run
 in order within a space. A stale query refresh cannot replace a pending edit.
 A failed save leaves the words visible and offers Retry saving.
 
-Pending or failed edits guard normal browser closing and Mac window closing.
+Pending or failed edits make the browser warn before it closes or reloads.
+Closing the Mac panel only hides it, so a pending save goes on. Quitting the
+Mac app does not wait for a save.
 A forced quit or device failure before the write completes can still lose edits.
 
 The first save creates a title from the first six words. The user can change the title later.
@@ -66,10 +68,10 @@ From 52rem of screen body, the list is a column beside the note. Below that widt
 
 The About tab edits the `context` field of the space, in the same document editor. Phrase generation and writing prompts read this field.
 
-The About tab saves when its field loses focus. It also saves pending text when the tab closes.
+The About tab saves on each edit, the same way a note does.
 
 ## Read aloud
 
 Read aloud uses the same voice settings as Talk. It reads the selected words when there is a selection. Otherwise, it reads the full note. It does not say the box of a checklist line. It does not create a message or change the Talk transcript.
 
-Removing a space also removes its scoped notes, messages, and phrases in one repository operation.
+Removing a space also removes its scoped notes, messages, Agent messages, and phrases in one repository operation.

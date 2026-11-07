@@ -1,6 +1,6 @@
 mod common;
 
-use common::serve_raw;
+use common::{body_of, serve_raw};
 use september_desktop_lib::proxy::{self, ProxyConfig};
 use serde_json::{json, Value};
 
@@ -12,17 +12,15 @@ const REPLY: &str = concat!(
     "{\"ok\":true}"
 );
 
+/// A Mac whose model does not start.
 fn config(upstream: &str) -> ProxyConfig {
     ProxyConfig {
         upstream: upstream.to_owned(),
-        apple: None,
+        apple: proxy::apple_upstream(|| async {
+            Err("Apple Intelligence needs macOS 26 on Apple silicon.".to_owned())
+        }),
         client: reqwest::Client::new(),
     }
-}
-
-fn body_of(request: &str) -> Value {
-    let (_, body) = request.split_once("\r\n\r\n").unwrap();
-    serde_json::from_str(body).unwrap()
 }
 
 fn header_of(request: &str, name: &str) -> String {
@@ -210,10 +208,10 @@ async fn it_carries_apple_intelligence_for_the_web_view() {
     let apple = sidecar.clone();
     let endpoint = proxy::serve(
         ProxyConfig {
-            apple: Some(proxy::apple_upstream(move || {
+            apple: proxy::apple_upstream(move || {
                 let apple = apple.clone();
                 async move { Ok((apple, "sidecar-token".to_owned())) }
-            })),
+            }),
             ..config("http://127.0.0.1:1")
         },
         || Err("no cloud key here".to_owned()),
@@ -252,6 +250,11 @@ async fn it_says_when_this_mac_has_no_apple_intelligence() {
         .unwrap();
 
     assert_eq!(answer.status(), 502);
+    let body: Value = answer.json().await.unwrap();
+    assert_eq!(
+        body["error"]["message"],
+        json!("Apple Intelligence needs macOS 26 on Apple silicon.")
+    );
 }
 
 /// The typed client adds its own headers, such as `x-stainless-os`, so the

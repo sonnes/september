@@ -93,16 +93,19 @@ the moment it started, and each one knows only its own fields.
 them, and a field that is absent keeps its value. Two writers that touch
 different fields both keep their change. A put would let the last writer put
 back the fields it read before the others wrote, and the user would watch a new
-name turn back into `New space 2`.
+name turn back into `Untitled 2`.
 
-A field is set, never cleared. No writer needs to empty one.
+A patch clears one field: `reset_phrases_synced_count` sets
+`phrases_synced_count` to null. The agent sends it after it edits or deletes
+a message, so the phrase sync counts the messages again.
 
 ## Start with the current schema
 
-Schema version 7 adds the separate Agent transcript to settings, domain rows,
-saved phrases, and analytics events. The migrations use
-`CREATE TABLE IF NOT EXISTS`, so databases from
-earlier desktop builds gain missing tables and keep existing settings.
+The schema is at version 8. Version 7 adds the separate Agent transcript to
+settings, domain rows, saved phrases, and analytics events. The table
+migrations use `CREATE TABLE IF NOT EXISTS`, so databases from earlier
+desktop builds gain missing tables and keep existing settings. Version 8
+drops `messages.audio_path`.
 
 ## Keep browser storage separate
 

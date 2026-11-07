@@ -1,8 +1,6 @@
 /**
  * The rules of a suggestion stripe: a row of word tiles where a press takes
  * the sentence up to that word.
- *
- * Both applications import the same stripe rules from this module.
  */
 
 import { isTag, splitTags, stripTags } from "./audio-tags.ts";
@@ -327,10 +325,7 @@ export function codeExpansionText(typed: string, phraseText: string): string {
   return typed.replace(/\S+$/, phraseText);
 }
 
-/**
- * The tile at full size, in pixels. The numbers mirror `STRIPE_BASE` in the
- * web app, so a row reads the same in both.
- */
+/** The tile at full size, in pixels. */
 export const TILE = {
   fontPx: 16,
   gapPx: 6,
@@ -350,13 +345,7 @@ export const TILE = {
  */
 export const TILE_SCALE_MIN = 0.5;
 
-/**
- * The width of one character of Noto Sans at 16 px, in the medium weight.
- *
- * ponytail: one number instead of a layout engine. The web app measures each
- * word with Pretext. Bring that engine over when a real sentence still does
- * not fit.
- */
+/** The width of one character of Noto Sans at 16 px, in the medium weight. */
 const CHAR_PX = 8.4;
 
 export interface StripeSize {
@@ -367,9 +356,8 @@ export interface StripeSize {
 }
 
 /**
- * How much to shrink every tile, so the widest row stays on one line.
- *
- * One scale for every row, as in the web app, so the rows stay a set.
+ * How much to shrink every tile, so the widest row stays on one line. Every
+ * row takes the same scale, so the rows stay a set.
  */
 export function tileScale(rows: readonly StripeSize[], availablePx: number): number {
   if (availablePx <= 0) return 1;

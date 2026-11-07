@@ -3,11 +3,26 @@ import { createRouter, type RouterHistory } from '@tanstack/react-router';
 import { AppShell } from '@september/app-ui/layouts/app';
 import { DashboardScreen } from '@september/app-ui/pages/dashboard';
 import { createAppRoutes } from '@september/app-ui/routes';
+import { loadSettings } from '@september/app-ui/services/settings';
 import { PUBLIC_PAGES } from '@/public-pages';
 import { analyticsPath } from '@/rules/analytics';
 import { countPage } from '@/services/analytics';
 
 const { '/': landing, ...others } = PUBLIC_PAGES;
+
+let reading: Promise<void> | null = null;
+
+/**
+ * Reads the settings once. A public page does not call it, so the landing
+ * page, the legal pages, and Help never open the database.
+ */
+export function settingsReady(): Promise<void> {
+  reading ??= loadSettings().catch(reason => {
+    // The app still opens when this browser denies storage.
+    console.error('September could not read its settings.', reason);
+  });
+  return reading;
+}
 
 const routeTree = createAppRoutes({
   shell: AppShell,
@@ -18,6 +33,7 @@ const routeTree = createAppRoutes({
     )
   ),
   pages: { '/dashboard': DashboardScreen },
+  settingsReady,
 });
 
 export const getRouter = (history: RouterHistory) => createRouter({ routeTree, history });

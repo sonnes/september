@@ -38,6 +38,9 @@ const args = [mode];
 if (usesApfel) {
   args.push("--config", "src-tauri/tauri.apfel.conf.json");
 }
+if (signsForDistribution) {
+  args.push("--config", "src-tauri/tauri.signed.conf.json");
+}
 run("pnpm", ["exec", "tauri", ...args]);
 
 function run(command, args) {
