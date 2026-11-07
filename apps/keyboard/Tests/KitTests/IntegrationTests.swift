@@ -28,13 +28,18 @@ private func focus(_ role: String, editable: Bool = false, secure: Bool = false,
 
 @MainActor
 private func inputBarTests() {
-    test("a text field, a password field, a terminal, and a caret are text input") {
+    test("a text field, a password field, a terminal, and an editable web page are text input") {
         expect(focus("AXTextField", editable: true).isTextInput)
         expect(focus("AXTextField", secure: true).isTextInput)
         expect(focus("AXTextArea").isTextInput, "Terminal exposes a text area with no settable value")
-        expect(focus("AXWebArea", caret: true).isTextInput, "an editable web page has a caret")
+        expect(focus("AXWebArea", editable: true, caret: true).isTextInput)
         expect(!focus("AXButton").isTextInput)
         expect(!focus("AXList").isTextInput)
+    }
+
+    test("a selection in text that the user only reads is not text input") {
+        expect(!focus("AXWebArea", caret: true).isTextInput, "a web page that the user reads")
+        expect(!focus("AXStaticText", caret: true).isTextInput)
     }
 
     test("the Finder desktop is not text input, though it reports a caret") {
@@ -55,6 +60,7 @@ private func inputBarTests() {
         expect(wants(focus("AXTextField", secure: true)), "a password field shows its notice")
         expect(wants(nil, isPrivate: true), "a field with private text shows its notice")
         expect(wants(nil, echo: "hi"), "an app with no readable field shows the echo")
+        expect(!wants(focus("AXList"), echo: "hi"), "the echo hides when the focus is on a list")
     }
 
     test("Talk mode and the Write window always show the bar") {

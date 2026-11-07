@@ -44,11 +44,11 @@ public struct FocusedField: Equatable, Sendable {
     static let nonTextSubroles: Set<String> = ["AXDesktop"]
 
     /// True when the focused element takes text: a password field, an
-    /// editable value, a caret, or a text role. A button, a list, or the
-    /// desktop is not.
+    /// editable value, or a text role. A button, a list, the desktop, or a
+    /// web page that the user only reads is not, even with a selection.
     public var isTextInput: Bool {
         if let subrole, Self.nonTextSubroles.contains(subrole) { return false }
-        return isSecure || isEditable || selection != nil || Self.textRoles.contains(role)
+        return isSecure || isEditable || Self.textRoles.contains(role)
     }
 
     /// How the input bar should show this field, or `nil` when the field gives

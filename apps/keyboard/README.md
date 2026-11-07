@@ -149,7 +149,8 @@ copy behind. See `docs/concepts/input-mirroring.md`.
 
 In Type mode, the bar, the sentence predictions, and the word row show only
 when there is text input. That is a focused text field, a password field, a
-field with private text, or an echo in an app that exposes no field. The bar
+field with private text, or an echo in an app that exposes no focused element.
+A selection in a web page that the user only reads is not text input. The bar
 shows at once. When the text input goes away, the bar hides after 300 ms, so
 a move from one field to the next does not make it blink. The hidden parts
 keep their space, so the keys do not move. In Talk mode and in the Write
