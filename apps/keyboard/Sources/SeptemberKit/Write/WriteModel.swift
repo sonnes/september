@@ -1,25 +1,24 @@
 import Foundation
 
-/// The state of the Write window: the document list, the open document, and
-/// the saves of the editor text.
+/// The documents of Write: the document list, the open document, and the
+/// saves of the editor text.
 ///
-/// Each open of a document gets its own path in the page. The page sends the
-/// last edit of a document after the next document opens, so a `change`
-/// finds its file through that path, even after a rename.
+/// The model shows a document in the editor through `show`, and reads the
+/// text of the editor through `editorText`. Before another document opens,
+/// the model saves the open document.
 @MainActor
 public final class WriteModel: ObservableObject {
     @Published public private(set) var documents: [WriteDocument] = []
     @Published public private(set) var current: WriteDocument?
-    /// The last error of the folder, for the window to show. It never holds document text.
+    /// The last error of the folder, for the paper to show. It never holds document text.
     @Published public private(set) var failure: String?
 
-    /// Sends a call to the editor page.
-    public var send: (EditorCall) -> Void = { _ in }
+    /// Shows the Markdown of a document in the editor. An empty text is a new document.
+    public var show: (String) -> Void = { _ in }
+    /// The Markdown in the editor now.
+    public var editorText: () -> String = { "" }
 
     public let library: DocumentLibrary
-    private var files: [String: URL] = [:]
-    private var currentPath: String?
-    private var opens = 0
 
     public init(library: DocumentLibrary) {
         self.library = library
@@ -36,6 +35,7 @@ public final class WriteModel: ObservableObject {
     }
 
     public func newDocument() {
+        save()
         do {
             let document = try library.create()
             reload()
@@ -49,6 +49,7 @@ public final class WriteModel: ObservableObject {
         guard url != current?.url, let document = documents.first(where: { $0.url == url }) else {
             return
         }
+        save()
         open(document)
     }
 
@@ -58,50 +59,25 @@ public final class WriteModel: ObservableObject {
         select(document.url)
     }
 
-    /// Saves the text of an open. The page sends it 120 ms after the last edit.
-    public func editorChanged(path: String, text: String) {
-        guard let url = files[path] else { return }
+    /// Saves the text of the editor to the open document. The file takes the
+    /// name of its first heading.
+    public func save() {
+        guard let url = current?.url else { return }
         do {
-            let saved = try library.save(text, to: url)
-            files[path] = saved
+            let saved = try library.save(editorText(), to: url)
             reload()
-            if path == currentPath {
-                current = documents.first { $0.url == saved } ?? WriteDocument(url: saved, modified: Date())
-                send(.header("Saved", nil))
-            }
+            current = documents.first { $0.url == saved } ?? WriteDocument(url: saved, modified: Date())
             failure = nil
         } catch {
-            if path == currentPath { send(.header("Not saved", nil)) }
             report(error)
         }
-    }
-
-    /// Saves the text that `window.piper.flush()` returned, before a close or a quit.
-    public func flushed(_ text: String) {
-        guard let currentPath else { return }
-        editorChanged(path: currentPath, text: text)
-    }
-
-    /// Shows the open document again, after the page loaded again.
-    public func reopen() {
-        guard let current else { return }
-        open(current)
     }
 
     private func open(_ document: WriteDocument) {
         do {
             let text = try library.read(document)
-            opens += 1
-            let path = "write-\(opens)"
-            files[path] = document.url
-            currentPath = path
             current = document
-            let targets = documents.map {
-                EditorOpenRequest.WikiTarget(path: $0.url.lastPathComponent, target: $0.title, title: $0.title)
-            }
-            send(.open(EditorOpenRequest(
-                path: path, text: text, header: WriteDocument.dateLabel(document.modified),
-                wikiTargets: targets)))
+            show(text)
         } catch {
             report(error)
         }

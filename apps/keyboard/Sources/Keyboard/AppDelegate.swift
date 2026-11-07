@@ -25,7 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var speech: SpeechServices!
     private var content: WindowContent!
     private var settingsWindow: SettingsWindowController!
-    private var writeWindow: WriteWindowController!
+    private var write: WriteController!
     /// Held strongly: the tap's callback does not retain it.
     private var chordTap: ChordTap?
     private var tracker = FrontAppTracker(ownPID: ProcessInfo.processInfo.processIdentifier)
@@ -35,7 +35,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// The read of the text near the field that runs now.
     private var screenRead: Task<Void, Never>?
     private var fieldWasEmpty = true
-    private var writeTimer: Timer?
     private var clipboardWatcher: ClipboardWatcher?
     private var clipboardTimer: Timer?
     private var appIcon: NSImage?
@@ -80,9 +79,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             pasteboard: SystemPasteboard())
         watchClipboard()
 
-        writeWindow = WriteWindowController()
-        writeWindow.onKeyChanged = { [weak self] isKey in self?.writeKeyChanged(isKey) }
-        session.writeSpeech = { [weak self] in await self?.writeWindow.speech() }
+        write = WriteController()
+        write.paper.onKeyChanged = { [weak self] isKey in self?.writeKeyChanged(isKey) }
+        write.paper.bringToFront = { AppActivation.bringToFront($0) }
+        write.paper.windowClosed = { AppActivation.windowClosed($0) }
+        write.onCaretChange = { [weak self] caret in self?.writeCaretChanged(caret) }
+        session.writeSpeech = { [weak self] in self?.write.speech }
         settingsWindow = SettingsWindowController(pages: makeSettingsPages())
         content = WindowContent(
             controller: controller, session: session, permission: permission, phrases: phrases,
@@ -147,13 +149,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         session?.predictions.refreshAvailability()
     }
 
-    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let writeWindow else { return .terminateNow }
-        Task {
-            await writeWindow.flush()
-            NSApp.reply(toApplicationShouldTerminate: true)
-        }
-        return .terminateLater
+    func applicationWillTerminate(_ notification: Notification) {
+        write?.save()
     }
 
     // MARK: - Settings
@@ -239,7 +236,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         sink.afterPost = { [weak self] in
             self?.focusWatcher.refreshSoon()
-            self?.readWriteCaretSoon()
         }
         focusWatcher.start()
         session.predictions.$screenEnabled
@@ -274,7 +270,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let front = NSWorkspace.shared.frontmostApplication
         let change = tracker.writeKeyChanged(isKey, front: front.map(FrontApp.init))
         apply(change, app: front, title: focusWatcher.windowTitle(of: front))
-        // The app in front may have come forward while the Write window was
+        // The app in front may have come forward while the Write paper was
         // key. Follow it again, so its field shows in the bar.
         if case .app = change { focusWatcher.refollow() }
     }
@@ -288,10 +284,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             appIcon = NSApp.applicationIconImage.tabIcon()
             session.menuName = { _ in nil }
             session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
-            startWriteTimer()
+            session.writeCaretRead(write.caret)
         case .app:
             isWriteInFront = false
-            stopWriteTimer()
             appIcon = app?.icon?.tabIcon()
             session.menuName = { [weak app] chord in
                 // The menu bar runs to hundreds of items, so it is read only
@@ -311,47 +306,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // MARK: - The Write window
+    // MARK: - Write
 
-    /// Opens the Write window out of the input bar. If the keyboard is
-    /// hidden, the window opens with no animation.
+    /// Opens the Write paper out of the input bar. If the keyboard is
+    /// hidden, the paper opens with no animation.
     private func showWrite() {
         let keyboard = keyboardPanel?.isVisible == true ? keyboardPanel : nil
         let screen = (keyboard?.screen ?? FloatingPanel.activeScreen)?.visibleFrame ?? .zero
         let bar = keyboard.map { WritePlacement.screenRect(session.inputBar.frame, in: $0.frame) }
-        writeWindow.show(
+        write.show(
             from: bar, floor: keyboard?.frame.maxY ?? screen.minY, screen: screen,
             margin: FloatingPanel.margin)
     }
 
     /// The keyboard cannot read its own window over accessibility, so the
     /// editor reports the paragraph at the caret.
-    private func readWriteCaret() {
+    private func writeCaretChanged(_ caret: EditorCaret) {
         guard isWriteInFront else { return }
-        Task {
-            guard let caret = await writeWindow.caret(), isWriteInFront else { return }
-            session.writeCaretRead(caret)
-        }
-    }
-
-    private func readWriteCaretSoon() {
-        guard isWriteInFront else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-            self?.readWriteCaret()
-        }
-    }
-
-    private func startWriteTimer() {
-        readWriteCaret()
-        writeTimer?.invalidate()
-        writeTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.readWriteCaret() }
-        }
-    }
-
-    private func stopWriteTimer() {
-        writeTimer?.invalidate()
-        writeTimer = nil
+        session.writeCaretRead(caret)
     }
 
     // MARK: - Learning from the hardware keyboard

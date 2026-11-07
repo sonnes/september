@@ -1,8 +1,7 @@
 import AppKit
 
 extension Typography {
-    /// A font of the native Write editor. Body text uses the system font, as
-    /// the "Sans Serif" setting of the web editor does.
+    /// A font of the Write editor. Body text uses the system font.
     public static func writeEditor(
         size: CGFloat, weight: NSFont.Weight = .regular, italic: Bool = false, monospaced: Bool = false
     ) -> NSFont {
@@ -16,4 +15,7 @@ extension Typography {
         }
         return font
     }
+
+    /// The save error at the top of the paper.
+    public static var writeNotice: NSFont { .systemFont(ofSize: 11) }
 }

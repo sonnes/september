@@ -2,7 +2,7 @@
 
 A floating accessible keyboard that types into whatever app is in front, with
 shortcut panels around it. It predicts sentences and words, speaks text
-aloud, and has a Talk mode and a Write window. Built with SwiftUI + AppKit, no
+aloud, and has a Talk mode and a Write paper. Built with SwiftUI + AppKit, no
 dependencies.
 
 ```
@@ -21,14 +21,14 @@ Sources/
     Talk/           Talk mode, the Said list, the Phrases panel
     UserPanel/      My Panel, private text, the Accessibility Keyboard import
     Settings/       the pages of the Settings window
-    Write/          the documents, the editor bridge, and the spoken text of the Write window
+    Write/          the documents of Write, `WriteController`, and the text that Speak reads
     WriteEditor/    the native Markdown editor and the Write paper
     Views/          keys, shortcut buttons, panels, the keyboard screen, the views of each part
     Resources/      Panels/{edit,text,system,phrases}.json, Panels/Apps/generic.json, Panels/Apps/<bundle id>.json,
                     Context/<bundle id>.json
   Keyboard/         the app: floating panels, CGEvent sink, focus watcher, chord tap, tree reader,
-                    menu bar, the Settings and Write windows
-  WriteLab/         the native Write editor on its own, before it goes into the keyboard
+                    menu bar, the Settings window
+  WriteLab/         the Write paper on its own, with a stand-in for the keyboard bar
 Tests/KitTests/     tests (see "Tests" below)
 ```
 
@@ -112,7 +112,7 @@ rejects an upload, `make release` stops. Then run
 - The first launch shows the Accessibility banner. After you allow September
   Keyboard in System Settings, the keys type into another app.
 - Settings opens, and Speak reads the input bar aloud.
-- The Write window opens and saves a document.
+- The Write paper opens and saves a document.
 
 ## The windows
 
@@ -205,14 +205,23 @@ When the history is off, it keeps no texts. If the file does not decode, the
 keyboard moves it to `clipboard-history.broken.json` and starts an empty
 history.
 
-Write opens the Write window, a normal macOS window with a Markdown editor.
-The window grows out of the input bar and opens above the keyboard. By
-default, the editor is a portrait page with the shape of A4 paper, as tall as
-the space above the keyboard. If the user resizes the window, the window keeps
-that size. If Reduce Motion is on, the window opens with no animation.
-`WritePlacement` holds the rule. In the Write window, Speak reads the selection. If nothing is selected, Speak
-reads the whole document without the Markdown marks. `MarkdownSpeech` holds
-the rule. If the document has no text, Speak is off.
+Write opens the Write paper: a sheet with round corners, no window frame,
+and a native Markdown editor (`WriteTextView`). The editor hides the Markdown
+marks and shows the look of the text. The paper comes out of the input bar
+and opens above the keyboard. It is as wide as the largest A4 page above the
+keyboard, and as tall as its text. The paper grows up by one line at a time
+as the user types. At the top of the page it stops, and the text moves up, so
+the typing line stays at the bottom. If Reduce Motion is on, nothing
+animates. `WritePaper` holds the rule.
+
+The editor saves the document 0.12 seconds after the last edit, so Write has
+no Save command. A document that the user did not edit saves byte for byte.
+Command-N starts a new document. A `[[` link opens the document with that
+title. If a save fails, the error shows at the top of the paper.
+
+In Write, Speak reads the selection. If nothing is selected, Speak reads the
+whole document without the Markdown marks. `MarkdownSpeech` holds the rule.
+If the document has no text, Speak is off.
 
 Settings opens the Settings window. Both windows take focus. The menu bar item
 also opens them. After a press through `AXPress`, macOS refuses to activate
@@ -256,7 +265,7 @@ window:
 ```sh
 swift run Keyboard --snapshot out.png            # Type mode in Messages, with the panels beside the keys
 swift run Keyboard --snapshot out.png --talk     # Talk mode during speech
-swift run Keyboard --snapshot out.png --write    # the Write window in front
+swift run Keyboard --snapshot out.png --write    # the Write paper in front
 swift run Keyboard --snapshot out.png --mine     # the Mine tab of the app panel
 swift run Keyboard --snapshot out.png --clipboard  # the clipboard history, open
 swift run Keyboard --snapshot out.png --mono     # mono variant
@@ -269,8 +278,8 @@ The keyboard snapshots use sample text. They read nothing from your apps.
 
 ## Write Lab
 
-Write Lab runs the native Write editor on its own. The keyboard still uses the
-web editor. Write Lab shows a stand-in for the keyboard bar at the bottom of
+Write Lab runs the Write paper on its own, with the same `WriteController`
+as the keyboard. Write Lab shows a stand-in for the keyboard bar at the bottom of
 the screen. The bar shows the paragraph at the caret, as the keyboard reads it
 for the predictions. Write opens the paper out of the bar.
 
@@ -280,7 +289,7 @@ swift run WriteLab --demo                               # also types a sample do
 swift run WriteLab --folder /tmp/notes                  # another folder of documents
 swift run WriteLab --snapshot out.png [--dark]          # render the sample document and quit
 swift run WriteLab --snapshot out.png --file notes.md   # render a file and quit
-swift run WriteLab --debug                              # print the paper frame each second, and draw it to /tmp/writelab-<n>.png
+swift run WriteLab --debug                              # print the paper frames each second, and draw the paper to /tmp/writelab-<n>.png
 ```
 
 Write Lab keeps its documents in `~/Library/Application Support/September/Write Lab`.
@@ -425,7 +434,7 @@ The Keychain holds the secrets:
 - The text of each private text button is in the service
   `com.september.keyboard.private`.
 
-The Write window keeps each document as a Markdown file in
+Write keeps each document as a Markdown file in
 `~/Documents/September`. My Panel, the use counts, the learned shortcuts, and
 the Talk history are JSON files in
 `~/Library/Application Support/September Keyboard`. Only the user can read the

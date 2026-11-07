@@ -1,9 +1,10 @@
 import AppKit
+import Combine
 import SeptemberKit
 import SwiftUI
 
-// Write Lab: the native Write editor on its own, to try it before it goes
-// into the keyboard.
+// Write Lab: the Write paper of the keyboard on its own, with a stand-in for
+// the keyboard bar.
 //
 //   WriteLab                    a stand-in for the keyboard bar, with Write
 //   WriteLab --demo             also types a sample document into the paper
@@ -40,28 +41,28 @@ app.run()
 
 @MainActor
 final class LabDelegate: NSObject, NSApplicationDelegate {
-    private let paper = WritePaperController()
+    private var write: WriteController!
+    private var paper: WritePaperController { write.paper }
     private let state = LabState()
     private var bar: NSPanel!
-    private var library: DocumentLibrary!
-    private var current: URL?
-    private var save: DispatchWorkItem?
     private var demo: LabDemo?
     private var frames = 0
+    private var subscription: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let folder =
             argument(after: "--folder").map { URL(fileURLWithPath: $0, isDirectory: true) }
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("September/Write Lab", isDirectory: true)
-        library = DocumentLibrary(folder: folder)
+        seed(folder)
+        write = WriteController(library: DocumentLibrary(folder: folder))
         NSApp.mainMenu = Self.menu()
 
-        paper.editor.onTextChange = { [weak self] in self?.scheduleSave() }
-        paper.editor.onCaretChange = { [weak self] caret in self?.state.caret = caret }
-        paper.window.onNewDocument = { [weak self] in self?.newDocument() }
-        paper.onClose = { [weak self] in self?.flush() }
-        openNewest()
+        write.onCaretChange = { [weak self] caret in self?.state.caret = caret }
+        subscription = write.model.$current.sink { [weak self] document in
+            self?.state.status = document?.title ?? ""
+        }
+        write.start()
         showBar()
         toggleWrite()
         if arguments.contains("--demo") { runDemo() }
@@ -69,7 +70,7 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
             Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated {
                     guard let self else { return }
-                    print("paper", self.paper.window.frame, "alpha", self.paper.window.alphaValue, "content", self.paper.editor.contentHeight, "visible", self.paper.window.isVisible)
+                    print("paper", self.paper.window.frame, "alpha", self.paper.window.alphaValue, "content", self.paper.editor.contentHeight, "visible", self.paper.window.isVisible, "sheet", self.paper.window.contentView?.frame ?? .zero, "scroll", self.paper.editor.enclosingScrollView?.frame ?? .zero, "editor", self.paper.editor.frame, "container", self.paper.editor.textContainer?.size ?? .zero)
                     fflush(stdout)
                     self.frames += 1
                     LabSnapshot.capture(self.paper.window, to: URL(fileURLWithPath: "/tmp/writelab-\(self.frames).png"))
@@ -78,59 +79,20 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        flush()
-        return .terminateNow
+    func applicationWillTerminate(_ notification: Notification) {
+        write.save()
     }
 
-    // MARK: Documents
-
-    private func openNewest() {
-        do {
-            if let newest = try library.documents().first {
-                open(newest.url)
-            } else {
-                try FileManager.default.createDirectory(at: library.folder, withIntermediateDirectories: true)
-                let url = library.folder.appendingPathComponent("Welcome.md")
-                try LabSample.text.write(to: url, atomically: true, encoding: .utf8)
-                open(url)
-            }
-        } catch {
-            state.status = "Cannot open the folder."
-        }
-    }
-
-    private func open(_ url: URL) {
-        current = url
-        let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-        if text.isEmpty { paper.editor.loadNewDocument() } else { paper.editor.load(text) }
-        state.status = url.deletingPathExtension().lastPathComponent
+    /// Puts the sample document into an empty folder.
+    private func seed(_ folder: URL) {
+        let library = DocumentLibrary(folder: folder)
+        guard (try? library.documents().isEmpty) ?? true else { return }
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try? LabSample.text.write(to: folder.appendingPathComponent("Write Lab.md"), atomically: true, encoding: .utf8)
     }
 
     private func newDocument() {
-        flush()
-        guard let document = try? library.create() else { return }
-        current = document.url
-        paper.editor.loadNewDocument()
-        state.status = document.title
-    }
-
-    private func scheduleSave() {
-        save?.cancel()
-        let work = DispatchWorkItem { [weak self] in self?.flush() }
-        save = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: work)
-    }
-
-    private func flush() {
-        save?.cancel()
-        guard let url = current else { return }
-        do {
-            current = try library.save(paper.editor.markdown, to: url)
-            state.status = "Saved · " + (current?.deletingPathExtension().lastPathComponent ?? "")
-        } catch {
-            state.status = "Not saved"
-        }
+        paper.window.onNewDocument?()
     }
 
     // MARK: Bar and paper
@@ -172,7 +134,7 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
         }
         let screen = bar.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
         let barFrame = bar.frame.insetBy(dx: 120, dy: 12)
-        paper.show(from: barFrame, floor: bar.frame.maxY, screen: screen, margin: 24)
+        write.show(from: barFrame, floor: bar.frame.maxY, screen: screen, margin: 24)
     }
 
     private static func menu() -> NSMenu {

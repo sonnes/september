@@ -119,18 +119,12 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
             documentIsEmpty: string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 
-    /// The text that Speak reads: the selection, or the whole document with
-    /// no Markdown marks. Nil when there is nothing to read.
-    public var speechText: String? {
-        let selection = selectedRange()
-        if selection.length > 0 {
-            let text = (string as NSString).substring(with: selection)
-                .replacingOccurrences(of: "\u{2028}", with: "\n")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty { return text }
-        }
-        let text = MarkdownSpeech.plainText(markdown)
-        return text.isEmpty ? nil : text
+    /// The selection and the document, for Speak. The selection has no
+    /// Markdown marks.
+    public var speech: EditorSpeech {
+        let selection = (string as NSString).substring(with: selectedRange())
+            .replacingOccurrences(of: "\u{2028}", with: "\n")
+        return EditorSpeech(selection: selection, markdown: markdown)
     }
 
     /// The height of the text with its insets.

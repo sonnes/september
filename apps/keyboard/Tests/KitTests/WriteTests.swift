@@ -20,26 +20,23 @@ private func names(_ documents: [WriteDocument]) -> [String] {
     documents.map(\.url.lastPathComponent)
 }
 
-/// Collects the calls that the model sends to the editor page.
+/// Stands in for the editor: it keeps the text that the model shows.
 @MainActor
-private final class CallLog {
-    var calls: [EditorCall] = []
-
-    var opens: [EditorOpenRequest] {
-        calls.compactMap { if case .open(let request) = $0 { request } else { nil } }
-    }
-
-    var headers: [String] {
-        calls.compactMap { if case .header(let header, _) = $0 { header } else { nil } }
-    }
+private final class EditorStub {
+    var shown: [String] = []
+    var text = ""
 }
 
 @MainActor
-private func makeModel(_ folder: URL) -> (WriteModel, CallLog) {
-    let log = CallLog()
+private func makeModel(_ folder: URL) -> (WriteModel, EditorStub) {
+    let editor = EditorStub()
     let model = WriteModel(library: DocumentLibrary(folder: folder))
-    model.send = { log.calls.append($0) }
-    return (model, log)
+    model.show = { text in
+        editor.shown.append(text)
+        editor.text = text
+    }
+    model.editorText = { editor.text }
+    return (model, editor)
 }
 
 @MainActor
@@ -154,65 +151,15 @@ func writeTests() {
         expectEqual(label(-3 * 86_400), "3 Nov")
     }
 
-    // MARK: The bridge
+    // MARK: The caret
 
-    test("a call is a script on window.piper with JSON arguments") {
-        expectEqual(EditorCall.replace("a \"b\"\n").script, #"window.piper.replace("a \"b\"\n")"#)
-        expectEqual(EditorCall.command("find").script, #"window.piper.command("find")"#)
-        expectEqual(EditorCall.header("Saved", nil).script, #"window.piper.header("Saved",null)"#)
-        expectEqual(EditorCall.flushScript, "window.piper.flush()")
-
-        let open = EditorCall.open(
-            EditorOpenRequest(path: "write-1", text: "# Hi", header: "Now", wikiTargets: [])
-        ).script
-        expect(open.hasPrefix("window.piper.open({"), open)
-        for part in [#""path":"write-1""#, ##""text":"# Hi""##, #""editable":true"#, #""mode":"rich""#,
-                     #""title":null"#, #""anchor":null"#, #""wikiTargets":[]"#] {
-            expect(open.contains(part), "open has \(part)")
-        }
-
-        let theme = EditorCall.theme(.september).script
-        for part in [#""theme":"Paper""#, #""font":"Sans Serif""#, #""appearance":"System""#] {
-            expect(theme.contains(part), "theme has \(part)")
-        }
-    }
-
-    test("the page messages decode, and the others answer nothing") {
-        expectEqual(EditorMessage(body: ["action": "ready"]), .ready)
-        expectEqual(
-            EditorMessage(body: ["action": "change", "path": "write-1", "text": "Hi"]),
-            .change(path: "write-1", text: "Hi"))
-        expectEqual(
-            EditorMessage(body: ["action": "link", "kind": "wiki", "target": "Plans"]),
-            .wikiLink("Plans"))
-        expectEqual(
-            EditorMessage(body: ["action": "link", "kind": "url", "target": "https://example.com"]),
-            .webLink(URL(string: "https://example.com")!))
-        expectEqual(EditorMessage(body: ["action": "link", "kind": "url", "target": "file:///etc"]), .unused)
-        expectEqual(EditorMessage(body: ["action": "change", "path": "write-1"]), .unused)
-        for action in ["image", "lossy", "copy", "note", "ask", "explain", "capture"] {
-            expectEqual(EditorMessage(body: ["action": action]), .unused)
-        }
-        expectEqual(EditorMessage(body: "not a dictionary"), .unused)
-    }
-
-    test("the caret paragraph of the page becomes the focused field of the input bar") {
-        expect(EditorCall.caretScript.contains("getSelection"), "the script reads the selection")
-        let caret = try JSONDecoder().decode(
-            EditorCaret.self, from: Data(#"{"text":"Who checks it at ni","caret":19,"length":0}"#.utf8))
+    test("the caret paragraph of the editor becomes the focused field of the input bar") {
+        let caret = EditorCaret(text: "Who checks it at ni", caret: 19, length: 0)
         let field = caret.focusedField
         expectEqual(field.appName, "Write")
         expectEqual(field.role, "AXTextArea")
         expect(field.isEditable && !field.isSecure, "an editable text field")
         expectEqual(field.display, .mirrored(text: "Who checks it at ni", caret: 19, selectionLength: 0))
-        expect(!caret.documentIsEmpty, "a page that does not say tells of a document with text")
-    }
-
-    test("the caret read tells when the document has no text") {
-        expect(EditorCall.caretScript.contains("empty"), "the script reads the whole editor")
-        let caret = try JSONDecoder().decode(
-            EditorCaret.self, from: Data(#"{"text":"","caret":0,"length":0,"empty":true}"#.utf8))
-        expect(caret.documentIsEmpty)
     }
 
     // MARK: Speak
@@ -268,106 +215,89 @@ func writeTests() {
         let whole = EditorSpeech(selection: "", markdown: "# Plan\n\nSee **the roses**.")
         expectEqual(whole.text, "Plan.\n\nSee the roses.")
         expect(EditorSpeech(selection: " ", markdown: "---\n").text == nil, "nothing to read")
-        expect(EditorCall.speechScript.contains("window.piper.flush()"), "the script reads the document")
-        let decoded = try JSONDecoder().decode(
-            EditorSpeech.self, from: Data(##"{"selection":"","markdown":"# Hi"}"##.utf8))
-        expectEqual(decoded.text, "Hi.")
     }
 
     // MARK: WriteModel
 
-    test("start opens the newest document in the editor") {
+    test("start shows the newest document in the editor") {
         let folder = makeFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
         _ = try write("# Old", to: folder, name: "Old.md", modified: now - 100)
         _ = try write("# New", to: folder, name: "New.md", modified: now)
-        let (model, log) = makeModel(folder)
+        let (model, editor) = makeModel(folder)
 
         model.start()
         expectEqual(model.current?.title, "New")
         expectEqual(model.documents.count, 2)
-        expectEqual(log.opens.count, 1)
-        expectEqual(log.opens.first?.text, "# New")
-        expectEqual(log.opens.first?.wikiTargets.map(\.target), ["New", "Old"])
+        expectEqual(editor.shown, ["# New"])
     }
 
     test("start in an empty folder makes a new document") {
         let folder = makeFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
-        let (model, log) = makeModel(folder)
+        let (model, editor) = makeModel(folder)
 
         model.start()
         expectEqual(model.current?.url.lastPathComponent, "Untitled.md")
-        expectEqual(log.opens.first?.text, "")
+        expectEqual(editor.shown, [""])
     }
 
-    test("a change saves the open document and renames it from its heading") {
+    test("a save writes the editor text and renames the file from its heading") {
         let folder = makeFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
-        let (model, log) = makeModel(folder)
+        let (model, editor) = makeModel(folder)
         model.start()
-        let path = try unwrap(log.opens.last?.path)
 
-        model.editorChanged(path: path, text: "# Questions for the Clinic\n\nAsk.")
+        editor.text = "# Questions for the Clinic\n\nAsk."
+        model.save()
         expectEqual(model.current?.title, "Questions for the Clinic")
         expectEqual(names(model.documents), ["Questions for the Clinic.md"])
-        expectEqual(log.headers.last, "Saved")
 
-        model.editorChanged(path: path, text: "# Questions for the Clinic\n\nAsk on Friday.")
+        editor.text = "# Questions for the Clinic\n\nAsk on Friday."
+        model.save()
         let saved = folder.appendingPathComponent("Questions for the Clinic.md")
         expectEqual(try String(contentsOf: saved, encoding: .utf8), "# Questions for the Clinic\n\nAsk on Friday.")
     }
 
-    test("a late change of the last document saves to that document") {
+    test("a new document saves the open document first") {
         let folder = makeFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
         let first = try write("# First", to: folder, name: "First.md", modified: now)
-        let (model, log) = makeModel(folder)
+        let (model, editor) = makeModel(folder)
         model.start()
-        let firstPath = try unwrap(log.opens.last?.path)
 
+        editor.text = "# First\n\nlast words"
         model.newDocument()
-        expectEqual(model.current?.url.lastPathComponent, "Untitled.md")
-        expect(log.opens.last?.path != firstPath, "each open has its own path")
-
-        model.editorChanged(path: firstPath, text: "# First\n\nlast words")
         expectEqual(try String(contentsOf: first, encoding: .utf8), "# First\n\nlast words")
         expectEqual(model.current?.url.lastPathComponent, "Untitled.md")
-        expectEqual(log.headers.last, nil, "a save of another document does not change the byline")
+        expectEqual(editor.shown.last, "")
     }
 
-    test("an unknown path saves nothing") {
+    test("a save before start writes nothing") {
         let folder = makeFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
-        let (model, _) = makeModel(folder)
-        model.start()
-        model.editorChanged(path: "elsewhere", text: "# Lost")
-        expectEqual(names(model.documents), ["Untitled.md"])
+        let (model, editor) = makeModel(folder)
+        editor.text = "# Lost"
+        model.save()
+        expectEqual(try DocumentLibrary(folder: folder).documents().count, 0)
     }
 
-    test("a flush saves the text of the open document") {
+    test("a save that fails keeps the error for the paper, and the next save clears it") {
         let folder = makeFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
-        let (model, _) = makeModel(folder)
+        let (model, editor) = makeModel(folder)
         model.start()
+        try FileManager.default.removeItem(at: folder)
+        try Data().write(to: folder)
 
-        model.flushed("# Kept\n\nthe last keys")
-        let kept = folder.appendingPathComponent("Kept.md")
-        expectEqual(try String(contentsOf: kept, encoding: .utf8), "# Kept\n\nthe last keys")
-        expectEqual(model.current?.title, "Kept")
-    }
+        editor.text = "# Gone"
+        model.save()
+        expect(model.failure != nil, "the failure is kept")
 
-    test("reopen shows the open document again, with a new path") {
-        let folder = makeFolder()
-        defer { try? FileManager.default.removeItem(at: folder) }
-        let (model, log) = makeModel(folder)
-        model.start()
-        let first = try unwrap(log.opens.last)
-
-        model.reopen()
-        expectEqual(log.opens.count, 2)
-        expect(log.opens.last?.path != first.path, "a new path")
-        expectEqual(model.current?.url.lastPathComponent, "Untitled.md")
+        try FileManager.default.removeItem(at: folder)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        model.save()
+        expectEqual(model.failure, nil)
     }
 
     test("select opens a document once, and a wiki link opens it by title") {
@@ -375,13 +305,13 @@ func writeTests() {
         defer { try? FileManager.default.removeItem(at: folder) }
         let plans = try write("# Plans", to: folder, name: "Plans.md", modified: now - 100)
         _ = try write("# Notes", to: folder, name: "Notes.md", modified: now)
-        let (model, log) = makeModel(folder)
+        let (model, editor) = makeModel(folder)
         model.start()
 
         model.select(plans)
         model.select(plans)
         expectEqual(model.current?.title, "Plans")
-        expectEqual(log.opens.count, 2)
+        expectEqual(editor.shown, ["# Notes", "# Plans"])
 
         model.openLink(title: "Notes")
         expectEqual(model.current?.title, "Notes")
@@ -407,11 +337,4 @@ func writeTests() {
         expectEqual(
             actions["redo"], .shortcut(Shortcut(modifiers: [.command, .shift], key: .character("z"))))
     }
-}
-
-private struct Missing: Error {}
-
-private func unwrap<T>(_ value: T?) throws -> T {
-    guard let value else { throw Missing() }
-    return value
 }

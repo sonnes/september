@@ -1,6 +1,6 @@
 import Foundation
 
-/// One Markdown file of the Write window.
+/// One Markdown file of the Write paper.
 public struct WriteDocument: Sendable, Hashable, Identifiable {
     public let url: URL
     public let modified: Date
@@ -40,7 +40,7 @@ public struct WriteDocument: Sendable, Hashable, Identifiable {
     }
 }
 
-/// The Markdown files of the Write window, in one folder: `~/Documents/September`.
+/// The Markdown files of the Write paper, in one folder: `~/Documents/September`.
 ///
 /// The library never logs or prints the text of a document.
 public struct DocumentLibrary: Sendable {
@@ -89,8 +89,8 @@ public struct DocumentLibrary: Sendable {
     /// Writes the text, and renames the file when its first heading changed.
     /// Returns the URL of the file after the save.
     public func save(_ text: String, to url: URL) throws -> URL {
-        // The page sends the text of a document when it opens. A write of the
-        // same text would move the document to the top of the list.
+        // A write of the same text would move the document to the top of
+        // the list.
         let data = Data(text.utf8)
         if (try? Data(contentsOf: url)) != data {
             try data.write(to: url, options: .atomic)

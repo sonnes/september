@@ -9,7 +9,7 @@ import SwiftUI
 ///
 /// The keyboard snapshots show the windows where they sit by default, with
 /// sample text in place of a real field: Type mode in Messages (frame 1 of the
-/// mock), Talk mode during speech (frame 4), and the Write window in front
+/// mock), Talk mode during speech (frame 4), and the Write paper in front
 /// (frame 5). Nothing is read from the apps of the user.
 @MainActor
 enum Snapshot {

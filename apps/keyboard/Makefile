@@ -44,7 +44,6 @@ app:
 	cp Resources/Info.plist "$(APP)/Contents/Info.plist"
 	cp Resources/AppIcon.icns "$(APP)/Contents/Resources/AppIcon.icns"
 	cp -R "$(BUILD_DIR)/Keyboard_SeptemberKit.bundle" "$(APP)/Contents/Resources/"
-	cp -R "$(BUILD_DIR)/Keyboard_Keyboard.bundle" "$(APP)/Contents/Resources/"
 	codesign --force --options runtime $(TIMESTAMP) \
 		--entitlements Resources/Keyboard.entitlements \
 		--sign "$(if $(IDENTITY),$(IDENTITY),-)" "$(APP)"

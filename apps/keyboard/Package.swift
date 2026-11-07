@@ -14,8 +14,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "Keyboard",
-            dependencies: ["SeptemberKit"],
-            resources: [.copy("Resources/Editor")]
+            dependencies: ["SeptemberKit"]
         ),
         // The native Write editor on its own: `make lab`.
         .executableTarget(

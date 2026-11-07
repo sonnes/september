@@ -3,9 +3,8 @@ import Foundation
 import QuartzCore
 
 extension Metrics {
-    /// The sizes of the native Write editor. They come from the Piper editor,
-    /// which the web Write window uses. An `em` value is a multiple of the
-    /// text size of its block.
+    /// The sizes of the Write editor. They come from the Piper editor. An
+    /// `em` value is a multiple of the text size of its block.
     public enum WriteEditor {
         /// The line height of body text, in `em`.
         public static let lineHeight: CGFloat = 1.6
@@ -49,6 +48,10 @@ extension Metrics {
         public static let sideMargin: CGFloat = 48
         /// The space above and below the text on the paper.
         public static let paperMargin: CGFloat = 48
+        /// The corners of the paper, the same as the cards of the keyboard.
+        public static let paperCornerRadius: CGFloat = Detached.cornerRadius
+        /// The space between a save error and the corner of the paper.
+        public static let noticePadding: CGFloat = 10
         /// The caret is this many times as tall as the glyphs of its line,
         /// and never taller than the line.
         public static let caretHeightScale: CGFloat = 1.5

@@ -173,9 +173,9 @@ func writeEditorTests() {
 
     test("Speak reads the selection, or the whole document without marks") {
         let view = editor("# Title\n\n- **one**")
-        expectEqual(view.speechText, MarkdownSpeech.plainText("# Title\n\n- **one**"))
+        expectEqual(view.speech, EditorSpeech(selection: "", markdown: "# Title\n\n- **one**"))
         view.setSelectedRange(NSRange(location: 0, length: 5))
-        expectEqual(view.speechText, "Title")
+        expectEqual(view.speech.text, "Title")
     }
 
     test("a new document opens with an empty heading") {
