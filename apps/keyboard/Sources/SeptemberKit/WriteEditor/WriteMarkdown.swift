@@ -49,8 +49,15 @@ public enum WriteMarkdown {
     // MARK: - Between blocks
 
     private static func separator(_ previous: WriteBlock, _ block: WriteBlock) -> String {
-        if let a = previous.source, let b = block.source, b.index == a.index + 1 { return a.gap }
-        return sameList(previous.kind, block.kind) ? "\n" : "\n\n"
+        let together = sameList(previous.kind, block.kind)
+        // The gap of the file stays while the two blocks still relate as
+        // they did in the file: in one list, or not.
+        if let a = previous.source, let b = block.source, b.index == a.index + 1,
+            sameList(a.kind, b.kind) == together
+        {
+            return a.gap
+        }
+        return together ? "\n" : "\n\n"
     }
 
     private static func sameList(_ a: WriteBlockKind, _ b: WriteBlockKind) -> Bool {
@@ -304,7 +311,7 @@ private struct BlockParser {
             let end = endOffset(block)
             let nextStart = index + 1 < found.count ? offset(found[index + 1].start) : all.utf16.count
             let source = WriteSource(
-                text: slice(start, end), index: index, gap: slice(end, nextStart), lead: lead,
+                text: slice(start, end), kind: block.kind, index: index, gap: slice(end, nextStart), lead: lead,
                 isLast: index == found.count - 1, trailing: trailing)
             let runs =
                 block.literal || block.kind.isLiteral

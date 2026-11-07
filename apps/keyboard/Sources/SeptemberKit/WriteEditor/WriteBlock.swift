@@ -80,6 +80,8 @@ public enum WriteBlockKind: Hashable, Sendable {
 public struct WriteSource: Equatable, Sendable {
     /// The Markdown of the block, without the line break at its end.
     public let text: String
+    /// The kind of the block in the file.
+    public let kind: WriteBlockKind
     /// The place of the block in the file, from 0.
     public let index: Int
     /// The text between the block and the next block, or the end of the file.
@@ -91,8 +93,11 @@ public struct WriteSource: Equatable, Sendable {
     /// The text after the last block of the file.
     public let trailing: String
 
-    public init(text: String, index: Int, gap: String, lead: String, isLast: Bool, trailing: String) {
+    public init(
+        text: String, kind: WriteBlockKind, index: Int, gap: String, lead: String, isLast: Bool, trailing: String
+    ) {
         self.text = text
+        self.kind = kind
         self.index = index
         self.gap = gap
         self.lead = lead
