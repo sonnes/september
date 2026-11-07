@@ -30,7 +30,11 @@ enum AXDump {
 
         // The probe prints no text, so it stops before the field is printed.
         if arguments.contains("--context-shape") {
-            ContextProbe.run(app: app, electron: arguments.contains("--electron"))
+            let limit =
+                arguments.firstIndex(of: "--lines").flatMap { index in
+                    index + 1 < arguments.count ? Int(arguments[index + 1]) : nil
+                } ?? ContextShape.lineLimit
+            ContextProbe.run(app: app, electron: arguments.contains("--electron"), limit: limit)
             exit(0)
         }
 

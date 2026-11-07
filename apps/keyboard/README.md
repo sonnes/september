@@ -185,7 +185,8 @@ swift run Keyboard --ax --context-shape --wait 5   # the shape of the text aroun
 the focused field. It prints the shape of each text and none of its words: a
 capitalized word is `W`, another word is `w`, and digits are `9`. `dy` is the
 distance from the top of the field, and a negative `dy` is above it. Add
-`--electron` to ask Chrome and Electron apps for their full tree first.
+`--electron` to ask Chrome and Electron apps for their full tree first. The
+probe prints 400 lines or fewer. To print more, add `--lines 3000`.
 
 ## The accessibility tree viewer
 

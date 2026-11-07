@@ -51,7 +51,8 @@ public struct ProbeElement: Equatable, Sendable {
 public enum ContextShape {
     /// The longest shape before the cut.
     static let shapeLimit = 60
-    static let lineLimit = 400
+    /// The most lines that `lines(for:field:)` prints by default.
+    public static let lineLimit = 400
 
     public static func shape(of text: String) -> String {
         var shape = ""
@@ -82,11 +83,11 @@ public enum ContextShape {
     /// One line for each element that has text or leads to the field, indented
     /// by depth. `dy` is the distance from the top of the field: less than
     /// zero is above it.
-    public static func lines(for root: ProbeElement, field: CGRect?) -> [String] {
+    public static func lines(for root: ProbeElement, field: CGRect?, limit: Int = lineLimit) -> [String] {
         var lines: [String] = []
         append(root, depth: 0, field: field, to: &lines)
-        guard lines.count > lineLimit else { return lines }
-        return Array(lines.prefix(lineLimit)) + ["… \(lines.count - lineLimit) more lines"]
+        guard lines.count > limit else { return lines }
+        return Array(lines.prefix(limit)) + ["… \(lines.count - limit) more lines"]
     }
 
     private static func append(_ element: ProbeElement, depth: Int, field: CGRect?, to lines: inout [String]) {

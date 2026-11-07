@@ -7,8 +7,10 @@ import SeptemberKit
 ///
 ///     swift run Keyboard --ax --context-shape --wait 5
 ///     swift run Keyboard --ax --context-shape --electron --wait 5
+///     swift run Keyboard --ax --context-shape --lines 3000
 ///
 /// `--electron` asks Chrome and Electron apps for their full tree first.
+/// `--lines` changes the most lines that the probe prints.
 @MainActor
 enum ContextProbe {
     static let nodeLimit = 3000
@@ -24,7 +26,7 @@ enum ContextProbe {
         kAXPlaceholderValueAttribute: "placeholder", kAXHelpAttribute: "help",
     ]
 
-    static func run(app: NSRunningApplication?, electron: Bool) {
+    static func run(app: NSRunningApplication?, electron: Bool, limit: Int) {
         guard let app else { return print("no app in front") }
         let root = AXUIElementCreateApplication(app.processIdentifier)
         if electron {
@@ -51,7 +53,7 @@ enum ContextProbe {
         if walker.count >= nodeLimit { print("stopped at \(nodeLimit) elements") }
         print("focused: \(focused.flatMap { $0.string(kAXRoleAttribute) } ?? "nothing")\n")
         guard let tree else { return print("no tree") }
-        for line in ContextShape.lines(for: tree, field: walker.fieldFrame) {
+        for line in ContextShape.lines(for: tree, field: walker.fieldFrame, limit: limit) {
             print(line)
         }
     }
