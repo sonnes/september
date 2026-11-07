@@ -81,10 +81,10 @@ a saved place is on no screen, the window goes back to its default place. The
 keyboard window and the panels never take focus.
 
 Arrange moves the panels back beside the keys, at the place where the keyboard
-is now. The menu bar item has the same command, Arrange Panels. Edit goes to
-the left of the keys. Text, System, and the app panel go to the right. If a
-panel does not fit on its side, it goes to the other side. Each panel stays on
-the screen. `PanelPlacement.arrangedFrames` holds the rule.
+is now. The menu bar item has the same command, Arrange Panels. Text, System,
+and the app panel go to the left of the keys, with Text nearest the keys. Edit
+goes to the right. If a panel does not fit on its side, it goes to the other
+side. Each panel stays on the screen. `PanelPlacement.arrangedFrames` holds the rule.
 
 The app panel has two tabs. The first tab shows the panel of the app in front.
 The second tab, Mine, shows the buttons that the user made on the My Panel page

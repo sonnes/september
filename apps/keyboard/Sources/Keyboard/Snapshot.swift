@@ -136,7 +136,6 @@ enum Snapshot {
 
     /// The keyboard window and the panels where they sit by default.
     private static func composite(_ content: WindowContent, appIcon: NSImage?) -> AnyView {
-        let gap = Metrics.Detached.gap
         let keyboard = content.keyboard()
         let keyboardSize = WindowContent.measure(keyboard)
         let keysSize = WindowContent.measure(content.keysCard())
@@ -146,9 +145,8 @@ enum Snapshot {
             views[panel] = content.panel(panel, appIcon: appIcon)
             sizes[panel] = WindowContent.measure(views[panel]!)
         }
-        // AppKit coordinates: the bottom of the keys is at zero.
-        let keys = CGRect(
-            origin: CGPoint(x: (sizes[.edit]?.width ?? 0) + gap, y: 0), size: keysSize)
+        // AppKit coordinates: the bottom left corner of the keys is at zero.
+        let keys = CGRect(origin: .zero, size: keysSize)
         let frames = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
         let keyboardFrame = CGRect(origin: keys.origin, size: keyboardSize)
         let all = frames.values.reduce(keyboardFrame) { $0.union($1) }

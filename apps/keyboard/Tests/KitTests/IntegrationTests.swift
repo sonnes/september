@@ -242,14 +242,14 @@ private func placementTests() {
     let keys = CGRect(x: 1000, y: 24, width: 1000, height: 400)
     let panel = CGSize(width: 174, height: 340)
 
-    test("Edit sits at the left of the keys and the others at the right") {
+    test("Edit sits at the right of the keys and the others at the left") {
         let frames = PanelPlacement.defaultFrames(
             keys: keys, sizes: [.edit: panel, .text: panel, .system: panel, .app: panel])
         let gap = Metrics.Detached.gap
-        expectEqual(frames[.edit]?.maxX, keys.minX - gap)
-        expectEqual(frames[.text]?.minX, keys.maxX + gap)
-        expectEqual(frames[.system]?.minX, keys.maxX + gap * 2 + panel.width)
-        expectEqual(frames[.app]?.minX, keys.maxX + gap * 3 + panel.width * 2)
+        expectEqual(frames[.edit]?.minX, keys.maxX + gap)
+        expectEqual(frames[.text]?.maxX, keys.minX - gap)
+        expectEqual(frames[.system]?.maxX, keys.minX - gap * 2 - panel.width)
+        expectEqual(frames[.app]?.maxX, keys.minX - gap * 3 - panel.width * 2)
         expectEqual(frames[.edit]?.maxY, keys.maxY)
         expectEqual(frames[.app]?.maxY, keys.maxY)
     }
@@ -268,7 +268,7 @@ private func placementTests() {
         for frame in right.values { expect(screen.contains(frame), "\(frame) is off the screen") }
         let atLeft = CGRect(x: 50, y: 24, width: 1000, height: 400)
         let left = PanelPlacement.arrangedFrames(keys: atLeft, sizes: sizes, screen: screen)
-        expect(screen.contains(left[.edit]!), "Edit stays on the screen")
+        for frame in left.values { expect(screen.contains(frame), "\(frame) is off the screen") }
     }
 
     test("the group of keys and panels is centred on the screen") {
@@ -276,7 +276,7 @@ private func placementTests() {
             keysSize: keys.size, panels: [.edit: panel, .text: panel, .system: panel, .app: panel],
             in: screen, rightInset: 0, margin: 24)
         let group = panel.width * 4 + Metrics.Detached.gap * 4 + keys.width
-        expectEqual(origin.x, (screen.width - group) / 2 + panel.width + Metrics.Detached.gap)
+        expectEqual(origin.x, (screen.width - group) / 2 + (panel.width + Metrics.Detached.gap) * 3)
         expectEqual(origin.y, 24)
     }
 
