@@ -38,6 +38,7 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         let layoutManager = NSTextLayoutManager()
         let container = NSTextContainer(size: CGSize(width: frame.width, height: .greatestFiniteMagnitude))
         container.widthTracksTextView = true
+        container.lineFragmentPadding = 0
         layoutManager.textContainer = container
         contentStorage = NSTextContentStorage()
         contentStorage.addTextLayoutManager(layoutManager)

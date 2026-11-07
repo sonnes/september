@@ -17,6 +17,11 @@ let package = Package(
             dependencies: ["SeptemberKit"],
             resources: [.copy("Resources/Editor")]
         ),
+        // The native Write editor on its own: `make lab`.
+        .executableTarget(
+            name: "WriteLab",
+            dependencies: ["SeptemberKit"]
+        ),
         // Tests run as a plain executable: `swift run KitTests`.
         .executableTarget(
             name: "KitTests",

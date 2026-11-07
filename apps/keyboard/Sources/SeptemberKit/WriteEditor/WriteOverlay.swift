@@ -107,7 +107,7 @@ final class WriteOverlay {
         guard case .task = fragment.kind else { return nil }
         let origin = fragment.layoutFragmentFrame.origin
         return WriteLayoutFragment.taskBox(kind: fragment.kind, firstLine: line.typographicBounds)
-            .offsetBy(dx: origin.x + textView.textContainerOrigin.x, dy: origin.y + textView.textContainerOrigin.y)
+            .offsetBy(dx: textView.textContainerOrigin.x, dy: origin.y + textView.textContainerOrigin.y)
     }
 
     /// The start of the to-do item whose checkbox is under `point`, or nil.

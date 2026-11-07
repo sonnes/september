@@ -22,11 +22,13 @@ Sources/
     UserPanel/      My Panel, private text, the Accessibility Keyboard import
     Settings/       the pages of the Settings window
     Write/          the documents, the editor bridge, and the spoken text of the Write window
+    WriteEditor/    the native Markdown editor and the Write paper
     Views/          keys, shortcut buttons, panels, the keyboard screen, the views of each part
     Resources/      Panels/{edit,text,system,phrases}.json, Panels/Apps/generic.json, Panels/Apps/<bundle id>.json,
                     Context/<bundle id>.json
   Keyboard/         the app: floating panels, CGEvent sink, focus watcher, chord tap, tree reader,
                     menu bar, the Settings and Write windows
+  WriteLab/         the native Write editor on its own, before it goes into the keyboard
 Tests/KitTests/     tests (see "Tests" below)
 ```
 
@@ -43,6 +45,7 @@ make release    # sign with Developer ID, notarize, staple, and check the app an
 make publish    # upload the DMG of make release to a GitHub Release
 make open       # build, sign and launch
 make snapshots  # render the keyboard and component library to .build/snapshots
+make lab        # run Write Lab, the native Write editor on its own
 ```
 
 `make run` and `make dev` show the keyboard on your screen. When you are done,
@@ -263,6 +266,33 @@ swift run Keyboard --snapshot out.png --viewer   # the tree viewer, reading the 
 ```
 
 The keyboard snapshots use sample text. They read nothing from your apps.
+
+## Write Lab
+
+Write Lab runs the native Write editor on its own. The keyboard still uses the
+web editor. Write Lab shows a stand-in for the keyboard bar at the bottom of
+the screen. The bar shows the paragraph at the caret, as the keyboard reads it
+for the predictions. Write opens the paper out of the bar.
+
+```sh
+make lab                                                # the bar and the paper
+swift run WriteLab --demo                               # also types a sample document
+swift run WriteLab --folder /tmp/notes                  # another folder of documents
+swift run WriteLab --snapshot out.png [--dark]          # render the sample document and quit
+swift run WriteLab --snapshot out.png --file notes.md   # render a file and quit
+swift run WriteLab --debug                              # print the paper frame each second, and draw it to /tmp/writelab-<n>.png
+```
+
+Write Lab keeps its documents in `~/Library/Application Support/September/Write Lab`.
+It never opens the documents of the keyboard in `~/Documents/September`.
+
+The paper is as wide as the largest A4 page above the bar, and as tall as its
+text. It grows up by one line at a time as you type. At the top of the page it
+stops, and the text moves up, so the line that you type stays at the bottom.
+With Reduce Motion on, the paper and the text move with no animation.
+
+The demo calls the editor directly. It posts no key events, so it cannot type
+into another app.
 
 ## The input bar
 

@@ -50,6 +50,12 @@ func writeEditorTests() {
         expectEqual(view.markdown, "- [ ] milk\n- [ ] eggs")
     }
 
+    test("a list mark typed in a list item sets the kind of the item") {
+        let view = editor()
+        type(view, "- a\n- b\n[ ] c\n[x] d\n1. e")
+        expectEqual(view.markdown, "- a\n- b\n- [ ] c\n- [x] d\n\n1. e")
+    }
+
     test("a number makes a numbered list that counts on") {
         let view = editor()
         type(view, "1. a\nb")
@@ -226,5 +232,24 @@ func writePaperTests() {
         let origin = WritePaper.scrollOrigin(
             caretMaxY: 300, current: 900, visibleHeight: 600, contentHeight: 2000, margin: 48, caretHeight: 30)
         expect(close(origin, 222), "origin \(origin)")
+    }
+}
+
+func writeCurveTests() {
+    test("a timing curve starts at 0, ends at 1, and never goes back") {
+        let curve = CubicCurve.easeOut
+        expectEqual(curve.value(at: 0), 0)
+        expectEqual(curve.value(at: 1), 1)
+        var last = 0.0
+        for step in 1...20 {
+            let value = curve.value(at: Double(step) / 20)
+            expect(value >= last, "step \(step): \(value) < \(last)")
+            last = value
+        }
+    }
+
+    test("an ease-out curve is past the middle at half the time") {
+        expect(CubicCurve.easeOut.value(at: 0.5) > 0.6)
+        expect(abs(CubicCurve(0, 0, 1, 1).value(at: 0.3) - 0.3) < 0.001)
     }
 }

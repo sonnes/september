@@ -17,6 +17,7 @@ make release    # Developer ID, notarize, staple, Gatekeeper check (reads ../../
 make publish    # GitHub Release of the DMG — ask the user first
 make icon       # Resources/AppIcon.svg → AppIcon.icns (needs rsvg-convert)
 make open       # build, sign, launch
+make lab        # Write Lab: the native Write editor on its own
 make snapshots  # keyboard (Type, Talk, Write, Mine, Clipboard) + component library PNGs in .build/snapshots
 ```
 
@@ -41,11 +42,13 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/UserPanel` | My Panel, private text, the Accessibility Keyboard import |
 | `Sources/SeptemberKit/Settings` | the Settings pages and `KeyboardSettings` |
 | `Sources/SeptemberKit/Write` | the document library, the editor bridge, `MarkdownSpeech` (the text that Speak reads), and `WritePlacement` (the frame where the window opens) of the Write window |
+| `Sources/SeptemberKit/WriteEditor` | the native Markdown editor (`WriteTextView`), the Markdown blocks (`WriteMarkdown`), and the Write paper (`WritePaperController`, `WritePaper`). The keyboard does not use it yet |
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, the keyboard screen, and the views of each part |
 | `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
 | `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ChordTap`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings and Write windows, snapshots |
+| `Sources/WriteLab` | Write Lab: the native editor on its own, with a stand-in for the keyboard bar (`make lab`) |
 | `Tests/KitTests` | tests + the harness |
 
 Rule of thumb: **anything testable lives in `SeptemberKit`**. `Keyboard` holds

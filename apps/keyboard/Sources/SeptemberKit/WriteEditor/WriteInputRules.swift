@@ -8,8 +8,18 @@ enum WriteInputRules {
     /// remove from the start of the paragraph.
     static func block(prefix: String, kind: WriteBlockKind, isWholeParagraph: Bool) -> (WriteBlockKind, Int)? {
         let length = (prefix as NSString).length
-        if case .bullet(let depth) = kind, let match = prefix.wholeMatch(of: #/\[([ xX])?\] /#) {
-            return (.task(checked: (match.1 ?? " ") != " ", depth: depth), length)
+        // In a list item, a list mark sets the kind of the item at its depth.
+        if let depth = kind.listDepth {
+            if let match = prefix.wholeMatch(of: #/(?:[-*+] )?\[([ xX])?\] /#) {
+                return (.task(checked: (match.1 ?? " ") != " ", depth: depth), length)
+            }
+            if prefix.wholeMatch(of: #/[-*+] /#) != nil {
+                return (.bullet(depth: depth), length)
+            }
+            if let match = prefix.wholeMatch(of: #/(\d{1,9})[.)] /#), let number = Int(match.1) {
+                return (.ordered(number: number, depth: depth), length)
+            }
+            return nil
         }
         switch kind {
         case .paragraph, .heading: break

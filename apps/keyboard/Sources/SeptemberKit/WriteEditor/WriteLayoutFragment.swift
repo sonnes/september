@@ -18,9 +18,24 @@ final class WriteLayoutFragment: NSTextLayoutFragment {
         return paragraph.attributedString.string.trimmingCharacters(in: .newlines).isEmpty
     }
 
+    /// The width of the text container. A fragment frame starts at the
+    /// indent of its paragraph and is only as wide as its text.
+    private var containerWidth: CGFloat {
+        textLayoutManager?.textContainer?.size.width ?? layoutFragmentFrame.maxX
+    }
+
     override var renderingSurfaceBounds: CGRect {
         let frame = layoutFragmentFrame
-        return super.renderingSurfaceBounds.union(CGRect(x: -frame.minX, y: 0, width: frame.maxX, height: frame.height))
+        return super.renderingSurfaceBounds.union(
+            CGRect(x: -frame.minX, y: 0, width: containerWidth, height: frame.height))
+    }
+
+    /// The baseline of the first line, in the coordinates of the fragment.
+    private func baseline(_ kind: WriteBlockKind) -> CGFloat? {
+        guard let line = textLineFragments.first else { return nil }
+        let font = WriteStyle.font(kind, marks: [])
+        let offset = WriteStyle.baselineOffset(font, lineHeight: WriteStyle.lineHeight(kind))
+        return line.typographicBounds.minY + line.glyphOrigin.y - offset
     }
 
     /// The bounds of the text lines, in the coordinates of the fragment.
@@ -43,13 +58,16 @@ final class WriteLayoutFragment: NSTextLayoutFragment {
         let kind = kind
         let indent = WriteStyle.indent(kind)
         let size = WriteStyle.size(kind)
-        let x = point.x
+        // Decorations are placed from the left edge of the text container.
+        let x = point.x - layoutFragmentFrame.minX
         let y = point.y
         switch kind {
         case .bullet:
             let diameter = size * 0.3
+            let font = WriteStyle.font(kind, marks: [])
+            let centre = baseline(kind).map { $0 - font.xHeight / 2 } ?? first.midY
             let rect = CGRect(
-                x: x + indent - M.listIndent / 2 - diameter / 2, y: y + first.midY - diameter / 2,
+                x: x + indent - M.listIndent / 2 - diameter / 2, y: y + centre - diameter / 2,
                 width: diameter, height: diameter)
             NSColor(Tokens.writeMuted).setFill()
             NSBezierPath(ovalIn: rect).fill()
@@ -59,8 +77,8 @@ final class WriteLayoutFragment: NSTextLayoutFragment {
             let label = NSAttributedString(
                 string: "\(number).", attributes: [.font: font, .foregroundColor: NSColor(Tokens.writeMuted)])
             let width = label.size().width
-            let height = font.ascender - font.descender
-            label.draw(at: CGPoint(x: x + indent - width - M.listIndent * 0.25, y: y + first.midY - height / 2))
+            let top = baseline(kind).map { $0 - font.ascender } ?? first.midY - (font.ascender - font.descender) / 2
+            label.draw(at: CGPoint(x: x + indent - width - M.listIndent * 0.25, y: y + top))
         case .task(let checked, _):
             Self.drawTaskBox(Self.taskBox(kind: kind, firstLine: first).offsetBy(dx: x, dy: y), checked: checked)
         case .quote:
@@ -71,12 +89,12 @@ final class WriteLayoutFragment: NSTextLayoutFragment {
             NSBezierPath(roundedRect: rect, xRadius: 1, yRadius: 1).fill()
         case .code:
             let rect = CGRect(
-                x: x, y: y + first.minY - M.codePaddingVertical, width: layoutFragmentFrame.width,
+                x: x, y: y + first.minY - M.codePaddingVertical, width: containerWidth,
                 height: last.maxY - first.minY + 2 * M.codePaddingVertical)
             NSColor(Tokens.writeCode).setFill()
             NSBezierPath(roundedRect: rect, xRadius: M.codeCornerRadius, yRadius: M.codeCornerRadius).fill()
         case .rule:
-            let rect = CGRect(x: x, y: y + first.midY, width: layoutFragmentFrame.width, height: M.ruleThickness)
+            let rect = CGRect(x: x, y: y + first.midY, width: containerWidth, height: M.ruleThickness)
             NSColor(Tokens.writeStroke).setFill()
             rect.fill()
         case .heading(let level) where isEmpty:
@@ -84,7 +102,7 @@ final class WriteLayoutFragment: NSTextLayoutFragment {
             let label = NSAttributedString(
                 string: "Heading \(level)", attributes: [.font: font, .foregroundColor: NSColor(Tokens.writeMuted)])
             let height = font.ascender - font.descender
-            label.draw(at: CGPoint(x: x + first.minX, y: y + first.midY - height / 2))
+            label.draw(at: CGPoint(x: point.x + first.minX, y: y + first.midY - height / 2))
         default:
             break
         }

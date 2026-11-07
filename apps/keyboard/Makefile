@@ -14,7 +14,7 @@ TIMESTAMP ?= --timestamp=none
 ENVRC ?= ../../.envrc
 SNAPSHOT_DIR ?= .build/snapshots
 
-.PHONY: run dev test app dmg release publish icon open stop snapshots clean
+.PHONY: run dev test app dmg release publish icon open stop snapshots clean lab
 
 # Runs unbundled as a child of this shell, so it inherits the terminal's own
 # Accessibility permission — keys type into other apps with nothing to grant.
@@ -27,6 +27,11 @@ dev:
 	swift build
 	.build/debug/Keyboard &
 	@echo "Keyboard running detached — stop it with: make stop"
+
+# The native Write editor on its own, with a stand-in for the keyboard bar.
+lab:
+	swift build --product WriteLab
+	exec .build/debug/WriteLab
 
 test:
 	swift test
@@ -139,6 +144,7 @@ open: app
 
 stop:
 	@pkill -f '\.build/(debug|release)/(September Keyboard\.app/Contents/MacOS/)?Keyboard' 2>/dev/null && echo "stopped" || echo "not running"
+	@pkill -f '\.build/debug/WriteLab' 2>/dev/null && echo "stopped Write Lab" || true
 
 # Renders the keyboard and the component library to PNGs for comparing against
 # the design mocks — no window, no permissions.
