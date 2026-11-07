@@ -16,6 +16,7 @@ await speechTests()
 await integrationTests()
 writeTests()
 pressTests()
+contextProbeTests()
 #if DEBUG
 #endif
 summarize()

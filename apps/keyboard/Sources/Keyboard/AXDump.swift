@@ -9,6 +9,7 @@ import SeptemberKit
 ///     swift run Keyboard --ax                 # focused field, right now
 ///     swift run Keyboard --ax --wait 5        # after 5s, so you can click away
 ///     swift run Keyboard --ax --tree          # + the app's tree, as the viewer shows it
+///     swift run Keyboard --ax --context-shape # the shape of the text around the field, no words
 @MainActor
 enum AXDump {
     static func run(arguments: [String]) {
@@ -26,6 +27,12 @@ enum AXDump {
 
         let app = NSWorkspace.shared.frontmostApplication
         print("frontmost: \(app?.localizedName ?? "?") (\(app?.bundleIdentifier ?? "?"))")
+
+        // The probe prints no text, so it stops before the field is printed.
+        if arguments.contains("--context-shape") {
+            ContextProbe.run(app: app, electron: arguments.contains("--electron"))
+            exit(0)
+        }
 
         let watcher = FocusWatcher()
         if let field = watcher.readFocusedField() {

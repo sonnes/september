@@ -178,7 +178,14 @@ To see what Keyboard can read out of the app in front:
 swift run Keyboard --ax            # the focused field, right now
 swift run Keyboard --ax --wait 5   # after 5s, so you can click into another app
 swift run Keyboard --ax --tree     # plus that app's accessibility tree
+swift run Keyboard --ax --context-shape --wait 5   # the shape of the text around the field
 ```
+
+`--context-shape` prints each element of the window that has text or leads to
+the focused field. It prints the shape of each text and none of its words: a
+capitalized word is `W`, another word is `w`, and digits are `9`. `dy` is the
+distance from the top of the field, and a negative `dy` is above it. Add
+`--electron` to ask Chrome and Electron apps for their full tree first.
 
 ## The accessibility tree viewer
 
