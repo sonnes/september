@@ -103,15 +103,12 @@ final class WriteCardView: NSView {
     override func updateLayer() {
         guard let layer else { return }
         let ring = Sizes.selectionRing
-        if isNewDocument && !isSelected {
-            layer.backgroundColor = nil
-            layer.shadowColor = nil
-            dash.isHidden = false
-        } else {
-            layer.backgroundColor = NSColor(Tokens.writePaper).cgColor
-            layer.shadowColor = NSColor(Tokens.writeCardShadow).cgColor
-            dash.isHidden = true
-        }
+        // A card with no fill has no shadow, or the shadow falls on its text.
+        let isOutline = isNewDocument && !isSelected
+        layer.backgroundColor = isOutline ? nil : NSColor(Tokens.writePaper).cgColor
+        layer.shadowColor = NSColor(Tokens.writeCardShadow).cgColor
+        layer.shadowOpacity = isOutline ? 0 : 1
+        dash.isHidden = !isOutline
         dash.strokeColor = NSColor(Tokens.writeMuted).cgColor
         dash.frame = bounds
         dash.path = CGPath(
