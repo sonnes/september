@@ -117,7 +117,7 @@ struct KeysWithWords: View {
 
     var body: some View {
         MainKeyboardView {
-            WordCompletionRow(engine: session.predictions, onType: session.type)
+            WordCompletionRow(engine: session.predictions, onPick: session.pickWord)
                 .shown(inputBar.isVisible)
                 .accessibilityHidden(!controller.accentChoices.isEmpty)
         }

@@ -4,9 +4,13 @@ import Foundation
 /// Turns the input bar into sentence predictions and word completions.
 ///
 /// The controller calls `update(input:mode:said:)` on each change of the
-/// input bar. Word completions change at once. Sentence predictions wait for
+/// input bar. Word completions do not wait. Sentence predictions wait for
 /// `delay` after the last change. A new change cancels the old request. The
 /// old predictions stay, marked stale, until the new ones arrive.
+///
+/// The engine keeps the completions that the user picks. When the user
+/// submits the text, it tells the completer which picked words the text
+/// still holds.
 @MainActor
 public final class PredictionEngine: ObservableObject {
     /// The rows of the stack, best first.
@@ -53,10 +57,14 @@ public final class PredictionEngine: ObservableObject {
     private var request: Task<Void, Never>?
     /// Counts the requests, so a late answer to an old one is dropped.
     private var generation = 0
+    private var wordRequest: Task<Void, Never>?
+    private var wordGeneration = 0
+    /// The completions that the user picked since the last submit.
+    private var picked: [WordCompletion] = []
 
     public init(
         predictor: any SentencePredicting = AppleIntelligencePredictor(),
-        completer: any WordCompleting = SpellCheckerCompleter(),
+        completer: any WordCompleting = CandidateCompleter(),
         delay: Duration = .milliseconds(300),
         defaults: UserDefaults = .standard
     ) {
@@ -91,9 +99,42 @@ public final class PredictionEngine: ObservableObject {
         refresh()
     }
 
-    /// Waits for the pending request to finish.
+    /// Waits for the pending requests to finish.
     public func settle() async {
+        await settleWords()
         await request?.value
+    }
+
+    /// Waits for the pending word completions.
+    public func settleWords() async {
+        await wordRequest?.value
+    }
+
+    // MARK: - Picked words
+
+    /// The user pressed a completion in the word row.
+    public func wordPicked(_ completion: WordCompletion) {
+        picked.append(completion)
+    }
+
+    /// The user submitted the text, with Return or with Speak in Talk mode.
+    /// Each picked word that the text still holds is accepted. Each other
+    /// picked word is edited. Private text and a password field record
+    /// nothing.
+    public func submit() {
+        defer { picked = [] }
+        guard !isPrivate, input.holdsText else { return }
+        let words = Set(Self.words(of: input.text))
+        for completion in picked {
+            completer.record(
+                words.contains(completion.word.lowercased()) ? .accepted : .edited, to: completion)
+        }
+    }
+
+    /// The focus moved to another field or app, so the picked words cannot be
+    /// found again. They are not recorded.
+    public func forgetPickedWords() {
+        picked = []
     }
 
     // MARK: - State
@@ -103,7 +144,7 @@ public final class PredictionEngine: ObservableObject {
             isPrivate
             ? .privateText
             : Self.notice(for: input, availability: availability, sentences: sentencesEnabled)
-        words = wordsEnabled ? context.map(completer.completions(for:)) ?? [] : []
+        refreshWords()
 
         guard let context, sentencesEnabled, availability == .ready else {
             cancel()
@@ -116,6 +157,33 @@ public final class PredictionEngine: ObservableObject {
         restripe()
         guard context != requested else { return }
         ask(context)
+    }
+
+    private func refreshWords() {
+        wordRequest?.cancel()
+        wordRequest = nil
+        wordGeneration += 1
+        guard wordsEnabled, let context else {
+            words = []
+            return
+        }
+        // Until the new words arrive, keep the old words that still complete
+        // the word at the caret, so a press never types the wrong letters.
+        let partial = context.partialWord
+        words = words.compactMap { WordCompletion(word: $0.word, partial: partial) }
+        let generation = wordGeneration
+        let completer = completer
+        wordRequest = Task { [weak self] in
+            let found = await completer.completions(for: context)
+            guard let self, self.wordGeneration == generation else { return }
+            self.words = found
+        }
+    }
+
+    private static func words(of text: String) -> [String] {
+        text.lowercased()
+            .split { !($0.isLetter || $0 == "'" || $0 == "\u{2019}") }
+            .map(String.init)
     }
 
     private static func notice(
@@ -146,9 +214,6 @@ public final class PredictionEngine: ObservableObject {
         let generation = generation
         let predictor = predictor
         let delay = delay
-        // The guardrail of the model can refuse a partial word that looks
-        // like a bad word, such as "cu". The full word passes.
-        let retry = completer.completions(for: context).first.map(context.completing(with:))
         request = Task { [weak self] in
             do {
                 try await Task.sleep(for: delay)
@@ -157,7 +222,12 @@ public final class PredictionEngine: ObservableObject {
             }
             var sentences = try? await predictor.predictions(for: context)
                 .compactMap(context.sentence(from:))
-            if sentences == nil, let retry, !Task.isCancelled {
+            // The guardrail of the model can refuse a partial word that looks
+            // like a bad word, such as "cu". The full word passes.
+            if sentences == nil, !Task.isCancelled,
+                let best = self?.words.first, best.partial == context.partialWord
+            {
+                let retry = context.completing(with: best)
                 sentences = try? await predictor.predictions(for: retry)
                     .compactMap(retry.sentence(from:))
             }

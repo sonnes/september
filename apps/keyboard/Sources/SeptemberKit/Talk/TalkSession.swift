@@ -13,6 +13,8 @@ public final class TalkSession: ObservableObject {
     public var speech: (any SpeechOutput)?
     /// The Return key speaks the bar. Settings turns it off.
     public var returnSpeaks = true
+    /// Called before the bar is spoken, because speaking submits the text.
+    public var onSpeak: (() -> Void)?
 
     /// The text that is in speech now and that leaves the bar when the speech
     /// ends.
@@ -87,6 +89,7 @@ public final class TalkSession: ObservableObject {
     /// Speaks the bar and adds it to the Said list. An empty bar does nothing.
     public func speak() {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        onSpeak?()
         speaking = text
         said.add(text)
         speech?.speak(text)

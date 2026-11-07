@@ -9,6 +9,7 @@ func predictionsTests() async {
     promptTests()
     noticeTests()
     await engineTests()
+    await candidateTests()
     await liveModelTests()
 }
 
@@ -191,26 +192,14 @@ private func wordTests() {
         expect(WordCompletion(word: "cu", partial: "cu") == nil)
     }
 
-    test("the spell checker completes the word at the caret, best match first") {
-        let completer = SpellCheckerCompleter()
-        let context = PredictionContext(
-            text: "I would like a cu", caret: 17, mode: .type, said: [])
-        let words = completer.completions(for: context)
-        expect(!words.isEmpty, "no completions")
-        expect(words.count <= SpellCheckerCompleter.limit)
-        expect(words.allSatisfy { $0.word.lowercased().hasPrefix("cu") })
-    }
-
-    test("the spell checker fills every slot of the word row for a common start") {
-        let completer = SpellCheckerCompleter()
-        let context = PredictionContext(text: "th", caret: 2, mode: .type, said: [])
-        expectEqual(completer.completions(for: context).count, 8)
-    }
-
-    test("the spell checker gives nothing with no word at the caret") {
-        let completer = SpellCheckerCompleter()
-        let context = PredictionContext(text: "I would ", caret: 8, mode: .type, said: [])
-        expect(completer.completions(for: context).isEmpty)
+    test("the candidates become completions of the partial word, without repeats") {
+        let words = CandidateCompleter.completions(
+            from: ["cu", "cup", "Cup", "cut", "🙂", "cat", "cute", "custom", "current", "customer",
+                "cuddle", "curious", "curry", "culture"],
+            partial: "Cu")
+        expectEqual(
+            words.map(\.word),
+            ["Cup", "Cut", "Cute", "Custom", "Current", "Customer", "Cuddle", "Curious"])
     }
 }
 
@@ -302,9 +291,18 @@ private actor FakePredictor: SentencePredicting {
     }
 }
 
-private struct FakeCompleter: WordCompleting {
-    func completions(for context: PredictionContext) -> [WordCompletion] {
-        WordCompletion(word: "cup", partial: context.partialWord).map { [$0] } ?? []
+@MainActor
+private final class FakeCompleter: WordCompleting {
+    var wait: Duration = .zero
+    private(set) var responses: [String] = []
+
+    func completions(for context: PredictionContext) async -> [WordCompletion] {
+        if wait > .zero { try? await Task.sleep(for: wait) }
+        return WordCompletion(word: "cup", partial: context.partialWord).map { [$0] } ?? []
+    }
+
+    func record(_ response: WordResponse, to completion: WordCompletion) {
+        responses.append("\(response) \(completion.word)")
     }
 }
 
@@ -313,10 +311,11 @@ private struct PredictionFailed: Error {}
 @MainActor
 private func makeEngine(
     _ predictor: FakePredictor,
+    completer: FakeCompleter = FakeCompleter(),
     defaults: UserDefaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
 ) -> PredictionEngine {
     PredictionEngine(
-        predictor: predictor, completer: FakeCompleter(), delay: .milliseconds(20), defaults: defaults)
+        predictor: predictor, completer: completer, delay: .milliseconds(20), defaults: defaults)
 }
 
 private let tea: @Sendable (PredictionContext) -> [String] = { _ in
@@ -347,10 +346,72 @@ private func engineTests() async {
         expectEqual(engine.stripes.first?.text(toTypeThrough: 2), "p of tea, ")
     }
 
-    await asyncTest("word completions show with no delay") {
+    await asyncTest("word completions do not wait for the sentence delay") {
         let engine = makeEngine(FakePredictor(answer: tea))
         engine.update(input: cu, mode: .type, said: [])
+        await engine.settleWords()
         expectEqual(engine.words.map(\.word), ["cup"])
+        expect(engine.stripes.isEmpty)
+    }
+
+    await asyncTest("while new words load, the old words that still complete the word stay") {
+        let completer = FakeCompleter()
+        let engine = makeEngine(FakePredictor(answer: tea), completer: completer)
+        engine.update(input: cu, mode: .type, said: [])
+        await engine.settleWords()
+        completer.wait = .milliseconds(50)
+        engine.update(input: .local(text: "I would like a c"), mode: .type, said: [])
+        expectEqual(engine.words.map(\.textToType), ["up "])
+        engine.update(input: .local(text: "I would like a cx"), mode: .type, said: [])
+        expect(engine.words.isEmpty, "a word that no longer fits must not type wrong letters")
+    }
+
+    await asyncTest("Return records a picked word that the text still holds as accepted") {
+        let completer = FakeCompleter()
+        let engine = makeEngine(FakePredictor(answer: tea), completer: completer)
+        engine.update(input: cu, mode: .type, said: [])
+        await engine.settleWords()
+        engine.wordPicked(engine.words[0])
+        engine.update(input: .local(text: "I would like a cup "), mode: .type, said: [])
+        engine.submit()
+        expectEqual(completer.responses, ["accepted cup"])
+        engine.submit()
+        expectEqual(completer.responses, ["accepted cup"], "a submit records a pick one time")
+    }
+
+    await asyncTest("a picked word that the user changed is recorded as edited") {
+        let completer = FakeCompleter()
+        let engine = makeEngine(FakePredictor(answer: tea), completer: completer)
+        engine.update(input: cu, mode: .type, said: [])
+        await engine.settleWords()
+        engine.wordPicked(engine.words[0])
+        engine.update(input: .local(text: "I would like a cupboard "), mode: .type, said: [])
+        engine.submit()
+        expectEqual(completer.responses, ["edited cup"])
+    }
+
+    await asyncTest("the picked words are forgotten, not recorded, when the field changes") {
+        let completer = FakeCompleter()
+        let engine = makeEngine(FakePredictor(answer: tea), completer: completer)
+        engine.update(input: cu, mode: .type, said: [])
+        await engine.settleWords()
+        engine.wordPicked(engine.words[0])
+        engine.forgetPickedWords()
+        engine.submit()
+        expectEqual(completer.responses, [])
+    }
+
+    await asyncTest("private text and a password field record no picked word") {
+        let completer = FakeCompleter()
+        let engine = makeEngine(FakePredictor(answer: tea), completer: completer)
+        for (input, isPrivate) in [(InputMirror.local(text: "I would like a cup "), true), (.secure, false)] {
+            engine.update(input: cu, mode: .type, said: [])
+            await engine.settleWords()
+            engine.wordPicked(engine.words[0])
+            engine.update(input: input, mode: .type, said: [], isPrivate: isPrivate)
+            engine.submit()
+        }
+        expectEqual(completer.responses, [])
     }
 
     await asyncTest("quick changes make one request, for the last text") {
@@ -539,5 +600,31 @@ private func liveModelTests() async {
             expectEqual(rows.count, 3, "\(text): \(rows)")
             expect(engine.stripes.first?.matches == true, "\(text): no row continues the field: \(rows)")
         }
+    }
+}
+
+@MainActor
+private func candidateTests() async {
+    let completer = CandidateCompleter()
+    func words(_ text: String) async -> [String] {
+        await completer.completions(
+            for: PredictionContext(text: text, caret: text.utf16.count, mode: .type, said: [])
+        ).map(\.word)
+    }
+
+    await asyncTest("the system candidates complete the word at the caret") {
+        let found = await words("I would like a cu")
+        expect(!found.isEmpty, "no completions")
+        expect(found.allSatisfy { $0.lowercased().hasPrefix("cu") })
+    }
+
+    await asyncTest("the system candidates fill every slot of the word row for a common start") {
+        let found = await words("th")
+        expectEqual(found.count, Metrics.Predictions.wordSlots)
+    }
+
+    await asyncTest("the system candidates give nothing with no word at the caret") {
+        let found = await words("I would ")
+        expect(found.isEmpty)
     }
 }

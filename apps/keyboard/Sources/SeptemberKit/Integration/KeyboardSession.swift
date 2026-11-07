@@ -89,6 +89,8 @@ public final class KeyboardSession: ObservableObject {
 
         controller.talk.speech = speaker
         controller.onChord = { [weak self] chord in self?.chordPressed(chord) }
+        controller.onSubmit = { [weak self] in self?.predictions.submit() }
+        controller.talk.onSpeak = { [weak self] in self?.predictions.submit() }
         rankUserPanel()
         observe()
         update()
@@ -103,6 +105,13 @@ public final class KeyboardSession: ObservableObject {
         case .type: controller.perform(.text(text))
         case .talk: controller.talk.type(text)
         }
+    }
+
+    /// A press on a word completion. The engine keeps the word, so that macOS
+    /// learns from it when the user submits the text.
+    public func pickWord(_ completion: WordCompletion) {
+        predictions.wordPicked(completion)
+        type(completion.textToType)
     }
 
     /// A press on the app panel. It counts toward the order of the panel.
@@ -150,6 +159,7 @@ public final class KeyboardSession: ObservableObject {
         controller.appChanged(name: name, bundleID: bundleID)
         isWriteInFront = bundleID == WritePanel.id
         appPanels.appActivated(bundleID: bundleID, windowTitle: windowTitle)
+        predictions.forgetPickedWords()
         rankUserPanel()
     }
 
@@ -162,6 +172,7 @@ public final class KeyboardSession: ObservableObject {
     /// focus leaves its field.
     public func focusMoved() {
         controller.focusMoved()
+        predictions.forgetPickedWords()
     }
 
     /// The editor of the Write window reported the paragraph at the caret.

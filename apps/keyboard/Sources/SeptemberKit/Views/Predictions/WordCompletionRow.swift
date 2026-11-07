@@ -5,12 +5,12 @@ import SwiftUI
 /// place when there is no word to complete.
 public struct WordCompletionRow: View {
     @ObservedObject private var engine: PredictionEngine
-    private let onType: (String) -> Void
+    private let onPick: (WordCompletion) -> Void
 
-    /// - Parameter onType: Types the rest of the pressed word and a space.
-    public init(engine: PredictionEngine, onType: @escaping (String) -> Void) {
+    /// - Parameter onPick: Types the rest of the pressed word and a space.
+    public init(engine: PredictionEngine, onPick: @escaping (WordCompletion) -> Void) {
         self.engine = engine
-        self.onType = onType
+        self.onPick = onPick
     }
 
     public var body: some View {
@@ -18,7 +18,7 @@ public struct WordCompletionRow: View {
             HStack(spacing: Metrics.Predictions.wordSpacing) {
                 ForEach(0..<Metrics.Predictions.wordSlots, id: \.self) { index in
                     if engine.words.indices.contains(index) {
-                        WordButton(completion: engine.words[index], isBest: index == 0, onType: onType)
+                        WordButton(completion: engine.words[index], isBest: index == 0, onPick: onPick)
                     } else {
                         EmptyWordSlot()
                     }
@@ -38,7 +38,7 @@ public struct WordCompletionRow: View {
 private struct WordButton: View {
     let completion: WordCompletion
     let isBest: Bool
-    let onType: (String) -> Void
+    let onPick: (WordCompletion) -> Void
 
     @State private var pressed = false
 
@@ -57,7 +57,7 @@ private struct WordButton: View {
                     .strokeBorder(Color(Tokens.strokeStandard), lineWidth: Metrics.Predictions.strokeWidth)
             )
             .pressable(label: completion.word, trigger: .down(.once), onPressing: { pressed = $0 }) {
-                onType(completion.textToType)
+                onPick(completion)
             }
     }
 }

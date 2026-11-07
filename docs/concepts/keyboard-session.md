@@ -118,11 +118,25 @@ gives it to `writeCaretRead(_:)`. The session sends the paragraph to
 
 | Call | From | What happens |
 |---|---|---|
-| `type(_:)` | A prediction tile or a word completion | Types into the app in Type mode, or into the Talk bar in Talk mode. |
+| `type(_:)` | A prediction tile | Types into the app in Type mode, or into the Talk bar in Talk mode. |
+| `pickWord(_:)` | A word completion | Types the rest of the word as `type(_:)` does. The engine keeps the word until the user submits the text. |
 | `speakPressed()` | Speak | See [Speak](#speak). |
 | `pressAppPanel(_:)` | A button of the app panel | Counts the press for the order of the panel, then does the action. |
 | `pressMine(_:)` | A button of Mine | Counts the press for the order of Mine, then does the action. |
 | `chordPressed(_:)` | `ChordTap` and the chords of the keys | Gives the chord to the app panel to learn. The app panel learns nothing while the field has private text. |
+
+## Picked Words
+
+The word row shows the candidates of macOS (`CandidateCompleter`). The engine
+keeps each word that the user picks. The user submits the text with Return in
+Type mode or with Speak in Talk mode. Then the engine tells macOS about each
+picked word:
+
+- If the text still holds the word, the response is accepted.
+- If the user changed the word, the response is edited.
+
+A new field and a new app clear the picked words, and nothing is recorded.
+Private text and a password field record nothing.
 
 ## Speak
 

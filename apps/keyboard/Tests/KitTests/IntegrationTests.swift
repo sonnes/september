@@ -325,6 +325,7 @@ private struct SessionParts {
     let voice: FakeEngine
     let userPanel: UserPanelStore?
     let clock: FakeClock
+    let completer: CupCompleter
 }
 
 @MainActor
@@ -339,8 +340,9 @@ private func makeSession(
     voice.holds = voiceHolds
     let speaker = Speaker(
         settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: FakeEngine())
+    let completer = CupCompleter()
     let engine = PredictionEngine(
-        predictor: SilentPredictor(), completer: CupCompleter(), delay: .milliseconds(5),
+        predictor: SilentPredictor(), completer: completer, delay: .milliseconds(5),
         defaults: defaults)
     let appPanels = AppPanelModel(
         store: controller.panels,
@@ -363,7 +365,7 @@ private func makeSession(
         inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25))
     return SessionParts(
         session: session, controller: controller, sink: sink, voice: voice,
-        userPanel: try? store.get(), clock: clock)
+        userPanel: try? store.get(), clock: clock, completer: completer)
 }
 
 private struct SilentPredictor: SentencePredicting {
@@ -371,9 +373,16 @@ private struct SilentPredictor: SentencePredicting {
     func predictions(for context: PredictionContext) async throws -> [String] { [] }
 }
 
-private struct CupCompleter: WordCompleting {
+@MainActor
+private final class CupCompleter: WordCompleting {
+    private(set) var responses: [String] = []
+
     func completions(for context: PredictionContext) -> [WordCompletion] {
         WordCompletion(word: "cup", partial: context.partialWord).map { [$0] } ?? []
+    }
+
+    func record(_ response: WordResponse, to completion: WordCompletion) {
+        responses.append("\(response) \(completion.word)")
     }
 }
 
@@ -421,6 +430,39 @@ private func sessionTests() async {
         parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
         await parts.session.settle()
         expectEqual(parts.session.predictions.words.map(\.word), ["cup"])
+    }
+
+    await asyncTest("Return on the keys records the picked word") {
+        let parts = try makeSession()
+        parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        expectEqual(parts.sink.typed, ["p "])
+        parts.controller.focusChanged(to: field("I would like a cup ", caret: 19))
+        await parts.session.settle()
+        parts.controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "return" }!)
+        expectEqual(parts.completer.responses, ["accepted cup"])
+    }
+
+    await asyncTest("Speak in Talk mode records the picked word") {
+        let parts = try makeSession()
+        parts.controller.mode = .talk
+        parts.controller.talk.type("a cu")
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        await parts.session.settle()
+        parts.session.speakPressed()
+        expectEqual(parts.completer.responses, ["accepted cup"])
+    }
+
+    await asyncTest("a new field forgets the picked words") {
+        let parts = try makeSession()
+        parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        parts.session.focusMoved()
+        parts.controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "return" }!)
+        expectEqual(parts.completer.responses, [])
     }
 
     await asyncTest("Talk mode feeds the predictions with the bar") {

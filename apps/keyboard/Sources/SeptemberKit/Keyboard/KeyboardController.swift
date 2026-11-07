@@ -40,6 +40,9 @@ public final class KeyboardController: ObservableObject {
     /// Called with each chord that the keys send, such as ⌘S, so the app
     /// panel can count and learn it.
     public var onChord: ((Shortcut) -> Void)?
+    /// Called when the user submits the text in Type mode: a press on Return
+    /// with no modifier.
+    public var onSubmit: (() -> Void)?
 
     public let panels: PanelStore
 
@@ -117,6 +120,7 @@ public final class KeyboardController: ObservableObject {
         case .character(let character):
             type(character, secondary: key.secondaryLabel, modifiers: &modifiers)
         case .virtual(let virtual):
+            if virtual == .return, modifiers.active.subtracting(.capsLock).isEmpty { onSubmit?() }
             post(virtual, modifiers: &modifiers)
         }
     }
