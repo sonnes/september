@@ -177,6 +177,27 @@ private func wordTests() {
         expectEqual(partial("hello", caret: 2), "")
     }
 
+    test("the next word can come at the start, after a space, and after a mark") {
+        func between(_ text: String, caret: Int? = nil) -> Bool {
+            PredictionContext(text: text, caret: caret ?? text.utf16.count, mode: .type, said: [])
+                .isBetweenWords
+        }
+        expect(between(""))
+        expect(between("Hello "))
+        expect(between("Hello,"))
+        expect(between("Are you ok?\n"))
+        expect(!between("Hel"), "a partial word gets completions")
+        expect(!between("Hello", caret: 2), "the caret is inside a word")
+        expect(!between("Hello world", caret: 6), "a word follows the caret")
+    }
+
+    test("a next word types the word and a space, and a space first after a mark") {
+        expectEqual(WordCompletion(nextWord: "there", spaceBefore: false)?.textToType, "there ")
+        expectEqual(WordCompletion(nextWord: "I", spaceBefore: true)?.textToType, " I ")
+        expectEqual(WordCompletion(nextWord: "I", spaceBefore: true)?.word, "I")
+        expect(WordCompletion(nextWord: "", spaceBefore: false) == nil)
+    }
+
     test("a completion types the rest of the word and a space") {
         let completion = WordCompletion(word: "cup", partial: "cu")
         expectEqual(completion?.textToType, "p ")
@@ -194,12 +215,19 @@ private func wordTests() {
 
     test("the candidates become completions of the partial word, without repeats") {
         let words = CandidateCompleter.completions(
-            from: ["cu", "cup", "Cup", "cut", "🙂", "cat", "cute", "custom", "current", "customer",
-                "cuddle", "curious", "curry", "culture"],
-            partial: "Cu")
+            from: ["cu ", "cup ", "Cup ", "cut ", "🙂 ", "cat ", "cute ", "custom ", "current ",
+                "customer ", "cuddle ", "curious ", "curry ", "culture "],
+            for: PredictionContext(text: "Cu", caret: 2, mode: .type, said: []))
         expectEqual(
             words.map(\.word),
             ["Cup", "Cut", "Cute", "Custom", "Current", "Customer", "Cuddle", "Curious"])
+    }
+
+    test("between words, the candidates become next words with the space they ask for") {
+        let words = CandidateCompleter.completions(
+            from: [" I ", " I’m ", " 🙋 ", " I ", " we "],
+            for: PredictionContext(text: "Hello,", caret: 6, mode: .type, said: []))
+        expectEqual(words.map(\.textToType), [" I ", " I’m ", " we "])
     }
 }
 
@@ -364,6 +392,16 @@ private func engineTests() async {
         expectEqual(engine.words.map(\.textToType), ["up "])
         engine.update(input: .local(text: "I would like a cx"), mode: .type, said: [])
         expect(engine.words.isEmpty, "a word that no longer fits must not type wrong letters")
+    }
+
+    await asyncTest("a space clears the completions of the last word at once") {
+        let completer = FakeCompleter()
+        let engine = makeEngine(FakePredictor(answer: tea), completer: completer)
+        engine.update(input: cu, mode: .type, said: [])
+        await engine.settleWords()
+        completer.wait = .milliseconds(50)
+        engine.update(input: .local(text: "I would like a cu "), mode: .type, said: [])
+        expect(engine.words.isEmpty)
     }
 
     await asyncTest("Return records a picked word that the text still holds as accepted") {
@@ -623,8 +661,14 @@ private func candidateTests() async {
         expectEqual(found.count, Metrics.Predictions.wordSlots)
     }
 
-    await asyncTest("the system candidates give nothing with no word at the caret") {
-        let found = await words("I would ")
+    await asyncTest("the system candidates give the next word after a space") {
+        let found = await words("I would like a cup of ")
+        expect(!found.isEmpty, "no next words")
+    }
+
+    await asyncTest("the system candidates give nothing with the caret inside a word") {
+        let found = await completer.completions(
+            for: PredictionContext(text: "Hello", caret: 2, mode: .type, said: []))
         expect(found.isEmpty)
     }
 }

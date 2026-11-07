@@ -68,10 +68,13 @@ Write, and Settings are at the right of the input bar. In Type mode, Arrange
 is between Write and Settings.
 
 The word row shows the candidates of macOS, the words of the QuickType bar.
-The candidates use the words before the caret. When you press Return, or Speak
-in Talk mode, the keyboard tells macOS which picked words the text still
-holds. macOS learns from these responses. Private text and password fields
-send nothing.
+The candidates use the words before the caret. In a word, they complete the
+word. At the start of the text, after a space, or after a mark, they give the
+next word. After a mark with no space, a press types a space before the word.
+
+When you press Return, or Speak in Talk mode, the keyboard tells macOS which
+picked words the text still holds. macOS learns from these responses. Private
+text and password fields send nothing.
 
 The Edit, Text, and System keypads and the app panel float in windows of their
 own. By default they sit beside the keys. To move the keyboard window or a

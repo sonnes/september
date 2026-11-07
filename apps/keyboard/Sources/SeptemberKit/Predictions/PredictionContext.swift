@@ -57,6 +57,15 @@ public struct PredictionContext: Equatable, Sendable {
         return String(String(word.reversed()).drop(while: Self.isApostrophe))
     }
 
+    /// True when the next word can come at the caret: at the start of the
+    /// text, after a space, or after a mark, with no word right after the
+    /// caret.
+    public var isBetweenWords: Bool {
+        if let next = following.first, Self.isWordCharacter(next) { return false }
+        guard let last = typed.last else { return true }
+        return !Self.isWordCharacter(last)
+    }
+
     /// The same context with the partial word at the caret replaced by a
     /// completion of it and a space.
     public func completing(with completion: WordCompletion) -> PredictionContext {

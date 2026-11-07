@@ -169,8 +169,9 @@ public final class PredictionEngine: ObservableObject {
         }
         // Until the new words arrive, keep the old words that still complete
         // the word at the caret, so a press never types the wrong letters.
+        // Between words, no old word fits.
         let partial = context.partialWord
-        words = words.compactMap { WordCompletion(word: $0.word, partial: partial) }
+        words = partial.isEmpty ? [] : words.compactMap { WordCompletion(word: $0.word, partial: partial) }
         let generation = wordGeneration
         let completer = completer
         wordRequest = Task { [weak self] in
@@ -225,7 +226,7 @@ public final class PredictionEngine: ObservableObject {
             // The guardrail of the model can refuse a partial word that looks
             // like a bad word, such as "cu". The full word passes.
             if sentences == nil, !Task.isCancelled,
-                let best = self?.words.first, best.partial == context.partialWord
+                let best = self?.words.first, !best.partial.isEmpty, best.partial == context.partialWord
             {
                 let retry = context.completing(with: best)
                 sentences = try? await predictor.predictions(for: retry)

@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Completions for the word at the caret, at the top of the keys. The best
-/// match comes first, in the accent colour. Empty slots keep the row in
-/// place when there is no word to complete.
+/// Completions for the word at the caret, or the next words between words,
+/// at the top of the keys. The best match comes first, in the accent colour.
+/// Empty slots keep the row in place when there are no words.
 public struct WordCompletionRow: View {
     @ObservedObject private var engine: PredictionEngine
     private let onPick: (WordCompletion) -> Void
