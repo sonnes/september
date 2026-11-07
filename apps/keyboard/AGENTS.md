@@ -15,6 +15,7 @@ make app        # build + sign September Keyboard.app (needs its own permission 
 make dmg        # package the app with an Applications shortcut
 make release    # Developer ID, notarize, staple, Gatekeeper check (reads ../../.envrc)
 make publish    # GitHub Release of the DMG — ask the user first
+make icon       # Resources/AppIcon.svg → AppIcon.icns (needs rsvg-convert)
 make open       # build, sign, launch
 make snapshots  # keyboard (Type, Talk, Write, Mine) + component library PNGs in .build/snapshots
 ```

@@ -54,8 +54,13 @@ and needs its own grant (below).
 
 The app is September Keyboard, with the bundle identifier
 `app.september.keyboard`. The version is `CFBundleShortVersionString` in
-`Resources/Info.plist`. The icon `Resources/AppIcon.icns` comes from the
-September mark in `apps/desktop/public/logo.svg`.
+`Resources/Info.plist`.
+
+The icon is a keyboard in the frame of the September mark
+(`apps/desktop/public/logo.svg`), so that it differs from the icon of the
+desktop app. Its source is `Resources/AppIcon.svg`. After you change the SVG,
+run `make icon` to make `Resources/AppIcon.icns`. The command needs
+`rsvg-convert` (`brew install librsvg`).
 
 ## Build the DMG
 

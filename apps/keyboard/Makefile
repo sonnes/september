@@ -21,7 +21,7 @@ TIMESTAMP ?= --timestamp=none
 ENVRC ?= ../../.envrc
 SNAPSHOT_DIR ?= .build/snapshots
 
-.PHONY: run dev test app dmg release publish open stop snapshots clean
+.PHONY: run dev test app dmg release publish icon open stop snapshots clean
 
 # Runs unbundled as a child of this shell, so it inherits the terminal's own
 # Accessibility permission — keys type into other apps with nothing to grant.
@@ -123,6 +123,20 @@ publish:
 		--repo sonnes/september \
 		--title "September Keyboard $(VERSION)" \
 		--notes-file "$$notes"
+
+# Makes Resources/AppIcon.icns from Resources/AppIcon.svg. Needs rsvg-convert
+# (brew install librsvg), because sips cannot read SVG.
+icon:
+	@set -eu; \
+	iconset="$$(mktemp -d)/AppIcon.iconset"; \
+	mkdir -p "$$iconset"; \
+	for size in 16 32 128 256 512; do \
+		rsvg-convert -w $$size -h $$size Resources/AppIcon.svg -o "$$iconset/icon_$${size}x$${size}.png"; \
+		rsvg-convert -w $$((size * 2)) -h $$((size * 2)) Resources/AppIcon.svg -o "$$iconset/icon_$${size}x$${size}@2x.png"; \
+	done; \
+	iconutil -c icns "$$iconset" -o Resources/AppIcon.icns; \
+	rm -rf "$$(dirname "$$iconset")"; \
+	echo "built Resources/AppIcon.icns"
 
 open: app
 	open "$(APP)"
