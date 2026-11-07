@@ -41,8 +41,8 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Talk` | Talk mode, the Said list, the Phrases panel |
 | `Sources/SeptemberKit/UserPanel` | My Panel, private text, the Accessibility Keyboard import |
 | `Sources/SeptemberKit/Settings` | the Settings pages and `KeyboardSettings` |
-| `Sources/SeptemberKit/Write` | the document library, `WriteModel` (the open document and its saves), `WriteController` (joins the documents and the paper), `EditorCaret` and `EditorSpeech`, and `MarkdownSpeech` (the text that Speak reads) |
-| `Sources/SeptemberKit/WriteEditor` | the native Markdown editor (`WriteTextView`), the Markdown blocks (`WriteMarkdown`), and the Write paper with round corners (`WritePaperController`, `WritePaper`) |
+| `Sources/SeptemberKit/Write` | the document library, `WriteModel` (the open document and its saves), `WriteController` (joins the documents, the paper, and the desk), `WriteDesk` (the cards, the Find query, and the selected card), `EditorCaret` and `EditorSpeech`, and `MarkdownSpeech` (the text that Speak reads) |
+| `Sources/SeptemberKit/WriteEditor` | the native Markdown editor (`WriteTextView`), the Markdown blocks (`WriteMarkdown`), the Write paper with round corners (`WritePaperController`, `WritePaper`), and the desk of document cards (`WriteDeskController`, `WriteDeskLayout`, `WriteCardView`) |
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, the keyboard screen, and the views of each part |
 | `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
@@ -88,7 +88,8 @@ only what needs a running app — the panel, the event sink, the menu bar.
 - **The keyboard window and the shortcut panels never take focus.** Do not add
   text fields to them, do not set `canBecomeKey`, and do not activate the app
   from them. Everything the user types goes to the app in front. Only the
-  Write paper and the Settings window take focus. To open one of them, call
+  Write paper, the desk of Write, and the Settings window take focus. To
+  open one of them, call
   `AppActivation.bringToFront(_:)`, and call `AppActivation.windowClosed(_:)`
   when it closes.
 - **A floating window has no title bar.** `FloatingPanel` is borderless. A

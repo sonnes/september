@@ -107,12 +107,47 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         page = WritePaper.page(
             bar: bar ?? CGRect(x: screen.midX, y: floor, width: 0, height: 0), floor: floor, screen: screen,
             margin: margin)
+        present(from: bar)
+    }
+
+    /// Opens the paper again on the same page. It grows out of `start`, such
+    /// as the card of the document on the desk. If `start` is nil, the paper
+    /// opens with no animation.
+    public func reopen(from start: CGRect?) {
+        present(from: start)
+    }
+
+    /// Shrinks the paper into `card` and fades it out, as the desk opens. If
+    /// `card` is nil, the paper goes with no animation. The paper does not
+    /// close, so the open document stays in the editor.
+    public func shrink(into card: CGRect?) {
+        guard window.isVisible else { return }
+        scrollMotion.stop()
+        targetFrame = nil
+        guard let card, !reduceMotion else {
+            frameMotion.stop()
+            window.orderOut(nil)
+            return
+        }
+        let from = window.frame
+        frameMotion.run(duration: Motion.deskCards, curve: .easeOut) { [weak self] progress in
+            guard let self else { return }
+            window.setFrame(from.interpolated(to: card, progress), display: true)
+            window.alphaValue = 1 - CGFloat(progress)
+            if progress >= 1 {
+                window.orderOut(nil)
+                window.alphaValue = 1
+            }
+        }
+    }
+
+    private func present(from start: CGRect?) {
         setWidth(page.width)
         let frame = paperFrame
-        let animates = bar != nil && !reduceMotion && !window.isVisible
-        if let bar, animates {
+        let animates = start != nil && !reduceMotion && (!window.isVisible || window.alphaValue < 1)
+        if let start, animates {
             window.alphaValue = 0
-            window.setFrame(bar, display: false)
+            window.setFrame(start, display: false)
         } else {
             window.alphaValue = 1
             window.setFrame(frame, display: false)
@@ -122,6 +157,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         window.makeFirstResponder(editor)
         scrollToCaret(animated: false)
         guard animates else {
+            frameMotion.stop()
             targetFrame = frame
             return
         }
@@ -262,9 +298,11 @@ private final class PaperSheetView: NSView {
 
 /// The window of the paper. It has no frame, so it says that it can become
 /// the key window. The app has no menu bar of its own, so the window answers
-/// Command-N and Command-W itself.
+/// Command-N, Command-O, and Command-W itself.
 public final class WritePaperWindow: NSWindow {
     public var onNewDocument: (() -> Void)?
+    /// Command-O: the desk of documents.
+    public var onShowDocuments: (() -> Void)?
 
     override public var canBecomeKey: Bool { true }
     override public var canBecomeMain: Bool { true }
@@ -275,6 +313,9 @@ public final class WritePaperWindow: NSWindow {
         switch event.charactersIgnoringModifiers {
         case "n":
             onNewDocument?()
+            return true
+        case "o":
+            onShowDocuments?()
             return true
         case "w":
             close()

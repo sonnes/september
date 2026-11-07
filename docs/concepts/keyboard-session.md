@@ -28,8 +28,9 @@ It runs on the main actor. The checks are in
 The app sets two hooks:
 
 - `menuName` gives the name of a chord from the menu bar of the app in front.
-- `writeSpeech` reads the selection and the document of the Write paper. The
-  keyboard cannot read its own window through the accessibility API.
+- `writeSpeech` reads the selection and the document of the Write paper, or
+  the Find query of the desk. The keyboard cannot read its own window through
+  the accessibility API.
 
 The views read these values of the session:
 
@@ -123,6 +124,12 @@ window, the app calls `appChanged` with `WritePanel.id`. Then the editor
 reports the paragraph at the caret after each edit and each caret move. The
 app gives it to `writeCaretRead(_:)`. The session sends the paragraph to
 `controller.focusChanged(to:)` and records if the document has text.
+
+The desk of Write is the other window of Write. When the paper turns into the
+desk, the app calls `appChanged` with `WritePanel.documentsID`, so the app
+panel shows the Documents keys. The desk reports its Find query in place of
+the paragraph. When the desk turns back into the paper, the app calls
+`appChanged` with `WritePanel.id` again.
 
 ### The clipboard changes
 

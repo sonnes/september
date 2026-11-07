@@ -96,6 +96,30 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         ownUndo.removeAllActions()
     }
 
+    /// Selects the text of the first heading, so that the next key press
+    /// renames the document. A document with no heading gets the caret at
+    /// its start.
+    public func selectTitle() {
+        let text = string as NSString
+        var location = 0
+        while location < text.length {
+            let paragraph = text.paragraphRange(for: NSRange(location: location, length: 0))
+            let box = textStorage?.attribute(.writeBlock, at: paragraph.location, effectiveRange: nil) as? WriteBlockBox
+            if case .heading = box?.kind {
+                var range = paragraph
+                while range.length > 0, CharacterSet.newlines.contains(
+                    UnicodeScalar(text.character(at: NSMaxRange(range) - 1)) ?? " ")
+                {
+                    range.length -= 1
+                }
+                setSelectedRange(range)
+                return
+            }
+            location = NSMaxRange(paragraph)
+        }
+        setSelectedRange(NSRange(location: 0, length: 0))
+    }
+
     /// The Markdown of the document. Blocks that the user did not edit keep
     /// their source.
     public var markdown: String {

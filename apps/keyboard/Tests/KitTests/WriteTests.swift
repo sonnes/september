@@ -326,7 +326,7 @@ func writeTests() {
         expectEqual(
             panel.buttons.map(\.id),
             ["heading", "list", "todo", "quote", "blocks", "link-document",
-             "bold", "italic", "link", "new-document", "undo", "redo"])
+             "bold", "italic", "documents", "new-document", "undo", "redo"])
 
         let actions = Dictionary(uniqueKeysWithValues: panel.buttons.map { ($0.id, $0.action) })
         expectEqual(actions["heading"], .text("# "))
@@ -336,5 +336,26 @@ func writeTests() {
         expectEqual(actions["bold"], .shortcut(Shortcut(modifiers: .command, key: .character("b"))))
         expectEqual(
             actions["redo"], .shortcut(Shortcut(modifiers: [.command, .shift], key: .character("z"))))
+        expectEqual(actions["documents"], .shortcut(Shortcut(modifiers: .command, key: .character("o"))))
+    }
+
+    test("the Documents panel has the keys of the desk") {
+        let panel = try PanelStore.bundled().appPanel(forBundleID: WritePanel.documentsID)
+        let actions = Dictionary(uniqueKeysWithValues: panel.buttons.map { ($0.id, $0.action) })
+        func shortcut(_ modifiers: Modifiers, _ key: Shortcut.Key) -> PanelAction {
+            .shortcut(Shortcut(modifiers: modifiers, key: key))
+        }
+        expectEqual(actions["open"], shortcut([], .virtual(.return)))
+        expectEqual(actions["new-document"], shortcut(.command, .character("n")))
+        expectEqual(actions["rename"], shortcut(.command, .character("r")))
+        expectEqual(actions["duplicate"], shortcut(.command, .character("d")))
+        expectEqual(actions["trash"], shortcut(.command, .virtual(.delete)))
+        expectEqual(actions["undo"], shortcut(.command, .character("z")))
+        expectEqual(actions["find"], shortcut(.command, .character("f")))
+        expectEqual(actions["finder"], shortcut([.command, .option], .character("r")))
+        expectEqual(actions["previous"], shortcut([], .virtual(.left)))
+        expectEqual(actions["next"], shortcut([], .virtual(.right)))
+        expectEqual(actions["back"], shortcut([], .virtual(.escape)))
+        expectEqual(actions["close"], shortcut(.command, .character("w")))
     }
 }

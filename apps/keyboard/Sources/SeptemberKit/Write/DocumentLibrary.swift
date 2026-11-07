@@ -40,19 +40,44 @@ public struct WriteDocument: Sendable, Hashable, Identifiable {
     }
 }
 
+/// Where Move to Trash puts a document.
+public struct DocumentTrash: Sendable {
+    /// Moves the file, and returns the URL of the file in the Trash.
+    let move: @Sendable (URL) throws -> URL
+
+    /// The Trash of macOS, so that Finder can put a document back too.
+    public static let system = DocumentTrash { url in
+        var trashed: NSURL?
+        try FileManager.default.trashItem(at: url, resultingItemURL: &trashed)
+        return (trashed as URL?) ?? url
+    }
+
+    /// A plain folder, for the tests.
+    public static func folder(_ folder: URL) -> DocumentTrash {
+        DocumentTrash { url in
+            let target = folder.appendingPathComponent(UUID().uuidString)
+                .appendingPathExtension(url.pathExtension)
+            try FileManager.default.moveItem(at: url, to: target)
+            return target
+        }
+    }
+}
+
 /// The Markdown files of the Write paper, in one folder: `~/Documents/September`.
 ///
 /// The library never logs or prints the text of a document.
 public struct DocumentLibrary: Sendable {
     public let folder: URL
+    public let trash: DocumentTrash
 
     public static var defaultFolder: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("September", isDirectory: true)
     }
 
-    public init(folder: URL = DocumentLibrary.defaultFolder) {
+    public init(folder: URL = DocumentLibrary.defaultFolder, trash: DocumentTrash = .system) {
         self.folder = folder
+        self.trash = trash
     }
 
     /// The Markdown files of the folder, newest first. A missing folder has none.
@@ -80,6 +105,49 @@ public struct DocumentLibrary: Sendable {
         let url = freeURL(for: "Untitled")
         try Data().write(to: url, options: .withoutOverwriting)
         return WriteDocument(url: url, modified: Date())
+    }
+
+    /// Copies a document as "Title 2", or the next free number. The copy
+    /// is the newest document.
+    public func duplicate(_ document: WriteDocument) throws -> WriteDocument {
+        let target = freeURL(for: document.title)
+        try FileManager.default.copyItem(at: document.url, to: target)
+        let now = Date()
+        try FileManager.default.setAttributes([.modificationDate: now], ofItemAtPath: target.path)
+        return WriteDocument(url: target, modified: now)
+    }
+
+    /// Moves a document to the Trash, and returns the URL of the file there.
+    public func moveToTrash(_ document: WriteDocument) throws -> URL {
+        try trash.move(document.url)
+    }
+
+    /// Puts a file from the Trash back in the folder as `title`, or as
+    /// "Title 2" when that name is taken.
+    public func restore(_ trashed: URL, as title: String) throws -> WriteDocument {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let target = freeURL(for: title)
+        try FileManager.default.moveItem(at: trashed, to: target)
+        let date = try target.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+        return WriteDocument(url: target, modified: date ?? Date())
+    }
+
+    /// The first `lines` lines of a document for its card, with no Markdown
+    /// marks. The first heading is the title of the card, so it is not part
+    /// of the lines.
+    public static func preview(of text: String, lines: Int) -> [String] {
+        var body = text.components(separatedBy: "\n")
+        if let first = body.firstIndex(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }),
+            title(of: body[first]) != nil
+        {
+            body.remove(at: first)
+        }
+        return MarkdownSpeech.plainText(body.joined(separator: "\n"))
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .prefix(lines)
+            .map { $0 }
     }
 
     public func read(_ document: WriteDocument) throws -> String {

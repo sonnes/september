@@ -12,6 +12,10 @@ public final class WriteModel: ObservableObject {
     @Published public private(set) var current: WriteDocument?
     /// The last error of the folder, for the paper to show. It never holds document text.
     @Published public private(set) var failure: String?
+    /// The document of the last Move to Trash, until Undo or the next move.
+    @Published public private(set) var trashed: WriteDocument?
+    /// Where the last Move to Trash put the file.
+    private var trashedFile: URL?
 
     /// Shows the Markdown of a document in the editor. An empty text is a new document.
     public var show: (String) -> Void = { _ in }
@@ -51,6 +55,60 @@ public final class WriteModel: ObservableObject {
         }
         save()
         open(document)
+    }
+
+    /// Copies a document as "Title 2". The open document saves first, so
+    /// the copy has its last words.
+    @discardableResult
+    public func duplicate(_ url: URL) -> WriteDocument? {
+        save()
+        guard let document = documents.first(where: { $0.url == url }) else { return nil }
+        do {
+            let copy = try library.duplicate(document)
+            reload()
+            return documents.first { $0.url == copy.url } ?? copy
+        } catch {
+            report(error)
+            return nil
+        }
+    }
+
+    /// Moves a document to the Trash. The open document saves first. When
+    /// the open document goes, no document is open until the next `select`
+    /// or `newDocument`.
+    public func moveToTrash(_ url: URL) {
+        save()
+        guard let document = documents.first(where: { $0.url == url }) else { return }
+        do {
+            trashedFile = try library.moveToTrash(document)
+            trashed = document
+            if current?.url == url { current = nil }
+            reload()
+        } catch {
+            report(error)
+        }
+    }
+
+    /// Puts the document of the last Move to Trash back in the folder.
+    @discardableResult
+    public func undoTrash() -> WriteDocument? {
+        guard let file = trashedFile, let document = trashed else { return nil }
+        trashedFile = nil
+        trashed = nil
+        do {
+            let back = try library.restore(file, as: document.title)
+            reload()
+            return documents.first { $0.url == back.url } ?? back
+        } catch {
+            report(error)
+            return nil
+        }
+    }
+
+    /// Forgets the last Move to Trash, so that Undo no longer offers it.
+    public func forgetTrash() {
+        trashedFile = nil
+        trashed = nil
     }
 
     /// Opens the document that a `[[` link names.

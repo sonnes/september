@@ -8,6 +8,7 @@ import SwiftUI
 //
 //   WriteLab                    a stand-in for the keyboard bar, with Write
 //   WriteLab --demo             also types a sample document into the paper
+//   WriteLab --desk             also opens the desk of documents
 //   WriteLab --folder <path>    the folder of documents
 //   WriteLab --snapshot <png> [--dark] [--file <md>]
 //                               renders the paper to a PNG and quits
@@ -66,6 +67,9 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
         showBar()
         toggleWrite()
         if arguments.contains("--demo") { runDemo() }
+        if arguments.contains("--desk") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in self?.write.showDesk() }
+        }
         if arguments.contains("--debug") {
             Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated {
@@ -74,6 +78,10 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
                     fflush(stdout)
                     self.frames += 1
                     LabSnapshot.capture(self.paper.window, to: URL(fileURLWithPath: "/tmp/writelab-\(self.frames).png"))
+                    if self.write.isDeskOpen {
+                        LabSnapshot.capture(
+                            self.write.desk.window, to: URL(fileURLWithPath: "/tmp/writelab-desk-\(self.frames).png"))
+                    }
                 }
             }
         }
@@ -111,6 +119,7 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
                 state: state,
                 write: { [weak self] in self?.toggleWrite() },
                 newDocument: { [weak self] in self?.newDocument() },
+                documents: { [weak self] in self?.write.showDesk() },
                 demo: { [weak self] in
                     guard let self else { return }
                     if !paper.isOpen { toggleWrite() }
@@ -166,6 +175,7 @@ struct LabBar: View {
     @ObservedObject var state: LabState
     let write: () -> Void
     let newDocument: () -> Void
+    let documents: () -> Void
     let demo: () -> Void
 
     var body: some View {
@@ -186,6 +196,7 @@ struct LabBar: View {
             .background(Capsule().fill(Color(Tokens.key)))
             Button("Demo", action: demo)
             Button("New", action: newDocument)
+            Button("Documents", action: documents)
             Button("Write", action: write)
                 .keyboardShortcut(.defaultAction)
         }

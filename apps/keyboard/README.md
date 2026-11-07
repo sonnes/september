@@ -219,6 +219,20 @@ no Save command. A document that the user did not edit saves byte for byte.
 Command-N starts a new document. A `[[` link opens the document with that
 title. If a save fails, the error shows at the top of the paper.
 
+Command-O, or the Documents key of the Write panel, turns the paper into the
+desk. The paper shrinks into its card, and the other documents rise out of
+the bar as paper cards, newest first. The first card is always New Document.
+The Find field takes the typing, and the input bar shows the query. The left
+and the right arrows move between the cards. Return opens the selected card,
+and Esc goes back to the paper.
+
+While the desk is open, the app panel shows the Documents keys. Rename opens
+the document with its heading selected, because the heading is the file
+name. Duplicate makes a copy with the name "Title 2". Move to Trash puts the
+file in the Trash of macOS, and Undo shows for 8 seconds. Show in Finder
+shows the file in `~/Documents/September`. Each card is a button, and its
+spoken label is the title, the date, and the first line.
+
 In Write, Speak reads the selection. If nothing is selected, Speak reads the
 whole document without the Markdown marks. `MarkdownSpeech` holds the rule.
 If the document has no text, Speak is off.
@@ -281,11 +295,13 @@ The keyboard snapshots use sample text. They read nothing from your apps.
 Write Lab runs the Write paper on its own, with the same `WriteController`
 as the keyboard. Write Lab shows a stand-in for the keyboard bar at the bottom of
 the screen. The bar shows the paragraph at the caret, as the keyboard reads it
-for the predictions. Write opens the paper out of the bar.
+for the predictions. Write opens the paper out of the bar, and Documents opens
+the desk.
 
 ```sh
 make lab                                                # the bar and the paper
 swift run WriteLab --demo                               # also types a sample document
+swift run WriteLab --desk                               # also opens the desk of documents
 swift run WriteLab --folder /tmp/notes                  # another folder of documents
 swift run WriteLab --snapshot out.png [--dark]          # render the sample document and quit
 swift run WriteLab --snapshot out.png --file notes.md   # render a file and quit

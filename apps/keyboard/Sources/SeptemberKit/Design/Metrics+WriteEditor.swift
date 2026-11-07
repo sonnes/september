@@ -61,6 +61,37 @@ extension Metrics {
         public static let caretWidthBase: CGFloat = 2
     }
 
+    /// The sizes of the desk of Write, where the documents stand as cards.
+    public enum WriteDesk {
+        /// A card has the shape of A4 paper, as the paper does.
+        public static let cardSize = CGSize(width: 200, height: 283)
+        public static let cardGap: CGFloat = 24
+        public static let cardCornerRadius: CGFloat = 12
+        /// The space inside a card.
+        public static let cardPadding: CGFloat = 16
+        /// The lines of the document on its card.
+        public static let cardLines = 6
+        /// The selected card rises by this height.
+        public static let selectedLift: CGFloat = 14
+        public static let selectionRing: CGFloat = 3
+        /// The dashes of the border of the New Document card.
+        public static let newCardDash: [CGFloat] = [6, 5]
+        public static let newCardBorder: CGFloat = 2
+        /// The space between the cards and the bottom of the desk.
+        public static let bottomPadding: CGFloat = 32
+        /// The space between the rows of the desk.
+        public static let spacing: CGFloat = 16
+        public static let actionHeight: CGFloat = 40
+        public static let actionGap: CGFloat = 6
+        public static let actionPadding: CGFloat = 14
+        public static let findSize = CGSize(width: 460, height: 44)
+        public static let findPadding: CGFloat = 18
+        public static let noticeSize = CGSize(width: 420, height: 40)
+        /// A card rises from this scale and from this depth below its place.
+        public static let riseScale: CGFloat = 0.6
+        public static let riseDepth: CGFloat = 260
+    }
+
     /// The motion of the native Write editor and its paper. The values come
     /// from the Piper editor. With Reduce Motion on, nothing moves, and the
     /// caret still blinks.
@@ -86,6 +117,14 @@ extension Metrics {
         /// The paper grows or shrinks by a line, or the text moves up by a
         /// line on a full page.
         public static let paperFeed: TimeInterval = 0.12
+        /// The cards rise out of the bar, or go back down into it.
+        public static let deskCards: TimeInterval = 0.3
+        /// Each card starts this time after the card to its left.
+        public static let cardStagger: TimeInterval = 0.03
+        /// The selected card rises, or a card moves to its new place.
+        public static let cardMove: TimeInterval = 0.2
+        /// Undo of Move to Trash stays this long.
+        public static let undoTime: TimeInterval = 8
 
         /// `cubic-bezier(0.2, 0, 0, 1)`, the snappy curve of the Piper editor.
         public static let snappy: [Float] = [0.2, 0, 0, 1]

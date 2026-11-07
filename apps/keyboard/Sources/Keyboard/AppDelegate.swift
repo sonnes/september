@@ -80,9 +80,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         watchClipboard()
 
         write = WriteController()
-        write.paper.onKeyChanged = { [weak self] isKey in self?.writeKeyChanged(isKey) }
-        write.paper.bringToFront = { AppActivation.bringToFront($0) }
-        write.paper.windowClosed = { AppActivation.windowClosed($0) }
+        write.onKeyChanged = { [weak self] isKey in self?.writeKeyChanged(isKey) }
+        write.bringToFront = { AppActivation.bringToFront($0) }
+        write.windowClosed = { AppActivation.windowClosed($0) }
+        write.onPanelChange = { [weak self] _ in self?.writePanelChanged() }
         write.onCaretChange = { [weak self] caret in self?.writeCaretChanged(caret) }
         session.writeSpeech = { [weak self] in self?.write.speech }
         settingsWindow = SettingsWindowController(pages: makeSettingsPages())
@@ -283,7 +284,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             isWriteInFront = true
             appIcon = NSApp.applicationIconImage.tabIcon()
             session.menuName = { _ in nil }
-            session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
+            session.appChanged(name: "Write", bundleID: write.panel, windowTitle: nil)
             session.writeCaretRead(write.caret)
         case .app:
             isWriteInFront = false
@@ -297,6 +298,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             startChordTap()
             readScreenSoon()
         }
+        updateAppPanel()
+    }
+
+    /// The paper turned into the desk, or the desk into the paper: the app
+    /// panel changes between the Write keys and the Documents keys.
+    private func writePanelChanged() {
+        guard isWriteInFront else { return }
+        session.appChanged(name: "Write", bundleID: write.panel, windowTitle: nil)
+        session.writeCaretRead(write.caret)
+        updateAppPanel()
+    }
+
+    private func updateAppPanel() {
         // The new panel gets the icon of the app. The top of the panel stays
         // in line with the top of the keys.
         if let window = panels[.app] {
