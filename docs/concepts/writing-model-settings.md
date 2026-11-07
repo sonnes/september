@@ -16,8 +16,8 @@ Suggestions override. `modelIdFor` in `packages/core/rules/model-config.ts`
 gives the model id of each request, and the shared writing service in
 `packages/app-ui/services/ai.ts` sends it.
 
-Every text-generation job reads `defaultModel`. This rule includes space
-descriptions, saved-phrase generation, and Agent turns. The provider of
+Every text-generation job reads `defaultModel`. This rule includes
+saved-phrase generation and Agent turns. The provider of
 `defaultModel` is the provider of every feature.
 
 Suggestions read `suggestionsModel` first. If this value is null, Suggestions
@@ -44,8 +44,8 @@ Writing settings also store `autoSuggestions`, `autoPhrases`, and
 three default to `true`, including older saved setups and backups with missing
 fields.
 
-Automatic suggestions require a text edit that ends in whitespace or
-`. , ! ? ; :`, followed by a 200 ms pause. Empty input and restored drafts do
+Automatic suggestions require a text edit that ends in whitespace,
+`. , ! ? ; :`, or the `]` that ends an audio tag, followed by a 200 ms pause. Empty input and restored drafts do
 not trigger requests. Local word completion remains available after each letter.
 A change of the Talk mood also counts as an edit, so the suggestions follow the
 new mood at once. See [audio tags and moods](audio-tags.md).

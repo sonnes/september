@@ -60,7 +60,7 @@ enum AXDump {
         if let label = row.node.label { line += " \"\(label)\"" }
         if let detail = row.node.detail { line += " = \"\(detail)\"" }
         if row.node.isFocused { line += "  <- focused" }
-        if row.hiddenChildren > 0 { line += "  (\(row.hiddenChildren) hidden)" }
+        if let heldBack = row.heldBack { line += "  (\(heldBack))" }
         return line
     }
 }

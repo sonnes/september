@@ -12,7 +12,7 @@ public struct AXNode: Equatable, Sendable, Identifiable {
     public let value: String?
     /// The element the app has focused — the one keystrokes reach.
     public let isFocused: Bool
-    /// The children that were read. An element with none read shows shut.
+    /// The children that were read. An element with unread children shows shut.
     public let children: [AXNode]
     /// How many children the element has, read or not.
     public let childCount: Int
@@ -74,14 +74,7 @@ public struct AXTree: Equatable, Sendable {
         var rows: [AXTreeRow] = []
         var stack = [(node: root, depth: 0)]
         while let (node, depth) = stack.popLast(), rows.count < limit {
-            rows.append(
-                AXTreeRow(
-                    node: node,
-                    depth: depth,
-                    isExpanded: !node.children.isEmpty,
-                    hiddenChildren: node.childCount - node.children.count
-                )
-            )
+            rows.append(AXTreeRow(node: node, depth: depth))
             for child in node.children.reversed() {
                 stack.append((child, depth + 1))
             }
@@ -94,16 +87,16 @@ public struct AXTree: Equatable, Sendable {
 public struct AXTreeRow: Equatable, Sendable, Identifiable {
     public let node: AXNode
     public let depth: Int
-    public let isExpanded: Bool
-    /// How many children the row is not showing.
-    public let hiddenChildren: Int
 
-    public init(node: AXNode, depth: Int, isExpanded: Bool = true, hiddenChildren: Int = 0) {
+    public init(node: AXNode, depth: Int) {
         self.node = node
         self.depth = depth
-        self.isExpanded = isExpanded
-        self.hiddenChildren = hiddenChildren
     }
+
+    public var isExpanded: Bool { !node.children.isEmpty }
+
+    /// How many children the row is not showing.
+    public var hiddenChildren: Int { node.childCount - node.children.count }
 
     public var id: Int { node.id }
 
@@ -119,20 +112,22 @@ public struct AXTreeRow: Equatable, Sendable, Identifiable {
         return hiddenChildren > 0 ? .shut : .none
     }
 
+    /// What the row holds back, in words. Nil when it shows every child.
+    public var heldBack: String? {
+        switch disclosure {
+        case .open: hiddenChildren > 0 ? "\(hiddenChildren) more not shown" : nil
+        case .shut: "\(hiddenChildren) hidden"
+        case .none: nil
+        }
+    }
+
     /// One line for VoiceOver: focus, the element, and what the row holds back.
     public var spokenLabel: String {
         var parts: [String] = []
         if node.isFocused { parts.append("Focused") }
         parts.append(node.spokenDescription)
-        switch disclosure {
-        case .open:
-            parts.append("open")
-            if hiddenChildren > 0 { parts.append("\(hiddenChildren) more not shown") }
-        case .shut:
-            parts.append("\(hiddenChildren) hidden")
-        case .none:
-            break
-        }
+        if disclosure == .open { parts.append("open") }
+        if let heldBack { parts.append(heldBack) }
         return parts.joined(separator: ", ")
     }
 }

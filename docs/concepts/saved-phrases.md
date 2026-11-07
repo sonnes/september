@@ -37,7 +37,7 @@ A phrase is a complete thought. A starter is a short sentence opening that moves
 
 A code is a 2–5 character shortcut. For example, `ty` can expand to “Thank you.”
 
-Codes are lowercase and unique in the current phrase set. The code rules reject common words to prevent an accidental expansion.
+Codes are lowercase and unique across all spaces. The code rules reject common words to prevent an accidental expansion.
 
 A user-set code pins its row. Generated codes remain unpinned until the user keeps the phrase.
 

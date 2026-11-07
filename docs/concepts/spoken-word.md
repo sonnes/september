@@ -14,12 +14,15 @@ The voice reports the place of a character in the text that it speaks. The
 screen marks a word by its place in the sentence, not by the place of a
 character.
 
-`packages/core/rules/spoken-word.ts` holds two rules:
+`packages/core/rules/spoken-word.ts` holds three rules:
 
 - `wordAt(text, charIndex)` gives the place of the word that holds a
   character. A character on a space belongs to the word after it.
 - `wordsOf(text)` cuts a text into words and the spaces between them. Each
   word has its place.
+- `sentencesOf(text)` cuts a text into sentences. A sentence ends at a `.`,
+  `!`, or `?` before a space, so a decimal or a web address stays whole.
+  Present and the Dialogue voice use it.
 
 ## Voices
 

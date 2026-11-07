@@ -724,6 +724,16 @@ Run `make desktop-release` from the repository root to create the distribution
 DMG. The command loads the Apple credentials from `.envrc`, notarizes and staples the
 DMG, checks it with Gatekeeper, and prints its SHA-256 checksum.
 
+The download link on the web home page points to
+`releases/download/v<version>/September_<version>_aarch64.dmg`, built in
+`apps/web/src/components/home/platform-section.tsx`. The site deploys again
+when the version in `package.json` changes. Publish a release in this order:
+
+1. Run `make desktop-release` on an Apple silicon Mac.
+2. Tag the commit `v<version>` and push the tag.
+3. Create the GitHub release for the tag and upload the DMG.
+4. Merge the version change to `main`.
+
 `pnpm tauri:build` signs the app when `APPLE_TEAM_ID` and
 `APPLE_SIGNING_IDENTITY` are set. Then it adds `src-tauri/tauri.signed.conf.json`,
 which puts the provisioning profile in the bundle. Without them, it builds an

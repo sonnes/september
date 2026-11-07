@@ -281,7 +281,8 @@ Suggestions use it.
 
 AI Assistance settings have independent switches for automatic suggestions and
 phrase generation. Both default to on. AI suggestions wait for an edit that
-ends in whitespace or `. , ! ? ; :`, then wait 200 ms. Local word completion
+ends in whitespace, `. , ! ? ; :`, or the `]` that ends an audio tag, then
+wait 200 ms. Local word completion
 still responds to each letter. Setup writes run in order and notify mounted
 generation hooks after a successful save. Portable backups preserve both switches.
 

@@ -168,7 +168,8 @@ presses a key after a dwell. For Switch, it scans the screen. The scan steps
 through the elements marked `data-scan-group`, then through their keys.
 `data-housing` marks an indigo surface, where the scan band is an amber ring.
 
-The input layer reads markers that `@september/ui` puts on its parts:
+The input layer reads these markers. `@september/ui` puts the first three on
+its parts, and the skip link of `Screen` sets `data-access-skip`:
 
 | Marker              | Meaning                                                           |
 | ------------------- | ----------------------------------------------------------------- |

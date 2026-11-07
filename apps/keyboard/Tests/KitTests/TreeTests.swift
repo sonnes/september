@@ -80,13 +80,13 @@ struct TreeTests {
     }
 
     @Test func `a shut element tells VoiceOver how many children it hides`() throws {
-        let row = AXTreeRow(node: node(1, "AXGroup", childCount: 7), depth: 1, isExpanded: false, hiddenChildren: 7)
+        let row = AXTreeRow(node: node(1, "AXGroup", childCount: 7), depth: 1)
         #expect(row.spokenLabel.contains("7"))
         #expect(!row.spokenLabel.contains("open"))
     }
 
     @Test func `an element with no children has no arrow`() throws {
-        let row = AXTreeRow(node: node(1, "AXButton"), depth: 1, isExpanded: false, hiddenChildren: 0)
+        let row = AXTreeRow(node: node(1, "AXButton"), depth: 1)
         #expect(row.disclosure == .none)
     }
 
