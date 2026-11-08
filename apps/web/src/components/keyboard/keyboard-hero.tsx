@@ -114,7 +114,7 @@ export function KeyboardHero() {
               still="type.webp"
               alt="The keyboard types 'Are we still on for t' into Messages. Above the input bar, three sentence predictions offer endings such as 'the match tonight?' A row of words above the keys completes the word. A press on a prediction finishes the sentence."
               width={3200}
-              height={1075}
+              height={1004}
               eager
             />
             <figcaption className="mt-4 px-1 text-sm leading-relaxed text-zinc-600">

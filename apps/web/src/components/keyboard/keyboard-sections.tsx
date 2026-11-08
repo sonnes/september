@@ -169,14 +169,14 @@ export function FeatureSections() {
         <SectionHeader
           eyebrow="Shortcut panels"
           title="Press shortcuts without holding keys."
-          lede="The Edit, Text, and System keypads float beside the keys. The app panel shows the shortcuts of the app in front and puts the ones you use first. On its Mine tab, you make your own buttons: a shortcut, a row of shortcuts, or a phrase. The panels that you built for the Accessibility Keyboard import in one step."
+          lede="The Text and System keypads float beside the keys. If you use Rectangle, its keypad moves the window in front to a half, a third, or a corner. The app panel shows the shortcuts of the app in front and puts the ones you use first. On its Mine tab, you make your own buttons: a shortcut, a row of shortcuts, or a phrase. The panels that you built for the Accessibility Keyboard import in one step."
           hint="Drag a panel by its grip to move it. Arrange puts each panel back beside the keys."
         />
         <Shot
           src="mine.webp"
           alt="The keyboard with its panels. At the left, the Mine tab holds buttons such as Paste as Text, Save, and Be right back. The System keypad sits next to it. At the right, the Text keypad has arrow keys in the layout of a Mac keyboard."
           width={2000}
-          height={672}
+          height={628}
         />
       </section>
 
@@ -190,7 +190,7 @@ export function FeatureSections() {
           src="clipboard.webp"
           alt="The clipboard history, open above the input bar. It shows copied texts such as a link, a dinner booking, a Terminal command, and the start of a note to a team."
           width={2000}
-          height={672}
+          height={628}
         />
       </section>
     </div>
