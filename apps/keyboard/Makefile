@@ -14,7 +14,7 @@ TIMESTAMP ?= --timestamp=none
 ENVRC ?= ../../.envrc
 SNAPSHOT_DIR ?= .build/snapshots
 
-.PHONY: run dev test app dmg release publish icon open stop snapshots clean lab
+.PHONY: run dev test app dmg release publish icon open stop snapshots landing-media clean lab
 
 # Runs unbundled as a child of this shell, so it inherits the terminal's own
 # Accessibility permission — keys type into other apps with nothing to grant.
@@ -158,6 +158,11 @@ snapshots:
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-clipboard.png" --clipboard
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/component-library.png" --gallery
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/tree-viewer.png" --viewer
+
+# Renders the screenshots and the animations of the keyboard page of the web app into
+# apps/web/public/keyboard. Needs ImageMagick and cwebp.
+landing-media:
+	scripts/landing-media.sh
 
 clean:
 	rm -rf .build

@@ -50,6 +50,12 @@ export function PlatformSection() {
             <p className="mt-1 text-sm text-zinc-600">
               Apple Intelligence requires macOS 26 or later.
             </p>
+            <Link
+              to="/keyboard"
+              className="focus-attention mt-2 inline-flex min-h-11 items-center text-sm font-medium text-indigo-700 underline-offset-4 hover:underline"
+            >
+              Also on Mac: September Keyboard
+            </Link>
           </div>
         </div>
       </div>

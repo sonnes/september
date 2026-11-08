@@ -124,6 +124,26 @@ support. Applicable statutory rights remain intact. The privacy notice covers
 local storage, optional providers, and website metadata. GitHub issues are the
 public contact route; users must not post private information there.
 
+## The keyboard page
+
+`/keyboard` is a public, prerendered page for September Keyboard, the native
+keyboard for macOS in `apps/keyboard`. The Mac section of the landing page links
+to it. `src/pages/keyboard.tsx` holds the page, and its sections are in
+`src/components/keyboard/`.
+
+The download link takes the version from `apps/keyboard/Resources/Info.plist`.
+`src/rules/keyboard-release.ts` reads `CFBundleShortVersionString` and gives
+the DMG of the GitHub Release `keyboard-v<version>`. When the app gets a new
+version, the link moves to the next release. The link works only after
+`make publish` in `apps/keyboard` creates that release.
+
+The screenshots and the animations are in `public/keyboard/`. The script
+`apps/keyboard/scripts/landing-media.sh` renders them from the keyboard
+snapshots. Each animation is an animated WebP at twice its width on the page,
+and each one also has a WebP still. A reader with reduced motion sees the
+still in place of the animation. To make the media again after a change to the
+keyboard, run `make landing-media` in `apps/keyboard`.
+
 `docs/research/2026-09-05-india-legal-review.md` on the `archive/old-docs`
 branch records the legal sources and limits of this review. A software licence does not supply privacy consent or
 exempt a personal project from applicable law.
@@ -320,8 +340,8 @@ The interface shows their unavailable state in the desktop UI positions.
 ```text
 src/
 ├── platform.ts   the browser platform that the shared code reaches
-├── components/   web-only landing-page sections
-├── pages/        the web-only home and legal pages
+├── components/   the sections of the landing page and the keyboard page
+├── pages/        the web-only home, keyboard, and legal pages
 ├── rules/        the prerender and analytics rules of the web
 ├── services/     IndexedDB, voices, audio output, provider keys, video, OAuth, analytics
 ├── public-pages.ts  the pages anyone can open, for the router and the prerender

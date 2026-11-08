@@ -46,6 +46,7 @@ make publish    # upload the DMG of make release to a GitHub Release
 make open       # build, sign and launch
 make snapshots  # render the keyboard and component library to .build/snapshots
 make lab        # run Write Lab, the native Write editor on its own
+make landing-media  # render the screenshots and animations of the keyboard page of the web app
 ```
 
 `make run` and `make dev` show the keyboard on your screen. When you are done,
@@ -300,6 +301,29 @@ swift run Keyboard --snapshot out.png --viewer   # the tree viewer, reading the 
 ```
 
 The keyboard snapshots use sample text. They read nothing from your apps.
+
+Two flags change the sample text:
+
+```sh
+swift run Keyboard --snapshot out.png --typed "I would"                 # Type mode with this text in the field
+swift run Keyboard --snapshot out.png --talk --typed "Can we"           # the Talk bar before Speak
+swift run Keyboard --snapshot out.png --talk --spoken 4                 # Speak stops on word 4, counted from 0
+swift run Keyboard --snapshot out.png --write --paper story.md         # the Write paper open above the keyboard
+```
+
+### Media of the keyboard page
+
+`make landing-media` runs `scripts/landing-media.sh`. The script renders the
+screenshots and the animations of the `/keyboard` page of the web app into
+`apps/web/public/keyboard`. It renders each frame of an animation as a
+snapshot, so it opens no window and reads nothing from your apps. The Write
+frames use `--paper`, which places and draws the paper as
+`WritePaperController` does, on a screen with 1,000 points above the keyboard. The script
+needs ImageMagick and `cwebp` (`brew install imagemagick webp`).
+
+Run it after a change to the look of the keyboard, the panels, Talk, or the
+Write paper. Then look at the animations, and commit the files in
+`apps/web/public/keyboard`.
 
 ## Write Lab
 
