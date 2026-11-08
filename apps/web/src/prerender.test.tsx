@@ -19,6 +19,15 @@ describe('landing markup', () => {
   });
 });
 
+describe('keyboard markup', () => {
+  it('renders the keyboard page without a browser', async () => {
+    const html = await renderPage('/keyboard');
+
+    expect(html).toContain('<main');
+    expect(html).toContain('<title>');
+  });
+});
+
 describe('injectMarkup', () => {
   const shell = '<div id="root" class="h-full"></div>';
 

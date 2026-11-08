@@ -4,8 +4,9 @@
  */
 import type { RouteComponent } from '@tanstack/react-router';
 
-import { LANDING_TITLE } from '@september/core/rules/titles';
+import { LANDING_TITLE, documentTitle } from '@september/core/rules/titles';
 import { HomePage } from '@/pages/home';
+import { KeyboardPage } from '@/pages/keyboard';
 import { PrivacyPolicy, TermsOfService } from '@/pages/legal';
 
 export interface PublicPageEntry {
@@ -24,6 +25,13 @@ export const PUBLIC_PAGES = {
       'A communication assistant for people living with ALS, MND, and other speech and motor difficulties.',
     title: LANDING_TITLE,
     component: HomePage,
+  },
+  '/keyboard': {
+    heading: 'The Accessibility Keyboard, Reimagined',
+    description:
+      'September Keyboard is an on-screen keyboard for macOS that types into any app, predicts your sentences, presses shortcuts, and speaks for you.',
+    title: documentTitle('September Keyboard for Mac'),
+    component: KeyboardPage,
   },
   '/help': {
     heading: 'Help',

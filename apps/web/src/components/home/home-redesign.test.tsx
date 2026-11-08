@@ -358,6 +358,12 @@ describe('landing navigation', () => {
     expect(container.querySelector('a[href="/terms-of-service"]')).toBeTruthy();
   });
 
+  it('leads to the page of the Mac keyboard', async () => {
+    await renderAsync(<HomePage />);
+
+    expect(container.querySelector('a[href="/keyboard"]')).toBeTruthy();
+  });
+
   it('provides a target for every in-page navigation link', async () => {
     await renderAsync(<HomePage />);
     const links = [...container.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')];
