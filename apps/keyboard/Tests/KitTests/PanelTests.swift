@@ -42,6 +42,18 @@ func panelTests() {
         expectEqual(panel.buttons[3].action, .text("Hello"))
     }
 
+    test("a button can name the part of the screen that its window takes") {
+        let panel = try decode("""
+            {"title": "X", "columns": 1, "buttons": [
+              {"id": "left", "label": "Left Half", "region": {"x": 0, "y": 0, "width": 0.5, "height": 1},
+               "action": {"type": "shortcut", "modifiers": ["control", "option"], "key": "left"}},
+              {"id": "keys", "label": "Keys",
+               "action": {"type": "shortcut", "modifiers": ["command"], "key": "k"}}]}
+            """)
+        expectEqual(panel.buttons[0].region, WindowRegion(x: 0, y: 0, width: 0.5, height: 1))
+        expectEqual(panel.buttons[1].region, nil)
+    }
+
     test("an unknown action type is rejected rather than silently dropped") {
         let bad = """
             {"title": "X", "columns": 1,

@@ -7,7 +7,8 @@ package: keyboard
 # Shortcut panels (macOS)
 
 Panels are on each side of the macOS keyboard. SYSTEM and the app panel are on
-the left. TEXT is on the right. Cut, Copy, and Paste are buttons at the left
+the left. TEXT and RECTANGLE are on the right. RECTANGLE shows only when the
+Rectangle window manager is installed (`DetachedPanel.shown(rectangleInstalled:)`). Cut, Copy, and Paste are buttons at the left
 of the input bar, so no keypad has them. The shortcuts of the app in front are
 also a panel. Each panel is a grid of buttons in a JSON file that the app loads at
 launch.
@@ -19,7 +20,8 @@ buttons with actions. September has no absolute layout and no modal editor.
 
 ```
 PanelDefinition   title, columns, buttons, arrows
-  PanelButton     id, label, symbol (SF Symbol), action
+  PanelButton     id, label, symbol (SF Symbol), region, action
+    WindowRegion  x, y, width, height, in fractions of the screen
     PanelAction   .shortcut(Shortcut) | .text(String)
   PanelBlock      columns, buttons
 ```
@@ -32,6 +34,11 @@ wide. System has three columns.
 A button presses a key combination or types a phrase. A text button uses up
 the latched modifiers, the same as a text key.
 
+A shortcut button shows its keys. In a keypad, a button with a `region` or a
+`symbol` shows an icon in place of its keys. A `region` draws a small screen
+with the part of the window filled, so the Rectangle keypad needs no SF Symbol
+for two thirds. An app panel always shows the keys.
+
 `Shortcut` renders its own hint (`⇧⌘Z`) and its own spoken name ("Shift Command
 Z"), so a button never has to repeat itself in JSON.
 
@@ -41,6 +48,7 @@ Z"), so a button never has to repeat itself in JSON.
 Sources/SeptemberKit/Resources/Panels/
 ├── text.json                        # right of the keys
 ├── system.json                      # left of the keys, nearest
+├── rectangle.json                   # right of TEXT, the shortcuts of Rectangle
 └── Apps/
     ├── generic.json                 # fallback for unknown apps
     └── com.microsoft.VSCode.json    # one file per known app, named by bundle id

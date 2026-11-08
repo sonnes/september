@@ -19,6 +19,14 @@ extension Metrics {
         public static let headerSpacing: CGFloat = 6
         public static let headerBottom: CGFloat = 8
         public static let appDot: CGFloat = 5
+        /// The icon of a button that places a window: a small screen with
+        /// the part of the window filled.
+        public static let regionIcon = CGSize(width: 26, height: 18)
+        public static let regionIconCornerRadius: CGFloat = 3
+        public static let regionIconStroke: CGFloat = 1.25
+        /// The space between the edge of the screen and the filled part.
+        public static let regionIconInset: CGFloat = 2.5
+        public static let regionCornerRadius: CGFloat = 1.5
         /// Long keys, such as a sequence, shrink to fit the button.
         public static let keysMinimumScale: CGFloat = 0.7
         /// The dash of the border of an empty slot.

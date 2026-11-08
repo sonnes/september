@@ -2,10 +2,12 @@ import SwiftUI
 
 /// A panel button. A shortcut button shows only its keys, and its name shows
 /// above it while the pointer or the gaze rests on it. A text button shows its
-/// text. The accessibility label is always the full name.
+/// text. In a keypad, a button with a region or a symbol shows that icon in
+/// place of its keys. The accessibility label is always the full name.
 public struct ShortcutButtonView: View {
     private let button: PanelButton
     private let width: CGFloat
+    private let showsIcon: Bool
     private let press: () -> Void
 
     @State private var isPressed = false
@@ -14,10 +16,12 @@ public struct ShortcutButtonView: View {
     public init(
         button: PanelButton,
         width: CGFloat = Metrics.AppPanel.buttonWidth,
+        showsIcon: Bool = false,
         press: @escaping () -> Void
     ) {
         self.button = button
         self.width = width
+        self.showsIcon = showsIcon
         self.press = press
     }
 
@@ -37,7 +41,15 @@ public struct ShortcutButtonView: View {
 
     @ViewBuilder
     private var label: some View {
-        if let hint = button.hint {
+        if showsIcon, let region = button.region {
+            WindowRegionIcon(region: region)
+                .accessibilityHidden(true)
+        } else if showsIcon, let symbol = button.symbol {
+            Image(systemName: symbol)
+                .font(Typography.shortcutSymbol)
+                .foregroundStyle(Color(Tokens.shortcutLabel))
+                .accessibilityHidden(true)
+        } else if let hint = button.hint {
             Text(hint)
                 .font(Typography.shortcutKeys)
                 .foregroundStyle(Color(Tokens.shortcutLabel))
@@ -91,6 +103,26 @@ public struct ShortcutButtonView: View {
     private var stroke: ThemeColor {
         if isHovered { return Tokens.accent }
         return button.isText ? Tokens.strokeStandard : Tokens.strokeSpecial
+    }
+}
+
+/// A small screen with the part that a window takes filled in.
+struct WindowRegionIcon: View {
+    let region: WindowRegion
+
+    var body: some View {
+        let size = Metrics.AppPanel.regionIcon
+        let inset = Metrics.AppPanel.regionIconInset
+        let inner = CGSize(width: size.width - inset * 2, height: size.height - inset * 2)
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: Metrics.AppPanel.regionIconCornerRadius, style: .continuous)
+                .strokeBorder(Color(Tokens.shortcutLabel), lineWidth: Metrics.AppPanel.regionIconStroke)
+            RoundedRectangle(cornerRadius: Metrics.AppPanel.regionCornerRadius, style: .continuous)
+                .fill(Color(Tokens.shortcutLabel))
+                .frame(width: inner.width * region.width, height: inner.height * region.height)
+                .offset(x: inset + inner.width * region.x, y: inset + inner.height * region.y)
+        }
+        .frame(width: size.width, height: size.height)
     }
 }
 

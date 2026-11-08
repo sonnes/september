@@ -44,7 +44,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Write` | the document library, `WriteModel` (the open document and its saves), `WriteController` (joins the documents, the paper, and the desk), `WriteDesk` (the cards, the Find query, and the selected card), `EditorCaret` and `EditorSpeech`, and `MarkdownSpeech` (the text that Speak reads) |
 | `Sources/SeptemberKit/WriteEditor` | the native Markdown editor (`WriteTextView`), the Markdown blocks (`WriteMarkdown`), the Write paper with round corners (`WritePaperController`, `WritePaper`), and the desk of document cards (`WriteDeskController`, `WriteDeskLayout`, `WriteCardView`) |
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, the keyboard screen, and the views of each part |
-| `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
+| `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`rectangle`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
 | `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ChordTap`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings window, snapshots |

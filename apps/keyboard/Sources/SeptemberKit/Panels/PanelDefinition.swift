@@ -18,12 +18,18 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
     public let label: String
     /// SF Symbol name.
     public let symbol: String?
+    /// The part of the screen that a window takes, for a button that places
+    /// a window. A keypad draws it as the icon of the button.
+    public let region: WindowRegion?
     public let action: PanelAction
 
-    public init(id: String, label: String, symbol: String?, action: PanelAction) {
+    public init(
+        id: String, label: String, symbol: String?, region: WindowRegion? = nil, action: PanelAction
+    ) {
         self.id = id
         self.label = label
         self.symbol = symbol
+        self.region = region
         self.action = action
     }
 
@@ -67,6 +73,22 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
 
     /// True for a chord that the keyboard learned from the hardware keyboard.
     public var isLearned: Bool { id.hasPrefix(PanelButton.learnedPrefix) }
+}
+
+/// A part of the screen, in fractions of its width and height, from the top
+/// left corner.
+public struct WindowRegion: Sendable, Hashable, Decodable {
+    public let x: Double
+    public let y: Double
+    public let width: Double
+    public let height: Double
+
+    public init(x: Double, y: Double, width: Double, height: Double) {
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+    }
 }
 
 /// A block of buttons below the grid of a keypad, with columns of its own.
@@ -148,7 +170,7 @@ extension PanelDefinition: Decodable {
 
 extension PanelButton: Decodable {
     enum CodingKeys: String, CodingKey {
-        case id, label, symbol, action
+        case id, label, symbol, region, action
     }
 }
 

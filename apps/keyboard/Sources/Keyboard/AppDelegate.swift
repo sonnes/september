@@ -367,7 +367,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         keyboard.placement = .free
         keyboardPanel = keyboard
 
-        let sizes = Dictionary(uniqueKeysWithValues: DetachedPanel.allCases.map { ($0, panelSize($0)) })
+        let rectangleInstalled =
+            NSWorkspace.shared.urlForApplication(withBundleIdentifier: DetachedPanel.rectangleBundleID) != nil
+        let shown = DetachedPanel.shown(rectangleInstalled: rectangleInstalled)
+        let sizes = Dictionary(uniqueKeysWithValues: shown.map { ($0, panelSize($0)) })
         let keysSize = WindowContent.measure(content.keysCard())
         let visible = FloatingPanel.activeScreen?.visibleFrame ?? .zero
         let screens = NSScreen.screens.map(\.visibleFrame)
@@ -389,7 +392,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let keys = CGRect(origin: KeyboardPosition.keysOrigin(ofWindow: origin, in: .type), size: keysSize)
         let defaults = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
-        for panel in DetachedPanel.allCases {
+        for panel in shown {
             let window = FloatingPanel(root: content.panel(panel, appIcon: appIcon), contentSize: sizes[panel]!)
             window.placement = .free
             // The panels sit above the keyboard window, whose clear corners

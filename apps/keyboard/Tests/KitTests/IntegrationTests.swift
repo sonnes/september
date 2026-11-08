@@ -254,6 +254,20 @@ private func placementTests() {
         expectEqual(frames[.app]?.maxY, keys.maxY)
     }
 
+    test("the Rectangle panel sits at the right of Text") {
+        let frames = PanelPlacement.defaultFrames(
+            keys: keys, sizes: [.text: panel, .rectangle: panel])
+        let gap = Metrics.Detached.gap
+        expectEqual(frames[.rectangle]?.minX, keys.maxX + gap * 2 + panel.width)
+        expectEqual(frames[.rectangle]?.maxY, keys.maxY)
+    }
+
+    test("the Rectangle panel shows only when Rectangle is installed") {
+        expect(DetachedPanel.shown(rectangleInstalled: true).contains(.rectangle))
+        expect(!DetachedPanel.shown(rectangleInstalled: false).contains(.rectangle))
+        expectEqual(Set(DetachedPanel.shown(rectangleInstalled: false)), [.text, .system, .app])
+    }
+
     test("arranging puts the panels around the keys where the keyboard is now") {
         let moved = keys.offsetBy(dx: -400, dy: 300)
         let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .app: panel]
