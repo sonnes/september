@@ -2,11 +2,13 @@ import { HELP_GUIDES } from '@september/core/rules/help/catalog';
 import { describe, expect, it } from 'vitest';
 
 import { renderPage } from './entry-server';
+import { PUBLIC_PAGES } from './public-pages';
 import {
   PRERENDERED_PATHS,
   hoistTitle,
   injectMarkup,
   prerenderedFile,
+  publicPage,
   withAnalytics,
 } from './rules/prerender';
 
@@ -25,6 +27,20 @@ describe('keyboard markup', () => {
 
     expect(html).toContain('<main');
     expect(html).toContain('<title>');
+  });
+});
+
+describe('publicPage', () => {
+  it('gives the share card the screenshot of a page, and describes it in the alt text', () => {
+    const { shareShot } = PUBLIC_PAGES['/keyboard'];
+    const page = publicPage('/keyboard');
+
+    expect(page.shot).toBe(shareShot.src);
+    expect(page.alt).toContain(shareShot.alt);
+  });
+
+  it('gives a page with no screenshot a card of text only', () => {
+    expect(publicPage('/privacy-policy').shot).toBeUndefined();
   });
 });
 

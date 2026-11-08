@@ -103,96 +103,141 @@ const text = (content, style) =>
 const row = (children, style = {}) =>
   React.createElement('div', { style: { display: 'flex', ...style } }, children);
 
-export async function generateShareCard(page, destination) {
-  const shareCardSvg = await satori(
-    row(
-      [
-        row(
-          [
-            row(
-              [
-                keycap(76),
-                row(
-                  WORDMARK.map(([part, color]) =>
-                    text(part, { color, fontFamily: 'Lexend', fontSize: 44, fontWeight: 700 })
-                  )
+const FONTS = [
+  { name: 'Lexend', data: font, weight: 700, style: 'normal' },
+  { name: 'Noto Sans', data: bodyFont, weight: 400, style: 'normal' },
+  { name: 'Noto Sans', data: bodyBoldFont, weight: 700, style: 'normal' },
+];
+
+/** The keycap and the wordmark at the left, and the open-source pill at the right. */
+const brandRow = () =>
+  row(
+    [
+      row(
+        [
+          keycap(76),
+          row(
+            WORDMARK.map(([part, color]) =>
+              text(part, { color, fontFamily: 'Lexend', fontSize: 44, fontWeight: 700 })
+            )
+          ),
+        ],
+        { alignItems: 'center', gap: 18 }
+      ),
+      text('Free & open source', {
+        color: '#ffffff',
+        fontFamily: 'Noto Sans',
+        fontSize: 22,
+        fontWeight: 700,
+        padding: '10px 22px',
+        borderRadius: 999,
+        border: '2px solid rgba(255,255,255,0.25)',
+        backgroundColor: 'rgba(255,255,255,0.12)',
+      }),
+    ],
+    { alignItems: 'center', justifyContent: 'space-between' }
+  );
+
+const heading = (content, fontSize) =>
+  text(content, {
+    color: '#ffffff',
+    fontFamily: 'Noto Sans',
+    fontSize,
+    fontWeight: 700,
+    letterSpacing: -2,
+    lineHeight: 1.12,
+  });
+
+/** A card of text: the heading and the description of the page. */
+const textCard = page =>
+  row(
+    [
+      brandRow(),
+      page
+        ? heading(page.heading, 66)
+        : row(
+            TAGLINE.map(line =>
+              row(
+                line.map(([part, color]) =>
+                  text(part, {
+                    color,
+                    fontFamily: 'Noto Sans',
+                    fontSize: 78,
+                    fontWeight: 700,
+                    letterSpacing: -2,
+                  })
                 ),
-              ],
-              { alignItems: 'center', gap: 18 }
+                { gap: WORD_GAP }
+              )
             ),
-            text('Free & open source', {
-              color: '#ffffff',
-              fontFamily: 'Noto Sans',
-              fontSize: 22,
-              fontWeight: 700,
-              padding: '10px 22px',
-              borderRadius: 999,
-              border: '2px solid rgba(255,255,255,0.25)',
-              backgroundColor: 'rgba(255,255,255,0.12)',
-            }),
-          ],
-          { alignItems: 'center', justifyContent: 'space-between' }
-        ),
-
-        page
-          ? text(page.heading, {
-              color: '#ffffff',
-              fontFamily: 'Noto Sans',
-              fontSize: 66,
-              fontWeight: 700,
-              letterSpacing: -2,
-              lineHeight: 1.12,
-            })
-          : row(
-              TAGLINE.map(line =>
-                row(
-                  line.map(([part, color]) =>
-                    text(part, {
-                      color,
-                      fontFamily: 'Noto Sans',
-                      fontSize: 78,
-                      fontWeight: 700,
-                      letterSpacing: -2,
-                    })
-                  ),
-                  { gap: WORD_GAP }
-                )
-              ),
-              { flexDirection: 'column', lineHeight: 1.12 }
-            ),
-
-        text(
-          page?.description ??
-            'A communication assistant for people living with ALS, MND, and other speech & motor difficulties.',
-          {
-            color: 'rgba(255,255,255,0.85)',
-            fontFamily: 'Noto Sans',
-            fontSize: 30,
-            lineHeight: 1.45,
-            maxWidth: 900,
-          }
-        ),
-      ],
-      {
-        width: 1200,
-        height: 630,
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: 72,
-        backgroundColor: '#4f46e5',
-      }
-    ),
+            { flexDirection: 'column', lineHeight: 1.12 }
+          ),
+      text(
+        page?.description ??
+          'A communication assistant for people living with ALS, MND, and other speech & motor difficulties.',
+        {
+          color: 'rgba(255,255,255,0.85)',
+          fontFamily: 'Noto Sans',
+          fontSize: 30,
+          lineHeight: 1.45,
+          maxWidth: 900,
+        }
+      ),
+    ],
     {
       width: 1200,
       height: 630,
-      fonts: [
-        { name: 'Lexend', data: font, weight: 700, style: 'normal' },
-        { name: 'Noto Sans', data: bodyFont, weight: 400, style: 'normal' },
-        { name: 'Noto Sans', data: bodyBoldFont, weight: 700, style: 'normal' },
-      ],
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: 72,
+      backgroundColor: '#4f46e5',
     }
   );
 
+// The screenshot sits on a light panel that runs off the bottom of the card,
+// as the media of the page sit on their indigo-50 stage.
+const SHOT_WIDTH = 1056;
+
+/** A card with the heading over the screenshot of the page. */
+async function shotCard(page) {
+  const shot = await sharp(`${publicDir}/${page.shot}`)
+    .resize({ width: SHOT_WIDTH * 2 })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  const height = Math.round((shot.info.height * SHOT_WIDTH) / shot.info.width);
+  return row(
+    [
+      brandRow(),
+      heading(page.heading, 56),
+      row(
+        React.createElement('img', {
+          src: `data:image/png;base64,${shot.data.toString('base64')}`,
+          width: SHOT_WIDTH,
+          height,
+        }),
+        {
+          flexGrow: 1,
+          overflow: 'hidden',
+          padding: '24px 24px 0',
+          borderRadius: '24px 24px 0 0',
+          backgroundColor: '#eef2ff',
+        }
+      ),
+    ],
+    {
+      width: 1200,
+      height: 630,
+      flexDirection: 'column',
+      gap: 28,
+      padding: '56px 48px 0',
+      backgroundColor: '#4f46e5',
+    }
+  );
+}
+
+export async function generateShareCard(page, destination) {
+  const card = page?.shot ? await shotCard(page) : textCard(page);
+  const shareCardSvg = await satori(card, { width: 1200, height: 630, fonts: FONTS });
   await sharp(Buffer.from(shareCardSvg)).png().toFile(destination);
 }
 

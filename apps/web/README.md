@@ -39,6 +39,11 @@ Twitter metadata, and 1200 × 630 PNG card. `pnpm build` generates the cards in
 The homepage stays at `/og.png`. All cards use the homepage's indigo surface,
 Noto Sans headings, and Lexend wordmark. No image server is needed.
 
+A page in `PUBLIC_PAGES` with a `shareShot` gets a card with a screenshot. The
+card shows the heading over the image from `public/`, on an indigo-50 panel.
+The alt text of the card adds the alt text of the screenshot. `/keyboard` uses
+`keyboard/type.webp`.
+
 Run `pnpm test:build` after a build to check every public page and decode its
 image. `pnpm brand:generate` still refreshes the committed homepage card and
 icons. The retired `/api/og` URL redirects to `/og.png` on Vercel.

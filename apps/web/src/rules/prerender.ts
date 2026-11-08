@@ -112,6 +112,8 @@ export interface PublicPage {
   url: string;
   image: string;
   alt: string;
+  /** The screenshot of the share card, a file in `public/`. */
+  shot?: string;
 }
 
 /** Only public, storage-independent content may enter a shared card. */
@@ -132,13 +134,17 @@ export function publicPage(path: string): PublicPage {
   const entry = entryFor(path);
   const { heading, description } = entry;
   const title = entry.title ?? documentTitle(heading);
+  const shot = 'shareShot' in entry ? entry.shareShot : undefined;
   return {
     title,
     heading,
     description,
     url: `https://september.to${path}`,
     image: path === '/' ? 'og.png' : `og${path}.png`,
-    alt: `September — ${heading}. White lettering on an indigo card.`,
+    alt: shot
+      ? `September — ${heading}. ${shot.alt}`
+      : `September — ${heading}. White lettering on an indigo card.`,
+    shot: shot?.src,
   };
 }
 

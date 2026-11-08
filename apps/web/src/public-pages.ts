@@ -16,6 +16,11 @@ export interface PublicPageEntry {
   title?: string;
   /** The page, when the web app draws it. The shared app draws Help. */
   component?: RouteComponent;
+  /**
+   * A screenshot that the share card shows under the heading. `src` is a
+   * file in `public/`, and `alt` describes it.
+   */
+  shareShot?: { src: string; alt: string };
 }
 
 export const PUBLIC_PAGES = {
@@ -32,6 +37,10 @@ export const PUBLIC_PAGES = {
       'September Keyboard is an on-screen keyboard for macOS that types into any app, predicts your sentences, presses shortcuts, and speaks for you.',
     title: documentTitle('September Keyboard for Mac'),
     component: KeyboardPage,
+    shareShot: {
+      src: 'keyboard/type.webp',
+      alt: 'A screenshot of September Keyboard: sentence predictions, the input bar, the keys, and the shortcut panels.',
+    },
   },
   '/help': {
     heading: 'Help',
