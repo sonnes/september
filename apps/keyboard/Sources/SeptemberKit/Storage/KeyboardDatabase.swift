@@ -141,9 +141,21 @@ public final class KeyboardDatabase {
         return try! KeyboardDatabase(path: ":memory:")
     }
 
+    /// SQLite gives the `-wal` and `-shm` files the mode of the database
+    /// file. The database file is therefore 0600 before it opens. A file
+    /// from an older build can have 0644 files, so each file gets 0600.
     private static func openFile(_ url: URL) throws -> KeyboardDatabase {
+        let files = FileManager.default
+        let userOnly: [FileAttributeKey: Any] = [.posixPermissions: 0o600]
+        if files.fileExists(atPath: url.path) {
+            try files.setAttributes(userOnly, ofItemAtPath: url.path)
+        } else {
+            files.createFile(atPath: url.path, contents: nil, attributes: userOnly)
+        }
         let database = try KeyboardDatabase(path: url.path)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        for suffix in ["-wal", "-shm"] where files.fileExists(atPath: url.path + suffix) {
+            try files.setAttributes(userOnly, ofItemAtPath: url.path + suffix)
+        }
         return database
     }
 

@@ -155,7 +155,7 @@ row matches.
 When you press Return on the keys, or Speak in Talk mode, the keyboard splits
 the paragraph at the caret into sentences. Each sentence goes into the history
 in `~/Library/Application Support/September Keyboard/keyboard.sqlite`. Only
-the user can read the file. A sentence that you send again gets one more use.
+the user can read the file and its `-wal` and `-shm` files. A sentence that you send again gets one more use.
 While you type, the history finds the sentences that start with the sentence
 at the caret. It ranks them by their uses, and a use loses half its weight in
 14 days. The history keeps 10,000 sentences at most, and removes the sentences

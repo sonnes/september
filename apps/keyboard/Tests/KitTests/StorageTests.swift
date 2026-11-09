@@ -36,6 +36,40 @@ private func databaseTests() {
         expectEqual(mode, 0o600)
     }
 
+    test("the write-ahead files of the database are readable only by the user") {
+        let folder = try temporaryFolder()
+        let url = folder.appendingPathComponent("keyboard.sqlite")
+        let database = KeyboardDatabase.open(at: url)
+        try database.execute(
+            "INSERT INTO sentence (text, key, first_at, last_at) VALUES (?, ?, ?, ?)",
+            [.text("Hello."), .text("hello."), .double(1), .double(1)])
+        for suffix in ["-wal", "-shm"] {
+            let path = url.path + suffix
+            expect(FileManager.default.fileExists(atPath: path))
+            let mode = try FileManager.default.attributesOfItem(atPath: path)[.posixPermissions] as? Int
+            expectEqual(mode, 0o600)
+        }
+    }
+
+    test("an old database file that others can read becomes readable only by the user") {
+        let folder = try temporaryFolder()
+        let url = folder.appendingPathComponent("keyboard.sqlite")
+        do {
+            let database = try KeyboardDatabase(path: url.path)
+            try database.execute(
+                "INSERT INTO sentence (text, key, first_at, last_at) VALUES (?, ?, ?, ?)",
+                [.text("Hello."), .text("hello."), .double(1), .double(1)])
+            for suffix in ["", "-wal", "-shm"] {
+                try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path + suffix)
+            }
+            _ = KeyboardDatabase.open(at: url)
+            for suffix in ["", "-wal", "-shm"] {
+                let mode = try FileManager.default.attributesOfItem(atPath: url.path + suffix)[.posixPermissions] as? Int
+                expectEqual(mode, 0o600)
+            }
+        }
+    }
+
     test("a file that is not a database moves aside, and a new database opens") {
         let folder = try temporaryFolder()
         let url = folder.appendingPathComponent("keyboard.sqlite")
