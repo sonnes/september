@@ -114,6 +114,17 @@ public final class KeyboardDatabase {
             .appendingPathComponent("keyboard.sqlite")
     }
 
+    /// The files in the folder of the database that no store reads.
+    public static let staleFileNames = ["usage.json", "learned.json"]
+
+    /// Removes each file of `staleFileNames` from `folder`. A file that is
+    /// not in the folder is not an error.
+    public static func removeStaleFiles(in folder: URL) {
+        for name in staleFileNames {
+            try? FileManager.default.removeItem(at: folder.appendingPathComponent(name))
+        }
+    }
+
     private let handle: OpaquePointer
 
     /// Opens the database at `path` and moves it to the newest schema

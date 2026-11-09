@@ -36,6 +36,18 @@ private func databaseTests() {
         expectEqual(mode, 0o600)
     }
 
+    test("removing the stale files deletes usage.json and learned.json, and keeps the other files") {
+        let folder = try temporaryFolder()
+        let names = ["usage.json", "learned.json", "my-panel-usage.json", "keyboard.sqlite"]
+        for name in names {
+            try Data("{}".utf8).write(to: folder.appendingPathComponent(name))
+        }
+        KeyboardDatabase.removeStaleFiles(in: folder)
+        let left = try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
+        expectEqual(left, ["keyboard.sqlite", "my-panel-usage.json"])
+        KeyboardDatabase.removeStaleFiles(in: folder)
+    }
+
     test("the write-ahead files of the database are readable only by the user") {
         let folder = try temporaryFolder()
         let url = folder.appendingPathComponent("keyboard.sqlite")
