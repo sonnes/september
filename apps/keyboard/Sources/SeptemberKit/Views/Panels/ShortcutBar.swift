@@ -15,7 +15,7 @@ public struct ShortcutBar: View {
     }
 
     public var body: some View {
-        HStack(spacing: Metrics.AppPanel.gap) {
+        HStack(spacing: Metrics.Keypad.gap) {
             ForEach(shortcuts.prefix(Metrics.Input.shortcutCount)) { shortcut in
                 ShortcutButtonView(
                     button: PanelButton(

@@ -29,7 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var settingsWindow: SettingsWindowController!
     private var write: WriteController!
     /// Held strongly: the tap's callback does not retain it.
-    private var chordTap: ChordTap?
+    private var modifierTap: ModifierTap?
     private var tracker = FrontAppTracker(ownPID: ProcessInfo.processInfo.processIdentifier)
     private var isWriteInFront = false
     /// How to read the text near the field in each app.
@@ -39,7 +39,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var fieldWasEmpty = true
     private var clipboardWatcher: ClipboardWatcher?
     private var clipboardTimer: Timer?
-    private var appIcon: NSImage?
     private var mode: KeyboardMode = .type
 
     /// The tree viewer is on by default — it is the window that shows why an
@@ -71,13 +70,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         speech.start()
         history = SentenceHistory(database: KeyboardDatabase.open(at: KeyboardDatabase.defaultURL))
         let predictions = PredictionEngine(history: history)
-        let appPanels = AppPanelModel(
-            store: controller.panels, usage: UsageStore(), learner: ShortcutLearner(),
-            settings: AppPanelSettings())
         session = KeyboardSession(
             controller: controller, predictions: predictions, speaker: speech.speaker,
-            appPanels: appPanels, userPanel: Result { try UserPanelStore() },
-            userPanelUsage: UsageStore(fileURL: UsageStore.userPanelURL),
+            userPanel: Result { try UserPanelStore() }, userPanelUsage: UsageStore(),
             clipboard: ClipboardHistory(fileURL: ClipboardHistory.defaultURL),
             pasteboard: SystemPasteboard())
         watchClipboard()
@@ -120,7 +115,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .store(in: &subscriptions)
 
         watchFocus()
-        startChordTap()
+        startModifierTap()
         predictions.refreshAvailability()
         observers.append(
             NSWorkspace.shared.notificationCenter.addObserver(
@@ -163,10 +158,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         var pages = SettingsPages(settings: keyboardSettings, permission: permission)
         pages[.voice] = AnyView(VoiceSettingsPage(speech: speech))
         pages[.speech] = AnyView(SpeechPage(speech: speech, settings: keyboardSettings, said: controller.talk.said))
-        pages[.predictions] = AnyView(PredictionsSettingsPage(engine: session.predictions, history: history))
+        pages[.predictions] = AnyView(
+            PredictionsSettingsPage(
+                engine: session.predictions, history: history, inputMonitoring: inputMonitoring))
         pages[.clipboard] = AnyView(ClipboardSettingsPage(history: session.clipboard))
-        pages[.appPanels] = AnyView(
-            AppPanelsSettingsPage(model: session.appPanels, inputMonitoring: inputMonitoring))
         if let store = session.userPanel {
             pages[.myPanel] = AnyView(MyPanelSettingsPage(store: store, usage: session.userPanelUsage))
         } else if let error = session.userPanelError {
@@ -206,7 +201,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func showSettings(_ page: SettingsPage = .voice) {
         session.predictions.refreshAvailability()
-        startChordTap()
+        startModifierTap()
         settingsWindow.show(page)
     }
 
@@ -231,12 +226,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // slow timer.
             self?.scheduleTreeRefresh()
         }
-        focusWatcher.onAppChanged = { [weak self] app, title in
+        focusWatcher.onAppChanged = { [weak self] app in
             guard let self else { return }
-            self.apply(self.tracker.appActivated(app.map(FrontApp.init)), app: app, title: title)
-        }
-        focusWatcher.onWindowTitleChanged = { [weak self] title in
-            self?.session.windowTitleChanged(title)
+            self.apply(self.tracker.appActivated(app.map(FrontApp.init)), app: app)
         }
         sink.afterPost = { [weak self] in
             self?.focusWatcher.refreshSoon()
@@ -273,56 +265,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func writeKeyChanged(_ isKey: Bool) {
         let front = NSWorkspace.shared.frontmostApplication
         let change = tracker.writeKeyChanged(isKey, front: front.map(FrontApp.init))
-        apply(change, app: front, title: focusWatcher.windowTitle(of: front))
+        apply(change, app: front)
         // The app in front may have come forward while the Write paper was
         // key. Follow it again, so its field shows in the bar.
         if case .app = change { focusWatcher.refollow() }
     }
 
-    private func apply(_ change: FrontAppTracker.Switch?, app: NSRunningApplication?, title: String?) {
+    private func apply(_ change: FrontAppTracker.Switch?, app: NSRunningApplication?) {
         switch change {
         case nil:
             return
         case .write:
             isWriteInFront = true
-            appIcon = NSApp.applicationIconImage.tabIcon()
-            session.menuName = { _ in nil }
             session.readMenu = { [] }
-            session.appChanged(name: "Write", bundleID: write.panel, windowTitle: nil)
+            session.appChanged(name: "Write", bundleID: write.panel)
             session.writeCaretRead(write.caret)
         case .app:
             isWriteInFront = false
-            appIcon = app?.icon?.tabIcon()
-            session.menuName = { [weak app] chord in
-                // The menu bar runs to hundreds of items, so it is read only
-                // when a chord is about to join the panel.
-                app.flatMap(MenuBarReader.index(for:))?.name(for: chord)
-            }
             session.readMenu = { [weak app] in app.map(MenuBarReader.shortcuts(for:)) ?? [] }
-            session.appChanged(name: app?.localizedName, bundleID: app?.bundleIdentifier, windowTitle: title)
-            startChordTap()
+            session.appChanged(name: app?.localizedName, bundleID: app?.bundleIdentifier)
+            startModifierTap()
             readScreenSoon()
         }
-        updateAppPanel()
     }
 
-    /// The paper turned into the desk, or the desk into the paper: the app
-    /// panel changes between the Write keys and the Documents keys.
+    /// The paper turned into the desk, or the desk into the paper: the Write
+    /// tab changes between the Write keys and the Documents keys.
     private func writePanelChanged() {
         guard isWriteInFront else { return }
-        session.appChanged(name: "Write", bundleID: write.panel, windowTitle: nil)
+        session.appChanged(name: "Write", bundleID: write.panel)
         session.writeCaretRead(write.caret)
-        updateAppPanel()
-    }
-
-    private func updateAppPanel() {
-        // The new panel gets the icon of the app. The top of the panel stays
-        // in line with the top of the keys.
-        if let window = panels[.app] {
-            let top = window.frame.maxY
-            window.update(root: content.panel(.app, appIcon: appIcon), contentSize: panelSize(.app))
-            window.setFrameOrigin(NSPoint(x: window.frame.minX, y: top - window.frame.height))
-        }
     }
 
     // MARK: - Write
@@ -345,21 +317,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         session.writeCaretRead(caret)
     }
 
-    // MARK: - Learning from the hardware keyboard
+    // MARK: - The modifiers of the hardware keyboard
 
     /// Starts the tap only when macOS already allows it, so launch never
-    /// prompts. The App Panels page asks.
-    private func startChordTap() {
-        guard chordTap == nil else { return }
-        guard ChordTap.isAllowed else {
+    /// prompts. The Predictions page of Settings asks.
+    private func startModifierTap() {
+        guard modifierTap == nil else { return }
+        guard ModifierTap.isAllowed else {
             inputMonitoring.isAllowed = false
             return
         }
-        let tap = ChordTap(
-            onChord: { [weak self] chord in self?.session.chordPressed(chord) },
-            onModifiers: { [weak self] modifiers in self?.session.hardwareModifiersChanged(modifiers) })
+        let tap = ModifierTap { [weak self] modifiers in self?.session.hardwareModifiersChanged(modifiers) }
         if tap.start() {
-            chordTap = tap
+            modifierTap = tap
             inputMonitoring.isAllowed = true
         } else {
             inputMonitoring.isAllowed = false
@@ -400,7 +370,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let keys = CGRect(origin: KeyboardPosition.keysOrigin(ofWindow: origin, in: .type), size: keysSize)
         let defaults = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
         for panel in shown {
-            let window = FloatingPanel(root: content.panel(panel, appIcon: appIcon), contentSize: sizes[panel]!)
+            let window = FloatingPanel(root: content.panel(panel), contentSize: sizes[panel]!)
             window.placement = .free
             // The panels sit above the keyboard window, whose clear corners
             // reach over them.
@@ -439,7 +409,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func panelSize(_ panel: DetachedPanel) -> CGSize {
-        WindowContent.measure(content.panel(panel, appIcon: appIcon))
+        WindowContent.measure(content.panel(panel))
     }
 
     /// Builds the keyboard window and measures it, scaling down if the

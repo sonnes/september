@@ -20,14 +20,15 @@ It runs on the main actor. The checks are in
 | The keys and the field | `KeyboardController` | Reads the input, the mode, and the private state. Types the text of a prediction. |
 | The predictions | `PredictionEngine` | Feeds it with the field, or with the Talk bar and the Said list. |
 | The voice | `Speaker` | Speaks the text of Speak, and stops it. Gives Talk mode its voice. |
-| The app panel | `AppPanelModel` | Tells it the app in front, the window title, the presses, and the chords. |
-| My Panel | `UserPanelStore`, `UsageStore` | Counts the presses and ranks the buttons of the Mine tab. |
+| The Write panel | `PanelStore` | Takes the paper keys or the desk keys while Write is in front. |
+| My Panel | `UserPanelStore`, `UsageStore` | Counts the presses and ranks the buttons of Mine. |
 | The input bar | `InputBarVisibility` | Shows the bar and the suggestions only when there is text input. |
 | The clipboard | `ClipboardHistory`, `ClipboardAccess` | Pastes a copied text, and does Cut, Copy, and Paste in each mode. |
 
 The app sets two hooks:
 
-- `menuName` gives the name of a chord from the menu bar of the app in front.
+- `readMenu` reads the menu shortcuts of the app in front. See
+  [Shortcut Suggestions](#shortcut-suggestions).
 - `writeSpeech` reads the selection and the document of the Write paper, or
   the Find query of the desk. The keyboard cannot read its own window through
   the accessibility API.
@@ -37,7 +38,10 @@ The views read these values of the session:
 - `speakMode`: Speak, Stop, or off.
 - `spokenWord`: the word that the voice speaks now, as a range in the text of
   the bar. It is `nil` when the bar does not hold the spoken text.
-- `appPanelTab`: the app tab or the Mine tab.
+- `writePanel`: the keys of the Write paper or the Write desk while Write is
+  in front. It is `nil` for another app.
+- `panelTab`: the Write tab or the Mine tab of My Panel. Without Write in
+  front, My Panel shows only Mine.
 - `mineButtons`: the buttons of Mine, most used first.
 - `userPanelError`: the reason that My Panel could not read its file.
 - `isHistoryOpen`: true while the clipboard history shows in the place of the
@@ -97,9 +101,8 @@ Settings ranks Mine at once, because the user is in the Settings window.
 order:
 
 1. `FrontAppTracker` decides between the Write paper and another app.
-2. `appChanged(name:bundleID:windowTitle:)`. The controller clears the text of
-   the last app. Then the app panel takes the panel of the new app, and Mine
-   takes its new order.
+2. `appChanged(name:bundleID:)`. The controller clears the text of the last
+   app. Then `writePanel` changes, and Mine takes its new order.
 3. `focusMoved()`. The private state of the last field ends.
 4. `controller.focusChanged(to:)` with the field of the new app.
 
@@ -114,11 +117,6 @@ the only observer of the app switch.
    field.
 2. `controller.focusChanged(to:)` with the new field.
 
-### The window title changes
-
-`windowTitleChanged(_:)` tells the app panel. A terminal shows the Claude Code
-panel when its window title names Claude Code.
-
 ### The Write paper
 
 The Write paper is in the keyboard process, and the keyboard cannot read its
@@ -129,8 +127,8 @@ app gives it to `writeCaretRead(_:)`. The session sends the paragraph to
 `controller.focusChanged(to:)` and records if the document has text.
 
 The desk of Write is the other window of Write. When the paper turns into the
-desk, the app calls `appChanged` with `WritePanel.documentsID`, so the app
-panel shows the Documents keys. The desk reports its Find query in place of
+desk, the app calls `appChanged` with `WritePanel.documentsID`, so the Write
+tab shows the Documents keys. The desk reports its Find query in place of
 the paragraph. When the desk turns back into the paper, the app calls
 `appChanged` with `WritePanel.id` again.
 
@@ -157,11 +155,9 @@ The text on the clipboard at launch does not go into the history.
 | `screenRead(_:)` | `AppDelegate`, after a read of the text near the field | Keeps the text for the sentence predictions of Type mode. A read of an app that is no longer in front is dropped. A new app clears the text. |
 | `pickWord(_:)` | A word completion | Types the rest of the word as `type(_:)` does. The engine keeps the word until the user submits the text. |
 | `speakPressed()` | Speak | See [Speak](#speak). |
-| `pressAppPanel(_:)` | A button of the app panel | Counts the press for the order of the panel, then does the action. |
 | `pressMine(_:)` | A button of Mine | Counts the press for the order of Mine, then does the action. |
-| `pressShortcut(_:)` | A shortcut suggestion | Acts as `pressAppPanel(_:)` with the chord of the suggestion. A latched modifier ends. |
-| `hardwareModifiersChanged(_:)` | `ChordTap` | See [Shortcut Suggestions](#shortcut-suggestions). |
-| `chordPressed(_:)` | `ChordTap` and the chords of the keys | Gives the chord to the app panel to learn. The app panel learns nothing while the field has private text. |
+| `pressShortcut(_:)` | A shortcut suggestion | Presses the chord of the suggestion in the app. A latched modifier ends. |
+| `hardwareModifiersChanged(_:)` | `ModifierTap` | See [Shortcut Suggestions](#shortcut-suggestions). |
 | `toggleHistory()` | History | Shows the clipboard history in the place of the predictions, on its newest page, or shows the predictions again. An app change and a mode change close the history. |
 | `olderPage()`, `newerPage()` | Older and Newer | Turns the pages of the history. |
 | `pasteClip(_:)` | A copied text | See [The Clipboard](#the-clipboard). |
@@ -196,9 +192,9 @@ text field has focus, or when Command or Control is on. The view shows them
 in the place of the input bar. Otherwise `shortcuts` is empty, and the bar
 shows. Talk mode and the Write window have no shortcuts.
 
-- The shortcuts come from `AppShortcut.suggestions(panel:menu:modifiers:)`:
-  the chords of the ranked app panel, then the menu shortcuts. Each chord
-  shows one time.
+- The shortcuts come from `AppShortcut.suggestions(menu:modifiers:)`: the
+  menu items of the app with a chord, in menu bar order. Each chord shows one
+  time.
 - `readMenu` reads the menu shortcuts of the app in front. The app shell sets
   it in each app change. The session calls it only when it needs shortcuts,
   and keeps the result until the next app change.

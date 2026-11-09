@@ -4,17 +4,18 @@ import Foundation
 extension Speaker: SpeechOutput {}
 
 /// Joins the parts of the keyboard: the controller, the predictions, the
-/// voice, the app panel, and My Panel.
+/// voice, the Write panel, and My Panel.
 ///
 /// The views and the app shell call the session. The session tells each part
 /// what changed: the input bar feeds the predictions, the end of a speech
-/// empties the Talk bar, and a press on a panel counts toward its order.
+/// empties the Talk bar, and a press on My Panel counts toward its order.
 @MainActor
 public final class KeyboardSession: ObservableObject {
-    /// The tabs of the app panel.
-    public enum AppPanelTab: Sendable, Hashable {
-        /// The panel of the app in front.
-        case app
+    /// The tabs of the My Panel window while Write is in front. Another app
+    /// shows only Mine.
+    public enum PanelTab: Sendable, Hashable {
+        /// The keys of the Write paper or the Write desk.
+        case write
         /// My Panel.
         case mine
     }
@@ -22,7 +23,6 @@ public final class KeyboardSession: ObservableObject {
     public let controller: KeyboardController
     public let predictions: PredictionEngine
     public let speaker: Speaker
-    public let appPanels: AppPanelModel
     public let userPanel: UserPanelStore?
     /// The counts of My Panel.
     public let userPanelUsage: UsageStore
@@ -33,7 +33,10 @@ public final class KeyboardSession: ObservableObject {
     /// The word that the voice speaks now, as a UTF-16 range in the text of the
     /// bar. `nil` when the bar does not hold the spoken text.
     @Published public private(set) var spokenWord: NSRange?
-    @Published public var appPanelTab: AppPanelTab = .app
+    @Published public var panelTab: PanelTab = .write
+    /// The keys of Write while it is in front: the paper keys or the desk
+    /// keys. Nil for another app.
+    @Published public private(set) var writePanel: PanelDefinition?
     /// The buttons of My Panel, most used first. The order changes only when
     /// an app comes to the front, so that a button never moves while the user
     /// aims at it.
@@ -77,8 +80,6 @@ public final class KeyboardSession: ObservableObject {
     private var screen: ScreenContext?
     /// False while the document of the Write window has no text.
     private var writeHasText = false
-    /// Gives the name of a chord in the menu bar of the app in front.
-    public var menuName: (Shortcut) -> String? = { _ in nil }
     /// Reads what Speak reads in the Write window: the selection and the
     /// document. The keyboard cannot read its own web view through the
     /// accessibility API, so the app asks the editor page.
@@ -106,7 +107,6 @@ public final class KeyboardSession: ObservableObject {
         controller: KeyboardController,
         predictions: PredictionEngine,
         speaker: Speaker,
-        appPanels: AppPanelModel,
         userPanel: Result<UserPanelStore, any Error>,
         userPanelUsage: UsageStore,
         inputBar: InputBarVisibility = InputBarVisibility(),
@@ -121,7 +121,6 @@ public final class KeyboardSession: ObservableObject {
         self.controller = controller
         self.predictions = predictions
         self.speaker = speaker
-        self.appPanels = appPanels
         self.userPanelUsage = userPanelUsage
         switch userPanel {
         case .success(let store):
@@ -136,7 +135,6 @@ public final class KeyboardSession: ObservableObject {
         }
 
         controller.talk.speech = speaker
-        controller.onChord = { [weak self] chord in self?.chordPressed(chord) }
         // The Write window keeps its text in its documents, so its sentences
         // do not go into the history.
         controller.onSubmit = { [weak self] in
@@ -168,16 +166,10 @@ public final class KeyboardSession: ObservableObject {
         type(completion.textToType)
     }
 
-    /// A press on the app panel. It counts toward the order of the panel.
-    public func pressAppPanel(_ action: PanelAction) {
-        appPanels.pressed(action)
-        controller.perform(action)
-    }
-
-    /// A press on a shortcut suggestion. It acts as a press on the app panel,
-    /// and it ends a latched modifier.
+    /// A press on a shortcut suggestion. It presses the chord in the app and
+    /// ends a latched modifier.
     public func pressShortcut(_ shortcut: AppShortcut) {
-        pressAppPanel(.shortcut(shortcut.shortcut))
+        controller.perform(.shortcut(shortcut.shortcut))
     }
 
     /// The modifiers that the user holds on the hardware keyboard changed.
@@ -206,7 +198,7 @@ public final class KeyboardSession: ObservableObject {
 
     /// A press on My Panel. It counts toward the order of My Panel.
     public func pressMine(_ button: UserButton) {
-        userPanelUsage.recordUserButton(button.id)
+        userPanelUsage.record(button.id)
         controller.perform(button)
     }
 
@@ -318,15 +310,16 @@ public final class KeyboardSession: ObservableObject {
     // MARK: - The app in front
 
     /// A different app came to the front. The last app's text goes first,
-    /// then the app panel and My Panel take their new order.
-    public func appChanged(name: String?, bundleID: String?, windowTitle: String?) {
-        controller.appChanged(name: name, bundleID: bundleID)
+    /// then My Panel takes its new order. `WritePanel.id` and
+    /// `WritePanel.documentsID` stand for Write.
+    public func appChanged(name: String?, bundleID: String?) {
+        controller.appChanged(name: name)
         isHistoryOpen = false
         isWriteInFront = WritePanel.isWrite(bundleID)
         frontBundleID = bundleID
         screen = nil
         menu = nil
-        appPanels.appActivated(bundleID: bundleID, windowTitle: windowTitle)
+        writePanel = controller.panels.writePanel(for: bundleID)
         predictions.focusMoved()
         rankUserPanel()
     }
@@ -337,10 +330,6 @@ public final class KeyboardSession: ObservableObject {
         guard screen == nil || screen?.bundleID == frontBundleID else { return }
         self.screen = screen
         scheduleUpdate()
-    }
-
-    public func windowTitleChanged(_ title: String?) {
-        appPanels.windowTitleChanged(title)
     }
 
     /// The focus moved to a different element. Call it only for a new element,
@@ -358,12 +347,6 @@ public final class KeyboardSession: ObservableObject {
         writeHasText = !caret.documentIsEmpty
         controller.focusChanged(to: caret.focusedField)
         scheduleUpdate()
-    }
-
-    /// A chord from the hardware keyboard or from the keys.
-    public func chordPressed(_ chord: Shortcut) {
-        guard !controller.isFieldPrivate else { return }
-        appPanels.chordPressed(chord, name: menuName)
     }
 
     /// Waits until the parts have taken the last change.
@@ -406,7 +389,6 @@ public final class KeyboardSession: ObservableObject {
             controller.talk.objectWillChange.eraseToAnyPublisher(),
             controller.talk.said.objectWillChange.eraseToAnyPublisher(),
             speaker.objectWillChange.eraseToAnyPublisher(),
-            appPanels.objectWillChange.eraseToAnyPublisher(),
         ]
         // `objectWillChange` fires before the new value is stored, so the
         // update waits a turn.
@@ -524,8 +506,7 @@ public final class KeyboardSession: ObservableObject {
             input: controller.input, isWriteInFront: isWriteInFront)
         guard byModifier || !hasTextInput else { return [] }
         if menu == nil { menu = readMenu() }
-        return AppShortcut.suggestions(
-            panel: appPanels.panel.buttons, menu: menu ?? [], modifiers: byModifier ? on : [])
+        return AppShortcut.suggestions(menu: menu ?? [], modifiers: byModifier ? on : [])
     }
 
     private func spokenWord(mode: KeyboardMode) -> NSRange? {

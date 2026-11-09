@@ -5,16 +5,19 @@ import SwiftUI
 public struct PredictionsSettingsPage: View {
     @ObservedObject private var engine: PredictionEngine
     @ObservedObject private var history: SentenceHistory
+    @ObservedObject private var inputMonitoring: InputMonitoringStatus
     private let onOpenSystemSettings: () -> Void
     @State private var confirmsClear = false
 
     public init(
         engine: PredictionEngine,
         history: SentenceHistory,
+        inputMonitoring: InputMonitoringStatus = InputMonitoringStatus(),
         onOpenSystemSettings: @escaping () -> Void = PredictionNoticeView.openSystemSettings
     ) {
         self.engine = engine
         self.history = history
+        self.inputMonitoring = inputMonitoring
         self.onOpenSystemSettings = onOpenSystemSettings
     }
 
@@ -61,6 +64,20 @@ public struct PredictionsSettingsPage: View {
                 Toggle("Word completions", isOn: $engine.wordsEnabled)
             } footer: {
                 Text("Completions for the word at the caret show above the keys. They come from the word suggestions of macOS.")
+            }
+            Section {
+                LabeledContent("Input Monitoring", value: inputMonitoring.isAllowed ? "On" : "Off")
+                if !inputMonitoring.isAllowed {
+                    Button("Open Input Monitoring Settings") { inputMonitoring.openSettings() }
+                }
+            } header: {
+                Text("Shortcuts")
+            } footer: {
+                Text(
+                    "When you hold Command or Control on the hardware keyboard, the shortcuts of the app show in the place of the input bar. This needs Input Monitoring. After you allow it, quit September Keyboard and open it again."
+                )
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .formStyle(.grouped)

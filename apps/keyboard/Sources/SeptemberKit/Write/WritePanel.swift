@@ -1,8 +1,8 @@
-/// The app panels of Write: `Resources/Panels/Apps/september.write.json`
-/// on the paper, and `september.write.documents.json` on the desk.
+/// The panels of Write: `Resources/Panels/write.json` on the paper, and
+/// `write-documents.json` on the desk.
 ///
-/// Write belongs to the keyboard itself, so the app in front has no bundle
-/// ID of its own for the panel. These names take its place.
+/// Write belongs to the keyboard itself, so it has no bundle ID of its own.
+/// These names take its place when Write comes to the front.
 public enum WritePanel {
     public static let id = "september.write"
     public static let documentsID = "september.write.documents"

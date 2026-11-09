@@ -3,21 +3,15 @@ import ApplicationServices
 import SeptemberKit
 
 /// Reads the menu bar of an app into an `AXNode` tree, with the keys of each
-/// menu item and whether it is on. `MenuShortcutIndex` names a chord with it,
-/// and `AppShortcut.menu(_:)` lists the shortcut suggestions.
+/// menu item and whether it is on. `AppShortcut.menu(_:)` lists the shortcut
+/// suggestions from it.
 ///
-/// A menu bar runs to hundreds of items, so read it only when a chord is about
-/// to join a panel or a suggestion needs it, not on each key press.
+/// A menu bar runs to hundreds of items, so read it only when a suggestion
+/// needs it, not on each key press.
 @MainActor
 enum MenuBarReader {
     private static let maxDepth = 6
     private static let maxNodes = 2_000
-
-    /// The names of the chords in the menu bar of the app, or nil when the app
-    /// shows no menu bar to accessibility.
-    static func index(for app: NSRunningApplication) -> MenuShortcutIndex? {
-        read(pid: app.processIdentifier).map(MenuShortcutIndex.init(menuBar:))
-    }
 
     /// The menu items with a chord of the app, for the shortcut suggestions.
     static func shortcuts(for app: NSRunningApplication) -> [AppShortcut] {

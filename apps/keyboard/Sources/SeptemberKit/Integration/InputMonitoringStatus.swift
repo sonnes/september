@@ -1,8 +1,8 @@
 import AppKit
 import Combine
 
-/// Whether macOS lets the keyboard listen to the hardware keyboard, so it can
-/// learn the shortcuts that the user presses there. The app sets `isAllowed`
+/// Whether macOS lets the keyboard listen to the modifier keys of the
+/// hardware keyboard, for the shortcut suggestions. The app sets `isAllowed`
 /// from the event tap. Nothing here asks for the permission at launch.
 @MainActor
 public final class InputMonitoringStatus: ObservableObject {

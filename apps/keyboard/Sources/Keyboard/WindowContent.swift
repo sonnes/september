@@ -31,12 +31,12 @@ struct WindowContent {
         AnyView(TypeKeysCard(session: session).environmentObject(controller))
     }
 
-    func panel(_ panel: DetachedPanel, appIcon: NSImage?) -> AnyView {
+    func panel(_ panel: DetachedPanel) -> AnyView {
         let view: AnyView
         switch panel {
         case .text: view = AnyView(KeypadCard(panel: controller.panels.text))
         case .system: view = AnyView(KeypadCard(panel: controller.panels.system))
-        case .app: view = AnyView(AppPanelCard(session: session, appIcon: appIcon))
+        case .mine: view = AnyView(MyPanelCard(session: session))
         case .rectangle: view = AnyView(KeypadCard(panel: controller.panels.rectangle))
         }
         return AnyView(view.environmentObject(controller).environment(\.keyPresser, presser))
@@ -53,28 +53,5 @@ struct WindowContent {
 extension FrontApp {
     init(_ app: NSRunningApplication) {
         self.init(pid: app.processIdentifier, name: app.localizedName, bundleID: app.bundleIdentifier)
-    }
-}
-
-extension NSImage {
-    /// The icon drawn once into a small bitmap for the tab of the app panel.
-    /// An app icon holds many large images, and `ImageRenderer` draws a grey
-    /// layer over the whole view when it meets one.
-    func tabIcon() -> NSImage? {
-        let side = Int(Metrics.Detached.tabIcon * 2)
-        guard
-            let bitmap = NSBitmapImageRep(
-                bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side, bitsPerSample: 8,
-                samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
-                bytesPerRow: 0, bitsPerPixel: 0),
-            let context = NSGraphicsContext(bitmapImageRep: bitmap)
-        else { return nil }
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = context
-        draw(in: NSRect(x: 0, y: 0, width: side, height: side))
-        NSGraphicsContext.restoreGraphicsState()
-        let image = NSImage(size: NSSize(width: Metrics.Detached.tabIcon, height: Metrics.Detached.tabIcon))
-        image.addRepresentation(bitmap)
-        return image
     }
 }

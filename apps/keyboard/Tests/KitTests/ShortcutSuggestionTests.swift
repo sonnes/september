@@ -70,36 +70,22 @@ private func menuListTests() {
 
 @MainActor
 private func suggestionTests() {
-    let panel = [
-        PanelButton(id: "reload", label: "Reload", symbol: nil, action: .shortcut(chord(.command, "r"))),
-        PanelButton(id: "tab", label: "Fresh Tab", symbol: nil, action: .shortcut(chord(.command, "t"))),
-        PanelButton(id: "hello", label: "Hello", symbol: nil, action: .text("Hello")),
-        PanelButton(
-            id: "twice", label: "Twice", symbol: nil,
-            action: .sequence([chord([], "a"), chord([], "b")])),
-        PanelButton(id: "prev", label: "Previous Tab", symbol: nil, action: .shortcut(chord([.control, .shift], "p"))),
-    ]
     let menu = AppShortcut.menu(menuBar)
 
-    test("the panel shortcuts come first, then the menu shortcuts, and each chord shows one time") {
-        let names = AppShortcut.suggestions(panel: panel, menu: menu, modifiers: []).map(\.name)
-        expectEqual(
-            names,
-            ["Reload", "Fresh Tab", "Previous Tab", "Reopen Tab", "Deep", "Copy", "Undo", "Hide Safari", "Quit Safari"])
+    test("with no modifier on, each menu shortcut shows") {
+        let names = AppShortcut.suggestions(menu: menu, modifiers: []).map(\.name)
+        expectEqual(names, ["New Tab", "Reopen Tab", "Deep", "Copy", "Undo", "Hide Safari", "Quit Safari"])
     }
 
     test("the modifiers that are on keep only the shortcuts that hold all of them") {
-        let command = AppShortcut.suggestions(panel: panel, menu: menu, modifiers: .command).map(\.name)
-        expectEqual(command, ["Reload", "Fresh Tab", "Reopen Tab", "Deep", "Copy", "Undo", "Hide Safari", "Quit Safari"])
-        let control = AppShortcut.suggestions(panel: panel, menu: menu, modifiers: .control).map(\.name)
-        expectEqual(control, ["Previous Tab", "Deep"])
-        let both = AppShortcut.suggestions(panel: panel, menu: menu, modifiers: [.shift, .command]).map(\.name)
+        let control = AppShortcut.suggestions(menu: menu, modifiers: .control).map(\.name)
+        expectEqual(control, ["Deep"])
+        let both = AppShortcut.suggestions(menu: menu, modifiers: [.shift, .command]).map(\.name)
         expectEqual(both, ["Reopen Tab"])
     }
 
     test("caps lock and fn do not filter the shortcuts") {
-        let names = AppShortcut.suggestions(panel: panel, menu: [], modifiers: [.command, .capsLock, .function])
-            .map(\.name)
-        expectEqual(names, ["Reload", "Fresh Tab"])
+        let names = AppShortcut.suggestions(menu: menu, modifiers: [.control, .capsLock, .function]).map(\.name)
+        expectEqual(names, ["Deep"])
     }
 }

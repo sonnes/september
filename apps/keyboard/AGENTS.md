@@ -34,7 +34,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController` |
 | `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map, the key settings of macOS (`KeyTiming`) and the timing of a held key (`KeyPresser`) |
 | `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `SpeakText`, `FrontAppTracker`, `PanelPlacement`, `KeyboardPosition`, `InputBarVisibility` |
-| `Sources/SeptemberKit/Panels` | panel model, JSON loading, app panel ranking and learning |
+| `Sources/SeptemberKit/Panels` | panel model, JSON loading, the grid of the Write panels, the shortcut suggestions |
 | `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence) and word completions |
 | `Sources/SeptemberKit/ScreenContext` | `ScreenContext`, the rule of each app (`ContextRule`), and `ScreenContextExtractor` |
 | `Sources/SeptemberKit/Speech` | `Speaker`, the macOS voices, ElevenLabs, the Keychain store |
@@ -45,10 +45,10 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Write` | the document library, `WriteModel` (the open document and its saves), `WriteController` (joins the documents, the paper, and the desk), `WriteDesk` (the cards, the Find query, and the selected card), `EditorCaret` and `EditorSpeech`, and `MarkdownSpeech` (the text that Speak reads) |
 | `Sources/SeptemberKit/WriteEditor` | the native Markdown editor (`WriteTextView`), the Markdown blocks (`WriteMarkdown`), the Write paper with round corners (`WritePaperController`, `WritePaper`), and the desk of document cards (`WriteDeskController`, `WriteDeskLayout`, `WriteCardView`) |
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, the keyboard screen, and the views of each part |
-| `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`rectangle`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
+| `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`rectangle`/`phrases`/`write`/`write-documents.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
-| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ChordTap`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings window, snapshots |
+| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ModifierTap`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings window, snapshots |
 | `Sources/WriteLab` | Write Lab: the Write paper on its own, with a stand-in for the keyboard bar (`make lab`) |
 | `Tests/KitTests` | tests + the harness |
 
@@ -98,7 +98,7 @@ only what needs a running app — the panel, the event sink, the menu bar.
   and down as it changes.
 - **Wire the parts through `KeyboardSession`.** The session feeds the
   predictions from the input bar, empties the Talk bar when the speech ends,
-  counts the presses of the panels, and ranks My Panel. Put new wiring there,
+  and counts the presses of My Panel to rank its buttons. Put new wiring there,
   with a check in `Tests/KitTests/IntegrationTests.swift`. `AppDelegate` keeps
   only what needs a running app. See `docs/concepts/keyboard-session.md`.
 - **Private text stays private.** Never log or print the text of a field, a
@@ -120,9 +120,8 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `AXSecureTextField`. See `docs/concepts/input-mirroring.md`.
 - **Panels are data.** New shortcuts are JSON in `Resources/Panels`, not Swift.
   A button presses a `shortcut`, presses a `sequence` of shortcuts, or types
-  `text`. The file name is the panel's identity: an app panel is
-  `Apps/<bundle id>.json`. `PanelStore` throws on a missing or broken file,
-  and the app shows the error and quits.
+  `text`. The file name is the panel's identity. `PanelStore` throws on a
+  missing or broken file, and the app shows the error and quits.
 - **Context rules are data.** The rule that reads the text near the field in
   an app is `Resources/Context/<bundle id>.json`, not Swift. Add one app at a
   time, and check it with `--ax --context-shape`. An app with no file gets the
@@ -161,7 +160,7 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `com.september.keyboard.private`: they are storage names, and a new name
   loses the saved key and the private text.
 - Never prompt for permission at launch. The banner and the menu item ask for
-  Accessibility. The App Panels page of Settings asks for Input Monitoring.
+  Accessibility. The Predictions page of Settings asks for Input Monitoring.
 - Key code mapping goes through `UCKeyTranslate`, never a hardcoded US table,
   and rebuilds when the input source changes. A shortcut letter that the
   current layout lacks comes from the ASCII-capable layout, as macOS does.

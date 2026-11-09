@@ -41,20 +41,10 @@ public struct AppShortcut: Equatable, Hashable, Sendable, Identifiable {
         return shortcuts
     }
 
-    /// The suggestions: the chords of the app panel in their order, then the
-    /// menu shortcuts. A chord shows one time, with the name of the panel. When
-    /// modifiers are on, only the chords that hold all of them stay.
-    public static func suggestions(
-        panel: [PanelButton], menu: [AppShortcut], modifiers: Modifiers
-    ) -> [AppShortcut] {
+    /// The suggestions from the menu shortcuts. When modifiers are on, only
+    /// the chords that hold all of them stay.
+    public static func suggestions(menu: [AppShortcut], modifiers: Modifiers) -> [AppShortcut] {
         let required = modifiers.intersection(filterModifiers)
-        let fromPanel = panel.compactMap { button -> AppShortcut? in
-            guard case .shortcut(let shortcut) = button.action else { return nil }
-            return AppShortcut(name: button.label, shortcut: shortcut)
-        }
-        var seen: Set<Shortcut> = []
-        return (fromPanel + menu).filter {
-            $0.shortcut.modifiers.isSuperset(of: required) && seen.insert($0.shortcut).inserted
-        }
+        return menu.filter { $0.shortcut.modifiers.isSuperset(of: required) }
     }
 }

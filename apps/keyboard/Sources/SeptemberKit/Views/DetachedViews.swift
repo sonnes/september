@@ -108,46 +108,38 @@ public struct KeypadCard: View {
             PanelGridView(
                 panel: panel,
                 width: max(panel.columns, panel.arrows?.columns ?? 0) > 2
-                    ? Metrics.AppPanel.arrowsWidth : Metrics.AppPanel.width
+                    ? Metrics.Keypad.arrowsWidth : Metrics.Keypad.width
             ) { controller.perform($0) }
         }
     }
 }
 
-/// The app panel in a window of its own, with two tabs: the panel of the app
-/// in front, and Mine.
-public struct AppPanelCard: View {
+/// My Panel in a window of its own. While Write is in front, a second tab
+/// holds the keys of Write.
+public struct MyPanelCard: View {
     @EnvironmentObject private var controller: KeyboardController
     @ObservedObject private var session: KeyboardSession
-    @ObservedObject private var appPanels: AppPanelModel
-    private let appIcon: NSImage?
 
-    /// - Parameter appIcon: the icon of the app in front, for its tab.
-    public init(session: KeyboardSession, appIcon: NSImage?) {
+    public init(session: KeyboardSession) {
         self.session = session
-        appPanels = session.appPanels
-        self.appIcon = appIcon
     }
 
     public var body: some View {
+        let write = session.writePanel
+        let showsWrite = write != nil && session.panelTab == .write
         PanelCard {
             VStack(spacing: Metrics.Detached.tabsBottom) {
                 HStack(spacing: Metrics.Detached.tabSpacing) {
-                    PanelTab(title: title, icon: appIcon, isSelected: session.appPanelTab == .app) {
-                        session.appPanelTab = .app
+                    if let write {
+                        PanelTab(title: write.title, isSelected: showsWrite) { session.panelTab = .write }
                     }
-                    PanelTab(title: "Mine", icon: nil, isSelected: session.appPanelTab == .mine) {
-                        session.appPanelTab = .mine
-                    }
+                    PanelTab(title: "Mine", isSelected: !showsWrite) { session.panelTab = .mine }
                 }
-                .frame(width: Metrics.AppPanel.width)
+                .frame(width: Metrics.Keypad.width)
 
-                switch session.appPanelTab {
-                case .app:
-                    AppShortcutsView(panel: appPanels.panel, appName: nil, showsHeader: false) {
-                        session.pressAppPanel($0)
-                    }
-                case .mine:
+                if let write, showsWrite {
+                    WritePanelGrid(panel: write) { controller.perform($0) }
+                } else {
                     mine
                 }
             }
@@ -171,40 +163,27 @@ public struct AppPanelCard: View {
             .foregroundStyle(Color(Tokens.labelSecondary))
             .multilineTextAlignment(.leading)
             .frame(
-                width: Metrics.AppPanel.width, height: Metrics.AppPanel.gridHeight, alignment: .topLeading)
-    }
-
-    private var title: String {
-        appPanels.title(appName: controller.frontmostAppName)
+                width: Metrics.Keypad.width, height: Metrics.Keypad.gridHeight, alignment: .topLeading)
     }
 }
 
-/// A tab of the app panel.
+/// A tab of the My Panel window.
 private struct PanelTab: View {
     let title: String
-    let icon: NSImage?
     let isSelected: Bool
     let select: () -> Void
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Metrics.Detached.tabCornerRadius, style: .continuous)
-        HStack(spacing: Metrics.Detached.tabIconSpacing) {
-            if let icon {
-                Image(nsImage: icon)
-                    .resizable()
-                    .frame(width: Metrics.Detached.tabIcon, height: Metrics.Detached.tabIcon)
-                    .accessibilityHidden(true)
-            }
-            Text(title)
-                .font(Typography.tabLabel)
-                .lineLimit(1)
-                .minimumScaleFactor(Metrics.AppPanel.keysMinimumScale)
-        }
-        .foregroundStyle(Color(isSelected ? Tokens.keyText : Tokens.labelSecondary))
-        .frame(maxWidth: .infinity)
-        .frame(height: Metrics.Detached.tabHeight)
-        .background(shape.fill(Color(isSelected ? Tokens.key : Tokens.keySpecial)))
-        .overlay(shape.strokeBorder(Color(Tokens.accent), lineWidth: 1).opacity(isSelected ? 1 : 0))
-        .pressable(label: "\(title) tab", isSelected: isSelected, onPressing: { _ in }, action: select)
+        Text(title)
+            .font(Typography.tabLabel)
+            .lineLimit(1)
+            .minimumScaleFactor(Metrics.Keypad.keysMinimumScale)
+            .foregroundStyle(Color(isSelected ? Tokens.keyText : Tokens.labelSecondary))
+            .frame(maxWidth: .infinity)
+            .frame(height: Metrics.Detached.tabHeight)
+            .background(shape.fill(Color(isSelected ? Tokens.key : Tokens.keySpecial)))
+            .overlay(shape.strokeBorder(Color(Tokens.accent), lineWidth: 1).opacity(isSelected ? 1 : 0))
+            .pressable(label: "\(title) tab", isSelected: isSelected, onPressing: { _ in }, action: select)
     }
 }

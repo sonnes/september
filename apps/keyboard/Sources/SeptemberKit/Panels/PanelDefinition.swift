@@ -53,7 +53,7 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
     }
 
     /// A button that types words. It shows the text and takes a whole row of
-    /// an app panel. Text of marks only, such as `# `, is a key instead.
+    /// a two-column grid. Text of marks only, such as `# `, is a key instead.
     public var isText: Bool {
         if case .text(let text) = action { return Self.marks(text) == nil }
         return false
@@ -67,12 +67,6 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
         }
         return trimmed
     }
-
-    /// The prefix of the ID of a button that `ShortcutLearner` added.
-    public static let learnedPrefix = "learned."
-
-    /// True for a chord that the keyboard learned from the hardware keyboard.
-    public var isLearned: Bool { id.hasPrefix(PanelButton.learnedPrefix) }
 }
 
 /// A part of the screen, in fractions of its width and height, from the top
@@ -103,8 +97,8 @@ public struct PanelBlock: Sendable, Hashable {
     }
 }
 
-/// A grid of shortcut buttons: the Text and System keypads, or the
-/// shortcuts for the app in front.
+/// A grid of shortcut buttons: a keypad, such as Text or System, or a panel
+/// of Write.
 public struct PanelDefinition: Sendable, Hashable {
     public let title: String
     public let columns: Int
@@ -117,28 +111,6 @@ public struct PanelDefinition: Sendable, Hashable {
         self.columns = columns
         self.buttons = buttons
         self.arrows = arrows
-    }
-
-    /// The chords that the buttons and the arrows press on their own.
-    public var shortcuts: Set<Shortcut> {
-        Set((buttons + (arrows?.buttons ?? [])).compactMap { button in
-            if case .shortcut(let shortcut) = button.action { return shortcut }
-            return nil
-        })
-    }
-
-    /// The same panel with other buttons after its own. A button whose ID is
-    /// already in the panel is skipped.
-    public func appending(_ extra: [PanelButton]) -> PanelDefinition {
-        let ids = Set(buttons.map(\.id))
-        return PanelDefinition(
-            title: title, columns: columns,
-            buttons: buttons + extra.filter { !ids.contains($0.id) }, arrows: arrows)
-    }
-
-    /// The same panel with these buttons.
-    public func with(buttons: [PanelButton]) -> PanelDefinition {
-        PanelDefinition(title: title, columns: columns, buttons: buttons, arrows: arrows)
     }
 }
 

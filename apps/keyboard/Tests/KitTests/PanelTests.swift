@@ -83,10 +83,10 @@ func panelTests() {
         expect((try? decode(bad)) == nil, "duplicate button ids decoded anyway")
     }
 
-    test("the bundled panels load, with a generic panel for unknown apps") {
+    test("the bundled panels load") {
         let store = try PanelStore.bundled()
-        let generic = store.appPanel(forBundleID: nil)
-        expectEqual(store.appPanel(forBundleID: "com.example.unheard-of"), generic)
-        expect(store.appPanel(forBundleID: "com.microsoft.VSCode") != generic)
+        for panel in [store.text, store.system, store.rectangle, store.write, store.writeDocuments] {
+            expect(!panel.buttons.isEmpty, "\(panel.title) is empty")
+        }
     }
 }

@@ -1,5 +1,5 @@
-/// How often the user presses each button of My Panel. The `UsageStore` of
-/// the app panels gives these counts after the merge.
+/// How often the user presses each button of My Panel. `UsageStore` gives
+/// these counts.
 @MainActor
 public protocol ButtonUsage {
     func uses(of buttonID: String) -> Int

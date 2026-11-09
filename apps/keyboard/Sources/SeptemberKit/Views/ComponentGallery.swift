@@ -28,7 +28,7 @@ public struct ComponentGallery: View {
             id: "g-phrase", label: "Be right back", symbol: nil, action: .text("Be right back")
         )
         let buttonSize = CGSize(
-            width: Metrics.AppPanel.buttonWidth, height: Metrics.AppPanel.buttonHeight)
+            width: Metrics.Keypad.buttonWidth, height: Metrics.Keypad.buttonHeight)
 
         return [
             (
@@ -53,7 +53,7 @@ public struct ComponentGallery: View {
             ),
             (
                 "Shortcut / Text", "The text it types, across two columns.",
-                AnyView(ShortcutButtonView(button: phrase, width: Metrics.AppPanel.width) {})
+                AnyView(ShortcutButtonView(button: phrase, width: Metrics.Keypad.width) {})
             ),
         ]
     }

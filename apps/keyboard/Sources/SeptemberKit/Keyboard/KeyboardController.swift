@@ -20,7 +20,6 @@ public final class KeyboardController: ObservableObject {
     @Published public private(set) var focusedField: FocusedField?
     /// The name of the app in front. `nil` until an app reports its name.
     @Published public private(set) var frontmostAppName: String?
-    @Published public private(set) var appPanel: PanelDefinition
     /// True after a private text button typed into the focused field, until
     /// the focus moves. The bar hides the field, and the controller keeps none
     /// of its text, so predictions and learning never see it.
@@ -37,9 +36,6 @@ public final class KeyboardController: ObservableObject {
     @Published public private(set) var accentChoices: [String] = []
     public var accents = AccentTable.english
     public let talk: TalkSession
-    /// Called with each chord that the keys send, such as ⌘S, so the app
-    /// panel can count and learn it.
-    public var onChord: ((Shortcut) -> Void)?
     /// Called when the user submits the text in Type mode: a press on Return
     /// with no modifier.
     public var onSubmit: (() -> Void)?
@@ -62,7 +58,6 @@ public final class KeyboardController: ObservableObject {
         self.sink = sink
         self.panels = panels
         self.keyCodeMap = keyCodeMap
-        appPanel = panels.appPanel(forBundleID: nil)
     }
 
     /// Called when the user switches input source, with the map of the new
@@ -128,9 +123,6 @@ public final class KeyboardController: ObservableObject {
             let flags = modifiers.active.subtracting(.capsLock)
             if virtual == .return, flags.isEmpty { onSubmit?() }
             post(virtual, modifiers: flags)
-            if !flags.subtracting(.shift).isEmpty {
-                onChord?(Shortcut(modifiers: flags, key: .virtual(virtual)))
-            }
             modifiers.consume()
         }
     }
@@ -165,9 +157,8 @@ public final class KeyboardController: ObservableObject {
     /// Called when a different app comes to the front. Everything on screen
     /// belonged to the app we just left: the mirrored field is gone, and our
     /// own echo was typed into that app, not this one.
-    public func appChanged(name: String?, bundleID: String?) {
+    public func appChanged(name: String?) {
         frontmostAppName = name
-        appPanel = panels.appPanel(forBundleID: bundleID)
         accentChoices = []
         focusedField = nil
         isFieldPrivate = false
@@ -237,7 +228,6 @@ public final class KeyboardController: ObservableObject {
             var flags = chord
             if modifiers.active.contains(.shift) { flags.insert(.shift) }
             guard post(shortcut: base, modifiers: flags) else { return }
-            onChord?(Shortcut(modifiers: flags, key: .character(base.lowercased())))
         }
         modifiers.consume()
     }

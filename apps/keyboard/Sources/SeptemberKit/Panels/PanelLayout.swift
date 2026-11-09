@@ -1,6 +1,6 @@
-/// The grid of an app panel: two columns and six rows. A key button takes one
-/// slot, and a text button takes a whole row.
-public enum AppPanelLayout {
+/// The grid of a Write panel: two columns and six rows. A key button takes
+/// one slot, and a text button takes a whole row.
+public enum PanelLayout {
     public static let columns = 2
     public static let slotCount = 12
 

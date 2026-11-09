@@ -25,7 +25,7 @@ public struct PanelGridView: View {
 
     public init(
         panel: PanelDefinition,
-        width: CGFloat = Metrics.AppPanel.width,
+        width: CGFloat = Metrics.Keypad.width,
         press: @escaping (PanelAction) -> Void
     ) {
         self.panel = panel
@@ -37,7 +37,7 @@ public struct PanelGridView: View {
         VStack(alignment: .leading, spacing: Metrics.Panel.titleSpacing) {
             SectionLabel(text: panel.title)
                 .frame(height: Metrics.Panel.titleHeight)
-            VStack(spacing: Metrics.AppPanel.gap) {
+            VStack(spacing: Metrics.Keypad.gap) {
                 grid(panel.buttons, columns: panel.columns)
                 if let arrows = panel.arrows {
                     grid(arrows.buttons, columns: arrows.columns)
@@ -50,7 +50,7 @@ public struct PanelGridView: View {
     }
 
     private func grid(_ buttons: [PanelButton], columns: Int) -> some View {
-        let spacing = Metrics.AppPanel.gap
+        let spacing = Metrics.Keypad.gap
         let columns = max(columns, 1)
         let buttonWidth = (width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
         return LazyVGrid(
@@ -66,40 +66,30 @@ public struct PanelGridView: View {
     }
 }
 
-/// Shortcuts for the app in front, headed by the app name, or by the panel
-/// title when the app has no name.
-///
-/// The grid has two columns and six rows. A text button takes a whole row.
-/// Empty slots keep the height of the panel the same in each app.
-public struct AppShortcutsView: View {
+/// The keys of Write in a grid of two columns and six rows. A text button
+/// takes a whole row. Empty slots keep the grid as tall on the desk as on the
+/// paper.
+public struct WritePanelGrid: View {
     private let panel: PanelDefinition
-    private let appName: String?
     private let width: CGFloat
-    private let showsHeader: Bool
     private let press: (PanelAction) -> Void
 
-    /// - Parameter showsHeader: false when tabs above the grid name the panel.
     public init(
         panel: PanelDefinition,
-        appName: String?,
-        width: CGFloat = Metrics.AppPanel.width,
-        showsHeader: Bool = true,
+        width: CGFloat = Metrics.Keypad.width,
         press: @escaping (PanelAction) -> Void
     ) {
         self.panel = panel
-        self.appName = appName
         self.width = width
-        self.showsHeader = showsHeader
         self.press = press
     }
 
     public var body: some View {
-        let gap = Metrics.AppPanel.gap
-        let cell = (width - gap) / CGFloat(AppPanelLayout.columns)
-        let rows = AppPanelLayout.rows(AppPanelLayout.fitting(panel.buttons))
+        let gap = Metrics.Keypad.gap
+        let cell = (width - gap) / CGFloat(PanelLayout.columns)
+        let rows = PanelLayout.rows(PanelLayout.fitting(panel.buttons))
 
         VStack(alignment: .leading, spacing: gap) {
-            if showsHeader { header }
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 HStack(spacing: gap) {
                     ForEach(row) { button in
@@ -112,7 +102,7 @@ public struct AppShortcutsView: View {
                     }
                 }
             }
-            ForEach(rows.count..<max(Metrics.AppPanel.rows, rows.count), id: \.self) { _ in
+            ForEach(rows.count..<max(Metrics.Keypad.rows, rows.count), id: \.self) { _ in
                 HStack(spacing: gap) {
                     EmptySlotView(width: cell)
                     EmptySlotView(width: cell)
@@ -121,24 +111,6 @@ public struct AppShortcutsView: View {
         }
         .frame(width: width, alignment: .leading)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(title) shortcuts")
+        .accessibilityLabel("\(panel.title) shortcuts")
     }
-
-    private var header: some View {
-        HStack(spacing: Metrics.AppPanel.headerSpacing) {
-            Image(systemName: "app.dashed")
-                .font(Typography.appIcon)
-                .foregroundStyle(Color(Tokens.accent))
-            Text(title)
-                .font(Typography.appName)
-                .foregroundStyle(Color(Tokens.keyText))
-                .lineLimit(1)
-            Circle()
-                .fill(Color(Tokens.positive))
-                .frame(width: Metrics.AppPanel.appDot, height: Metrics.AppPanel.appDot)
-        }
-        .padding(.bottom, Metrics.AppPanel.headerBottom - Metrics.AppPanel.gap)
-    }
-
-    private var title: String { appName ?? panel.title }
 }

@@ -9,7 +9,6 @@ extension Tokens {
         case .predictions: hex = 0xFF9F0A
         // The shift row color of the keys.
         case .clipboard: hex = 0x5AC8FA
-        case .appPanels: hex = 0x30B85C
         case .myPanel: hex = 0x5E5CE6
         case .look: hex = 0xFF375F
         }

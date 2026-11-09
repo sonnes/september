@@ -16,8 +16,6 @@ public enum Typography {
     public static let shortcutButtonText = Font.system(size: 11, weight: .medium)
     public static let shortcutRowIcon = Font.system(size: 12)
     public static let shortcutRowText = Font.system(size: 10)
-    public static let appIcon = Font.system(size: 12)
-    public static let appName = Font.system(size: 11, weight: .medium)
 
     public static let treeTitle = Font.system(size: 13, weight: .medium)
     public static let treeRefreshIcon = Font.system(size: 12, weight: .medium)

@@ -1,10 +1,9 @@
 import CoreGraphics
 
 extension Metrics {
-    /// The Text and System keypads and the app panel: buttons that show only
-    /// their keys, in two columns, or in three for System and the arrows of
-    /// Text.
-    public enum AppPanel {
+    /// The keypads, Mine, and the Write panels: buttons that show only their
+    /// keys, in two columns, or in three for System and the arrows of Text.
+    public enum Keypad {
         public static let width: CGFloat = 150
         public static let gap: CGFloat = 6
         public static let buttonHeight: CGFloat = 44
@@ -14,11 +13,8 @@ extension Metrics {
         /// a row.
         public static let arrowsWidth: CGFloat = buttonWidth * 3 + gap * 2
         public static let cornerRadius: CGFloat = 8
-        /// The rows of the app panel grid.
+        /// The rows of the grid of a Write panel.
         public static let rows = 6
-        public static let headerSpacing: CGFloat = 6
-        public static let headerBottom: CGFloat = 8
-        public static let appDot: CGFloat = 5
         /// The icon of a button that places a window: a small screen with
         /// the part of the window filled.
         public static let regionIcon = CGSize(width: 26, height: 18)
@@ -33,11 +29,6 @@ extension Metrics {
         public static let emptySlotDash: CGFloat = 3
         /// The padding of the text in a text button.
         public static let textPadding: CGFloat = 8
-
-        /// The dot that marks a learned chord, in the top right corner.
-        public static let learnedDot: CGFloat = 6
-        public static let learnedDotTop: CGFloat = 3
-        public static let learnedDotTrailing: CGFloat = 4
 
         /// The name that shows above a button under the pointer.
         public static let tipGap: CGFloat = 8

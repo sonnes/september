@@ -156,7 +156,7 @@ func focusTests() {
 
     test("a field with no app name keeps the name we have") {
         let (controller, _) = try makeController()
-        controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
+        controller.appChanged(name: "Safari")
         var unnamed = editable
         unnamed.appName = nil
         controller.focusChanged(to: unnamed)
@@ -166,14 +166,14 @@ func focusTests() {
     test("switching apps drops what we typed into the last one") {
         let (controller, _) = try makeController()
         controller.perform(.text("draft"))
-        controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
+        controller.appChanged(name: "Safari")
         expectEqual(controller.input, .local(text: ""))
     }
 
     test("switching apps drops the field we were mirroring") {
         let (controller, _) = try makeController()
         controller.focusChanged(to: editable)
-        controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
+        controller.appChanged(name: "Safari")
         expectEqual(controller.input, .local(text: ""), "the old app's text is not ours to show")
         expect(controller.focusedField == nil)
     }
@@ -181,16 +181,14 @@ func focusTests() {
     test("the app name is unknown until an app reports one") {
         let (controller, _) = try makeController()
         expect(controller.frontmostAppName == nil)
-        controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
-        controller.appChanged(name: nil, bundleID: nil)
+        controller.appChanged(name: "Safari")
+        controller.appChanged(name: nil)
         expect(controller.frontmostAppName == nil, "a nameless app keeps no stale name")
     }
 
-    test("switching apps swaps the name and the shortcuts panel") {
+    test("switching apps swaps the name") {
         let (controller, _) = try makeController()
-        controller.appChanged(name: "Visual Studio Code", bundleID: "com.microsoft.VSCode")
+        controller.appChanged(name: "Visual Studio Code")
         expectEqual(controller.frontmostAppName, "Visual Studio Code")
-        expectEqual(controller.appPanel, controller.panels.appPanel(forBundleID: "com.microsoft.VSCode"))
-        expect(controller.appPanel != controller.panels.appPanel(forBundleID: nil))
     }
 }

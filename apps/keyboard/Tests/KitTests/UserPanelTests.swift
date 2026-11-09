@@ -10,7 +10,7 @@ final class MemoryPrivateTexts: PrivateTextStore, @unchecked Sendable {
     func removeText(for id: String) throws { texts[id] = nil }
 }
 
-/// Use counts for the tests, in place of the `UsageStore` of track 3.
+/// Use counts for the tests, in place of a `UsageStore`.
 @MainActor
 final class FixedUsage: ButtonUsage {
     var counts: [String: Int] = [:]
@@ -69,7 +69,7 @@ private func userButtonTests() {
         expectEqual(try JSONDecoder().decode([UserButton].self, from: data), buttons)
     }
 
-    test("a sequence decodes from the JSON of the app panels") {
+    test("a sequence decodes from the JSON of the panels") {
         let json = """
             {"id": "x", "name": "Rewind", "action": {"type": "sequence", "keys": [
               {"modifiers": [], "key": "escape"}, {"modifiers": [], "key": "escape"}]}}
@@ -354,7 +354,7 @@ private func privateTextControllerTests() {
     test("an app switch ends the private state") {
         let (controller, _, _) = try privateController()
         controller.perform(.privateText("home"))
-        controller.appChanged(name: "Notes", bundleID: "com.apple.Notes")
+        controller.appChanged(name: "Notes")
         expect(!controller.isFieldPrivate)
         expectEqual(controller.input, .local(text: ""))
     }
