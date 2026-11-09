@@ -53,9 +53,9 @@ public final class KeyboardSession: ObservableObject {
     @Published public private(set) var canCutOrCopy = true
     /// True when the clipboard holds text.
     @Published public private(set) var canPaste = false
-    /// The shortcuts of the app in front that show in the place of the
-    /// predictions: in Type mode with no text field in focus, and while
-    /// Command or Control is on. Empty when the predictions show.
+    /// The shortcuts of the app in front that show in the place of the input
+    /// bar: in Type mode with no text field in focus, and while Command or
+    /// Control is on. Empty when the bar shows.
     @Published public private(set) var shortcuts: [AppShortcut] = []
     /// Reads the menu items with a chord of the app in front. The app reads
     /// the menu bar through accessibility. The session reads it only when a
@@ -68,7 +68,7 @@ public final class KeyboardSession: ObservableObject {
         }
     }
     /// A modifier of the hardware keyboard shows the shortcuts after this
-    /// hold, so a quick chord does not make the stack blink.
+    /// hold, so a quick chord does not make the bar blink.
     public static let modifierHoldDelay: TimeInterval = 0.4
     @Published private var isWriteInFront = false
     /// The bundle ID of the app in front.
@@ -513,7 +513,7 @@ public final class KeyboardSession: ObservableObject {
         if shortcuts != self.shortcuts { self.shortcuts = shortcuts }
     }
 
-    /// The shortcuts for the stack, or none when the predictions show.
+    /// The shortcuts for the place of the bar, or none when the bar shows.
     private func shortcutSuggestions(mode: KeyboardMode) -> [AppShortcut] {
         // Talk mode sends no keys to the app. The Write window has its panel.
         guard mode == .type, !isWriteInFront else { return [] }

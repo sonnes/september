@@ -63,6 +63,10 @@ public enum Metrics {
 
     public enum Input {
         public static let height: CGFloat = 48
+        /// The shortcut suggestions that fit in the place of the bar: panel
+        /// buttons with the gap of a panel between them.
+        public static let shortcutCount = Int(
+            (Metrics.keyboardWidth + AppPanel.gap) / (AppPanel.buttonWidth + AppPanel.gap))
         public static let cornerRadius: CGFloat = 24
         public static let spacing: CGFloat = 12
         public static let horizontalPadding: CGFloat = 18

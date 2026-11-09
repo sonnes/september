@@ -492,17 +492,19 @@ just do not reach other apps.
 
 ## Shortcut suggestions
 
-In Type mode, the shortcuts of the app in front take the place of the sentence
-predictions in two cases:
+In Type mode, the shortcuts of the app in front take the place of the input
+bar in two cases:
 
-- No text field has focus. The input bar stays hidden.
+- No text field has focus.
 - Command or Control is on. This is a modifier key of the keyboard that is
   latched or locked, or a modifier key of the hardware keyboard that you hold
   for 0.4 seconds. Only the shortcuts that hold all the modifiers that are on
-  show.
+  show. The sentence predictions of a text field stay above the shortcuts.
 
-Each tile shows the keys and the name of a shortcut. A press presses the keys
-in the app and ends a latched modifier. The shortcuts of the app panel come
+The shortcuts are panel buttons in one row, 12 at most. A button shows only
+its keys. Its name shows above it on hover, and its accessibility label holds
+the name and the keys. A press presses the keys in the app and ends a latched
+modifier. The shortcuts of the app panel come
 first, in their ranked order. Then the menu items of the app with a chord come,
 in menu bar order. The keyboard reads the menu bar through accessibility when
 a suggestion needs it, and keeps the read until another app comes to the front.

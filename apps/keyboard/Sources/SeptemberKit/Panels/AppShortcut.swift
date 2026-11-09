@@ -1,8 +1,6 @@
-import CoreGraphics
-
 /// A chord of the app in front with its name, such as "New Tab" for
-/// Command-T. The prediction stack shows these as suggestions when no text
-/// field has focus, and when Command or Control is on.
+/// Command-T. The place of the input bar shows these as suggestions when no
+/// text field has focus, and when Command or Control is on.
 public struct AppShortcut: Equatable, Hashable, Sendable, Identifiable {
     public let name: String
     public let shortcut: Shortcut
@@ -58,31 +56,5 @@ public struct AppShortcut: Equatable, Hashable, Sendable, Identifiable {
         return (fromPanel + menu).filter {
             $0.shortcut.modifiers.isSuperset(of: required) && seen.insert($0.shortcut).inserted
         }
-    }
-}
-
-/// The shortcuts that fit in the rows of the prediction stack.
-///
-/// Each shortcut goes into the first row that has room for it, so a long
-/// shortcut that does not fit leaves room for a shorter one after it. A
-/// shortcut wider than a row does not show. In each row, the shortcuts keep
-/// their order.
-public struct ShortcutRowsFit: Equatable, Sendable {
-    /// The positions of the shortcuts in each row. Row 0 is the best row.
-    public let rows: [[Int]]
-
-    public init(widths: [CGFloat], width: CGFloat, rows count: Int, spacing: CGFloat) {
-        var rows: [[Int]] = Array(repeating: [], count: max(count, 0))
-        var used: [CGFloat] = Array(repeating: 0, count: rows.count)
-        for (index, itemWidth) in widths.enumerated() {
-            for row in rows.indices {
-                let needed = (rows[row].isEmpty ? 0 : spacing) + itemWidth
-                guard used[row] + needed <= width else { continue }
-                rows[row].append(index)
-                used[row] += needed
-                break
-            }
-        }
-        self.rows = rows.filter { !$0.isEmpty }
     }
 }

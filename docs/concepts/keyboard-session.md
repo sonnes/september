@@ -193,8 +193,8 @@ continue the sentence at the caret to the rows of the stack. See
 
 In Type mode, `shortcuts` holds the shortcuts of the app in front when no
 text field has focus, or when Command or Control is on. The view shows them
-in the place of the prediction stack. Otherwise `shortcuts` is empty, and the
-predictions show. Talk mode and the Write window have no shortcuts.
+in the place of the input bar. Otherwise `shortcuts` is empty, and the bar
+shows. Talk mode and the Write window have no shortcuts.
 
 - The shortcuts come from `AppShortcut.suggestions(panel:menu:modifiers:)`:
   the chords of the ranked app panel, then the menu shortcuts. Each chord

@@ -5,7 +5,7 @@ import SwiftUI
 /// and the keys with the word completions on top. History shows the
 /// clipboard history in the place of the prediction stack. With no text field
 /// in focus, or while Command or Control is on, the shortcuts of the app take
-/// the place of the prediction stack.
+/// the place of the input bar.
 ///
 /// The bar is as wide as the keys and sits over them. The clipboard buttons
 /// sit at the left of the bar, past the left edge of the keys, so the window
@@ -73,7 +73,7 @@ public struct KeyboardScreen: View {
             }
 
             stack
-                .shown(inputBar.isVisible || session.isHistoryOpen || !session.shortcuts.isEmpty)
+                .shown(inputBar.isVisible || session.isHistoryOpen)
                 .padding(.leading, inset)
                 .padding(.bottom, Metrics.TopRow.stackBottom)
 
@@ -81,10 +81,14 @@ public struct KeyboardScreen: View {
                 // Copy works with no text field, for example on a web page,
                 // so the buttons always show.
                 ClipboardButtons(session: session)
-                bar.shown(inputBar.isVisible)
-                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
-                        inputBar.frame = $0
-                    }
+                ZStack(alignment: .leading) {
+                    bar.shown(inputBar.isVisible && session.shortcuts.isEmpty)
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
+                            inputBar.frame = $0
+                        }
+                    ShortcutBar(shortcuts: session.shortcuts, onPress: session.pressShortcut)
+                        .shown(!session.shortcuts.isEmpty)
+                }
                 SpeakButton(mode: session.speakMode, action: session.speakPressed)
                 ModeButtons(
                     mode: controller.mode,
@@ -110,8 +114,6 @@ public struct KeyboardScreen: View {
     private var stack: some View {
         if session.isHistoryOpen {
             ClipboardHistoryView(session: session)
-        } else if !session.shortcuts.isEmpty {
-            ShortcutSuggestions(shortcuts: session.shortcuts, onPress: session.pressShortcut)
         } else {
             PredictionStack(
                 engine: session.predictions, mode: controller.mode == .talk ? .talk : .type,

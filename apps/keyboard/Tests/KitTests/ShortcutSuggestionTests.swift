@@ -1,4 +1,3 @@
-import CoreGraphics
 import Foundation
 import SeptemberKit
 
@@ -6,7 +5,6 @@ import SeptemberKit
 func shortcutSuggestionTests() {
     menuListTests()
     suggestionTests()
-    rowFitTests()
 }
 
 private func chord(_ modifiers: Modifiers, _ key: String) -> Shortcut {
@@ -103,27 +101,5 @@ private func suggestionTests() {
         let names = AppShortcut.suggestions(panel: panel, menu: [], modifiers: [.command, .capsLock, .function])
             .map(\.name)
         expectEqual(names, ["Reload", "Fresh Tab"])
-    }
-}
-
-@MainActor
-private func rowFitTests() {
-    test("the shortcuts fill the rows in order") {
-        let fit = ShortcutRowsFit(widths: [40, 40, 40, 40, 40], width: 100, rows: 2, spacing: 10)
-        expectEqual(fit.rows, [[0, 1], [2, 3]])
-    }
-
-    test("a shortcut that does not fit leaves room for a shorter one after it") {
-        let fit = ShortcutRowsFit(widths: [60, 60, 30, 200, 30], width: 100, rows: 2, spacing: 10)
-        expectEqual(fit.rows, [[0, 2], [1, 4]])
-    }
-
-    test("a shortcut wider than a row does not show") {
-        let fit = ShortcutRowsFit(widths: [150, 50], width: 100, rows: 3, spacing: 10)
-        expectEqual(fit.rows, [[1]])
-    }
-
-    test("no shortcuts give no rows") {
-        expectEqual(ShortcutRowsFit(widths: [], width: 100, rows: 3, spacing: 10).rows, [])
     }
 }
