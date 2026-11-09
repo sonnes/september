@@ -74,7 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         session = KeyboardSession(
             controller: controller, predictions: predictions, speaker: speech.speaker,
             userPanel: Result { try UserPanelStore() }, userPanelUsage: UsageStore(),
-            clipboard: ClipboardHistory(fileURL: ClipboardHistory.defaultURL),
+            clipboard: ClipboardHistory(database: database, importing: ClipboardHistory.jsonURL),
             pasteboard: SystemPasteboard())
         watchClipboard()
 

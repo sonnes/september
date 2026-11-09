@@ -129,8 +129,8 @@ public final class SaidList: ObservableObject {
             try database.execute("DELETE FROM talk_line WHERE said_at < ?", [.double(start)])
             try database.execute(
                 """
-                DELETE FROM talk_line WHERE id IN
-                  (SELECT id FROM talk_line ORDER BY said_at DESC LIMIT -1 OFFSET ?)
+                DELETE FROM talk_line WHERE rowid IN
+                  (SELECT rowid FROM talk_line ORDER BY said_at DESC, rowid DESC LIMIT -1 OFFSET ?)
                 """,
                 [.int(Int64(Self.lineLimit))])
         }
@@ -139,7 +139,7 @@ public final class SaidList: ObservableObject {
     private func load() -> [SaidLine] {
         let rows =
             (try? database.query(
-                "SELECT id, text, said_at FROM talk_line ORDER BY said_at DESC LIMIT ?",
+                "SELECT id, text, said_at FROM talk_line ORDER BY said_at DESC, rowid DESC LIMIT ?",
                 [.int(Int64(Self.lineLimit))])) ?? []
         return rows.compactMap { row in
             guard let id = row[0].text.flatMap(UUID.init(uuidString:)), let text = row[1].text,
