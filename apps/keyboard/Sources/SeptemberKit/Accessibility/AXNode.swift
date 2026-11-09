@@ -14,6 +14,8 @@ public struct AXNode: Equatable, Sendable, Identifiable {
     public let isFocused: Bool
     /// The keys of a menu item, when it has a shortcut.
     public let menuKeys: AXMenuKeys?
+    /// False for a menu item that is off. Other elements are on.
+    public let isEnabled: Bool
     /// The children that were read. An element with unread children shows shut.
     public let children: [AXNode]
     /// How many children the element has, read or not.
@@ -27,6 +29,7 @@ public struct AXNode: Equatable, Sendable, Identifiable {
         value: String? = nil,
         isFocused: Bool = false,
         menuKeys: AXMenuKeys? = nil,
+        isEnabled: Bool = true,
         children: [AXNode] = [],
         childCount: Int? = nil
     ) {
@@ -36,6 +39,7 @@ public struct AXNode: Equatable, Sendable, Identifiable {
         self.value = value
         self.isFocused = isFocused
         self.menuKeys = menuKeys
+        self.isEnabled = isEnabled
         self.children = children
         self.childCount = childCount ?? children.count
     }

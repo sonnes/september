@@ -29,6 +29,7 @@ screenContextTests()
 talkHistoryTests()
 clipboardTests()
 storageTests()
+shortcutSuggestionTests()
 #if DEBUG
 #endif
 summarize()
