@@ -96,7 +96,7 @@ enum Snapshot {
             speaker: Speaker(
                 settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
             userPanel: .success(userPanel),
-            userPanelUsage: UsageStore(fileURL: folder.appendingPathComponent("my-panel-usage.json")),
+            userPanelUsage: UsageStore(),
             clipboard: ClipboardHistory(defaults: defaults, now: { Date().addingTimeInterval(-40 * 60) }),
             pasteboard: MemoryPasteboard())
         let content = WindowContent(

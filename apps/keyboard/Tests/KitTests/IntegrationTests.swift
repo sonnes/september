@@ -174,31 +174,6 @@ private func wiringTests() {
         expectEqual(hidden.root?.children.first?.role, "AXTextArea")
     }
 
-    test("the usage store counts the presses of My Panel") {
-        let usage = UsageStore(fileURL: temporaryDirectory().appendingPathComponent("usage.json"))
-        usage.record("save")
-        usage.record("save")
-        expectEqual(usage.uses(of: "save"), 2)
-        expectEqual(usage.uses(of: "other"), 0)
-    }
-
-    test("a press of My Panel loses half its weight in 14 days") {
-        var now = Date(timeIntervalSince1970: 1_800_000_000)
-        let usage = UsageStore(
-            fileURL: temporaryDirectory().appendingPathComponent("usage.json"), now: { now })
-        for _ in 0..<4 { usage.record("save") }
-        now += UsageStore.halfLife
-        expectEqual(usage.uses(of: "save"), 2)
-    }
-
-    test("the counts of My Panel survive a restart, and a broken file starts empty") {
-        let file = temporaryDirectory().appendingPathComponent("usage.json")
-        UsageStore(fileURL: file).record("save")
-        expectEqual(UsageStore(fileURL: file).uses(of: "save"), 1)
-        try Data("{ not json".utf8).write(to: file)
-        expectEqual(UsageStore(fileURL: file).uses(of: "save"), 0)
-    }
-
     test("the Write window counts as the app in front while it is key") {
         var tracker = FrontAppTracker(ownPID: 1)
         let messages = FrontApp(pid: 2, name: "Messages", bundleID: "com.apple.MobileSMS")
@@ -389,7 +364,7 @@ private func makeSession(
     let clipboard = ClipboardHistory(defaults: defaults)
     let session = KeyboardSession(
         controller: controller, predictions: engine, speaker: speaker, userPanel: store,
-        userPanelUsage: UsageStore(fileURL: folder.appendingPathComponent("my-panel-usage.json")),
+        userPanelUsage: UsageStore(),
         inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25),
         clipboard: clipboard, pasteboard: pasteboard, scheduler: clock)
     return SessionParts(

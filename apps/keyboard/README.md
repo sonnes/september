@@ -208,6 +208,11 @@ keys. The title of a keypad is as tall as the tabs of My Panel, so the buttons
 of all the panels start at the same height. System, Text, and My Panel end at
 the same height.
 
+My Panel ranks its buttons by their presses. A press loses half its weight in
+14 days. The presses are in the `button_use` table of
+`~/Library/Application Support/September Keyboard/keyboard.sqlite`. The table
+holds button IDs, not text.
+
 In Talk mode, the keys type into the input bar of the keyboard, and other apps
 get no keys. The shortcut panels hide. Phrases show at the left of the keys,
 and the Said list shows at the right. Speak reads the bar aloud and adds it to
@@ -241,8 +246,8 @@ The Clipboard page of Settings turns the history off and clears it. When the
 history is off, it keeps no texts.
 
 At the first launch after an update, the keyboard moves the lines of
-`talk-history.json` and the texts of `clipboard-history.json` into the
-database and removes the two files. If a file does not decode, the keyboard
+`talk-history.json`, the texts of `clipboard-history.json`, and the presses
+of `my-panel-usage.json` into the database. Then it removes the files. If a file does not decode, the keyboard
 moves it to `<name>.broken.json`.
 
 Write opens the Write paper: a sheet with round corners, no window frame,
@@ -534,10 +539,10 @@ The Keychain holds the secrets:
   `com.september.keyboard.private`.
 
 Write keeps each document as a Markdown file in
-`~/Documents/September`. My Panel, its use counts, the clipboard history, and
-the Talk history are JSON files in
-`~/Library/Application Support/September Keyboard`. Only the user can read the
-Talk history file.
+`~/Documents/September`. The sentence history, the Talk history, the clipboard
+history, and the presses of My Panel are in `keyboard.sqlite` in
+`~/Library/Application Support/September Keyboard`. Only the user can read
+this file. The buttons of My Panel are in `my-panel.json` in the same folder.
 
 ## Tests
 

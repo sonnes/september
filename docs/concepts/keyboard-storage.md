@@ -19,10 +19,10 @@ documents.
 | A secret | Keychain | The ElevenLabs key (`com.september.keyboard`) and the text of each private button (`com.september.keyboard.private`) |
 | A document of the user | Markdown files | The Write documents in `~/Documents/September/` |
 | A definition that ships with the app | JSON in the bundle | Panels, accents, and context rules in `Sources/SeptemberKit/Resources/` |
-| A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history, the Said list of Talk mode, and the clipboard history |
-| A record that the keyboard keeps or learns | JSON files | The presses of the buttons of My Panel (`my-panel-usage.json`) and the buttons of My Panel (`my-panel.json`) |
+| A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history, the Said list of Talk mode, the clipboard history, and the presses of the buttons of My Panel |
+| A record that the keyboard keeps or learns | JSON file | The buttons of My Panel (`my-panel.json`) |
 
-The two JSON stores of My Panel move to `keyboard.sqlite` in later changes.
+The buttons of My Panel move to `keyboard.sqlite` in a later change.
 
 ## The Database
 
@@ -52,9 +52,10 @@ index and returns in less than one millisecond.
 
 ## The JSON Files of Older Versions
 
-Older versions of the keyboard kept the Said list in `talk-history.json` and
-the clipboard history in `clipboard-history.json`. At launch, each store moves
-the rows of its file into its table with `KeyboardDatabase.importJSON`:
+Older versions of the keyboard kept the Said list in `talk-history.json`, the
+clipboard history in `clipboard-history.json`, and the presses of My Panel in
+`my-panel-usage.json`. At launch, each store moves the rows of its file into
+its table with `KeyboardDatabase.importJSON`:
 
 1. The store decodes the file.
 2. The store inserts the rows in one transaction. A row that is already in
@@ -149,3 +150,26 @@ moves to the newest place. `items` holds the rows in memory, newest first.
 The switch is in `UserDefaults`, key `clipboardHistoryEnabled`, and it is on
 by default. When the user turns it off, the history removes every row and
 keeps no new copies.
+
+## The Presses of My Panel
+
+`UsageStore` owns the `button_use` table. Each row holds the presses of one
+button of My Panel. My Panel ranks its buttons by these presses. The table
+holds button IDs and weights, and no text that the user typed.
+
+```sql
+CREATE TABLE button_use (
+  button_id   TEXT PRIMARY KEY,
+  weight      REAL NOT NULL,           -- the weight at `updated_at`
+  updated_at  REAL NOT NULL            -- seconds since 1970
+) WITHOUT ROWID;
+```
+
+Each press counts 1, and a press loses half its weight in 14 days. A new
+press adds 1 to the weight of the button at that time, and it replaces the
+row. At launch, the store removes each row whose weight is now less than
+0.01. The store holds the rows in memory, so the views do not read the
+database.
+
+The old file kept the counts under the key `my-panel`, with dates in seconds
+since 2001. The import changes the dates to seconds since 1970.
