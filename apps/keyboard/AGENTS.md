@@ -61,7 +61,8 @@ only what needs a running app — the panel, the event sink, the menu bar.
   needs a running app: the panel, the event sink, and the menu bar.
 - **TDD, strictly.** Write the failing test first, then the smallest code that
   passes it. Every model change lands with a test in `Tests/KitTests`.
-- **Tests are an executable, not `swift test`.** Add checks with
+- **Tests are an executable, not `swift test`.** `make test` runs
+  `swift run KitTests`. Add checks with
   `test("…") { expect(…) }` and register the suite in
   `Tests/KitTests/main.swift`. Xcode is installed now, so swift-testing is
   available. The move to swift-testing is not done yet.

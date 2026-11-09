@@ -33,8 +33,9 @@ lab:
 	swift build --product WriteLab
 	exec .build/debug/WriteLab
 
+# The tests are an executable, not a test target, so `swift test` finds none.
 test:
-	swift test
+	swift run KitTests
 
 app:
 	swift build -c $(CONFIG)
