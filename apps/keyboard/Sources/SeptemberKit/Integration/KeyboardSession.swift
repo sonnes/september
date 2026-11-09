@@ -110,7 +110,12 @@ public final class KeyboardSession: ObservableObject {
 
         controller.talk.speech = speaker
         controller.onChord = { [weak self] chord in self?.chordPressed(chord) }
-        controller.onSubmit = { [weak self] in self?.predictions.submit() }
+        // The Write window keeps its text in its documents, so its sentences
+        // do not go into the history.
+        controller.onSubmit = { [weak self] in
+            guard let self else { return }
+            self.predictions.submit(keepsSentences: !self.isWriteInFront)
+        }
         controller.talk.onSpeak = { [weak self] in self?.predictions.submit() }
         rankUserPanel()
         observe()
@@ -264,7 +269,7 @@ public final class KeyboardSession: ObservableObject {
         frontBundleID = bundleID
         screen = nil
         appPanels.appActivated(bundleID: bundleID, windowTitle: windowTitle)
-        predictions.forgetPickedWords()
+        predictions.focusMoved()
         rankUserPanel()
     }
 
@@ -285,7 +290,7 @@ public final class KeyboardSession: ObservableObject {
     /// focus leaves its field.
     public func focusMoved() {
         controller.focusMoved()
-        predictions.forgetPickedWords()
+        predictions.focusMoved()
     }
 
     /// The editor of the Write window reported the paragraph at the caret.

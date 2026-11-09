@@ -38,6 +38,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence) and word completions |
 | `Sources/SeptemberKit/ScreenContext` | `ScreenContext`, the rule of each app (`ContextRule`), and `ScreenContextExtractor` |
 | `Sources/SeptemberKit/Speech` | `Speaker`, the macOS voices, ElevenLabs, the Keychain store |
+| `Sources/SeptemberKit/Storage` | `KeyboardDatabase` (`keyboard.sqlite` and its migrations) and `SentenceHistory` (the sentences that the user sent) |
 | `Sources/SeptemberKit/Talk` | Talk mode, the Said list, the Phrases panel |
 | `Sources/SeptemberKit/UserPanel` | My Panel, private text, the Accessibility Keyboard import |
 | `Sources/SeptemberKit/Settings` | the Settings pages and `KeyboardSettings` |
@@ -100,8 +101,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
   counts the presses of the panels, and ranks My Panel. Put new wiring there,
   with a check in `Tests/KitTests/IntegrationTests.swift`. `AppDelegate` keeps
   only what needs a running app. See `docs/concepts/keyboard-session.md`.
-- **Private text stays private.** Never log, print, or keep the text of a
-  field, a private text button, or an API key. While `isFieldPrivate` is true,
+- **Private text stays private.** Never log or print the text of a field, a
+  private text button, or an API key. Keep the text of a field only in the
+  sentence history. While `isFieldPrivate` is true,
   the predictions, Speak, learning, and the tree viewer get no text of the
   field. Call `KeyboardSession.focusMoved()` only when the focused element
   changes, not when its value changes.
@@ -134,6 +136,13 @@ only what needs a running app — the panel, the event sink, the menu bar.
   file, and no copy while the focused field is a password field or holds
   private text. Only `ClipboardWatcher.poll()` reads the clipboard for the
   history.
+- **The sentence history is private.** Never log or print a sentence. Only
+  `PredictionEngine.submit(keepsSentences:)` adds sentences. It adds nothing
+  from a password field, from private text, or from the Write window.
+- **The database has one schema path.** Change the tables of
+  `keyboard.sqlite` only with a new step at the end of
+  `KeyboardDatabase.migrations`. Never edit an old step. See
+  `docs/concepts/keyboard-storage.md`.
 - **Keep Swift 6 concurrency clean.** UI, controller and keystroke sinks are
   `@MainActor`. A type that holds an accessibility element and crosses actors
   is `@unchecked Sendable`, with a comment that says why. Do not silence

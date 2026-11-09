@@ -4,13 +4,17 @@ import SwiftUI
 /// controls.
 public struct PredictionsSettingsPage: View {
     @ObservedObject private var engine: PredictionEngine
+    @ObservedObject private var history: SentenceHistory
     private let onOpenSystemSettings: () -> Void
+    @State private var confirmsClear = false
 
     public init(
         engine: PredictionEngine,
+        history: SentenceHistory,
         onOpenSystemSettings: @escaping () -> Void = PredictionNoticeView.openSystemSettings
     ) {
         self.engine = engine
+        self.history = history
         self.onOpenSystemSettings = onOpenSystemSettings
     }
 
@@ -24,6 +28,27 @@ public struct PredictionsSettingsPage: View {
                 }
             } footer: {
                 Text("Three predictions show above the input bar. Apple Intelligence makes them on this Mac.")
+            }
+            Section {
+                Toggle("Learn from the sentences that I send", isOn: $history.isEnabled)
+                HStack {
+                    Text(sentenceCount)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Clear Sentence History…") { confirmsClear = true }
+                        .disabled(history.count == 0)
+                }
+                .confirmationDialog("Clear the sentence history?", isPresented: $confirmsClear) {
+                    Button("Clear Sentence History", role: .destructive, action: history.clear)
+                } message: {
+                    Text("The predictions lose every sentence that you sent. You cannot undo this.")
+                }
+            } footer: {
+                Text(
+                    "When you press Return on the keys, or Speak in Talk mode, the keyboard keeps each sentence. While you type, the sentences that continue your words show first. The history stays on this Mac. It keeps nothing from a password field, from private text, or from Write. When you turn the history off, it removes every sentence."
+                )
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             Section {
                 Toggle("Use the text on screen", isOn: $engine.screenEnabled)
@@ -40,5 +65,13 @@ public struct PredictionsSettingsPage: View {
         }
         .formStyle(.grouped)
         .onAppear { engine.refreshAvailability() }
+    }
+
+    private var sentenceCount: String {
+        switch history.count {
+        case 0: "No sentences"
+        case 1: "1 sentence"
+        case let count: "\(count) sentences"
+        }
     }
 }

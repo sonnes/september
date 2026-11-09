@@ -110,6 +110,16 @@ public struct PredictionContext: Equatable, Sendable {
 }
 
 extension InputMirror {
+    /// The case of the input, with no text: 0 for `.local`, 1 for
+    /// `.mirrored`, and 2 for `.secure`.
+    var kind: Int {
+        switch self {
+        case .local: 0
+        case .mirrored: 1
+        case .secure: 2
+        }
+    }
+
     /// True when the bar holds text that the keyboard can predict from.
     var holdsText: Bool {
         if case .mirrored = self { return true }

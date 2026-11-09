@@ -71,6 +71,8 @@ An update does these steps in this order:
    text on screen when its switch is on, and no Talk history. In Talk mode,
    the input is the Talk bar, and the lines of the last hour of the Talk
    history are the conversation. Private text gives the predictions no input.
+   The engine shows sentence predictions only after the user types in the
+   field. `focusMoved()` and `appChanged(...)` start a new field.
 2. If the speech ended after the last update, it tells Talk mode. Talk mode
    then empties the bar.
 3. It sets `speakMode`. In Type mode, Speak is on when the field has text to
@@ -174,6 +176,15 @@ picked word:
 
 A new field and a new app clear the picked words, and nothing is recorded.
 Private text and a password field record nothing.
+
+## Sentence History
+
+The same submit also adds the sentences of the paragraph at the caret to the
+`SentenceHistory`. With the Write window in front, the session calls
+`submit(keepsSentences: false)`, because Write keeps its text in its
+documents. While the user types, the engine adds the history sentences that
+continue the sentence at the caret to the rows of the stack. See
+[keyboard-storage.md](keyboard-storage.md).
 
 ## Speak
 

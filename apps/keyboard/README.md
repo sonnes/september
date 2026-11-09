@@ -18,6 +18,7 @@ Sources/
     Predictions/    sentence predictions and word completions
     ScreenContext/  the text near the focused field, and the rule of each app
     Speech/         the voice: macOS voices, Personal Voice, ElevenLabs
+    Storage/        the keyboard database (keyboard.sqlite) and the sentence history
     Talk/           Talk mode, the Said list, the Phrases panel
     UserPanel/      My Panel, private text, the Accessibility Keyboard import
     Settings/       the pages of the Settings window
@@ -138,6 +139,32 @@ space at its end among the buttons. `WordRowFit` holds the rule.
 When you press Return, or Speak in Talk mode, the keyboard tells macOS which
 picked words the text still holds. macOS learns from these responses. Private
 text and password fields send nothing.
+
+The sentence predictions show only after you type. When the focus comes to a
+field, the stack stays empty until the text of the field changes. The text
+before the caret must also hold a letter. An empty Talk bar shows no
+sentence predictions. The word row does not wait.
+
+The stack has three rows. The rows come from the sentence history and from
+Apple Intelligence. History rows show at once. Up to two history rows come
+first, then the rows of the model, and then the other history rows. A row
+with the same words as an earlier row does not show. When Apple Intelligence
+is not ready, the history rows still show, and its notice shows only when no
+row matches.
+
+When you press Return on the keys, or Speak in Talk mode, the keyboard splits
+the paragraph at the caret into sentences. Each sentence goes into the history
+in `~/Library/Application Support/September Keyboard/keyboard.sqlite`. Only
+the user can read the file. A sentence that you send again gets one more use.
+While you type, the history finds the sentences that start with the sentence
+at the caret. It ranks them by their uses, and a use loses half its weight in
+14 days. The history keeps 10,000 sentences at most, and removes the sentences
+that you used least recently. It keeps nothing from a password field, from
+private text, or from the Write window. Return on the hardware keyboard does
+not add to the history. The Predictions page of Settings turns the history off
+and clears it. When the history is off, it keeps no sentences. If the database
+does not open, the keyboard moves it to `keyboard.broken.sqlite` and starts an
+empty database.
 
 The Text, System, and Rectangle keypads and the app panel float in windows
 of their own. By default they sit beside the keys. To move the keyboard window or a
