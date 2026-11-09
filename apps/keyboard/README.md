@@ -256,6 +256,8 @@ At the first launch after an update, the keyboard moves the lines of
 Then it removes the files. If a file does not decode, the keyboard moves it to
 `<name>.broken.json`. A broken `my-panel.json` stays where it is, and My Panel
 shows an error, so the buttons of the user are not lost.
+At launch, the keyboard also removes `usage.json` and `learned.json`. No part
+of the keyboard reads these files.
 
 Write opens the Write paper: a sheet with round corners, no window frame,
 and a native Markdown editor (`WriteTextView`). The editor hides the Markdown

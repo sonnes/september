@@ -56,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let phrases: PanelDefinition
         let database = KeyboardDatabase.open(at: KeyboardDatabase.defaultURL)
+        KeyboardDatabase.removeStaleFiles(in: KeyboardDatabase.defaultURL.deletingLastPathComponent())
         do {
             controller = KeyboardController(
                 sink: sink, panels: try PanelStore.bundled(),
