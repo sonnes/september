@@ -556,10 +556,11 @@ the user can read this file.
 ## Tests
 
 Tests are a plain executable with a ~40-line harness in
-`Tests/KitTests/Harness.swift`. Run them with `make test`. Xcode is installed
-now, so swift-testing is available. To move to it, change the target to
-`.testTarget` and replace `test`/`expect` with `@Test`/`#expect`. The test
-bodies change very little.
+`Tests/KitTests/Harness.swift`. Run them with `make test`, which runs
+`swift run KitTests`. Xcode is installed now, so swift-testing is available.
+To move to it, change the target to `.testTarget` and replace
+`test`/`expect` with `@Test`/`#expect`. Then change the `test` target of the
+Makefile to `swift test`. The test bodies change very little.
 
 The tests cover keystroke dispatch, controller state, input mirroring, panels,
 accessibility-tree behavior, and each part of the keyboard. The wiring between
