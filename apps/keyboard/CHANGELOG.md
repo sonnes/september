@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0
+
+### Predictions
+
+- The sentence predictions show only after you type in a field. The word row does not wait.
+- The sentence history keeps the sentences that you send with Return on the keys, or with Speak in Talk mode. While you type, up to two sentences from the history that start with your text show above the predictions of Apple Intelligence.
+- History rows also show when Apple Intelligence is not available.
+- The history ranks a sentence by its uses, and it keeps 10,000 sentences at most. It keeps nothing from a password field, from private text, or from the Write window. The Predictions page of Settings turns the history off and clears it.
+
+### Shortcut Suggestions
+
+- In Type mode, when no text field has focus, the shortcuts of the app in front show in the place of the input bar. The shortcuts come from the menu bar of the app. A press presses the shortcut in the app.
+- When Command or Control is on, only the shortcuts with that modifier show. A latched modifier ends after the press.
+- If you hold Command or Control on the hardware keyboard for 0.4 seconds, the shortcuts also show. This needs Input Monitoring. The Predictions page of Settings asks for it.
+- Each button shows only its keys. The name of the shortcut shows on hover.
+- This version removes the app panel, because the shortcut suggestions replace it. The window is now My Panel. It shows your own buttons, and a Write tab while Write is in front.
+
+### Storage
+
+- The sentence history, the Said list, the clipboard history, and the buttons of My Panel are in one database: `~/Library/Application Support/September Keyboard/keyboard.sqlite`.
+- At the first launch after the update, the keyboard moves the Said list, the clipboard history, and My Panel from the old JSON files into the database. Then it removes the files. A file that does not decode moves to `<name>.broken.json`.
+- If `my-panel.json` does not decode, it stays in place, and My Panel shows an error. Your buttons are not lost.
+- Only you can read the database file and its `-wal` and `-shm` files.
+- The keyboard removes `usage.json` and `learned.json`. The old app panel wrote these files.
+
 ## 0.2.0
 
 ### Clipboard
