@@ -23,12 +23,39 @@ func temporaryDirectory() -> URL {
         .appendingPathComponent("september-mypanel-tests-\(UUID().uuidString)")
 }
 
+/// A store on a database in memory, with its own defaults.
 @MainActor
-private func makeStore(
-    file: URL = temporaryDirectory().appendingPathComponent("my-panel.json"),
-    texts: MemoryPrivateTexts = MemoryPrivateTexts()
-) throws -> (UserPanelStore, MemoryPrivateTexts, URL) {
-    (try UserPanelStore(fileURL: file, privateTexts: texts), texts, file)
+private struct PanelParts {
+    var database = try! KeyboardDatabase(path: ":memory:")
+    var defaults = UserDefaults(suiteName: "kit-mypanel-\(UUID().uuidString)")!
+    var texts = MemoryPrivateTexts()
+
+    func store(importing jsonURL: URL? = nil) throws -> UserPanelStore {
+        try UserPanelStore(
+            database: database, importing: jsonURL, defaults: defaults, privateTexts: texts)
+    }
+
+    /// The names and actions of the `user_button` table, in the order of
+    /// `position`, as one text.
+    func tableText() throws -> String {
+        try database.query("SELECT name, action FROM user_button ORDER BY position")
+            .map { $0.compactMap(\.text).joined(separator: " ") }
+            .joined(separator: "\n")
+    }
+}
+
+@MainActor
+private func makeStore() throws -> (UserPanelStore, MemoryPrivateTexts, PanelParts) {
+    let parts = PanelParts()
+    return (try parts.store(), parts.texts, parts)
+}
+
+private func writeFile(_ text: String) throws -> URL {
+    let file = temporaryDirectory().appendingPathComponent("my-panel.json")
+    try FileManager.default.createDirectory(
+        at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try Data(text.utf8).write(to: file)
+    return file
 }
 
 private func fileText(_ url: URL) -> String {
@@ -117,62 +144,75 @@ private func userButtonTests() {
 
 @MainActor
 private func userPanelStoreTests() {
-    test("a missing file gives an empty panel that makes new text private") {
+    test("an empty database gives an empty panel that makes new text private") {
         let (store, _, _) = try makeStore()
         expect(store.buttons.isEmpty)
         expect(store.makeNewTextPrivate)
     }
 
-    test("a broken file throws and is left alone") {
-        let file = temporaryDirectory().appendingPathComponent("my-panel.json")
-        try FileManager.default.createDirectory(
-            at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Data("{ not json".utf8).write(to: file)
-        expect((try? makeStore(file: file)) == nil, "a broken file loaded anyway")
-        expectEqual(fileText(file), "{ not json")
-    }
-
-    test("new private text goes to the keychain, and the file holds only its name") {
-        let (store, texts, file) = try makeStore()
+    test("new private text goes to the keychain, and the table holds only its name") {
+        let (store, texts, parts) = try makeStore()
         let id = try store.add(NewButton(name: "Home Address", action: .text("1 Main Street")))
         expectEqual(store.buttons.map(\.action), [.privateText])
         expectEqual(texts.texts[id], "1 Main Street")
-        expect(fileText(file).contains("Home Address"))
-        expect(!fileText(file).contains("1 Main Street"), "the file holds the private text")
+        expect(try parts.tableText().contains("Home Address"))
+        expect(try !parts.tableText().contains("1 Main Street"), "the table holds the private text")
     }
 
-    test("with the switch off, new text stays in the file") {
-        let (store, texts, file) = try makeStore()
+    test("with the switch off, new text stays in the table") {
+        let (store, texts, parts) = try makeStore()
         store.makeNewTextPrivate = false
         try store.add(NewButton(name: "Greeting", action: .text("Hello there")))
         expectEqual(store.buttons.map(\.action), [.text("Hello there")])
         expect(texts.texts.isEmpty)
-        expect(fileText(file).contains("Hello there"))
+        expect(try parts.tableText().contains("Hello there"))
     }
 
-    test("the store loads what it saved, with the switch") {
-        let (store, texts, file) = try makeStore()
+    test("the switch for new private text is in the defaults") {
+        let (store, _, parts) = try makeStore()
+        store.makeNewTextPrivate = false
+        expectEqual(parts.defaults.object(forKey: UserPanelStore.makeNewTextPrivateKey) as? Bool, false)
+        expect(!(try parts.store().makeNewTextPrivate))
+    }
+
+    test("the store loads what it saved, in the order of the settings") {
+        let (store, _, parts) = try makeStore()
         store.makeNewTextPrivate = false
         try store.add(NewButton(name: "Save", action: .shortcut(saveKeys)))
-        try store.add(NewButton(name: "Exit", action: .sequence([interrupt, interrupt])))
-        let (reloaded, _, _) = try makeStore(file: file, texts: texts)
+        let exit = try store.add(NewButton(name: "Exit", action: .sequence([interrupt, interrupt])))
+        try store.add(NewButton(name: "Greeting", action: .text("Hello")))
+        try store.add(NewButton(name: "Paste", action: .shortcut(pastePlain)))
+        try store.remove(id: exit)
+        try store.add(NewButton(name: "Exit", action: .sequence([interrupt])))
+        let reloaded = try parts.store()
         expectEqual(reloaded.buttons, store.buttons)
-        expect(!reloaded.makeNewTextPrivate)
+        expectEqual(reloaded.buttons.map(\.name), ["Save", "Greeting", "Paste", "Exit"])
     }
 
-    test("private on and off moves the text between the keychain and the file") {
-        let (store, texts, file) = try makeStore()
+    test("the buttons survive a restart in the database file") {
+        let url = temporaryDirectory().appendingPathComponent("keyboard.sqlite")
+        var parts = PanelParts()
+        parts.database = KeyboardDatabase.open(at: url)
+        try parts.store().add(NewButton(name: "Save", action: .shortcut(saveKeys)))
+        parts.database = KeyboardDatabase.open(at: url)
+        expectEqual(try parts.store().buttons.map(\.name), ["Save"])
+    }
+
+    test("private on and off moves the text between the keychain and the table") {
+        let (store, texts, parts) = try makeStore()
         store.makeNewTextPrivate = false
         let id = try store.add(NewButton(name: "Phone", action: .text("555 0100")))
 
         try store.setPrivate(true, for: id)
         expectEqual(store.buttons.first?.action, .privateText)
         expectEqual(texts.texts[id], "555 0100")
-        expect(!fileText(file).contains("555 0100"))
+        expect(try !parts.tableText().contains("555 0100"))
+        expectEqual(try parts.store().buttons.first?.action, .privateText)
 
         try store.setPrivate(false, for: id)
         expectEqual(store.buttons.first?.action, .text("555 0100"))
         expect(texts.texts[id] == nil, "the keychain kept a copy")
+        expectEqual(try parts.store().buttons.first?.action, .text("555 0100"))
     }
 
     test("removing a private button removes its keychain item") {
@@ -196,7 +236,7 @@ private func userPanelStoreTests() {
     }
 
     test("the import adds keys and sequences, and text as private by default") {
-        let (store, texts, file) = try makeStore()
+        let (store, texts, parts) = try makeStore()
         let imported = [
             NewButton(name: "Paste as Text", action: .shortcut(pastePlain)),
             NewButton(name: "Exit", action: .sequence([interrupt, interrupt])),
@@ -208,7 +248,8 @@ private func userPanelStoreTests() {
             .shortcut(pastePlain), .sequence([interrupt, interrupt]), .privateText,
         ])
         expectEqual(Array(texts.texts.values), ["12-3456-78"])
-        expect(!fileText(file).contains("12-3456-78"))
+        expect(try !parts.tableText().contains("12-3456-78"))
+        expectEqual(try parts.store().buttons, store.buttons)
     }
 
     test("the import skips keys that the panel already has") {
@@ -226,6 +267,46 @@ private func userPanelStoreTests() {
             [NewButton(name: "Sign-off", action: .text("Best, Sam"))], textAsPrivate: false)
         expectEqual(store.buttons.map(\.action), [.text("Best, Sam")])
         expect(texts.texts.isEmpty)
+    }
+
+    test("the store moves the buttons of my-panel.json into the table, then removes the file") {
+        let file = try writeFile("""
+            {"makeNewTextPrivate": false, "buttons": [
+              {"id": "b", "name": "Save", "action": {"type": "shortcut", "modifiers": ["command"], "key": "s"}},
+              {"id": "a", "name": "Home", "action": {"type": "privateText"}},
+              {"id": "c", "name": "Hi", "action": {"type": "text", "text": "Hello"}}]}
+            """)
+        let parts = PanelParts()
+        parts.texts.texts["a"] = "1 Main Street"
+        let store = try parts.store(importing: file)
+        expectEqual(store.buttons.map(\.id), ["b", "a", "c"])
+        expectEqual(store.buttons.map(\.action), [.shortcut(saveKeys), .privateText, .text("Hello")])
+        expect(!store.makeNewTextPrivate)
+        expect(!FileManager.default.fileExists(atPath: file.path), "the old file stayed")
+        expectEqual(try parts.store().buttons, store.buttons)
+        expect(!(try parts.store().makeNewTextPrivate))
+        expectEqual(parts.texts.texts["a"], "1 Main Street")
+    }
+
+    test("a second import of my-panel.json adds no button") {
+        let json = """
+            {"makeNewTextPrivate": true, "buttons": [
+              {"id": "b", "name": "Save", "action": {"type": "shortcut", "modifiers": ["command"], "key": "s"}}]}
+            """
+        let parts = PanelParts()
+        try parts.store(importing: try writeFile(json))
+        let store = try parts.store(importing: try writeFile(json))
+        expectEqual(store.buttons.map(\.id), ["b"])
+    }
+
+    test("a broken my-panel.json throws, stays as it is, and adds no button") {
+        let file = try writeFile("{ not json")
+        let parts = PanelParts()
+        expect((try? parts.store(importing: file)) == nil, "a broken file loaded anyway")
+        expectEqual(fileText(file), "{ not json")
+        expectEqual(try parts.tableText(), "")
+        expect(!FileManager.default.fileExists(
+            atPath: file.deletingPathExtension().appendingPathExtension("broken.json").path))
     }
 }
 

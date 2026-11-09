@@ -80,14 +80,11 @@ enum Snapshot {
     // MARK: - The keyboard
 
     private static func keyboard(arguments: [String], permission: AccessibilityPermission) throws -> AnyView {
-        let folder = FileManager.default.temporaryDirectory
-            .appendingPathComponent("september-snapshot-\(UUID().uuidString)")
         let defaults = UserDefaults(suiteName: "september-snapshot-\(UUID().uuidString)")!
         let controller = KeyboardController(sink: SilentSink(), panels: try PanelStore.bundled())
         controller.style = arguments.contains("--mono") ? .mono : .rainbow
         let voice = SampleVoice()
-        let userPanel = try UserPanelStore(
-            fileURL: folder.appendingPathComponent("my-panel.json"), privateTexts: NoPrivateTexts())
+        let userPanel = try UserPanelStore(defaults: defaults, privateTexts: NoPrivateTexts())
         let session = KeyboardSession(
             controller: controller,
             predictions: PredictionEngine(
