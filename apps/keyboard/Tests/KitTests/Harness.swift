@@ -44,3 +44,13 @@ func summarize() -> Never {
     for failure in Run.failures { print("  • \(failure)") }
     exit(1)
 }
+
+/// Removes the defaults domain `name` and its file in `~/Library/Preferences`.
+/// `removePersistentDomain(forName:)` empties the domain but keeps the file,
+/// so `defaults domains` still lists the name until the file is gone.
+func removeDefaults(_ name: String) {
+    UserDefaults.standard.removePersistentDomain(forName: name)
+    let file = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent("Library/Preferences/\(name).plist")
+    try? FileManager.default.removeItem(at: file)
+}
