@@ -4,16 +4,20 @@ import Foundation
 /// Counts the presses of each button of My Panel. My Panel ranks its buttons
 /// by these counts.
 ///
-/// A press loses half its weight in `halfLife`. The file holds button IDs and
-/// weights, never typed text.
+/// A press loses half its weight in `halfLife`. The `button_use` table holds
+/// button IDs and weights, never typed text.
 @MainActor
 public final class UsageStore: ObservableObject, ButtonUsage {
     public static let halfLife: TimeInterval = 14 * 24 * 60 * 60
 
+    /// At launch, a count with a weight below this value is removed.
+    public static let minimumWeight = 0.01
+
+    /// The JSON file of the older versions of the keyboard:
     /// `~/Library/Application Support/September Keyboard/my-panel-usage.json`.
-    public static var defaultURL: URL {
+    public static var jsonURL: URL {
         URL.applicationSupportDirectory
-            .appendingPathComponent("September Keyboard")
+            .appendingPathComponent("September Keyboard", isDirectory: true)
             .appendingPathComponent("my-panel-usage.json")
     }
 
@@ -23,29 +27,49 @@ public final class UsageStore: ObservableObject, ButtonUsage {
         var updated: Date
     }
 
-    /// The file keeps the counts under the key `my-panel`.
-    private struct File: Codable {
+    /// The old JSON file keeps the counts under the key `my-panel`.
+    private struct File: Decodable {
         var apps: [String: [String: Count]]
     }
 
     private static let key = "my-panel"
 
-    private let fileURL: URL
+    private let database: KeyboardDatabase
     private let now: () -> Date
-    private var counts: [String: Count]
+    private var counts: [String: Count] = [:]
 
-    public init(fileURL: URL = UsageStore.defaultURL, now: @escaping () -> Date = Date.init) {
-        self.fileURL = fileURL
+    /// Opens the counts on `database`. If `jsonURL` names a JSON file of an
+    /// older version, its counts move into the database, and the file is
+    /// removed.
+    public init(
+        database: KeyboardDatabase = try! KeyboardDatabase(path: ":memory:"), importing jsonURL: URL? = nil,
+        now: @escaping () -> Date = Date.init
+    ) {
+        self.database = database
         self.now = now
-        let data = try? Data(contentsOf: fileURL)
-        let file = data.flatMap { try? JSONDecoder().decode(File.self, from: $0) }
-        counts = file?.apps[UsageStore.key] ?? [:]
+        if let jsonURL {
+            database.importJSON(File.self, from: jsonURL) { file in
+                for (buttonID, count) in file.apps[Self.key] ?? [:] {
+                    try database.execute(
+                        "INSERT OR IGNORE INTO button_use (button_id, weight, updated_at) VALUES (?, ?, ?)",
+                        [.text(buttonID), .double(count.weight), .double(count.updated.timeIntervalSince1970)])
+                }
+            }
+        }
+        counts = load()
+        removeFaded()
     }
 
     /// Counts one press of a button.
     public func record(_ buttonID: String) {
-        counts[buttonID] = Count(weight: weight(of: buttonID) + 1, updated: now())
-        save()
+        let count = Count(weight: weight(of: buttonID) + 1, updated: now())
+        counts[buttonID] = count
+        objectWillChange.send()
+        // The counts only order the buttons. A failed write loses a little
+        // order and nothing else.
+        try? database.execute(
+            "INSERT OR REPLACE INTO button_use (button_id, weight, updated_at) VALUES (?, ?, ?)",
+            [.text(buttonID), .double(count.weight), .double(count.updated.timeIntervalSince1970)])
     }
 
     /// The presses of a button, less their decay, rounded.
@@ -60,15 +84,25 @@ public final class UsageStore: ObservableObject, ButtonUsage {
         return count.weight * pow(0.5, age / UsageStore.halfLife)
     }
 
-    private func save() {
-        objectWillChange.send()
-        do {
-            try FileManager.default.createDirectory(
-                at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try JSONEncoder().encode(File(apps: [UsageStore.key: counts])).write(to: fileURL, options: .atomic)
-        } catch {
-            // The counts only order the buttons. A failed save loses a little
-            // order and nothing else.
+    /// Removes the counts whose weight is now below `minimumWeight`.
+    private func removeFaded() {
+        let faded = counts.keys.filter { weight(of: $0) < Self.minimumWeight }
+        guard !faded.isEmpty else { return }
+        for buttonID in faded { counts[buttonID] = nil }
+        try? database.transaction {
+            for buttonID in faded {
+                try database.execute("DELETE FROM button_use WHERE button_id = ?", [.text(buttonID)])
+            }
         }
+    }
+
+    private func load() -> [String: Count] {
+        let rows = (try? database.query("SELECT button_id, weight, updated_at FROM button_use")) ?? []
+        var counts: [String: Count] = [:]
+        for row in rows {
+            guard let buttonID = row[0].text, let weight = row[1].double, let at = row[2].double else { continue }
+            counts[buttonID] = Count(weight: weight, updated: Date(timeIntervalSince1970: at))
+        }
+        return counts
     }
 }
