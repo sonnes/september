@@ -73,7 +73,23 @@ public final class KeyboardDatabase {
           last_at   REAL    NOT NULL
         );
         CREATE INDEX sentence_last_at ON sentence(last_at);
+        """,
         """
+        CREATE TABLE talk_line (
+          id       TEXT PRIMARY KEY,
+          text     TEXT NOT NULL,
+          said_at  REAL NOT NULL
+        );
+        CREATE INDEX talk_line_said_at ON talk_line(said_at);
+        """,
+        """
+        CREATE TABLE clip (
+          id         TEXT PRIMARY KEY,
+          text       TEXT NOT NULL UNIQUE,
+          copied_at  REAL NOT NULL
+        );
+        CREATE INDEX clip_copied_at ON clip(copied_at);
+        """,
     ]
 
     /// `~/Library/Application Support/September Keyboard/keyboard.sqlite`.
@@ -179,6 +195,33 @@ public final class KeyboardDatabase {
         } catch {
             try? execute("ROLLBACK")
             throw error
+        }
+    }
+
+    /// Moves the rows of an old JSON store into the database, one time.
+    ///
+    /// `insert` writes the decoded rows in one transaction. After the commit,
+    /// the file is removed. A file that does not decode moves to
+    /// `<name>.broken.json`, and no row is written. With no file, nothing
+    /// happens. `insert` must ignore a row that is already in its table, so
+    /// that a second import of the same file changes nothing.
+    public func importJSON<Row: Decodable>(
+        _ type: [Row].Type, from url: URL, insert: ([Row]) throws -> Void
+    ) {
+        let files = FileManager.default
+        guard let data = try? Data(contentsOf: url) else { return }
+        guard let rows = try? JSONDecoder().decode(type, from: data) else {
+            let aside = url.deletingPathExtension().appendingPathExtension("broken.json")
+            try? files.removeItem(at: aside)
+            try? files.moveItem(at: url, to: aside)
+            return
+        }
+        do {
+            try transaction { try insert(rows) }
+            try? files.removeItem(at: url)
+        } catch {
+            // The file stays, and the next launch tries again. The error
+            // never holds a value of a row.
         }
     }
 

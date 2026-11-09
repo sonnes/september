@@ -9,8 +9,8 @@ func clipboardTests() {
 
 private let now = Date(timeIntervalSince1970: 1_800_000_000)
 
-private func historyFile() -> URL {
-    temporaryDirectory().appendingPathComponent("clipboard-history.json")
+private func open(_ folder: URL) -> KeyboardDatabase {
+    KeyboardDatabase.open(at: folder.appendingPathComponent("keyboard.sqlite"))
 }
 
 private func memoryDefaults() -> UserDefaults {
@@ -45,61 +45,83 @@ private func historyTests() {
     }
 
     test("the clipboard history keeps its texts across launches") {
-        let url = historyFile()
-        let history = ClipboardHistory(fileURL: url, defaults: memoryDefaults(), now: { now })
+        let folder = temporaryDirectory()
+        let defaults = memoryDefaults()
+        var clock = now
+        let history = ClipboardHistory(database: open(folder), defaults: defaults, now: { clock })
         history.add("Ward 7, bed 12")
+        clock = now.addingTimeInterval(60)
         history.add("14 Elm Road")
-        let again = ClipboardHistory(fileURL: url, defaults: memoryDefaults(), now: { now })
+        clock = now.addingTimeInterval(120)
+        history.add("Ward 7, bed 12")
+        let again = ClipboardHistory(database: open(folder), defaults: defaults, now: { clock })
         expectEqual(again.items, history.items)
     }
 
     test("the clipboard history drops texts older than 7 days and keeps the newest 200") {
         var clock = now.addingTimeInterval(-8 * 24 * 3600)
-        let url = historyFile()
-        let history = ClipboardHistory(fileURL: url, defaults: memoryDefaults(), now: { clock })
+        let folder = temporaryDirectory()
+        let history = ClipboardHistory(database: open(folder), defaults: memoryDefaults(), now: { clock })
         history.add("Last week")
-        clock = now
-        for index in 0..<205 { history.add("Text \(index)") }
+        for index in 0..<205 {
+            clock = now.addingTimeInterval(Double(index))
+            history.add("Text \(index)")
+        }
         expectEqual(history.items.count, ClipboardHistory.itemLimit)
         expectEqual(history.items.first?.text, "Text 204")
         expect(!history.items.contains { $0.text == "Last week" })
-        expectEqual(
-            ClipboardHistory(fileURL: url, defaults: memoryDefaults(), now: { now }).items.count,
-            ClipboardHistory.itemLimit)
+        let rows = try open(folder).query("SELECT count(*) FROM clip")
+        expectEqual(rows.first?.first, .int(Int64(ClipboardHistory.itemLimit)))
     }
 
     test("a text older than 7 days is gone at the next launch") {
-        let url = historyFile()
-        ClipboardHistory(fileURL: url, defaults: memoryDefaults(), now: { now }).add("Hello")
+        let folder = temporaryDirectory()
+        ClipboardHistory(database: open(folder), defaults: memoryDefaults(), now: { now }).add("Hello")
         let later = now.addingTimeInterval(ClipboardHistory.maxAge + 1)
-        expect(ClipboardHistory(fileURL: url, defaults: memoryDefaults(), now: { later }).items.isEmpty)
+        expect(ClipboardHistory(database: open(folder), defaults: memoryDefaults(), now: { later }).items.isEmpty)
+        let rows = try open(folder).query("SELECT count(*) FROM clip")
+        expectEqual(rows.first?.first, .int(0))
     }
 
-    test("the clipboard history file is readable only by the user") {
-        let url = historyFile()
-        ClipboardHistory(fileURL: url, defaults: memoryDefaults(), now: { now }).add("Hello")
-        let permissions = try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? Int
-        expectEqual(permissions, 0o600)
+    test("the clipboard history moves the texts of its old JSON file into the database") {
+        let folder = temporaryDirectory()
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let json = folder.appendingPathComponent("clipboard-history.json")
+        let old = [
+            ClipboardItem(text: "14 Elm Road", date: now.addingTimeInterval(-60)),
+            ClipboardItem(text: "Ward 7, bed 12", date: now.addingTimeInterval(-120)),
+            ClipboardItem(text: "Last week", date: now.addingTimeInterval(-8 * 24 * 3600)),
+        ]
+        try JSONEncoder().encode(old).write(to: json)
+        let history = ClipboardHistory(
+            database: open(folder), importing: json, defaults: memoryDefaults(), now: { now })
+        expectEqual(history.items, Array(old.prefix(2)))
+        expect(!FileManager.default.fileExists(atPath: json.path))
+        expectEqual(
+            ClipboardHistory(database: open(folder), importing: json, defaults: memoryDefaults(), now: { now }).items,
+            Array(old.prefix(2)))
     }
 
-    test("a broken clipboard history file is moved aside, not overwritten") {
-        let url = historyFile()
-        try FileManager.default.createDirectory(
-            at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Data("not json".utf8).write(to: url)
-        let history = ClipboardHistory(fileURL: url, defaults: memoryDefaults(), now: { now })
+    test("a broken old clipboard history file is moved aside, not overwritten") {
+        let folder = temporaryDirectory()
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let json = folder.appendingPathComponent("clipboard-history.json")
+        try Data("not json".utf8).write(to: json)
+        let history = ClipboardHistory(
+            database: open(folder), importing: json, defaults: memoryDefaults(), now: { now })
         expect(history.items.isEmpty)
-        let aside = url.deletingPathExtension().appendingPathExtension("broken.json")
+        let aside = folder.appendingPathComponent("clipboard-history.broken.json")
         expectEqual(try String(contentsOf: aside, encoding: .utf8), "not json")
+        expect(!FileManager.default.fileExists(atPath: json.path))
     }
 
-    test("clearing the clipboard history empties the list and the file") {
-        let url = historyFile()
-        let history = ClipboardHistory(fileURL: url, defaults: memoryDefaults(), now: { now })
+    test("clearing the clipboard history empties the list and the table") {
+        let folder = temporaryDirectory()
+        let history = ClipboardHistory(database: open(folder), defaults: memoryDefaults(), now: { now })
         history.add("Hello")
         history.clear()
         expect(history.items.isEmpty)
-        expect(ClipboardHistory(fileURL: url, defaults: memoryDefaults(), now: { now }).items.isEmpty)
+        expect(ClipboardHistory(database: open(folder), defaults: memoryDefaults(), now: { now }).items.isEmpty)
     }
 
     test("the clipboard history is on by default") {
@@ -107,15 +129,16 @@ private func historyTests() {
     }
 
     test("turning the clipboard history off clears it, keeps no copies, and stays off") {
-        let url = historyFile()
+        let folder = temporaryDirectory()
         let defaults = memoryDefaults()
-        let history = ClipboardHistory(fileURL: url, defaults: defaults, now: { now })
+        let history = ClipboardHistory(database: open(folder), defaults: defaults, now: { now })
         history.add("Hello")
         history.isEnabled = false
         history.add("Goodbye")
         expect(history.items.isEmpty)
-        expect(!FileManager.default.fileExists(atPath: url.path))
-        expect(!ClipboardHistory(fileURL: url, defaults: defaults, now: { now }).isEnabled)
+        let rows = try open(folder).query("SELECT count(*) FROM clip")
+        expectEqual(rows.first?.first, .int(0))
+        expect(!ClipboardHistory(database: open(folder), defaults: defaults, now: { now }).isEnabled)
     }
 
     test("the clipboard history shows six texts on each page, newest first") {

@@ -55,10 +55,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let phrases: PanelDefinition
+        let database = KeyboardDatabase.open(at: KeyboardDatabase.defaultURL)
         do {
             controller = KeyboardController(
                 sink: sink, panels: try PanelStore.bundled(),
-                talk: TalkSession(said: SaidList(fileURL: SaidList.defaultURL)))
+                talk: TalkSession(said: SaidList(database: database, importing: SaidList.jsonURL)))
             phrases = try Phrases.bundled()
             contextRules = try ContextRules.bundled()
         } catch {
@@ -68,12 +69,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         speech = SpeechServices()
         speech.start()
-        history = SentenceHistory(database: KeyboardDatabase.open(at: KeyboardDatabase.defaultURL))
+        history = SentenceHistory(database: database)
         let predictions = PredictionEngine(history: history)
         session = KeyboardSession(
             controller: controller, predictions: predictions, speaker: speech.speaker,
             userPanel: Result { try UserPanelStore() }, userPanelUsage: UsageStore(),
-            clipboard: ClipboardHistory(fileURL: ClipboardHistory.defaultURL),
+            clipboard: ClipboardHistory(database: database, importing: ClipboardHistory.jsonURL),
             pasteboard: SystemPasteboard())
         watchClipboard()
 

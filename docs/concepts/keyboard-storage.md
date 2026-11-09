@@ -19,11 +19,10 @@ documents.
 | A secret | Keychain | The ElevenLabs key (`com.september.keyboard`) and the text of each private button (`com.september.keyboard.private`) |
 | A document of the user | Markdown files | The Write documents in `~/Documents/September/` |
 | A definition that ships with the app | JSON in the bundle | Panels, accents, and context rules in `Sources/SeptemberKit/Resources/` |
-| A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history |
-| A record that the keyboard keeps or learns | JSON files | The Said list (`talk-history.json`), the clipboard history (`clipboard-history.json`), the presses of the buttons of My Panel (`my-panel-usage.json`), and the buttons of My Panel (`my-panel.json`) |
+| A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history, the Said list of Talk mode, and the clipboard history |
+| A record that the keyboard keeps or learns | JSON files | The presses of the buttons of My Panel (`my-panel-usage.json`) and the buttons of My Panel (`my-panel.json`) |
 
-The JSON records move to `keyboard.sqlite` one store at a time. The plan is in
-the `2026-11-09-sentence-history` change of the project.
+The two JSON stores of My Panel move to `keyboard.sqlite` in later changes.
 
 ## The Database
 
@@ -44,8 +43,31 @@ the `2026-11-09-sentence-history` change of the project.
 - A `DatabaseValue` that holds text describes itself by its length only. A log
   or a test failure never prints the text.
 
+`AppDelegate` opens one `KeyboardDatabase` at launch and gives it to each
+store. A store that gets no database uses a database in memory. The snapshots
+and most tests use this database.
+
 The stores that own the database run on the main actor. A search reads one
 index and returns in less than one millisecond.
+
+## The JSON Files of Older Versions
+
+Older versions of the keyboard kept the Said list in `talk-history.json` and
+the clipboard history in `clipboard-history.json`. At launch, each store moves
+the rows of its file into its table with `KeyboardDatabase.importJSON`:
+
+1. The store decodes the file.
+2. The store inserts the rows in one transaction. A row that is already in
+   the table stays as it is.
+3. After the commit, the store removes the file.
+
+If the file does not decode, it moves to `<name>.broken.json`, and the table
+gets no rows. If the transaction fails, the file stays, and the next launch
+tries again. A second import of the same file changes nothing, because the
+insert ignores the rows that are already in the table.
+
+The import is not a step of `KeyboardDatabase.migrations`. The steps hold SQL
+only, and they do not know the file formats of the stores.
 
 ## The Sentence History
 
@@ -81,3 +103,49 @@ no new ones.
 
 `PredictionEngine.submit(keepsSentences:)` is the only caller of `record(_:)`.
 See [keyboard-session.md](keyboard-session.md).
+
+## The Said List
+
+`SaidList` owns the `talk_line` table. Each row is one line that the user
+spoke in Talk mode. A line can hold more than one sentence.
+
+```sql
+CREATE TABLE talk_line (
+  id       TEXT PRIMARY KEY,           -- the UUID of SaidLine
+  text     TEXT NOT NULL,
+  said_at  REAL NOT NULL               -- seconds since 1970
+);
+CREATE INDEX talk_line_said_at ON talk_line(said_at);
+```
+
+The list keeps the lines of the last 30 days, and 1,000 lines at most. It
+removes the other rows at launch and after each new line. `lines` holds the
+rows in memory, newest first, so the views do not read the database.
+`clear()` removes every row.
+
+`talk_line` and `sentence` are separate tables. `talk_line` is a log of what
+the user said, and when. `sentence` holds the sentences that the user uses,
+and how often.
+
+## The Clipboard History
+
+`ClipboardHistory` owns the `clip` table. Each row is one text that the user
+copied.
+
+```sql
+CREATE TABLE clip (
+  id         TEXT PRIMARY KEY,         -- the UUID of ClipboardItem
+  text       TEXT NOT NULL UNIQUE,
+  copied_at  REAL NOT NULL             -- seconds since 1970
+);
+CREATE INDEX clip_copied_at ON clip(copied_at);
+```
+
+The history keeps the texts of the last 7 days, and 200 texts at most. It
+removes the other rows at launch and after each new copy. A copy of a text
+that is already in the table replaces its row, so the text gets a new ID and
+moves to the newest place. `items` holds the rows in memory, newest first.
+
+The switch is in `UserDefaults`, key `clipboardHistoryEnabled`, and it is on
+by default. When the user turns it off, the history removes every row and
+keeps no new copies.
