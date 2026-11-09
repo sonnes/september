@@ -39,11 +39,10 @@ extension SaidLine: CustomStringConvertible, CustomDebugStringConvertible {
 
 /// The lines that the user said in Talk mode, newest first.
 ///
-/// The Talk history is separate from every other store of the keyboard. With
-/// a file, the list keeps its lines across launches, for 30 days and up to
-/// `lineLimit` lines. The file is readable only by the user. A file that does
-/// not decode is moved aside to `<name>.broken.json`, and the list starts
-/// empty. With no file, the list stays in memory.
+/// The list keeps its lines in the `talk_line` table of the keyboard
+/// database, for 30 days and up to `lineLimit` lines. The Talk history is
+/// separate from every other store of the keyboard. With no database file,
+/// the list stays in memory.
 @MainActor
 public final class SaidList: ObservableObject {
     /// The most lines that the history keeps.
@@ -53,8 +52,9 @@ public final class SaidList: ObservableObject {
     /// The lines that the sentence predictions get are this new or newer.
     public static let contextWindow: TimeInterval = 3600
 
+    /// The JSON file of the older versions of the keyboard:
     /// `~/Library/Application Support/September Keyboard/talk-history.json`.
-    public static var defaultURL: URL {
+    public static var jsonURL: URL {
         URL.applicationSupportDirectory
             .appendingPathComponent("September Keyboard", isDirectory: true)
             .appendingPathComponent("talk-history.json")
@@ -64,12 +64,28 @@ public final class SaidList: ObservableObject {
     /// The line that the keyboard spoke last.
     @Published public private(set) var currentID: SaidLine.ID?
 
-    private let fileURL: URL?
+    private let database: KeyboardDatabase
     private let now: () -> Date
 
-    public init(fileURL: URL? = nil, now: @escaping () -> Date = Date.init) {
-        self.fileURL = fileURL
+    /// Opens the list on `database`. If `jsonURL` names a JSON file of an
+    /// older version, its lines move into the database, and the file is
+    /// removed.
+    public init(
+        database: KeyboardDatabase = try! KeyboardDatabase(path: ":memory:"), importing jsonURL: URL? = nil,
+        now: @escaping () -> Date = Date.init
+    ) {
+        self.database = database
         self.now = now
+        if let jsonURL {
+            database.importJSON([SaidLine].self, from: jsonURL) { lines in
+                for line in lines {
+                    try database.execute(
+                        "INSERT OR IGNORE INTO talk_line (id, text, said_at) VALUES (?, ?, ?)",
+                        [.text(line.id.uuidString), .text(line.text), .double(line.date.timeIntervalSince1970)])
+                }
+            }
+        }
+        trim()
         lines = load()
     }
 
@@ -77,8 +93,12 @@ public final class SaidList: ObservableObject {
         let line = SaidLine(text: text, date: date ?? now())
         lines.insert(line, at: 0)
         currentID = line.id
+        try? database.execute(
+            "INSERT INTO talk_line (id, text, said_at) VALUES (?, ?, ?)",
+            [.text(line.id.uuidString), .text(line.text), .double(line.date.timeIntervalSince1970)])
         trim()
-        save()
+        let start = now().addingTimeInterval(-Self.maxAge)
+        lines = Array(lines.filter { $0.date >= start }.prefix(Self.lineLimit))
     }
 
     /// A replay marks the line but does not move it. The rows stay in place
@@ -87,11 +107,11 @@ public final class SaidList: ObservableObject {
         currentID = id
     }
 
-    /// Removes every line, and the file.
+    /// Removes every line.
     public func clear() {
         lines = []
         currentID = nil
-        if let fileURL { try? FileManager.default.removeItem(at: fileURL) }
+        try? database.execute("DELETE FROM talk_line")
     }
 
     /// The texts of the lines of the last `contextWindow`, oldest first, for
@@ -101,37 +121,31 @@ public final class SaidList: ObservableObject {
         return lines.filter { $0.date >= start }.reversed().map(\.text)
     }
 
+    /// Removes the lines older than `maxAge` and the lines after the newest
+    /// `lineLimit`.
     private func trim() {
-        let start = now().addingTimeInterval(-Self.maxAge)
-        lines = Array(lines.filter { $0.date >= start }.prefix(Self.lineLimit))
-    }
-
-    private func load() -> [SaidLine] {
-        guard let fileURL, let data = try? Data(contentsOf: fileURL) else { return [] }
-        do {
-            let start = now().addingTimeInterval(-Self.maxAge)
-            return Array(
-                try JSONDecoder().decode([SaidLine].self, from: data)
-                    .filter { $0.date >= start }
-                    .prefix(Self.lineLimit))
-        } catch {
-            let aside = fileURL.deletingPathExtension().appendingPathExtension("broken.json")
-            try? FileManager.default.removeItem(at: aside)
-            try? FileManager.default.moveItem(at: fileURL, to: aside)
-            return []
+        let start = now().addingTimeInterval(-Self.maxAge).timeIntervalSince1970
+        try? database.transaction {
+            try database.execute("DELETE FROM talk_line WHERE said_at < ?", [.double(start)])
+            try database.execute(
+                """
+                DELETE FROM talk_line WHERE id IN
+                  (SELECT id FROM talk_line ORDER BY said_at DESC LIMIT -1 OFFSET ?)
+                """,
+                [.int(Int64(Self.lineLimit))])
         }
     }
 
-    private func save() {
-        guard let fileURL else { return }
-        do {
-            try FileManager.default.createDirectory(
-                at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try JSONEncoder().encode(lines).write(to: fileURL, options: .atomic)
-            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
-        } catch {
-            // The history stays in memory. The error can name the file, and
-            // never holds the text.
+    private func load() -> [SaidLine] {
+        let rows =
+            (try? database.query(
+                "SELECT id, text, said_at FROM talk_line ORDER BY said_at DESC LIMIT ?",
+                [.int(Int64(Self.lineLimit))])) ?? []
+        return rows.compactMap { row in
+            guard let id = row[0].text.flatMap(UUID.init(uuidString:)), let text = row[1].text,
+                let at = row[2].double
+            else { return nil }
+            return SaidLine(id: id, text: text, date: Date(timeIntervalSince1970: at))
         }
     }
 }
