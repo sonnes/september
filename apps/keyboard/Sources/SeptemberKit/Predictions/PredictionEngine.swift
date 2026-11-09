@@ -8,6 +8,11 @@ import Foundation
 /// `delay` after the last change. A new change cancels the old request. The
 /// old predictions stay, marked stale, until the new ones arrive.
 ///
+/// Sentence predictions show only after the user types. The first input
+/// after a focus move, a change of mode, or a change of the input kind is
+/// the baseline of the field. A later input with other text is typing. The
+/// text before the caret must also hold a letter.
+///
 /// The engine keeps the completions that the user picks. When the user
 /// submits the text, it tells the completer which picked words the text
 /// still holds.
@@ -54,7 +59,13 @@ public final class PredictionEngine: ObservableObject {
     private let defaults: UserDefaults
 
     private var input: InputMirror = .local(text: "")
+    private var mode: PredictionMode = .type
     private var isPrivate = false
+    /// The input and the mode when the focus came to the field. It is `nil`
+    /// until the first input after a focus move.
+    private var baseline: (input: InputMirror, mode: PredictionMode)?
+    /// True when the text of the field changed after the baseline.
+    private var hasTyped = false
     private var context: PredictionContext?
     /// The context of the current predictions. A failed or cancelled request
     /// leaves it as it was.
@@ -92,8 +103,12 @@ public final class PredictionEngine: ObservableObject {
         screen: ScreenContext? = nil
     ) {
         let context = isPrivate ? nil : PredictionContext(input: input, mode: mode, said: said, screen: screen)
-        guard input != self.input || context != self.context || isPrivate != self.isPrivate else { return }
+        let changed =
+            input != self.input || mode != self.mode || context != self.context || isPrivate != self.isPrivate
+        if changed || baseline == nil { noteTyping(input, mode: mode) }
+        guard changed else { return }
         self.input = input
+        self.mode = mode
         self.context = context
         self.isPrivate = isPrivate
         refresh()
@@ -141,10 +156,31 @@ public final class PredictionEngine: ObservableObject {
         }
     }
 
-    /// The focus moved to another field or app, so the picked words cannot be
-    /// found again. They are not recorded.
-    public func forgetPickedWords() {
+    /// The focus moved to another field or app. The picked words cannot be
+    /// found again, so they are not recorded. The sentence predictions wait
+    /// until the user types in the new field.
+    public func focusMoved() {
         picked = []
+        baseline = nil
+        hasTyped = false
+        refresh()
+    }
+
+    /// Sets the baseline of a new field, or marks the field as typed when its
+    /// text changed.
+    private func noteTyping(_ input: InputMirror, mode: PredictionMode) {
+        guard let baseline, baseline.mode == mode, baseline.input.kind == input.kind else {
+            baseline = (input, mode)
+            hasTyped = false
+            return
+        }
+        if input.text != baseline.input.text { hasTyped = true }
+    }
+
+    /// True when the user typed in the field and the text before the caret
+    /// holds a letter.
+    private func wantsSentences(_ context: PredictionContext) -> Bool {
+        hasTyped && context.typed.contains(where: \.isLetter)
     }
 
     // MARK: - State
@@ -156,7 +192,7 @@ public final class PredictionEngine: ObservableObject {
             : Self.notice(for: input, availability: availability, sentences: sentencesEnabled)
         refreshWords()
 
-        guard let context, sentencesEnabled, availability == .ready else {
+        guard let context, sentencesEnabled, availability == .ready, wantsSentences(context) else {
             cancel()
             predictions = []
             requested = nil

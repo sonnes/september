@@ -431,6 +431,15 @@ private final class CupCompleter: WordCompleting {
     }
 }
 
+/// The focus comes to an empty field, and then the user types `text` in it.
+@MainActor
+private func userTypes(_ text: String, in parts: SessionParts) async throws {
+    parts.controller.focusChanged(to: field("", caret: 0))
+    await parts.session.settle()
+    parts.controller.focusChanged(to: field(text, caret: text.utf16.count))
+    await parts.session.settle()
+}
+
 @MainActor
 private func sessionTests() async {
     await asyncTest("the session shows the bar for a text field and hides it after the delay") {
@@ -514,7 +523,7 @@ private func sessionTests() async {
         let predictor = RecordingPredictor()
         let parts = try makeSession(predictor: predictor)
         parts.session.appChanged(name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp", windowTitle: nil)
-        parts.controller.focusChanged(to: field("Yes", caret: 3))
+        try await userTypes("Yes", in: parts)
         let screen = ScreenContext(
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
         parts.session.screenRead(screen)
@@ -528,6 +537,7 @@ private func sessionTests() async {
         expectEqual(last?.screen, screen)
 
         parts.controller.mode = .talk
+        await parts.session.settle()
         parts.controller.talk.type("Hi")
         await parts.session.settle()
         last = await predictor.requests.last
@@ -540,12 +550,12 @@ private func sessionTests() async {
         let said = parts.controller.talk.said
         said.add("Yesterday", at: Date().addingTimeInterval(-24 * 3600))
         said.add("Good morning", at: Date())
-        parts.controller.focusChanged(to: field("Hi", caret: 2))
-        await parts.session.settle()
+        try await userTypes("Hi", in: parts)
         var last = await predictor.requests.last
         expectEqual(last?.said, [])
 
         parts.controller.mode = .talk
+        await parts.session.settle()
         parts.controller.talk.type("Hi")
         await parts.session.settle()
         last = await predictor.requests.last
@@ -557,12 +567,12 @@ private func sessionTests() async {
         let parts = try makeSession(predictor: predictor)
         parts.session.predictions.screenEnabled = true
         parts.session.appChanged(name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp", windowTitle: nil)
-        parts.controller.focusChanged(to: field("Yes", caret: 3))
+        try await userTypes("Yes", in: parts)
         parts.session.screenRead(
             ScreenContext(bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"]))
         await parts.session.settle()
         parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes", windowTitle: nil)
-        parts.controller.focusChanged(to: field("Ye", caret: 2))
+        try await userTypes("Ye", in: parts)
         parts.session.screenRead(
             ScreenContext(bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Late"]))
         await parts.session.settle()

@@ -264,7 +264,7 @@ public final class KeyboardSession: ObservableObject {
         frontBundleID = bundleID
         screen = nil
         appPanels.appActivated(bundleID: bundleID, windowTitle: windowTitle)
-        predictions.forgetPickedWords()
+        predictions.focusMoved()
         rankUserPanel()
     }
 
@@ -285,7 +285,7 @@ public final class KeyboardSession: ObservableObject {
     /// focus leaves its field.
     public func focusMoved() {
         controller.focusMoved()
-        predictions.forgetPickedWords()
+        predictions.focusMoved()
     }
 
     /// The editor of the Write window reported the paragraph at the caret.
