@@ -276,7 +276,9 @@ private func placementTests() {
     }
 
     test("the keyboard window keeps the place where the user put it") {
-        let defaults = UserDefaults(suiteName: "september-test-\(UUID().uuidString)")!
+        let suite = "september-test-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { removeDefaults(suite) }
         let position = KeyboardPosition(defaults: defaults)
         expectEqual(position.saved, nil)
         position.saved = CGPoint(x: 300, y: 200)
