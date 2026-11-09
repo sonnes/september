@@ -73,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let predictions = PredictionEngine(history: history)
         session = KeyboardSession(
             controller: controller, predictions: predictions, speaker: speech.speaker,
-            userPanel: Result { try UserPanelStore() },
+            userPanel: Result { try UserPanelStore(database: database, importing: UserPanelStore.jsonURL) },
             userPanelUsage: UsageStore(database: database, importing: UsageStore.jsonURL),
             clipboard: ClipboardHistory(database: database, importing: ClipboardHistory.jsonURL),
             pasteboard: SystemPasteboard())

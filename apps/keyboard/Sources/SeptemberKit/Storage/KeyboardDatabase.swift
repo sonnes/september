@@ -97,6 +97,14 @@ public final class KeyboardDatabase {
           updated_at  REAL NOT NULL
         ) WITHOUT ROWID;
         """,
+        """
+        CREATE TABLE user_button (
+          id        TEXT PRIMARY KEY,
+          position  INTEGER NOT NULL UNIQUE,
+          name      TEXT NOT NULL,
+          action    TEXT NOT NULL
+        );
+        """,
     ]
 
     /// `~/Library/Application Support/September Keyboard/keyboard.sqlite`.

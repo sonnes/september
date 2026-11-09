@@ -343,7 +343,6 @@ private func makeSession(
 ) throws -> SessionParts {
     let (controller, sink) = try makeController()
     let defaults = UserDefaults(suiteName: "kit-integration-\(UUID().uuidString)")!
-    let folder = temporaryDirectory()
     let voice = FakeEngine()
     voice.holds = voiceHolds
     let speaker = Speaker(
@@ -356,9 +355,7 @@ private func makeSession(
     let store =
         userPanel
         ?? Result {
-            try UserPanelStore(
-                fileURL: folder.appendingPathComponent("my-panel.json"),
-                privateTexts: MemoryPrivateTexts())
+            try UserPanelStore(defaults: defaults, privateTexts: MemoryPrivateTexts())
         }
     let clock = FakeClock()
     let clipboard = ClipboardHistory(defaults: defaults)
@@ -840,7 +837,11 @@ private func sessionTests() async {
             at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data("{ not json".utf8).write(to: file)
         let parts = try makeSession(
-            userPanel: Result { try UserPanelStore(fileURL: file, privateTexts: MemoryPrivateTexts()) })
+            userPanel: Result {
+                try UserPanelStore(
+                    importing: file, defaults: UserDefaults(suiteName: "kit-broken-\(UUID().uuidString)")!,
+                    privateTexts: MemoryPrivateTexts())
+            })
         expect(parts.session.userPanelError != nil)
         expect(parts.session.mineButtons.isEmpty)
         expectEqual(try String(contentsOf: file, encoding: .utf8), "{ not json")

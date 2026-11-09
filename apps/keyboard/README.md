@@ -208,6 +208,11 @@ keys. The title of a keypad is as tall as the tabs of My Panel, so the buttons
 of all the panels start at the same height. System, Text, and My Panel end at
 the same height.
 
+The buttons of My Panel are in the `user_button` table of
+`~/Library/Application Support/September Keyboard/keyboard.sqlite`. The text
+of a private text button is in the Keychain, not in the table. The switch
+"Make new text private" is in `UserDefaults`.
+
 My Panel ranks its buttons by their presses. A press loses half its weight in
 14 days. The presses are in the `button_use` table of
 `~/Library/Application Support/September Keyboard/keyboard.sqlite`. The table
@@ -246,9 +251,11 @@ The Clipboard page of Settings turns the history off and clears it. When the
 history is off, it keeps no texts.
 
 At the first launch after an update, the keyboard moves the lines of
-`talk-history.json`, the texts of `clipboard-history.json`, and the presses
-of `my-panel-usage.json` into the database. Then it removes the files. If a file does not decode, the keyboard
-moves it to `<name>.broken.json`.
+`talk-history.json`, the texts of `clipboard-history.json`, the presses of
+`my-panel-usage.json`, and the buttons of `my-panel.json` into the database.
+Then it removes the files. If a file does not decode, the keyboard moves it to
+`<name>.broken.json`. A broken `my-panel.json` stays where it is, and My Panel
+shows an error, so the buttons of the user are not lost.
 
 Write opens the Write paper: a sheet with round corners, no window frame,
 and a native Markdown editor (`WriteTextView`). The editor hides the Markdown
@@ -540,9 +547,9 @@ The Keychain holds the secrets:
 
 Write keeps each document as a Markdown file in
 `~/Documents/September`. The sentence history, the Talk history, the clipboard
-history, and the presses of My Panel are in `keyboard.sqlite` in
-`~/Library/Application Support/September Keyboard`. Only the user can read
-this file. The buttons of My Panel are in `my-panel.json` in the same folder.
+history, and the buttons of My Panel and their presses are in
+`keyboard.sqlite` in `~/Library/Application Support/September Keyboard`. Only
+the user can read this file.
 
 ## Tests
 

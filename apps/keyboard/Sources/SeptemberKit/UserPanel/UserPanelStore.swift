@@ -1,11 +1,12 @@
 import Combine
 import Foundation
+import SQLite3
 
-/// The buttons of My Panel, saved as JSON in
-/// `~/Library/Application Support/September Keyboard/my-panel.json`.
+/// The buttons of My Panel, in the `user_button` table of `keyboard.sqlite`.
 ///
-/// The file holds only the name of a private text button. Its text is in the
-/// `PrivateTextStore`, under the ID of the button.
+/// The table holds only the name of a private text button. Its text is in the
+/// `PrivateTextStore`, under the ID of the button. The switch for new private
+/// text is in `UserDefaults`.
 @MainActor
 public final class UserPanelStore: ObservableObject {
     /// The buttons in the order of the settings. `ranked(by:)` gives the
@@ -13,37 +14,54 @@ public final class UserPanelStore: ObservableObject {
     @Published public private(set) var buttons: [UserButton]
     /// New text goes to the Keychain when this is on.
     @Published public var makeNewTextPrivate: Bool {
-        // A failed save leaves the switch on the screen as the user set it;
-        // the next change saves again.
-        didSet { try? save() }
+        didSet { defaults.set(makeNewTextPrivate, forKey: Self.makeNewTextPrivateKey) }
     }
 
-    public let fileURL: URL
-    private let privateTexts: any PrivateTextStore
+    /// The `UserDefaults` key of `makeNewTextPrivate`.
+    public static let makeNewTextPrivateKey = "myPanel.makeNewTextPrivate"
 
-    public static var defaultFileURL: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    /// The JSON file of the older versions of the keyboard:
+    /// `~/Library/Application Support/September Keyboard/my-panel.json`.
+    public static var jsonURL: URL {
+        URL.applicationSupportDirectory
             .appendingPathComponent("September Keyboard", isDirectory: true)
             .appendingPathComponent("my-panel.json")
     }
 
-    /// Loads the panel. A missing file gives an empty panel. A broken file
-    /// throws and stays as it is, so that no save overwrites the buttons of
-    /// the user.
+    private let database: KeyboardDatabase
+    private let defaults: UserDefaults
+    private let privateTexts: any PrivateTextStore
+
+    /// Opens the panel on `database`. If `jsonURL` names a JSON file of an
+    /// older version, its buttons move into the database, and the file is
+    /// removed.
+    ///
+    /// A file that does not decode throws and stays as it is, so that the
+    /// buttons of the user are not lost. A row that does not decode also
+    /// throws.
     public init(
-        fileURL: URL = UserPanelStore.defaultFileURL,
+        database: KeyboardDatabase = try! KeyboardDatabase(path: ":memory:"), importing jsonURL: URL? = nil,
+        defaults: UserDefaults = .standard,
         privateTexts: any PrivateTextStore = KeychainPrivateTextStore()
     ) throws {
-        self.fileURL = fileURL
+        self.database = database
+        self.defaults = defaults
         self.privateTexts = privateTexts
-        if FileManager.default.fileExists(atPath: fileURL.path) {
-            let saved = try JSONDecoder().decode(SavedPanel.self, from: Data(contentsOf: fileURL))
-            buttons = saved.buttons
-            makeNewTextPrivate = saved.makeNewTextPrivate
-        } else {
-            buttons = []
-            makeNewTextPrivate = true
+        if let jsonURL, let data = try? Data(contentsOf: jsonURL) {
+            // `KeyboardDatabase.importJSON` moves a broken file aside. This
+            // file holds the buttons of the user, so it stays, and the error
+            // goes to My Panel.
+            let saved = try JSONDecoder().decode(SavedPanel.self, from: data)
+            try database.transaction {
+                for (position, button) in saved.buttons.enumerated() {
+                    try Self.insert(button, at: position, into: database, orIgnore: true)
+                }
+            }
+            defaults.set(saved.makeNewTextPrivate, forKey: Self.makeNewTextPrivateKey)
+            try? FileManager.default.removeItem(at: jsonURL)
         }
+        buttons = try Self.load(from: database)
+        makeNewTextPrivate = defaults.object(forKey: Self.makeNewTextPrivateKey) as? Bool ?? true
     }
 
     // MARK: - Order
@@ -68,8 +86,8 @@ public final class UserPanelStore: ObservableObject {
     @discardableResult
     public func add(_ button: NewButton) throws -> String {
         let made = try make(button, textAsPrivate: makeNewTextPrivate)
+        try insert([made])
         buttons.append(made)
-        try save()
         return made.id
     }
 
@@ -81,8 +99,8 @@ public final class UserPanelStore: ObservableObject {
         for button in imported where !contains(button, among: buttons + added) {
             added.append(try make(button, textAsPrivate: textAsPrivate))
         }
+        try insert(added)
         buttons += added
-        try save()
         return added.count
     }
 
@@ -91,8 +109,8 @@ public final class UserPanelStore: ObservableObject {
         if buttons[index].action == .privateText {
             try privateTexts.removeText(for: id)
         }
+        try database.execute("DELETE FROM user_button WHERE id = ?", [.text(id)])
         buttons.remove(at: index)
-        try save()
     }
 
     /// Moves the text of a text button into the Keychain, or back out of it.
@@ -101,12 +119,12 @@ public final class UserPanelStore: ObservableObject {
         switch (buttons[index].action, isPrivate) {
         case (.text(let text), true):
             try privateTexts.setText(text, for: id)
+            try update(.privateText, of: id)
             buttons[index].action = .privateText
-            try save()
         case (.privateText, false):
             let text = try privateTexts.text(for: id) ?? ""
+            try update(.text(text), of: id)
             buttons[index].action = .text(text)
-            try save()
             try privateTexts.removeText(for: id)
         default:
             break
@@ -144,18 +162,51 @@ public final class UserPanelStore: ObservableObject {
         }
     }
 
-    private func save() throws {
+    /// Adds rows after the last position, in one transaction.
+    private func insert(_ added: [UserButton]) throws {
+        guard !added.isEmpty else { return }
+        try database.transaction {
+            let last = try database.query("SELECT max(position) FROM user_button").first?.first?.int ?? -1
+            for (offset, button) in added.enumerated() {
+                try Self.insert(button, at: Int(last) + 1 + offset, into: database, orIgnore: false)
+            }
+        }
+    }
+
+    private func update(_ action: UserAction, of id: String) throws {
+        try database.execute(
+            "UPDATE user_button SET action = ? WHERE id = ?", [.text(try Self.json(action)), .text(id)])
+    }
+
+    /// `orIgnore` skips a button whose ID or position is already in the
+    /// table, so that a second import of the same file adds nothing.
+    private static func insert(
+        _ button: UserButton, at position: Int, into database: KeyboardDatabase, orIgnore: Bool
+    ) throws {
+        try database.execute(
+            "INSERT \(orIgnore ? "OR IGNORE " : "")INTO user_button (id, position, name, action) VALUES (?, ?, ?, ?)",
+            [.text(button.id), .int(Int64(position)), .text(button.name), .text(try json(button.action))])
+    }
+
+    private static func load(from database: KeyboardDatabase) throws -> [UserButton] {
+        try database.query("SELECT id, name, action FROM user_button ORDER BY position").map { row in
+            guard let id = row[0].text, let name = row[1].text, let action = row[2].text else {
+                throw DatabaseError(code: SQLITE_MISMATCH, message: "a user_button row has no text")
+            }
+            return UserButton(
+                id: id, name: name, action: try JSONDecoder().decode(UserAction.self, from: Data(action.utf8)))
+        }
+    }
+
+    private static func json(_ action: UserAction) throws -> String {
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let data = try encoder.encode(
-            SavedPanel(makeNewTextPrivate: makeNewTextPrivate, buttons: buttons))
-        try FileManager.default.createDirectory(
-            at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try data.write(to: fileURL, options: .atomic)
+        encoder.outputFormatting = .sortedKeys
+        return String(decoding: try encoder.encode(action), as: UTF8.self)
     }
 }
 
-private struct SavedPanel: Codable {
+/// The JSON file of the older versions of the keyboard.
+private struct SavedPanel: Decodable {
     var makeNewTextPrivate: Bool
     var buttons: [UserButton]
 }
