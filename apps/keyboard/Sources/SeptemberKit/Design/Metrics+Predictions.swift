@@ -21,6 +21,10 @@ extension Metrics {
         /// Three rows. The stack keeps this height, so the input bar does not
         /// move when the predictions change.
         public static let stackHeight: CGFloat = tileHeight * 3 + rowSpacing * 2
+        /// The rows of shortcut suggestions in the stack.
+        public static let shortcutRows = 3
+        /// The gap between the keys and the name of a shortcut suggestion.
+        public static let shortcutKeysGap: CGFloat = 8
         /// The gap between the stack and the input bar.
         public static let stackBottomSpacing: CGFloat = 14
 

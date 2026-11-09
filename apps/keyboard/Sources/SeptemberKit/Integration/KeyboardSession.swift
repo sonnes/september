@@ -53,6 +53,23 @@ public final class KeyboardSession: ObservableObject {
     @Published public private(set) var canCutOrCopy = true
     /// True when the clipboard holds text.
     @Published public private(set) var canPaste = false
+    /// The shortcuts of the app in front that show in the place of the
+    /// predictions: in Type mode with no text field in focus, and while
+    /// Command or Control is on. Empty when the predictions show.
+    @Published public private(set) var shortcuts: [AppShortcut] = []
+    /// Reads the menu items with a chord of the app in front. The app reads
+    /// the menu bar through accessibility. The session reads it only when a
+    /// suggestion needs it, and keeps the read until another app comes to the
+    /// front.
+    public var readMenu: () -> [AppShortcut] = { [] } {
+        didSet {
+            menu = nil
+            scheduleUpdate()
+        }
+    }
+    /// A modifier of the hardware keyboard shows the shortcuts after this
+    /// hold, so a quick chord does not make the stack blink.
+    public static let modifierHoldDelay: TimeInterval = 0.4
     @Published private var isWriteInFront = false
     /// The bundle ID of the app in front.
     private var frontBundleID: String?
@@ -66,6 +83,14 @@ public final class KeyboardSession: ObservableObject {
     /// document. The keyboard cannot read its own web view through the
     /// accessibility API, so the app asks the editor page.
     public var writeSpeech: () async -> EditorSpeech? = { nil }
+
+    /// The menu shortcuts of the app in front, from the last read.
+    private var menu: [AppShortcut]?
+    /// The modifiers of the hardware keyboard that the user holds, after the
+    /// hold delay.
+    private var heldModifiers: Modifiers = []
+    private var pendingHold: (any ScheduledWork)?
+    private let scheduler: any DelayScheduler
 
     /// What Speak read in Type mode.
     private var speaking: SpeakText?
@@ -86,8 +111,10 @@ public final class KeyboardSession: ObservableObject {
         userPanelUsage: UsageStore,
         inputBar: InputBarVisibility = InputBarVisibility(),
         clipboard: ClipboardHistory = ClipboardHistory(),
-        pasteboard: any ClipboardAccess = MemoryPasteboard()
+        pasteboard: any ClipboardAccess = MemoryPasteboard(),
+        scheduler: any DelayScheduler = MainQueueScheduler()
     ) {
+        self.scheduler = scheduler
         self.inputBar = inputBar
         self.clipboard = clipboard
         self.pasteboard = pasteboard
@@ -145,6 +172,36 @@ public final class KeyboardSession: ObservableObject {
     public func pressAppPanel(_ action: PanelAction) {
         appPanels.pressed(action)
         controller.perform(action)
+    }
+
+    /// A press on a shortcut suggestion. It acts as a press on the app panel,
+    /// and it ends a latched modifier.
+    public func pressShortcut(_ shortcut: AppShortcut) {
+        pressAppPanel(.shortcut(shortcut.shortcut))
+    }
+
+    /// The modifiers that the user holds on the hardware keyboard changed.
+    /// Command or Control shows the shortcuts after `modifierHoldDelay`. A
+    /// change while the shortcuts show, and a release, act at once.
+    public func hardwareModifiersChanged(_ modifiers: Modifiers) {
+        pendingHold?.cancel()
+        pendingHold = nil
+        let held = modifiers.intersection(AppShortcut.filterModifiers)
+        guard !held.isDisjoint(with: [.command, .control]) else {
+            heldModifiers = []
+            scheduleUpdate()
+            return
+        }
+        guard heldModifiers.isEmpty else {
+            heldModifiers = held
+            scheduleUpdate()
+            return
+        }
+        pendingHold = scheduler.schedule(after: Self.modifierHoldDelay) { [weak self] in
+            self?.pendingHold = nil
+            self?.heldModifiers = held
+            self?.scheduleUpdate()
+        }
     }
 
     /// A press on My Panel. It counts toward the order of My Panel.
@@ -268,6 +325,7 @@ public final class KeyboardSession: ObservableObject {
         isWriteInFront = WritePanel.isWrite(bundleID)
         frontBundleID = bundleID
         screen = nil
+        menu = nil
         appPanels.appActivated(bundleID: bundleID, windowTitle: windowTitle)
         predictions.focusMoved()
         rankUserPanel()
@@ -348,6 +406,7 @@ public final class KeyboardSession: ObservableObject {
             controller.talk.objectWillChange.eraseToAnyPublisher(),
             controller.talk.said.objectWillChange.eraseToAnyPublisher(),
             speaker.objectWillChange.eraseToAnyPublisher(),
+            appPanels.objectWillChange.eraseToAnyPublisher(),
         ]
         // `objectWillChange` fires before the new value is stored, so the
         // update waits a turn.
@@ -449,6 +508,24 @@ public final class KeyboardSession: ObservableObject {
 
         let word = spokenWord(mode: mode)
         if word != spokenWord { spokenWord = word }
+
+        let shortcuts = shortcutSuggestions(mode: mode)
+        if shortcuts != self.shortcuts { self.shortcuts = shortcuts }
+    }
+
+    /// The shortcuts for the stack, or none when the predictions show.
+    private func shortcutSuggestions(mode: KeyboardMode) -> [AppShortcut] {
+        // Talk mode sends no keys to the app. The Write window has its panel.
+        guard mode == .type, !isWriteInFront else { return [] }
+        let on = controller.modifiers.active.union(heldModifiers)
+        let byModifier = !on.isDisjoint(with: [.command, .control])
+        let hasTextInput = InputBarVisibility.wantsBar(
+            mode: mode, focusedField: controller.focusedField, isFieldPrivate: controller.isFieldPrivate,
+            input: controller.input, isWriteInFront: isWriteInFront)
+        guard byModifier || !hasTextInput else { return [] }
+        if menu == nil { menu = readMenu() }
+        return AppShortcut.suggestions(
+            panel: appPanels.panel.buttons, menu: menu ?? [], modifiers: byModifier ? on : [])
     }
 
     private func spokenWord(mode: KeyboardMode) -> NSRange? {

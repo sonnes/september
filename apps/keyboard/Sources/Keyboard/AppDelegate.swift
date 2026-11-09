@@ -287,6 +287,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             isWriteInFront = true
             appIcon = NSApp.applicationIconImage.tabIcon()
             session.menuName = { _ in nil }
+            session.readMenu = { [] }
             session.appChanged(name: "Write", bundleID: write.panel, windowTitle: nil)
             session.writeCaretRead(write.caret)
         case .app:
@@ -297,6 +298,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 // when a chord is about to join the panel.
                 app.flatMap(MenuBarReader.index(for:))?.name(for: chord)
             }
+            session.readMenu = { [weak app] in app.map(MenuBarReader.shortcuts(for:)) ?? [] }
             session.appChanged(name: app?.localizedName, bundleID: app?.bundleIdentifier, windowTitle: title)
             startChordTap()
             readScreenSoon()
@@ -353,7 +355,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             inputMonitoring.isAllowed = false
             return
         }
-        let tap = ChordTap { [weak self] chord in self?.session.chordPressed(chord) }
+        let tap = ChordTap(
+            onChord: { [weak self] chord in self?.session.chordPressed(chord) },
+            onModifiers: { [weak self] modifiers in self?.session.hardwareModifiersChanged(modifiers) })
         if tap.start() {
             chordTap = tap
             inputMonitoring.isAllowed = true

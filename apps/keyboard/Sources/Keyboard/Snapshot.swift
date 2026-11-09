@@ -5,11 +5,13 @@ import SwiftUI
 /// Renders the keyboard (or the component gallery) to a PNG without opening a
 /// window, so the layout can be checked against the design mocks from the
 /// terminal:
-/// `swift run Keyboard --snapshot out.png [--mono] [--light] [--talk | --write | --mine | --gallery | --viewer]`.
+/// `swift run Keyboard --snapshot out.png [--mono] [--light] [--talk | --write | --mine | --shortcuts | --command | --gallery | --viewer]`.
 ///
 /// `--typed <text>` replaces the sample text of Type mode, Talk mode, or Write.
 /// `--write --paper <file.md>` also draws the Write paper with this document
 /// above the keyboard window, where the paper opens on a large screen.
+/// `--shortcuts` shows the shortcut suggestions of Messages with no text field
+/// in focus. `--command` shows them with Command latched in the field.
 /// `--spoken <n>` speaks the Talk bar and stops on word `n`, counted from 0.
 /// Without `--spoken`, a Talk snapshot with `--typed` shows the bar before
 /// Speak. The landing page renders its animations frame by frame with them.
@@ -146,6 +148,17 @@ enum Snapshot {
             if arguments.contains("--clipboard") {
                 addSampleCopies(to: session)
                 session.toggleHistory()
+            }
+            if arguments.contains("--shortcuts") || arguments.contains("--command") {
+                session.readMenu = { sampleMenu }
+                if arguments.contains("--command") {
+                    controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "command-left" }!)
+                } else {
+                    controller.focusChanged(
+                        to: FocusedField(
+                            appName: "Messages", role: "AXButton", isEditable: false, isSecure: false,
+                            text: nil, selection: nil))
+                }
             }
             if arguments.contains("--mine") {
                 try addSampleButtons(to: userPanel)
@@ -351,6 +364,20 @@ private struct SamplePredictor: SentencePredicting {
         ].filter { $0.hasPrefix(context.typed) && $0 != context.typed }
     }
 }
+
+/// Menu items of Messages, for the shortcut snapshots.
+private let sampleMenu: [AppShortcut] =
+    [
+        ("New Message", "n", Modifiers.command), ("Find", "f", .command), ("Bold", "b", .command),
+        ("Italic", "i", .command), ("Close Window", "w", .command), ("Minimise", "m", .command),
+        ("Delete Conversation", "d", [.command, .shift]), ("Settings…", ",", .command),
+        ("Hide Messages", "h", .command), ("Quit Messages", "q", .command),
+    ].map { name, key, modifiers in
+        AppShortcut(name: name, shortcut: Shortcut(modifiers: modifiers, key: .character(key)))
+    } + [
+        AppShortcut(
+            name: "Emoji & Symbols", shortcut: Shortcut(modifiers: [.control, .command], key: .virtual(.space)))
+    ]
 
 /// A voice that stops on one word and stays there, for the Talk snapshot.
 @MainActor

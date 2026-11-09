@@ -3,7 +3,9 @@ import SwiftUI
 /// The keyboard window: the prediction stack, the input bar with the
 /// clipboard buttons at its left and Speak and the mode buttons at its right,
 /// and the keys with the word completions on top. History shows the
-/// clipboard history in the place of the prediction stack.
+/// clipboard history in the place of the prediction stack. With no text field
+/// in focus, or while Command or Control is on, the shortcuts of the app take
+/// the place of the prediction stack.
 ///
 /// The bar is as wide as the keys and sits over them. The clipboard buttons
 /// sit at the left of the bar, past the left edge of the keys, so the window
@@ -71,7 +73,7 @@ public struct KeyboardScreen: View {
             }
 
             stack
-                .shown(inputBar.isVisible || session.isHistoryOpen)
+                .shown(inputBar.isVisible || session.isHistoryOpen || !session.shortcuts.isEmpty)
                 .padding(.leading, inset)
                 .padding(.bottom, Metrics.TopRow.stackBottom)
 
@@ -108,6 +110,8 @@ public struct KeyboardScreen: View {
     private var stack: some View {
         if session.isHistoryOpen {
             ClipboardHistoryView(session: session)
+        } else if !session.shortcuts.isEmpty {
+            ShortcutSuggestions(shortcuts: session.shortcuts, onPress: session.pressShortcut)
         } else {
             PredictionStack(
                 engine: session.predictions, mode: controller.mode == .talk ? .talk : .type,

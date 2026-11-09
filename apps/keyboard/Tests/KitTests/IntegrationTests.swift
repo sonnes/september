@@ -14,6 +14,7 @@ func integrationTests() async {
     placementTests()
     inputBarTests()
     await sessionTests()
+    await shortcutTests()
     await clipboardSessionTests()
     await panelHeightTests()
     activationTests()
@@ -398,7 +399,7 @@ private func makeSession(
         userPanel: store,
         userPanelUsage: UsageStore(fileURL: folder.appendingPathComponent("my-panel-usage.json")),
         inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25),
-        clipboard: clipboard, pasteboard: pasteboard)
+        clipboard: clipboard, pasteboard: pasteboard, scheduler: clock)
     return SessionParts(
         session: session, controller: controller, sink: sink, voice: voice,
         userPanel: try? store.get(), clock: clock, completer: completer,
@@ -440,6 +441,107 @@ private func userTypes(_ text: String, in parts: SessionParts) async throws {
     await parts.session.settle()
     parts.controller.focusChanged(to: field(text, caret: text.utf16.count))
     await parts.session.settle()
+}
+
+@MainActor
+private func shortcutTests() async {
+    let copy = AppShortcut(name: "Copy", shortcut: Shortcut(modifiers: .command, key: .character("c")))
+    let lock = AppShortcut(
+        name: "Lock Notes", shortcut: Shortcut(modifiers: [.control, .option], key: .character("l")))
+    let commandKey = KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "command-left" }!
+
+    func makeParts() throws -> SessionParts {
+        let parts = try makeSession()
+        parts.session.readMenu = { [copy, lock] }
+        return parts
+    }
+
+    await asyncTest("with no text field in focus, the stack shows the shortcuts of the panel, then of the menu") {
+        let parts = try makeParts()
+        parts.controller.focusChanged(to: focus("AXButton"))
+        await parts.session.settle()
+        let panel = parts.session.appPanels.panel.buttons.compactMap { button -> String? in
+            if case .shortcut = button.action { return button.label }
+            return nil
+        }
+        let names = parts.session.shortcuts.map(\.name)
+        expectEqual(Array(names.prefix(panel.count)), panel)
+        expect(names.contains("Lock Notes"))
+    }
+
+    await asyncTest("a text field shows the predictions, not the shortcuts") {
+        let parts = try makeParts()
+        parts.controller.focusChanged(to: field("Hi", caret: 2))
+        await parts.session.settle()
+        expect(parts.session.shortcuts.isEmpty)
+    }
+
+    await asyncTest("a latched Command shows the Command shortcuts, and a press presses the chord and ends the latch") {
+        let parts = try makeParts()
+        parts.controller.focusChanged(to: field("Hi", caret: 2))
+        parts.controller.press(commandKey)
+        await parts.session.settle()
+        let shortcuts = parts.session.shortcuts
+        expect(!shortcuts.isEmpty)
+        expect(shortcuts.allSatisfy { $0.shortcut.modifiers.contains(.command) })
+        expect(!shortcuts.contains(lock))
+
+        let posted = parts.sink.posted.count
+        parts.session.pressShortcut(copy)
+        await parts.session.settle()
+        expect(parts.sink.posted.count > posted, "the chord goes to the app")
+        expect(parts.controller.modifiers.active.isEmpty)
+        expect(parts.session.shortcuts.isEmpty)
+    }
+
+    await asyncTest("Talk mode shows no shortcuts") {
+        let parts = try makeParts()
+        parts.controller.mode = .talk
+        parts.controller.press(commandKey)
+        await parts.session.settle()
+        expect(parts.session.shortcuts.isEmpty)
+    }
+
+    await asyncTest("a held Command on the hardware keyboard shows the shortcuts after the hold delay") {
+        let parts = try makeParts()
+        parts.controller.focusChanged(to: field("Hi", caret: 2))
+        parts.session.hardwareModifiersChanged(.command)
+        await parts.session.settle()
+        expect(parts.session.shortcuts.isEmpty, "a quick chord does not make the stack blink")
+        parts.clock.advance(to: KeyboardSession.modifierHoldDelay)
+        await parts.session.settle()
+        expect(parts.session.shortcuts.contains(copy))
+        parts.session.hardwareModifiersChanged([])
+        await parts.session.settle()
+        expect(parts.session.shortcuts.isEmpty, "the release hides the shortcuts at once")
+    }
+
+    await asyncTest("a quick hardware chord shows no shortcuts") {
+        let parts = try makeParts()
+        parts.controller.focusChanged(to: field("Hi", caret: 2))
+        parts.session.hardwareModifiersChanged(.command)
+        parts.session.hardwareModifiersChanged([])
+        parts.clock.advance(to: 1)
+        await parts.session.settle()
+        expect(parts.session.shortcuts.isEmpty)
+    }
+
+    await asyncTest("the keyboard reads the menu bar one time for each app") {
+        let parts = try makeSession()
+        var reads = 0
+        parts.session.readMenu = {
+            reads += 1
+            return [copy]
+        }
+        parts.controller.focusChanged(to: focus("AXButton"))
+        await parts.session.settle()
+        parts.controller.focusChanged(to: focus("AXGroup"))
+        await parts.session.settle()
+        expectEqual(reads, 1)
+        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes", windowTitle: nil)
+        await parts.session.settle()
+        expectEqual(reads, 2)
+    }
 }
 
 @MainActor

@@ -3,23 +3,26 @@ import CoreGraphics
 import SeptemberKit
 
 /// Listens for the chords that the user presses on the hardware keyboard, so
-/// `AppPanelModel` can count and learn them.
+/// `AppPanelModel` can count and learn them, and for the modifier keys that
+/// the user holds, so the session can show the shortcut suggestions.
 ///
 /// The tap is listen-only: it never changes or drops an event. It reports only
-/// key downs that hold Command or Control, so the characters that the user
-/// types never leave the callback. It skips the events that Keyboard posts
-/// itself, and key repeats.
+/// key downs that hold Command or Control, and the modifiers of a change of
+/// the modifier keys, so the characters that the user types never leave the
+/// callback. It skips the events that Keyboard posts itself, and key repeats.
 ///
 /// The callback holds the tap without a retain, so keep a strong reference to
 /// the tap while it runs.
 @MainActor
 final class ChordTap {
     private let onChord: (Shortcut) -> Void
+    private let onModifiers: (Modifiers) -> Void
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
 
-    init(onChord: @escaping (Shortcut) -> Void) {
+    init(onChord: @escaping (Shortcut) -> Void, onModifiers: @escaping (Modifiers) -> Void) {
         self.onChord = onChord
+        self.onModifiers = onModifiers
     }
 
     /// True when macOS lets Keyboard listen to key events. Does not ask.
@@ -30,7 +33,7 @@ final class ChordTap {
     @discardableResult
     func start() -> Bool {
         guard tap == nil else { return true }
-        let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+        let mask = CGEventMask(1 << CGEventType.keyDown.rawValue | 1 << CGEventType.flagsChanged.rawValue)
         guard
             let tap = CGEvent.tapCreate(
                 tap: .cgSessionEventTap,
@@ -56,15 +59,28 @@ final class ChordTap {
         source = nil
     }
 
-    fileprivate func handle(_ type: CGEventType, chord: Shortcut?) {
+    fileprivate func handle(_ type: CGEventType, chord: Shortcut?, modifiers: Modifiers?) {
         switch type {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
         case .keyDown:
             if let chord { onChord(chord) }
+        case .flagsChanged:
+            if let modifiers { onModifiers(modifiers) }
         default:
             break
         }
+    }
+
+    /// The modifiers of a change of the modifier keys, or nil for an event that
+    /// Keyboard posted.
+    fileprivate nonisolated static func modifiers(from event: CGEvent) -> Modifiers? {
+        guard event.getIntegerValueField(.eventSourceUnixProcessID) != Int64(getpid()) else { return nil }
+        var modifiers: Modifiers = []
+        for held in Modifiers.held where event.flags.contains(held.eventFlag) {
+            modifiers.insert(held.modifier)
+        }
+        return modifiers
     }
 
     /// The chord of a key down, or nil for typing, a key repeat, or an event
@@ -107,7 +123,8 @@ private func chordTapCallback(
     if let userInfo {
         let tap = Unmanaged<ChordTap>.fromOpaque(userInfo).takeUnretainedValue()
         let chord = type == .keyDown ? ChordTap.chord(from: event) : nil
-        MainActor.assumeIsolated { tap.handle(type, chord: chord) }
+        let modifiers = type == .flagsChanged ? ChordTap.modifiers(from: event) : nil
+        MainActor.assumeIsolated { tap.handle(type, chord: chord, modifiers: modifiers) }
     }
     return Unmanaged.passUnretained(event)
 }
