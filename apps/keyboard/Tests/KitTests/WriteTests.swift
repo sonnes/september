@@ -322,7 +322,7 @@ func writeTests() {
     // MARK: The Write panel
 
     test("the Write panel has the Markdown keys and the editor shortcuts") {
-        let panel = try PanelStore.bundled().appPanel(forBundleID: WritePanel.id)
+        let panel = try PanelStore.bundled().write
         expectEqual(
             panel.buttons.map(\.id),
             ["heading", "list", "todo", "quote", "blocks", "link-document",
@@ -340,7 +340,7 @@ func writeTests() {
     }
 
     test("the Documents panel has the keys of the desk") {
-        let panel = try PanelStore.bundled().appPanel(forBundleID: WritePanel.documentsID)
+        let panel = try PanelStore.bundled().writeDocuments
         let actions = Dictionary(uniqueKeysWithValues: panel.buttons.map { ($0.id, $0.action) })
         func shortcut(_ modifiers: Modifiers, _ key: Shortcut.Key) -> PanelAction {
             .shortcut(Shortcut(modifiers: modifiers, key: key))

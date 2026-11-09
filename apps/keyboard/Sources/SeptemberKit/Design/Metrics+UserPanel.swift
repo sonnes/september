@@ -4,7 +4,7 @@ extension Metrics {
     /// Mine, the My Panel settings page, and the import window. From frame 3
     /// of the mock.
     public enum UserPanel {
-        /// The grid of Mine, as wide as the app panel beside it.
+        /// The grid of Mine, as wide as a keypad.
         public static let width: CGFloat = 150
         public static let buttonHeight: CGFloat = 44
         public static let cornerRadius: CGFloat = 8

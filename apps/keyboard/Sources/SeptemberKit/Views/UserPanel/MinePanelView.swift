@@ -168,7 +168,7 @@ struct MinePageButton: View {
 }
 
 extension View {
-    /// The surface of a Mine button: the radius of the app panel buttons.
+    /// The surface of a Mine button: the radius of the keypad buttons.
     fileprivate func mineChrome(fill: ThemeColor, stroke: ThemeColor) -> some View {
         background(
             RoundedRectangle(cornerRadius: Metrics.UserPanel.cornerRadius, style: .continuous)

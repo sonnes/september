@@ -94,7 +94,7 @@ func writeControllerTests() {
         return (write, url)
     }
 
-    test("Command-O opens the desk on the open document, and the app panel turns to Documents") {
+    test("Command-O opens the desk on the open document, and the Write panel turns to Documents") {
         let (write, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
         var panels: [String] = []

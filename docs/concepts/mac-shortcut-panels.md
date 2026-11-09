@@ -1,17 +1,22 @@
 ---
 title: Shortcut panels (macOS)
-description: Panels are grids of buttons in JSON. A button types text or presses a key combination. Each app can have its own panel, and a generic panel is the fallback.
+description: Panels are grids of buttons in JSON. A button types text or presses a key combination. The keypads float beside the keys, and Write has its own panels.
 package: keyboard
 ---
 
 # Shortcut panels (macOS)
 
-Panels are on each side of the macOS keyboard. SYSTEM and the app panel are on
-the left. TEXT and RECTANGLE are on the right. RECTANGLE shows only when the
-Rectangle window manager is installed (`DetachedPanel.shown(rectangleInstalled:)`). Cut, Copy, and Paste are buttons at the left
-of the input bar, so no keypad has them. The shortcuts of the app in front are
-also a panel. Each panel is a grid of buttons in a JSON file that the app loads at
-launch.
+Panels are on each side of the macOS keyboard. SYSTEM and My Panel are on the
+left. TEXT and RECTANGLE are on the right. RECTANGLE shows only when the
+Rectangle window manager is installed (`DetachedPanel.shown(rectangleInstalled:)`).
+Cut, Copy, and Paste are buttons at the left of the input bar, so no keypad
+has them. While Write is in front, My Panel has a Write tab with the keys of
+the paper or of the desk. Each panel is a grid of buttons in a JSON file that
+the app loads at launch.
+
+The shortcuts of the app in front are not a panel. They come from its menu
+bar and show in the place of the input bar. See the Shortcut Suggestions
+section of [keyboard-session.md](keyboard-session.md).
 
 The Apple Accessibility Keyboard uses the same model: `.ascconfig` bundles of
 buttons with actions. September has no absolute layout and no modal editor.
@@ -37,7 +42,7 @@ the latched modifiers, the same as a text key.
 A shortcut button shows its keys. In a keypad, a button with a `region` or a
 `symbol` shows an icon in place of its keys. A `region` draws a small screen
 with the part of the window filled, so the Rectangle keypad needs no SF Symbol
-for two thirds. An app panel always shows the keys.
+for two thirds. A Write panel always shows the keys.
 
 `Shortcut` renders its own hint (`⇧⌘Z`) and its own spoken name ("Shift Command
 Z"), so a button never has to repeat itself in JSON.
@@ -46,47 +51,39 @@ Z"), so a button never has to repeat itself in JSON.
 
 ```
 Sources/SeptemberKit/Resources/Panels/
-├── text.json                        # right of the keys
-├── system.json                      # left of the keys, nearest
-├── rectangle.json                   # right of TEXT, the shortcuts of Rectangle
-└── Apps/
-    ├── generic.json                 # fallback for unknown apps
-    └── com.microsoft.VSCode.json    # one file per known app, named by bundle id
+├── text.json              # right of the keys
+├── system.json            # left of the keys, nearest
+├── rectangle.json         # right of TEXT, the shortcuts of Rectangle
+├── phrases.json           # the Phrases panel of Talk mode
+├── write.json             # the Write tab on the paper
+└── write-documents.json   # the Write tab on the desk
 ```
 
-`PanelStore.bundled()` loads them. The file name is the name of the panel. To
-add shortcuts for an app, add `Apps/<bundle id>.json`. No Swift change is
-necessary.
+`PanelStore.bundled()` loads the keypads and the Write panels, and
+`Phrases.bundled()` loads the Phrases panel. The file name is the name of the
+panel.
 
 `PanelStore.bundled()` throws if a panel is missing, if a file does not
 decode, or if two buttons in a panel have the same id. The app then shows the
 error and quits. The buttons of `arrows` count as buttons of the panel for this
 check.
 
-## Following the frontmost app
+## Changing a panel
 
-`FocusWatcher` reports each change of the frontmost app. Then
-`KeyboardController.appChanged(name:bundleID:)` shows the panel for the bundle
-ID of that app, or `generic.json` if no panel has that name. The keyboard
-window does not activate, so the frontmost app is always the app that gets
-the keys.
-
-## Adding a panel
-
-1. Write the JSON:
+1. Edit the JSON of the panel:
 
    ```json
    {
-     "title": "SAFARI",
+     "title": "System",
+     "columns": 3,
      "buttons": [
-       { "id": "new-tab", "label": "New Tab", "symbol": "plus.square",
-         "action": { "type": "shortcut", "modifiers": ["command"], "key": "t" } }
+       { "id": "undo", "label": "Undo",
+         "action": { "type": "shortcut", "modifiers": ["command"], "key": "z" } }
      ]
    }
    ```
 
-2. Save it as `Resources/Panels/Apps/com.apple.Safari.json`.
-3. Add a check in `Tests/KitTests/PanelTests.swift` if the panel carries
+2. Add a check in `Tests/KitTests/PanelGridTests.swift` if the panel carries
    behaviour worth pinning.
 
 Key names are a single character (`"t"`) or a `VirtualKey` case name

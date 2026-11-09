@@ -63,6 +63,10 @@ public enum Metrics {
 
     public enum Input {
         public static let height: CGFloat = 48
+        /// The shortcut suggestions that fit in the place of the bar: panel
+        /// buttons with the gap of a panel between them.
+        public static let shortcutCount = Int(
+            (Metrics.keyboardWidth + Keypad.gap) / (Keypad.buttonWidth + Keypad.gap))
         public static let cornerRadius: CGFloat = 24
         public static let spacing: CGFloat = 12
         public static let horizontalPadding: CGFloat = 18
@@ -79,14 +83,14 @@ public enum Metrics {
         public static let horizontalPadding: CGFloat = 16
     }
 
-    /// The keypads and the app shortcuts list.
+    /// The titles of the keypads.
     public enum Panel {
         public static let titleSpacing: CGFloat = 8
         /// The title of a keypad, such as "EDIT". The title and the gap under
-        /// it are as tall as the tabs of the app panel and the gap under
-        /// them. Then the buttons of the keypads and the app panel start at
-        /// the same height, and System, Text, and the app panel end at the
-        /// same height.
+        /// it are as tall as the tabs of the My Panel window and the gap
+        /// under them. Then the buttons of the keypads and My Panel start at
+        /// the same height, and System, Text, and My Panel end at the same
+        /// height.
         public static let titleHeight: CGFloat =
             Metrics.Detached.tabHeight + Metrics.Detached.tabsBottom - titleSpacing
         public static let appSpacing: CGFloat = 6

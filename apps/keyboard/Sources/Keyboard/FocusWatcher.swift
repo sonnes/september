@@ -12,16 +12,12 @@ import SeptemberKit
 final class FocusWatcher {
     /// Called with the focused field, or `nil` when nothing readable is focused.
     var onChange: ((FocusedField?) -> Void)?
-    /// Called when a different app comes to the front, with the title of its
-    /// focused window, before any field of its own is read, so the last app's
-    /// text can be cleared first.
-    var onAppChanged: ((NSRunningApplication?, String?) -> Void)?
+    /// Called when a different app comes to the front, before any field of
+    /// its own is read, so the last app's text can be cleared first.
+    var onAppChanged: ((NSRunningApplication?) -> Void)?
     /// Called when focus lands somewhere else entirely — a different element or
     /// a different app — as opposed to the same field simply changing.
     var onFocusMoved: (() -> Void)?
-    /// Called when the title of the focused window of the app in front
-    /// changes, such as a terminal that starts Claude Code.
-    var onWindowTitleChanged: ((String?) -> Void)?
 
     /// Reading a whole document on every keystroke is wasteful; past this many
     /// characters we ask only for the text around the caret.
@@ -36,7 +32,6 @@ final class FocusWatcher {
     private var pollTimer: Timer?
     private var last: FocusedField?
     private var lastElement: AXUIElement?
-    private var lastTitle: String?
 
     func start() {
         workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -73,12 +68,6 @@ final class FocusWatcher {
     }
 
     func refresh() {
-        let title = windowTitle(of: NSWorkspace.shared.frontmostApplication)
-        if title != lastTitle {
-            lastTitle = title
-            onWindowTitleChanged?(title)
-        }
-
         let field = readFocusedField()
         guard field != last else { return }
         last = field
@@ -90,16 +79,6 @@ final class FocusWatcher {
         follow(NSWorkspace.shared.frontmostApplication)
     }
 
-    /// The title of the focused window of an app. The keyboard's own windows
-    /// have no title to report.
-    func windowTitle(of app: NSRunningApplication?) -> String? {
-        guard let app, app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
-            let window = AXUIElementCreateApplication(app.processIdentifier)
-                .element(kAXFocusedWindowAttribute)
-        else { return nil }
-        return window.string(kAXTitleAttribute)
-    }
-
     // MARK: - Following the frontmost app
 
     private func follow(_ app: NSRunningApplication?) {
@@ -108,8 +87,7 @@ final class FocusWatcher {
         // next read has to publish even if it looks the same.
         last = nil
         lastElement = nil
-        lastTitle = windowTitle(of: app)
-        onAppChanged?(app, lastTitle)
+        onAppChanged?(app)
         onFocusMoved?()
         guard let app, app.processIdentifier != ProcessInfo.processInfo.processIdentifier else {
             refresh()

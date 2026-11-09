@@ -14,20 +14,20 @@ Sources/
     Keyboard/       key definitions, the QWERTY layout, KeyboardController, PressTracker
     Input/          modifiers, keystrokes, layout-aware key code map
     Integration/    the session that joins the parts, panel placement, the app in front
-    Panels/         panel model, JSON loading, app panel ranking and learning
+    Panels/         panel model, JSON loading, the grid of the Write panels, the shortcut suggestions
     Predictions/    sentence predictions and word completions
     ScreenContext/  the text near the focused field, and the rule of each app
     Speech/         the voice: macOS voices, Personal Voice, ElevenLabs
     Storage/        the keyboard database (keyboard.sqlite) and the sentence history
     Talk/           Talk mode, the Said list, the Phrases panel
-    UserPanel/      My Panel, private text, the Accessibility Keyboard import
+    UserPanel/      My Panel, its use counts, private text, the Accessibility Keyboard import
     Settings/       the pages of the Settings window
     Write/          the documents of Write, `WriteController`, and the text that Speak reads
     WriteEditor/    the native Markdown editor and the Write paper
     Views/          keys, shortcut buttons, panels, the keyboard screen, the views of each part
-    Resources/      Panels/{edit,text,system,phrases}.json, Panels/Apps/generic.json, Panels/Apps/<bundle id>.json,
+    Resources/      Panels/{text,system,rectangle,phrases,write,write-documents}.json,
                     Context/<bundle id>.json
-  Keyboard/         the app: floating panels, CGEvent sink, focus watcher, chord tap, tree reader,
+  Keyboard/         the app: floating panels, CGEvent sink, focus watcher, modifier tap, tree reader,
                     menu bar, the Settings window
   WriteLab/         the Write paper on its own, with a stand-in for the keyboard bar
 Tests/KitTests/     tests (see "Tests" below)
@@ -166,7 +166,7 @@ and clears it. When the history is off, it keeps no sentences. If the database
 does not open, the keyboard moves it to `keyboard.broken.sqlite` and starts an
 empty database.
 
-The Text, System, and Rectangle keypads and the app panel float in windows
+The Text, System, and Rectangle keypads and My Panel float in windows
 of their own. By default they sit beside the keys. To move the keyboard window or a
 panel, drag it by the grip at its top. A drag does not take focus from the app
 in front. The keyboard keeps the place of each window for the next launch. If
@@ -174,8 +174,8 @@ a saved place is on no screen, the window goes back to its default place. The
 keyboard window and the panels never take focus.
 
 Arrange moves the panels back beside the keys, at the place where the keyboard
-is now. The menu bar item has the same command, Arrange Panels. System and the
-app panel go to the left of the keys, with System nearest the keys. Text and
+is now. The menu bar item has the same command, Arrange Panels. System and
+My Panel go to the left of the keys, with System nearest the keys. Text and
 Rectangle go to the right, with Text nearest the keys. If a panel does not fit on
 its side, it goes to the other side. Each panel stays on the screen.
 `PanelPlacement.arrangedFrames` holds the rule.
@@ -202,11 +202,11 @@ the recommended shortcuts of Rectangle (Control Option and a key). If the user
 chose the Spectacle shortcuts or changed a shortcut in Rectangle, a button
 presses the wrong keys.
 
-The app panel has two tabs. The first tab shows the panel of the app in front.
-The second tab, Mine, shows the buttons that the user made on the My Panel page
-of Settings. The title of a keypad is as tall as the tabs of the app panel, so
-the buttons of all the panels start at the same height. System, Text, and the
-app panel end at the same height, in each app and in Mine.
+My Panel shows Mine: the buttons that the user made on the My Panel page of
+Settings. While Write is in front, My Panel has a second tab with the Write
+keys. The title of a keypad is as tall as the tabs of My Panel, so the buttons
+of all the panels start at the same height. System, Text, and My Panel end at
+the same height.
 
 In Talk mode, the keys type into the input bar of the keyboard, and other apps
 get no keys. The shortcut panels hide. Phrases show at the left of the keys,
@@ -265,7 +265,7 @@ The Find field takes the typing, and the input bar shows the query. The left
 and the right arrows move between the cards. Return opens the selected card,
 and Esc goes back to the paper.
 
-While the desk is open, the app panel shows the Documents keys. Rename opens
+While the desk is open, the Write tab of My Panel shows the Documents keys. Rename opens
 the document with its heading selected, because the heading is the file
 name. Duplicate makes a copy with the name "Title 2". Move to Trash puts the
 file in the Trash of macOS, and Undo shows for 8 seconds. Show in Finder
@@ -319,7 +319,7 @@ window:
 swift run Keyboard --snapshot out.png            # Type mode in Messages, with the panels beside the keys
 swift run Keyboard --snapshot out.png --talk     # Talk mode during speech
 swift run Keyboard --snapshot out.png --write    # the Write paper in front
-swift run Keyboard --snapshot out.png --mine     # the Mine tab of the app panel
+swift run Keyboard --snapshot out.png --mine     # My Panel with sample buttons
 swift run Keyboard --snapshot out.png --clipboard  # the clipboard history, open
 swift run Keyboard --snapshot out.png --mono     # mono variant
 swift run Keyboard --snapshot out.png --light    # light appearance
@@ -490,13 +490,33 @@ rebuild. To keep it:
 Until permission is granted the keyboard still runs and shows a banner; keys
 just do not reach other apps.
 
+## Shortcut suggestions
+
+In Type mode, the shortcuts of the app in front take the place of the input
+bar in two cases:
+
+- No text field has focus.
+- Command or Control is on. This is a modifier key of the keyboard that is
+  latched or locked, or a modifier key of the hardware keyboard that you hold
+  for 0.4 seconds. Only the shortcuts that hold all the modifiers that are on
+  show. The sentence predictions of a text field stay above the shortcuts.
+
+The shortcuts are panel buttons in one row, 12 at most. A button shows only
+its keys. Its name shows above it on hover, and its accessibility label holds
+the name and the keys. A press presses the keys in the app and ends a latched
+modifier. The shortcuts are the menu items of the app with a chord, in menu
+bar order. The keyboard reads the menu bar through accessibility when
+a suggestion needs it, and keeps the read until another app comes to the front.
+The suggestions leave out the Apple menu, which holds Log Out and Lock Screen,
+and the menu items that are off. The app menu, with Hide and Quit, comes last.
+Talk mode and the Write window show no shortcut suggestions.
+
 ## Input Monitoring
 
-The keyboard learns the shortcuts that you press with its own keys. To learn
-from the hardware keyboard too, it needs Input Monitoring. The keyboard does
-not ask for it at launch.
+The shortcut suggestions of a held hardware modifier need Input Monitoring.
+The keyboard does not ask for it at launch.
 
-1. Open Settings, then the App Panels page.
+1. Open Settings, then the Predictions page.
 2. Click Open Input Monitoring Settings.
 3. Turn on Keyboard in the list.
 4. Quit the keyboard and open it again.
@@ -513,7 +533,7 @@ The Keychain holds the secrets:
   `com.september.keyboard.private`.
 
 Write keeps each document as a Markdown file in
-`~/Documents/September`. My Panel, the use counts, the learned shortcuts, and
+`~/Documents/September`. My Panel, its use counts, the clipboard history, and
 the Talk history are JSON files in
 `~/Library/Application Support/September Keyboard`. Only the user can read the
 Talk history file.

@@ -169,7 +169,7 @@ export function FeatureSections() {
         <SectionHeader
           eyebrow="Shortcut panels"
           title="Press shortcuts without holding keys."
-          lede="The Text and System keypads float beside the keys. If you use Rectangle, its keypad moves the window in front to a half, a third, or a corner. The app panel shows the shortcuts of the app in front and puts the ones you use first. On its Mine tab, you make your own buttons: a shortcut, a row of shortcuts, or a phrase. The panels that you built for the Accessibility Keyboard import in one step."
+          lede="The Text and System keypads float beside the keys. If you use Rectangle, its keypad moves the window in front to a half, a third, or a corner. When no text field has focus, or while you hold Command or Control, the shortcuts of the app in front take the place of the input bar. On My Panel, you make your own buttons: a shortcut, a row of shortcuts, or a phrase. The panels that you built for the Accessibility Keyboard import in one step."
           hint="Drag a panel by its grip to move it. Arrange puts each panel back beside the keys."
         />
         <Shot
@@ -246,7 +246,7 @@ export function PrivacySection() {
 const REQUIREMENTS = [
   'A Mac with Apple Silicon and macOS 14 or later. Sentence predictions need macOS 26 or later, with Apple Intelligence on.',
   'Accessibility access, so that the keys can type into other apps. The keyboard shows a banner until you allow it.',
-  'Input Monitoring is optional. With it, the app panel also learns the shortcuts that you press on a hardware keyboard.',
+  'Input Monitoring is optional. With it, a held Command or Control key on a hardware keyboard also shows the shortcuts of the app.',
 ];
 
 export function DownloadSection() {

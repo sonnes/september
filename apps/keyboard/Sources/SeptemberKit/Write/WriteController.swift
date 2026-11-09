@@ -21,7 +21,7 @@ public final class WriteController {
     /// read its own window through the accessibility API, so the input bar
     /// reads the editor here.
     public var onCaretChange: ((EditorCaret) -> Void)?
-    /// Called with the app panel of Write when the desk opens or closes.
+    /// Called with the panel of Write when the desk opens or closes.
     public var onPanelChange: ((String) -> Void)?
     /// Called with `true` when the paper or the desk becomes the key window,
     /// and with `false` when it stops being the key window.
@@ -124,7 +124,7 @@ public final class WriteController {
     /// True while the desk of documents is open.
     public var isDeskOpen: Bool { desk.isOpen }
 
-    /// The app panel of Write: the Documents keys while the desk is open,
+    /// The panel of Write: the Documents keys while the desk is open,
     /// and the Write keys on the paper.
     public var panel: String { desk.isOpen ? WritePanel.documentsID : WritePanel.id }
 

@@ -20,7 +20,7 @@ documents.
 | A document of the user | Markdown files | The Write documents in `~/Documents/September/` |
 | A definition that ships with the app | JSON in the bundle | Panels, accents, and context rules in `Sources/SeptemberKit/Resources/` |
 | A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history |
-| A record that the keyboard keeps or learns | JSON files | The Said list (`talk-history.json`), the clipboard history (`clipboard-history.json`), the presses of the panel buttons (`usage.json`, `my-panel-usage.json`), the learned chords (`learned.json`), and the buttons of My Panel (`my-panel.json`) |
+| A record that the keyboard keeps or learns | JSON files | The Said list (`talk-history.json`), the clipboard history (`clipboard-history.json`), the presses of the buttons of My Panel (`my-panel-usage.json`), and the buttons of My Panel (`my-panel.json`) |
 
 The JSON records move to `keyboard.sqlite` one store at a time. The plan is in
 the `2026-11-09-sentence-history` change of the project.

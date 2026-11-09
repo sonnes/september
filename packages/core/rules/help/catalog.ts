@@ -932,7 +932,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     category: "use-september-on-a-mac",
     title: "Use the input bar and shortcut panels",
     summary:
-      "See the active field and use buttons prepared for the current Mac app.",
+      "See the active field and press the shortcuts of the current Mac app.",
     keywords: [
       "mirror",
       "caret",
@@ -947,10 +947,10 @@ export const HELP_GUIDES: HelpGuide[] = [
       "Choose a text field in another Mac app.",
       "Read the mirrored field text in the input bar.",
       "Use the keyboard to edit at the mirrored caret or selection.",
-      "Choose a shortcut-panel button for the active app.",
+      "Click outside a text field, then choose a shortcut in the place of the input bar.",
     ],
     expectedResult:
-      "The input bar follows the active field and the panel changes for the active app.",
+      "The input bar follows the active field. When no field has focus, the shortcuts of the active app show in its place.",
     recovery:
       "Password fields stay hidden; for another field, refocus it or check Accessibility permission.",
     related: [
@@ -960,9 +960,9 @@ export const HELP_GUIDES: HelpGuide[] = [
     media: [
       {
         type: "video",
-        title: "Use the input bar and app panels",
+        title: "Use the input bar and app shortcuts",
         transcript:
-          "Choose a text field in a Mac app. The input bar mirrors its words, caret, and selection. Switch apps to see the shortcut panel change, then choose a panel button.",
+          "Choose a text field in a Mac app. The input bar mirrors its words, caret, and selection. Click outside the field to see the shortcuts of the app in place of the input bar, then choose a shortcut.",
       },
     ],
   },

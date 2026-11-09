@@ -3,19 +3,19 @@ import ApplicationServices
 import SeptemberKit
 
 /// Reads the menu bar of an app into an `AXNode` tree, with the keys of each
-/// menu item, so `MenuShortcutIndex` can name a chord.
+/// menu item and whether it is on. `AppShortcut.menu(_:)` lists the shortcut
+/// suggestions from it.
 ///
-/// A menu bar runs to hundreds of items, so read it only when a chord is about
-/// to join a panel, not on each key press.
+/// A menu bar runs to hundreds of items, so read it only when a suggestion
+/// needs it, not on each key press.
 @MainActor
 enum MenuBarReader {
     private static let maxDepth = 6
     private static let maxNodes = 2_000
 
-    /// The names of the chords in the menu bar of the app, or nil when the app
-    /// shows no menu bar to accessibility.
-    static func index(for app: NSRunningApplication) -> MenuShortcutIndex? {
-        read(pid: app.processIdentifier).map(MenuShortcutIndex.init(menuBar:))
+    /// The menu items with a chord of the app, for the shortcut suggestions.
+    static func shortcuts(for app: NSRunningApplication) -> [AppShortcut] {
+        read(pid: app.processIdentifier).map(AppShortcut.menu) ?? []
     }
 
     static func read(pid: pid_t) -> AXNode? {
@@ -39,11 +39,15 @@ enum MenuBarReader {
             }
         }
 
+        let keys = menuKeys(of: element)
         return AXNode(
             id: id,
             role: element.string(kAXRoleAttribute) ?? "unknown",
             title: element.string(kAXTitleAttribute),
-            menuKeys: menuKeys(of: element),
+            menuKeys: keys,
+            // Only an item with a chord can be a suggestion, so only its state
+            // is read.
+            isEnabled: keys == nil || element.number(kAXEnabledAttribute) != 0,
             children: children
         )
     }

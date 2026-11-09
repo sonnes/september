@@ -5,11 +5,14 @@ import SwiftUI
 /// Renders the keyboard (or the component gallery) to a PNG without opening a
 /// window, so the layout can be checked against the design mocks from the
 /// terminal:
-/// `swift run Keyboard --snapshot out.png [--mono] [--light] [--talk | --write | --mine | --gallery | --viewer]`.
+/// `swift run Keyboard --snapshot out.png [--mono] [--light] [--talk | --write | --mine | --shortcuts | --command | --gallery | --viewer]`.
 ///
 /// `--typed <text>` replaces the sample text of Type mode, Talk mode, or Write.
 /// `--write --paper <file.md>` also draws the Write paper with this document
 /// above the keyboard window, where the paper opens on a large screen.
+/// `--shortcuts` shows the shortcut suggestions of Messages with no text field
+/// in focus. `--command` shows them with Command latched in the field.
+/// `--mine` fills My Panel with sample buttons.
 /// `--spoken <n>` speaks the Talk bar and stops on word `n`, counted from 0.
 /// Without `--spoken`, a Talk snapshot with `--typed` shows the bar before
 /// Speak. The landing page renders its animations frame by frame with them.
@@ -92,11 +95,6 @@ enum Snapshot {
                 history: SentenceHistory(database: try KeyboardDatabase(path: ":memory:"), defaults: defaults)),
             speaker: Speaker(
                 settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
-            appPanels: AppPanelModel(
-                store: controller.panels,
-                usage: UsageStore(fileURL: folder.appendingPathComponent("usage.json")),
-                learner: ShortcutLearner(fileURL: folder.appendingPathComponent("learned.json")),
-                settings: AppPanelSettings(defaults: defaults)),
             userPanel: .success(userPanel),
             userPanelUsage: UsageStore(fileURL: folder.appendingPathComponent("my-panel-usage.json")),
             clipboard: ClipboardHistory(defaults: defaults, now: { Date().addingTimeInterval(-40 * 60) }),
@@ -107,7 +105,6 @@ enum Snapshot {
 
         let typed = value(of: "--typed", in: arguments)
         let spoken = value(of: "--spoken", in: arguments).flatMap(Int.init)
-        var appIcon: NSImage?
         // The sentence predictions show only after typing, so each field
         // starts empty and the sample text comes after one settle.
         if arguments.contains("--talk") {
@@ -125,15 +122,14 @@ enum Snapshot {
                 session.speakPressed()
             }
         } else if arguments.contains("--write") {
-            session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
+            session.appChanged(name: "Write", bundleID: WritePanel.id)
             let line = typed ?? "Send the release notes before the we"
             controller.focusChanged(to: EditorCaret(text: "", caret: 0, length: 0).focusedField)
             settle(session)
             controller.focusChanged(
                 to: EditorCaret(text: line, caret: (line as NSString).length, length: 0).focusedField)
-            appIcon = NSApplication.shared.applicationIconImage.tabIcon()
         } else {
-            session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS", windowTitle: nil)
+            session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS")
             let text = typed ?? "Are we still on for t"
             for sample in ["", text] {
                 controller.focusChanged(
@@ -142,15 +138,25 @@ enum Snapshot {
                         text: sample, selection: NSRange(location: (sample as NSString).length, length: 0)))
                 settle(session)
             }
-            appIcon = icon(of: "com.apple.MobileSMS")?.tabIcon()
             if arguments.contains("--clipboard") {
                 addSampleCopies(to: session)
                 session.toggleHistory()
             }
+            if arguments.contains("--shortcuts") || arguments.contains("--command") {
+                session.readMenu = { sampleMenu }
+                if arguments.contains("--command") {
+                    controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "command-left" }!)
+                } else {
+                    controller.focusChanged(
+                        to: FocusedField(
+                            appName: "Messages", role: "AXButton", isEditable: false, isSecure: false,
+                            text: nil, selection: nil))
+                }
+            }
             if arguments.contains("--mine") {
                 try addSampleButtons(to: userPanel)
-                session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS", windowTitle: nil)
-                session.appPanelTab = .mine
+                // My Panel ranks its buttons when an app comes to the front.
+                session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS")
             }
         }
         settle(session)
@@ -161,18 +167,18 @@ enum Snapshot {
         if arguments.contains("--write"), let path = value(of: "--paper", in: arguments) {
             return paperScene(content, markdown: try String(contentsOfFile: path, encoding: .utf8))
         }
-        return composite(content, appIcon: appIcon)
+        return composite(content)
     }
 
     /// The keyboard window and the panels where they sit by default.
-    private static func composite(_ content: WindowContent, appIcon: NSImage?) -> AnyView {
+    private static func composite(_ content: WindowContent) -> AnyView {
         let keyboard = content.keyboard()
         let keyboardSize = WindowContent.measure(keyboard)
         let keysSize = WindowContent.measure(content.keysCard())
         var views: [DetachedPanel: AnyView] = [:]
         var sizes: [DetachedPanel: CGSize] = [:]
         for panel in DetachedPanel.allCases {
-            views[panel] = content.panel(panel, appIcon: appIcon)
+            views[panel] = content.panel(panel)
             sizes[panel] = WindowContent.measure(views[panel]!)
         }
         // AppKit coordinates: the bottom left corner of the keys is at zero.
@@ -319,11 +325,6 @@ enum Snapshot {
         }
     }
 
-    private static func icon(of bundleID: String) -> NSImage? {
-        NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
-            .map { NSWorkspace.shared.icon(forFile: $0.path) }
-    }
-
     private static func fail(_ message: String) -> Never {
         FileHandle.standardError.write(Data("\(message)\n".utf8))
         exit(1)
@@ -351,6 +352,20 @@ private struct SamplePredictor: SentencePredicting {
         ].filter { $0.hasPrefix(context.typed) && $0 != context.typed }
     }
 }
+
+/// Menu items of Messages, for the shortcut snapshots.
+private let sampleMenu: [AppShortcut] =
+    [
+        ("New Message", "n", Modifiers.command), ("Find", "f", .command), ("Bold", "b", .command),
+        ("Italic", "i", .command), ("Close Window", "w", .command), ("Minimise", "m", .command),
+        ("Delete Conversation", "d", [.command, .shift]), ("Settings…", ",", .command),
+        ("Hide Messages", "h", .command), ("Quit Messages", "q", .command),
+    ].map { name, key, modifiers in
+        AppShortcut(name: name, shortcut: Shortcut(modifiers: modifiers, key: .character(key)))
+    } + [
+        AppShortcut(
+            name: "Emoji & Symbols", shortcut: Shortcut(modifiers: [.control, .command], key: .virtual(.space)))
+    ]
 
 /// A voice that stops on one word and stays there, for the Talk snapshot.
 @MainActor

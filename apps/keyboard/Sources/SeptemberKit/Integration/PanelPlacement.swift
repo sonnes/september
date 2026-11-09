@@ -4,7 +4,8 @@ import Foundation
 public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
     case text
     case system
-    case app
+    /// My Panel, with the keys of Write while Write is in front.
+    case mine
     /// The shortcuts of Rectangle, the window manager.
     case rectangle
 
@@ -23,13 +24,13 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
     }
 }
 
-/// Where the panels sit until the user drags them: System and the app panel
+/// Where the panels sit until the user drags them: System and My Panel
 /// at the left of the keys, and Text and Rectangle at the right, with their tops
 /// in line with the top of the keys. Frames use the coordinates of AppKit, with
 /// the origin at the bottom left.
 public enum PanelPlacement {
     /// The panels at the left of the keys, from the keys out.
-    static let left: [DetachedPanel] = [.system, .app]
+    static let left: [DetachedPanel] = [.system, .mine]
     /// The panels at the right of the keys, from the keys out.
     static let right: [DetachedPanel] = [.text, .rectangle]
 

@@ -15,13 +15,11 @@ extension Metrics {
         public static let grip = CGSize(width: 28, height: 4)
         public static let gripTop: CGFloat = 7
         public static let gripOpacity: Double = 0.35
-        /// The gap between the tabs and the grid of the app panel.
+        /// The gap between the tabs and the grid of the My Panel window.
         public static let tabsBottom: CGFloat = 8
         public static let tabSpacing: CGFloat = 4
         public static let tabHeight: CGFloat = 26
         public static let tabCornerRadius: CGFloat = 7
-        public static let tabIcon: CGFloat = 14
-        public static let tabIconSpacing: CGFloat = 5
     }
 
     /// The input bar row: the bar, Speak, and the mode buttons.
@@ -42,7 +40,7 @@ extension Metrics {
     }
 }
 
-extension Metrics.AppPanel {
+extension Metrics.Keypad {
     /// The height of the grid of six rows. Mine and a message in place of a
     /// panel take the same height, so the window does not change size.
     public static let gridHeight: CGFloat = buttonHeight * CGFloat(rows) + gap * CGFloat(rows - 1)

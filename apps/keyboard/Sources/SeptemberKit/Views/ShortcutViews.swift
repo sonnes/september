@@ -15,7 +15,7 @@ public struct ShortcutButtonView: View {
 
     public init(
         button: PanelButton,
-        width: CGFloat = Metrics.AppPanel.buttonWidth,
+        width: CGFloat = Metrics.Keypad.buttonWidth,
         showsIcon: Bool = false,
         press: @escaping () -> Void
     ) {
@@ -27,10 +27,9 @@ public struct ShortcutButtonView: View {
 
     public var body: some View {
         label
-            .frame(width: width, height: Metrics.AppPanel.buttonHeight)
+            .frame(width: width, height: Metrics.Keypad.buttonHeight)
             .background(shape.fill(Color(fill)))
             .overlay(shape.strokeBorder(Color(stroke), lineWidth: 1))
-            .overlay(alignment: .topTrailing) { learnedDot }
             .overlay(alignment: .top) { tip }
             .onHover { isHovered = $0 }
             .pressable(label: button.accessibilityLabel, trigger: .down(.once)) { isPressed = $0 } action: {
@@ -54,26 +53,14 @@ public struct ShortcutButtonView: View {
                 .font(Typography.shortcutKeys)
                 .foregroundStyle(Color(Tokens.shortcutLabel))
                 .lineLimit(1)
-                .minimumScaleFactor(Metrics.AppPanel.keysMinimumScale)
+                .minimumScaleFactor(Metrics.Keypad.keysMinimumScale)
         } else {
             Text(button.label)
                 .font(Typography.shortcutText)
                 .foregroundStyle(Color(Tokens.keyText))
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .padding(.horizontal, Metrics.AppPanel.textPadding)
-        }
-    }
-
-    @ViewBuilder
-    private var learnedDot: some View {
-        if button.isLearned {
-            Circle()
-                .fill(Color(Tokens.accent))
-                .frame(width: Metrics.AppPanel.learnedDot, height: Metrics.AppPanel.learnedDot)
-                .padding(.top, Metrics.AppPanel.learnedDotTop)
-                .padding(.trailing, Metrics.AppPanel.learnedDotTrailing)
-                .accessibilityHidden(true)
+                .padding(.horizontal, Metrics.Keypad.textPadding)
         }
     }
 
@@ -84,14 +71,14 @@ public struct ShortcutButtonView: View {
         if isHovered, button.hint != nil {
             ShortcutTip(text: button.label)
                 .fixedSize()
-                .alignmentGuide(.top) { $0[.bottom] + Metrics.AppPanel.tipGap }
+                .alignmentGuide(.top) { $0[.bottom] + Metrics.Keypad.tipGap }
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
     }
 
     private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: Metrics.AppPanel.cornerRadius, style: .continuous)
+        RoundedRectangle(cornerRadius: Metrics.Keypad.cornerRadius, style: .continuous)
     }
 
     private var fill: ThemeColor {
@@ -111,13 +98,13 @@ struct WindowRegionIcon: View {
     let region: WindowRegion
 
     var body: some View {
-        let size = Metrics.AppPanel.regionIcon
-        let inset = Metrics.AppPanel.regionIconInset
+        let size = Metrics.Keypad.regionIcon
+        let inset = Metrics.Keypad.regionIconInset
         let inner = CGSize(width: size.width - inset * 2, height: size.height - inset * 2)
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: Metrics.AppPanel.regionIconCornerRadius, style: .continuous)
-                .strokeBorder(Color(Tokens.shortcutLabel), lineWidth: Metrics.AppPanel.regionIconStroke)
-            RoundedRectangle(cornerRadius: Metrics.AppPanel.regionCornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.Keypad.regionIconCornerRadius, style: .continuous)
+                .strokeBorder(Color(Tokens.shortcutLabel), lineWidth: Metrics.Keypad.regionIconStroke)
+            RoundedRectangle(cornerRadius: Metrics.Keypad.regionCornerRadius, style: .continuous)
                 .fill(Color(Tokens.shortcutLabel))
                 .frame(width: inner.width * region.width, height: inner.height * region.height)
                 .offset(x: inset + inner.width * region.x, y: inset + inner.height * region.y)
@@ -136,19 +123,19 @@ struct ShortcutTip: View {
             Text(text)
                 .font(Typography.shortcutTip)
                 .foregroundStyle(Color(Tokens.background))
-                .padding(.horizontal, Metrics.AppPanel.tipHorizontalPadding)
-                .padding(.vertical, Metrics.AppPanel.tipVerticalPadding)
+                .padding(.horizontal, Metrics.Keypad.tipHorizontalPadding)
+                .padding(.vertical, Metrics.Keypad.tipVerticalPadding)
                 .background(
-                    RoundedRectangle(cornerRadius: Metrics.AppPanel.tipCornerRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: Metrics.Keypad.tipCornerRadius, style: .continuous)
                         .fill(Color(Tokens.keyText))
                 )
             TipArrow()
                 .fill(Color(Tokens.keyText))
-                .frame(width: Metrics.AppPanel.tipArrow.width, height: Metrics.AppPanel.tipArrow.height)
+                .frame(width: Metrics.Keypad.tipArrow.width, height: Metrics.Keypad.tipArrow.height)
         }
         .shadow(
-            color: Color(Tokens.tipShadow), radius: Metrics.AppPanel.tipShadowRadius,
-            y: Metrics.AppPanel.tipShadowY)
+            color: Color(Tokens.tipShadow), radius: Metrics.Keypad.tipShadowRadius,
+            y: Metrics.Keypad.tipShadowY)
     }
 }
 
@@ -164,14 +151,14 @@ private struct TipArrow: Shape {
     }
 }
 
-/// An empty slot of the app panel grid, drawn with a dashed border.
+/// An empty slot of the grid of a Write panel, drawn with a dashed border.
 struct EmptySlotView: View {
     let width: CGFloat
 
     var body: some View {
-        RoundedRectangle(cornerRadius: Metrics.AppPanel.cornerRadius, style: .continuous)
-            .strokeBorder(Color(Tokens.strokeStandard), style: StrokeStyle(lineWidth: 1, dash: [Metrics.AppPanel.emptySlotDash]))
-            .frame(width: width, height: Metrics.AppPanel.buttonHeight)
+        RoundedRectangle(cornerRadius: Metrics.Keypad.cornerRadius, style: .continuous)
+            .strokeBorder(Color(Tokens.strokeStandard), style: StrokeStyle(lineWidth: 1, dash: [Metrics.Keypad.emptySlotDash]))
+            .frame(width: width, height: Metrics.Keypad.buttonHeight)
             .accessibilityHidden(true)
     }
 }
