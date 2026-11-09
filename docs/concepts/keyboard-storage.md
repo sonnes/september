@@ -72,6 +72,9 @@ is, and My Panel shows an error. The store does not use `importJSON`, because
 The import is not a step of `KeyboardDatabase.migrations`. The steps hold SQL
 only, and they do not know the file formats of the stores.
 
+At launch, `KeyboardDatabase.removeStaleFiles` removes `usage.json` and
+`learned.json` from the folder of the database. No store reads these files.
+
 ## The Sentence History
 
 `SentenceHistory` owns the `sentence` table.
