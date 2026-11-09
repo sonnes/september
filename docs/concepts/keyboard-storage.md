@@ -30,7 +30,9 @@ the `2026-11-09-sentence-history` change of the project.
 `KeyboardDatabase` opens `keyboard.sqlite` through the SQLite of macOS
 (`import SQLite3`). The app has no third-party dependencies.
 
-- Only the user can read the file (mode 0600).
+- Only the user can read the file and its `-wal` and `-shm` files (mode
+  0600). The file gets mode 0600 before SQLite opens it, because SQLite gives
+  the `-wal` and `-shm` files the mode of the database file.
 - The journal mode is WAL, and foreign keys are on.
 - `PRAGMA user_version` holds the schema version.
 - `KeyboardDatabase.migrations` holds one SQL step for each version. Each step
