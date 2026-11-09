@@ -356,6 +356,7 @@ private struct SessionParts {
     let completer: CupCompleter
     let pasteboard: MemoryPasteboard
     let clipboard: ClipboardHistory
+    let history: SentenceHistory
 }
 
 @MainActor
@@ -373,9 +374,10 @@ private func makeSession(
     let speaker = Speaker(
         settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: FakeEngine())
     let completer = CupCompleter()
+    let history = SentenceHistory(database: try KeyboardDatabase(path: ":memory:"), defaults: defaults)
     let engine = PredictionEngine(
         predictor: predictor, completer: completer, delay: .milliseconds(5),
-        defaults: defaults)
+        defaults: defaults, history: history)
     let appPanels = AppPanelModel(
         store: controller.panels,
         usage: UsageStore(fileURL: folder.appendingPathComponent("usage.json")),
@@ -400,7 +402,7 @@ private func makeSession(
     return SessionParts(
         session: session, controller: controller, sink: sink, voice: voice,
         userPanel: try? store.get(), clock: clock, completer: completer,
-        pasteboard: pasteboard, clipboard: clipboard)
+        pasteboard: pasteboard, clipboard: clipboard, history: history)
 }
 
 private struct SilentPredictor: SentencePredicting {
@@ -496,6 +498,26 @@ private func sessionTests() async {
         await parts.session.settle()
         parts.controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "return" }!)
         expectEqual(parts.completer.responses, ["accepted cup"])
+    }
+
+    await asyncTest("Return on the keys keeps the sentences of the field, and the Write window keeps none") {
+        let parts = try makeSession()
+        let returnKey = KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "return" }!
+        try await userTypes("See you soon.", in: parts)
+        parts.controller.press(returnKey)
+        expectEqual(parts.history.matches(for: "See"), ["See you soon."])
+
+        parts.session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
+        try await userTypes("My diary.", in: parts)
+        parts.controller.press(returnKey)
+        expectEqual(parts.history.count, 1)
+    }
+
+    await asyncTest("the history rows of a typed field reach the stack") {
+        let parts = try makeSession()
+        parts.history.record("See you soon.")
+        try await userTypes("See y", in: parts)
+        expectEqual(parts.session.predictions.stripes.map(\.prediction), ["See you soon."])
     }
 
     await asyncTest("Speak in Talk mode records the picked word") {

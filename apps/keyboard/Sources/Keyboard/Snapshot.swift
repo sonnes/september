@@ -88,7 +88,8 @@ enum Snapshot {
         let session = KeyboardSession(
             controller: controller,
             predictions: PredictionEngine(
-                predictor: SamplePredictor(), delay: .zero, defaults: defaults),
+                predictor: SamplePredictor(), delay: .zero, defaults: defaults,
+                history: SentenceHistory(database: try KeyboardDatabase(path: ":memory:"), defaults: defaults)),
             speaker: Speaker(
                 settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
             appPanels: AppPanelModel(
@@ -107,8 +108,11 @@ enum Snapshot {
         let typed = value(of: "--typed", in: arguments)
         let spoken = value(of: "--spoken", in: arguments).flatMap(Int.init)
         var appIcon: NSImage?
+        // The sentence predictions show only after typing, so each field
+        // starts empty and the sample text comes after one settle.
         if arguments.contains("--talk") {
             controller.mode = .talk
+            settle(session)
             for line in ["Nice try. Two chocolates, not six.", "Ask your mom. She is the boss.",
                 "Homework first, then Minecraft.", "Who won the match last night?"]
             {
@@ -123,16 +127,21 @@ enum Snapshot {
         } else if arguments.contains("--write") {
             session.appChanged(name: "Write", bundleID: WritePanel.id, windowTitle: nil)
             let line = typed ?? "Send the release notes before the we"
+            controller.focusChanged(to: EditorCaret(text: "", caret: 0, length: 0).focusedField)
+            settle(session)
             controller.focusChanged(
                 to: EditorCaret(text: line, caret: (line as NSString).length, length: 0).focusedField)
             appIcon = NSApplication.shared.applicationIconImage.tabIcon()
         } else {
             session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS", windowTitle: nil)
             let text = typed ?? "Are we still on for t"
-            controller.focusChanged(
-                to: FocusedField(
-                    appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false,
-                    text: text, selection: NSRange(location: (text as NSString).length, length: 0)))
+            for sample in ["", text] {
+                controller.focusChanged(
+                    to: FocusedField(
+                        appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false,
+                        text: sample, selection: NSRange(location: (sample as NSString).length, length: 0)))
+                settle(session)
+            }
             appIcon = icon(of: "com.apple.MobileSMS")?.tabIcon()
             if arguments.contains("--clipboard") {
                 addSampleCopies(to: session)

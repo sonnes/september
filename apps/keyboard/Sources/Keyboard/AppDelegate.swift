@@ -23,6 +23,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var controller: KeyboardController!
     private var session: KeyboardSession!
     private var speech: SpeechServices!
+    /// The sentences that the user sent, in `keyboard.sqlite`.
+    private var history: SentenceHistory!
     private var content: WindowContent!
     private var settingsWindow: SettingsWindowController!
     private var write: WriteController!
@@ -67,7 +69,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         speech = SpeechServices()
         speech.start()
-        let predictions = PredictionEngine()
+        history = SentenceHistory(database: KeyboardDatabase.open(at: KeyboardDatabase.defaultURL))
+        let predictions = PredictionEngine(history: history)
         let appPanels = AppPanelModel(
             store: controller.panels, usage: UsageStore(), learner: ShortcutLearner(),
             settings: AppPanelSettings())
@@ -160,7 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         var pages = SettingsPages(settings: keyboardSettings, permission: permission)
         pages[.voice] = AnyView(VoiceSettingsPage(speech: speech))
         pages[.speech] = AnyView(SpeechPage(speech: speech, settings: keyboardSettings, said: controller.talk.said))
-        pages[.predictions] = AnyView(PredictionsSettingsPage(engine: session.predictions))
+        pages[.predictions] = AnyView(PredictionsSettingsPage(engine: session.predictions, history: history))
         pages[.clipboard] = AnyView(ClipboardSettingsPage(history: session.clipboard))
         pages[.appPanels] = AnyView(
             AppPanelsSettingsPage(model: session.appPanels, inputMonitoring: inputMonitoring))

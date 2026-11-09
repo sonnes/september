@@ -124,7 +124,10 @@ public final class SentenceHistory: ObservableObject {
     /// The sentence that the user types at the end of `typed`, or `nil` when
     /// it holds no letter or when `typed` ends a sentence.
     static func fragment(of typed: String) -> String? {
-        guard let last = sentences(in: typed).last, last.contains(where: \.isLetter) else { return nil }
+        // A sentence longer than `maxCharacters` is never a match, so the
+        // tokenizer reads only the end of a long text.
+        let tail = String(typed.suffix(maxCharacters + 1))
+        guard let last = sentences(in: tail).last, last.contains(where: \.isLetter) else { return nil }
         let trimmed = last.trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "\"')\u{201D}\u{2019}"))
         if let end = trimmed.last, ".!?\u{2026}".contains(end) { return nil }

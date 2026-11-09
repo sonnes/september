@@ -11,6 +11,7 @@ func predictionsTests() async {
     noticeTests()
     await engineTests()
     await typingTests()
+    await historyTests()
     await candidateTests()
     await liveModelTests()
 }
@@ -376,10 +377,21 @@ private struct PredictionFailed: Error {}
 private func makeEngine(
     _ predictor: FakePredictor,
     completer: FakeCompleter = FakeCompleter(),
-    defaults: UserDefaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+    defaults: UserDefaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!,
+    history: SentenceHistory? = nil
 ) -> PredictionEngine {
     PredictionEngine(
-        predictor: predictor, completer: completer, delay: .milliseconds(20), defaults: defaults)
+        predictor: predictor, completer: completer, delay: .milliseconds(20), defaults: defaults,
+        history: history)
+}
+
+@MainActor
+private func makeHistory(_ sentences: [String] = []) throws -> SentenceHistory {
+    let history = SentenceHistory(
+        database: try KeyboardDatabase(path: ":memory:"),
+        defaults: UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!)
+    for sentence in sentences { history.record(sentence) }
+    return history
 }
 
 private let tea: @Sendable (PredictionContext) -> [String] = { _ in
@@ -776,6 +788,109 @@ private func typingTests() async {
         expect(engine.stripes.isEmpty)
         let count = await predictor.requests.count
         expectEqual(count, 0)
+    }
+}
+
+@MainActor
+private func historyTests() async {
+    let cu = InputMirror.mirrored(text: "I would like a cu", caret: 17, selectionLength: 0)
+    // Three uses, two uses, and one use.
+    let sent = [
+        "I would like a cup of tea, please.", "I would like a cup of tea, please.",
+        "I would like a cup of tea, please.", "I would like a cushion.", "I would like a cushion.",
+        "I would like a cupcake.",
+    ]
+
+    await asyncTest("history rows show at once, before the model answers") {
+        let engine = makeEngine(FakePredictor(answer: tea), history: try makeHistory(["I would like a cupcake."]))
+        engine.userTypes(cu)
+        expectEqual(engine.stripes.map(\.prediction), ["I would like a cupcake."])
+        expectEqual(engine.stripes.first?.text(toTypeThrough: 0), "pcake. ")
+    }
+
+    await asyncTest("up to two history rows come first, then the model rows, with no row twice") {
+        let engine = makeEngine(FakePredictor(answer: tea), history: try makeHistory(sent))
+        engine.userTypes(cu)
+        await engine.settle()
+        expectEqual(
+            engine.stripes.map(\.prediction),
+            ["I would like a cup of tea, please.", "I would like a cushion.", "I would like a cup of coffee now."])
+    }
+
+    await asyncTest("history rows fill the rows that the model leaves empty") {
+        let engine = makeEngine(FakePredictor { _ in [] }, history: try makeHistory(sent))
+        engine.userTypes(cu)
+        await engine.settle()
+        expectEqual(
+            engine.stripes.map(\.prediction),
+            ["I would like a cup of tea, please.", "I would like a cushion.", "I would like a cupcake."])
+    }
+
+    await asyncTest("a model row that repeats a history sentence after earlier sentences shows one time") {
+        let engine = makeEngine(
+            FakePredictor { _ in ["Thanks. I would like a cupcake."] },
+            history: try makeHistory(["I would like a cupcake."]))
+        engine.userTypes(.local(text: "Thanks. I would like a cu"))
+        await engine.settle()
+        expectEqual(engine.stripes.count, 1)
+    }
+
+    await asyncTest("history rows wait for typing, as model rows do") {
+        let engine = makeEngine(FakePredictor(answer: tea), history: try makeHistory(sent))
+        engine.update(input: cu, mode: .type, said: [])
+        expect(engine.stripes.isEmpty)
+    }
+
+    await asyncTest("history rows show when Apple Intelligence is off, in the place of its notice") {
+        let engine = makeEngine(
+            FakePredictor(availability: .off, answer: tea), history: try makeHistory(["I would like a cupcake."]))
+        engine.userTypes(cu)
+        await engine.settle()
+        expectEqual(engine.stripes.map(\.prediction), ["I would like a cupcake."])
+        expect(engine.notice == nil)
+        engine.update(input: .mirrored(text: "Hello", caret: 5, selectionLength: 0), mode: .type, said: [])
+        await engine.settle()
+        expectEqual(engine.notice, .appleIntelligence(.off), "with no history row, the notice shows")
+    }
+
+    await asyncTest("the sentence switch turns off the history rows") {
+        let engine = makeEngine(FakePredictor(answer: tea), history: try makeHistory(sent))
+        engine.sentencesEnabled = false
+        engine.userTypes(cu)
+        await engine.settle()
+        expect(engine.stripes.isEmpty)
+    }
+
+    await asyncTest("submit keeps the sentences of the paragraph at the caret") {
+        let history = try makeHistory()
+        let engine = makeEngine(FakePredictor(answer: tea), history: history)
+        let text = "Dear Sam.\nSee you soon. Bye now\nLater."
+        engine.update(input: .mirrored(text: text, caret: 15, selectionLength: 0), mode: .type, said: [])
+        engine.submit()
+        expectEqual(history.count, 2)
+        expectEqual(history.matches(for: "See"), ["See you soon."])
+        expectEqual(history.matches(for: "Bye"), ["Bye now"])
+        expectEqual(history.matches(for: "Dear"), [])
+    }
+
+    await asyncTest("the Talk bar goes into the history when the user speaks it") {
+        let history = try makeHistory()
+        let engine = makeEngine(FakePredictor(answer: tea), history: history)
+        engine.update(input: .local(text: "Good morning. How are you?"), mode: .talk, said: [])
+        engine.submit()
+        expectEqual(history.count, 2)
+    }
+
+    await asyncTest("private text, a password field, and a submit that keeps no sentences keep nothing") {
+        let history = try makeHistory()
+        let engine = makeEngine(FakePredictor(answer: tea), history: history)
+        engine.update(input: .local(text: "My secret."), mode: .type, said: [], isPrivate: true)
+        engine.submit()
+        engine.update(input: .secure, mode: .type, said: [])
+        engine.submit()
+        engine.update(input: .local(text: "In the Write window."), mode: .type, said: [])
+        engine.submit(keepsSentences: false)
+        expectEqual(history.count, 0)
     }
 }
 

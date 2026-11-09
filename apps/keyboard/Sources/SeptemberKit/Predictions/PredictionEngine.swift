@@ -13,6 +13,10 @@ import Foundation
 /// the baseline of the field. A later input with other text is typing. The
 /// text before the caret must also hold a letter.
 ///
+/// The rows of the stack come from two sources: the sentence history and the
+/// model. History rows show at once. Up to `historyLead` of them come first,
+/// then the model rows, and then the other history rows.
+///
 /// The engine keeps the completions that the user picks. When the user
 /// submits the text, it tells the completer which picked words the text
 /// still holds.
@@ -53,7 +57,11 @@ public final class PredictionEngine: ObservableObject {
         static let screen = "predictions.screen"
     }
 
+    /// The most history rows that come before the model rows.
+    public static let historyLead = 2
+
     private let predictor: any SentencePredicting
+    private let history: SentenceHistory?
     private let completer: any WordCompleting
     private let delay: Duration
     private let defaults: UserDefaults
@@ -71,6 +79,8 @@ public final class PredictionEngine: ObservableObject {
     /// leaves it as it was.
     private var requested: PredictionContext?
     private var predictions: [String] = []
+    /// The history sentences that continue the typed text, best first.
+    private var historyRows: [String] = []
     private var request: Task<Void, Never>?
     /// Counts the requests, so a late answer to an old one is dropped.
     private var generation = 0
@@ -83,9 +93,11 @@ public final class PredictionEngine: ObservableObject {
         predictor: any SentencePredicting = AppleIntelligencePredictor(),
         completer: any WordCompleting = CandidateCompleter(),
         delay: Duration = .milliseconds(300),
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = .standard,
+        history: SentenceHistory? = nil
     ) {
         self.predictor = predictor
+        self.history = history
         self.completer = completer
         self.delay = delay
         self.defaults = defaults
@@ -144,9 +156,10 @@ public final class PredictionEngine: ObservableObject {
 
     /// The user submitted the text, with Return or with Speak in Talk mode.
     /// Each picked word that the text still holds is accepted. Each other
-    /// picked word is edited. Private text and a password field record
-    /// nothing.
-    public func submit() {
+    /// picked word is edited. The sentences of the paragraph at the caret go
+    /// into the history when `keepsSentences` is true. Private text and a
+    /// password field record nothing.
+    public func submit(keepsSentences: Bool = true) {
         defer { picked = [] }
         guard !isPrivate, input.holdsText else { return }
         let words = Set(Self.words(of: input.text))
@@ -154,6 +167,17 @@ public final class PredictionEngine: ObservableObject {
             completer.record(
                 words.contains(completion.word.lowercased()) ? .accepted : .edited, to: completion)
         }
+        if keepsSentences { history?.record(Self.paragraph(at: input)) }
+    }
+
+    /// The line of the caret. A field with many lines, such as a note, gives
+    /// only the paragraph that the user wrote last.
+    private static func paragraph(at input: InputMirror) -> String {
+        guard case .mirrored(let text, let caret, let selectionLength) = input else { return input.text }
+        let parts = InputMirror.split(text, caret: caret, selectionLength: selectionLength)
+        let before = parts.before.split(separator: "\n", omittingEmptySubsequences: false).last ?? ""
+        let after = (parts.selected + parts.after).split(separator: "\n", omittingEmptySubsequences: false).first ?? ""
+        return String(before + after)
     }
 
     /// The focus moved to another field or app. The picked words cannot be
@@ -186,23 +210,31 @@ public final class PredictionEngine: ObservableObject {
     // MARK: - State
 
     private func refresh() {
-        notice =
-            isPrivate
-            ? .privateText
-            : Self.notice(for: input, availability: availability, sentences: sentencesEnabled)
         refreshWords()
 
-        guard let context, sentencesEnabled, availability == .ready, wantsSentences(context) else {
-            cancel()
-            predictions = []
-            requested = nil
-            isStale = false
+        guard let context, sentencesEnabled, wantsSentences(context) else {
+            historyRows = []
+            stopAsking()
+            restripe()
+            return
+        }
+        historyRows = history?.matches(for: context.typed, limit: SuggestionPrompt.count) ?? []
+        guard availability == .ready else {
+            stopAsking()
             restripe()
             return
         }
         restripe()
         guard context != requested else { return }
         ask(context)
+    }
+
+    /// Cancels the request and forgets the model rows.
+    private func stopAsking() {
+        cancel()
+        predictions = []
+        requested = nil
+        isStale = false
     }
 
     private func refreshWords() {
@@ -243,9 +275,31 @@ public final class PredictionEngine: ObservableObject {
         return nil
     }
 
+    /// Builds the rows from the history rows and the model rows, then sets
+    /// the notice. A row with the same words as an earlier row does not
+    /// show. The notice of Apple Intelligence does not hide history rows.
     private func restripe() {
         let typed = context?.typed ?? ""
-        stripes = predictions.map { PredictionStripe(prediction: $0, typed: typed) }
+        let lead = historyRows.prefix(Self.historyLead)
+        let sources = lead + predictions + historyRows.dropFirst(Self.historyLead)
+        var rows: [PredictionStripe] = []
+        var seen: Set<String> = []
+        for source in sources where rows.count < SuggestionPrompt.count {
+            let stripe = PredictionStripe(prediction: source, typed: typed)
+            guard seen.insert(stripe.tiles.joined(separator: " ").lowercased()).inserted else { continue }
+            rows.append(stripe)
+        }
+        stripes = rows
+
+        let notice =
+            isPrivate
+            ? .privateText
+            : Self.notice(for: input, availability: availability, sentences: sentencesEnabled)
+        if case .appleIntelligence = notice, !rows.isEmpty {
+            self.notice = nil
+        } else {
+            self.notice = notice
+        }
     }
 
     private func cancel() {
