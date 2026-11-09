@@ -332,6 +332,7 @@ private struct SessionParts {
     let pasteboard: MemoryPasteboard
     let clipboard: ClipboardHistory
     let history: SentenceHistory
+    let database: KeyboardDatabase
 }
 
 @MainActor
@@ -348,7 +349,8 @@ private func makeSession(
     let speaker = Speaker(
         settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: FakeEngine())
     let completer = CupCompleter()
-    let history = SentenceHistory(database: try KeyboardDatabase(path: ":memory:"), defaults: defaults)
+    let database = try KeyboardDatabase(path: ":memory:")
+    let history = SentenceHistory(database: database, defaults: defaults)
     let engine = PredictionEngine(
         predictor: predictor, completer: completer, delay: .milliseconds(5),
         defaults: defaults, history: history)
@@ -367,7 +369,8 @@ private func makeSession(
     return SessionParts(
         session: session, controller: controller, sink: sink, voice: voice,
         userPanel: try? store.get(), clock: clock, completer: completer,
-        pasteboard: pasteboard, clipboard: clipboard, history: history)
+        pasteboard: pasteboard, clipboard: clipboard, history: history,
+        database: database)
 }
 
 private struct SilentPredictor: SentencePredicting {
@@ -589,6 +592,18 @@ private func sessionTests() async {
         await parts.session.settle()
         parts.session.speakPressed()
         expectEqual(parts.completer.responses, ["accepted cup"])
+    }
+
+    await asyncTest("Speak in Talk mode keeps each sentence of the line in the sentence table") {
+        let parts = try makeSession()
+        parts.controller.mode = .talk
+        parts.controller.talk.type("I am thirsty. Can I have some water?")
+        await parts.session.settle()
+        parts.session.speakPressed()
+        let rows = try parts.database.query("SELECT text, uses FROM sentence ORDER BY id")
+        expectEqual(rows.map { $0[0].text }, ["I am thirsty.", "Can I have some water?"])
+        expectEqual(rows.map { $0[1].int }, [1, 1])
+        expectEqual(parts.history.count, 2)
     }
 
     await asyncTest("a new field forgets the picked words") {
