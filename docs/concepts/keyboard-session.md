@@ -79,6 +79,7 @@ An update does these steps in this order:
    read. On the Write paper, Speak is on when the document has text.
 4. It sets `spokenWord`.
 5. It sets `canCutOrCopy`.
+6. It sets `shortcuts`. See [Shortcut Suggestions](#shortcut-suggestions).
 
 The input bar does not wait for the turn. The session takes the focused field,
 the input, the mode, the private state, and the Write paper from their
@@ -158,6 +159,8 @@ The text on the clipboard at launch does not go into the history.
 | `speakPressed()` | Speak | See [Speak](#speak). |
 | `pressAppPanel(_:)` | A button of the app panel | Counts the press for the order of the panel, then does the action. |
 | `pressMine(_:)` | A button of Mine | Counts the press for the order of Mine, then does the action. |
+| `pressShortcut(_:)` | A shortcut suggestion | Acts as `pressAppPanel(_:)` with the chord of the suggestion. A latched modifier ends. |
+| `hardwareModifiersChanged(_:)` | `ChordTap` | See [Shortcut Suggestions](#shortcut-suggestions). |
 | `chordPressed(_:)` | `ChordTap` and the chords of the keys | Gives the chord to the app panel to learn. The app panel learns nothing while the field has private text. |
 | `toggleHistory()` | History | Shows the clipboard history in the place of the predictions, on its newest page, or shows the predictions again. An app change and a mode change close the history. |
 | `olderPage()`, `newerPage()` | Older and Newer | Turns the pages of the history. |
@@ -185,6 +188,26 @@ The same submit also adds the sentences of the paragraph at the caret to the
 documents. While the user types, the engine adds the history sentences that
 continue the sentence at the caret to the rows of the stack. See
 [keyboard-storage.md](keyboard-storage.md).
+
+## Shortcut Suggestions
+
+In Type mode, `shortcuts` holds the shortcuts of the app in front when no
+text field has focus, or when Command or Control is on. The view shows them
+in the place of the prediction stack. Otherwise `shortcuts` is empty, and the
+predictions show. Talk mode and the Write window have no shortcuts.
+
+- The shortcuts come from `AppShortcut.suggestions(panel:menu:modifiers:)`:
+  the chords of the ranked app panel, then the menu shortcuts. Each chord
+  shows one time.
+- `readMenu` reads the menu shortcuts of the app in front. The app shell sets
+  it in each app change. The session calls it only when it needs shortcuts,
+  and keeps the result until the next app change.
+- The modifiers that are on are the modifiers of the keys, latched or locked,
+  and the modifiers that the user holds on the hardware keyboard. With
+  Command or Control on, only the chords that hold all these modifiers stay.
+- `hardwareModifiersChanged(_:)` waits `modifierHoldDelay` (0.4 seconds)
+  before a held Command or Control counts, so a quick chord does not change
+  the stack. A release, or a change while the shortcuts show, counts at once.
 
 ## Speak
 

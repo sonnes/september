@@ -490,11 +490,32 @@ rebuild. To keep it:
 Until permission is granted the keyboard still runs and shows a banner; keys
 just do not reach other apps.
 
+## Shortcut suggestions
+
+In Type mode, the shortcuts of the app in front take the place of the sentence
+predictions in two cases:
+
+- No text field has focus. The input bar stays hidden.
+- Command or Control is on. This is a modifier key of the keyboard that is
+  latched or locked, or a modifier key of the hardware keyboard that you hold
+  for 0.4 seconds. Only the shortcuts that hold all the modifiers that are on
+  show.
+
+Each tile shows the keys and the name of a shortcut. A press presses the keys
+in the app and ends a latched modifier. The shortcuts of the app panel come
+first, in their ranked order. Then the menu items of the app with a chord come,
+in menu bar order. The keyboard reads the menu bar through accessibility when
+a suggestion needs it, and keeps the read until another app comes to the front.
+The suggestions leave out the Apple menu, which holds Log Out and Lock Screen,
+and the menu items that are off. The app menu, with Hide and Quit, comes last.
+Talk mode and the Write window show no shortcut suggestions.
+
 ## Input Monitoring
 
 The keyboard learns the shortcuts that you press with its own keys. To learn
-from the hardware keyboard too, it needs Input Monitoring. The keyboard does
-not ask for it at launch.
+from the hardware keyboard too, it needs Input Monitoring. The shortcut
+suggestions of a held hardware modifier also need it. The keyboard does not
+ask for it at launch.
 
 1. Open Settings, then the App Panels page.
 2. Click Open Input Monitoring Settings.

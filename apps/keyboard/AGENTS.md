@@ -143,6 +143,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `keyboard.sqlite` only with a new step at the end of
   `KeyboardDatabase.migrations`. Never edit an old step. See
   `docs/concepts/keyboard-storage.md`.
+- **A suggestion never comes from the Apple menu.** `AppShortcut.menu(_:)`
+  leaves out the Apple menu, because one press there logs out or locks the
+  Mac. Keep it out of every list of suggestions.
 - **Keep Swift 6 concurrency clean.** UI, controller and keystroke sinks are
   `@MainActor`. A type that holds an accessibility element and crosses actors
   is `@unchecked Sendable`, with a comment that says why. Do not silence
