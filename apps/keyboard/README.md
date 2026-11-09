@@ -213,14 +213,12 @@ get no keys. The shortcut panels hide. Phrases show at the left of the keys,
 and the Said list shows at the right. Speak reads the bar aloud and adds it to
 the Said list.
 
-Talk mode keeps its own history, the Said list, in
-`~/Library/Application Support/September Keyboard/talk-history.json`. No
-other part of the keyboard uses this file. The history keeps each line for 30
+Talk mode keeps its own history, the Said list, in the `talk_line` table of
+`~/Library/Application Support/September Keyboard/keyboard.sqlite`. No other
+part of the keyboard uses this table. The history keeps each line for 30
 days, and 1,000 lines at most. The sentence predictions of Talk mode use the
 lines of the last hour. Type mode does not use the history. To clear it, open
-Settings, then Speech, then click Clear Talk History. If the file does not
-decode, the keyboard moves it to `talk-history.broken.json` and starts an
-empty history.
+Settings, then Speech, then click Clear Talk History.
 
 Cut, Copy, and Paste press Command-X, Command-C, and Command-V in the app in
 front. In Talk mode they act on the Talk bar: Copy copies its text, Cut also
@@ -233,16 +231,19 @@ predictions. A page shows six texts. The newest text is at the bottom left,
 next to the input bar. A press on a text pastes it into the app in front, or
 types it into the Talk bar in Talk mode. Then the predictions show again.
 
-The clipboard history is in
-`~/Library/Application Support/September Keyboard/clipboard-history.json`,
-and only the user can read the file. The history keeps each text for 7 days,
-and 200 texts at most. A copy of a text that is already in the history moves
-it to the newest place. The history keeps no copy from a password manager, no
-copy of a file, and no copy from a password field or a field with private
-text. The Clipboard page of Settings turns the history off and clears it.
-When the history is off, it keeps no texts. If the file does not decode, the
-keyboard moves it to `clipboard-history.broken.json` and starts an empty
-history.
+The clipboard history is in the `clip` table of
+`~/Library/Application Support/September Keyboard/keyboard.sqlite`, and only
+the user can read the file. The history keeps each text for 7 days, and 200
+texts at most. A copy of a text that is already in the history moves it to
+the newest place. The history keeps no copy from a password manager, no copy
+of a file, and no copy from a password field or a field with private text.
+The Clipboard page of Settings turns the history off and clears it. When the
+history is off, it keeps no texts.
+
+At the first launch after an update, the keyboard moves the lines of
+`talk-history.json` and the texts of `clipboard-history.json` into the
+database and removes the two files. If a file does not decode, the keyboard
+moves it to `<name>.broken.json`.
 
 Write opens the Write paper: a sheet with round corners, no window frame,
 and a native Markdown editor (`WriteTextView`). The editor hides the Markdown
