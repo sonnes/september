@@ -1,6 +1,6 @@
 ---
 title: Keyboard storage (macOS)
-description: Where the macOS keyboard keeps its data. Preferences are in UserDefaults, secrets in the Keychain, documents in Markdown files, and the records that the keyboard keeps or learns in keyboard.sqlite or in JSON files.
+description: Where the macOS keyboard keeps its data. Preferences are in UserDefaults, secrets in the Keychain, documents in Markdown files, and the records that the keyboard keeps or learns in keyboard.sqlite.
 package: keyboard
 ---
 
@@ -15,14 +15,11 @@ documents.
 
 | Kind | Store | Data |
 |---|---|---|
-| A preference that the user sets | `UserDefaults` | The switches of the predictions, the look, Talk Return, the clipboard history, the sentence history, the app panels, the voice choice, and the places of the windows |
+| A preference that the user sets | `UserDefaults` | The switches of the predictions, the look, Talk Return, the clipboard history, the sentence history, the app panels, new private text in My Panel, the voice choice, and the places of the windows |
 | A secret | Keychain | The ElevenLabs key (`com.september.keyboard`) and the text of each private button (`com.september.keyboard.private`) |
 | A document of the user | Markdown files | The Write documents in `~/Documents/September/` |
 | A definition that ships with the app | JSON in the bundle | Panels, accents, and context rules in `Sources/SeptemberKit/Resources/` |
-| A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history, the Said list of Talk mode, the clipboard history, and the presses of the buttons of My Panel |
-| A record that the keyboard keeps or learns | JSON file | The buttons of My Panel (`my-panel.json`) |
-
-The buttons of My Panel move to `keyboard.sqlite` in a later change.
+| A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history, the Said list of Talk mode, the clipboard history, and the buttons of My Panel and their presses |
 
 ## The Database
 
@@ -53,19 +50,24 @@ index and returns in less than one millisecond.
 ## The JSON Files of Older Versions
 
 Older versions of the keyboard kept the Said list in `talk-history.json`, the
-clipboard history in `clipboard-history.json`, and the presses of My Panel in
-`my-panel-usage.json`. At launch, each store moves the rows of its file into
-its table with `KeyboardDatabase.importJSON`:
+clipboard history in `clipboard-history.json`, the presses of My Panel in
+`my-panel-usage.json`, and the buttons of My Panel in `my-panel.json`. At
+launch, each store moves the rows of its file into its table:
 
 1. The store decodes the file.
 2. The store inserts the rows in one transaction. A row that is already in
    the table stays as it is.
 3. After the commit, the store removes the file.
 
-If the file does not decode, it moves to `<name>.broken.json`, and the table
-gets no rows. If the transaction fails, the file stays, and the next launch
+`KeyboardDatabase.importJSON` does these steps for each store except
+`UserPanelStore`. If the file does not decode, it moves to
+`<name>.broken.json`, and the table gets no rows. If the transaction fails, the file stays, and the next launch
 tries again. A second import of the same file changes nothing, because the
 insert ignores the rows that are already in the table.
+
+`my-panel.json` is the exception. If it does not decode, it stays where it
+is, and My Panel shows an error. The store does not use `importJSON`, because
+`importJSON` moves a broken file aside. See "The Buttons of My Panel".
 
 The import is not a step of `KeyboardDatabase.migrations`. The steps hold SQL
 only, and they do not know the file formats of the stores.
@@ -173,3 +175,38 @@ database.
 
 The old file kept the counts under the key `my-panel`, with dates in seconds
 since 2001. The import changes the dates to seconds since 1970.
+
+## The Buttons of My Panel
+
+`UserPanelStore` owns the `user_button` table. Each row is one button of My
+Panel.
+
+```sql
+CREATE TABLE user_button (
+  id        TEXT PRIMARY KEY,
+  position  INTEGER NOT NULL UNIQUE,   -- the order of the settings
+  name      TEXT NOT NULL,
+  action    TEXT NOT NULL              -- the JSON of UserAction
+);
+```
+
+The store reads the rows in the order of `position`. A new button gets the
+position after the last row. When the user removes a button, the other rows
+keep their positions, so the positions can have gaps. My Panel ranks the
+buttons by their presses, and a tie keeps the order of `position`.
+
+A private text button has the action `{"type": "privateText"}`. Its text is
+in the Keychain, under the ID of the button, and never in the table. The
+switch "Make new text private" is in `UserDefaults`, key
+`myPanel.makeNewTextPrivate`, and it is on by default.
+
+The store keeps the buttons in memory, so the views do not read the
+database. Each change writes the table first and then changes `buttons`. If
+the write fails, the method throws and the panel stays as it was.
+
+At launch, the store moves the buttons of `my-panel.json` into the table in
+one transaction, in the order of the file. It sets the switch from the file.
+After the commit, it removes the file. A button whose ID or position is
+already in the table stays as it is. The store throws if the file does not
+decode, if the transaction fails, or if a row of the table does not decode. My Panel then shows an error
+and keeps the file as it is, so the buttons of the user are not lost.
