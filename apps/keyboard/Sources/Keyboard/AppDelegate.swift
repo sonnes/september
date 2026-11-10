@@ -285,7 +285,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             session.writeCaretRead(write.caret)
         case .app:
             isWriteInFront = false
-            session.readMenu = { [weak app] in app.map(MenuBarReader.shortcuts(for:)) ?? [] }
+            // Keep the process ID, not the app: macOS frees the app object of
+            // the activation notice soon after the notice.
+            let pid = app?.processIdentifier
+            session.readMenu = { pid.map(MenuBarReader.shortcuts(pid:)) ?? [] }
             session.appChanged(name: app?.localizedName, bundleID: app?.bundleIdentifier)
             startModifierTap()
             readScreenSoon()
