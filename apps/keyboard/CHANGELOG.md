@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1
+
+### Shortcut Suggestions
+
+- The shortcuts of the app in front show in the place of the input bar. In 0.3.0, the place of the bar stayed empty, because the keyboard did not read the menu bar of the app.
+
+### Panels
+
+- The name of a panel button shows above the button. In 0.3.0, the name covered the top half of the button.
+
 ## 0.3.0
 
 ### Predictions
