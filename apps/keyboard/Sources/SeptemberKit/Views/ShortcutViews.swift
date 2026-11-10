@@ -69,9 +69,12 @@ public struct ShortcutButtonView: View {
     @ViewBuilder
     private var tip: some View {
         if isHovered, button.hint != nil {
+            // A frame with no height at the top edge of the button holds the
+            // tip at its bottom, so the tip grows up from the button.
             ShortcutTip(text: button.label)
                 .fixedSize()
-                .alignmentGuide(.top) { $0[.bottom] + Metrics.Keypad.tipGap }
+                .padding(.bottom, Metrics.Keypad.tipGap)
+                .frame(height: 0, alignment: .bottom)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
