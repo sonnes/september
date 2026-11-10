@@ -14,8 +14,8 @@ enum MenuBarReader {
     private static let maxNodes = 2_000
 
     /// The menu items with a chord of the app, for the shortcut suggestions.
-    static func shortcuts(for app: NSRunningApplication) -> [AppShortcut] {
-        read(pid: app.processIdentifier).map(AppShortcut.menu) ?? []
+    static func shortcuts(pid: pid_t) -> [AppShortcut] {
+        read(pid: pid).map(AppShortcut.menu) ?? []
     }
 
     static func read(pid: pid_t) -> AXNode? {
