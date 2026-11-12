@@ -32,7 +32,10 @@ public struct ShortcutButtonView: View {
             .overlay(shape.strokeBorder(Color(stroke), lineWidth: 1))
             .overlay(alignment: .top) { tip }
             .onHover { isHovered = $0 }
-            .pressable(label: button.accessibilityLabel, trigger: .down(.once)) { isPressed = $0 } action: {
+            .pressable(
+                label: button.accessibilityLabel,
+                trigger: .down(KeyHold(behavior: { [action = button.action] in action.holdBehavior }))
+            ) { isPressed = $0 } action: {
                 press()
             }
             .zIndex(isHovered ? 1 : 0)

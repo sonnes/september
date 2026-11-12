@@ -12,6 +12,22 @@ public enum PanelAction: Sendable, Hashable {
     case privateText(String)
 }
 
+extension PanelAction {
+    /// What the button does while the user holds it. A key that repeats on
+    /// a hardware keyboard, such as an arrow or Delete, repeats alone or
+    /// with Shift or Option, so a held button moves the caret or extends the
+    /// selection. A chord with Command or Control acts once, so a long dwell
+    /// does not press a window or app command again and again.
+    public var holdBehavior: HoldBehavior {
+        guard case .shortcut(let shortcut) = self,
+            case .virtual(let key) = shortcut.key,
+            key.repeatsWhenHeld,
+            shortcut.modifiers.isSubset(of: [.shift, .option])
+        else { return .once }
+        return .repeats
+    }
+}
+
 /// One button in a shortcut panel.
 public struct PanelButton: Sendable, Hashable, Identifiable {
     public let id: String

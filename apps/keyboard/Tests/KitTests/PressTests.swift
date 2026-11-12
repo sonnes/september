@@ -52,6 +52,29 @@ private func heldKeyTests() {
         expectEqual(controller.holdBehavior(for: layoutKey("key-1")), .repeats)
     }
 
+    test("a panel arrow repeats, alone or with Shift or Option") {
+        for modifiers in [Modifiers(), .shift, .option, [.shift, .option]] {
+            let action = PanelAction.shortcut(Shortcut(modifiers: modifiers, key: .virtual(.down)))
+            expectEqual(action.holdBehavior, .repeats, "\(modifiers)")
+        }
+        expectEqual(PanelAction.shortcut(Shortcut(modifiers: [], key: .virtual(.delete))).holdBehavior, .repeats)
+    }
+
+    test("a panel button with Command or Control, a letter, a sequence, or text acts once") {
+        let down = Shortcut(modifiers: [.control, .option], key: .virtual(.down))
+        let actions: [PanelAction] = [
+            .shortcut(down),
+            .shortcut(Shortcut(modifiers: .command, key: .virtual(.down))),
+            .shortcut(Shortcut(modifiers: [], key: .virtual(.return))),
+            .shortcut(Shortcut(modifiers: .command, key: .character("c"))),
+            .sequence([Shortcut(modifiers: [], key: .virtual(.down))]),
+            .text("hi"),
+        ]
+        for action in actions {
+            expectEqual(action.holdBehavior, .once, "\(action)")
+        }
+    }
+
     test("the modifiers, Return, Escape, and Tab do not repeat") {
         let (controller, _) = try makeController()
         for id in ["shift-left", "command-left", "capslock", "return", "esc", "tab"] {
