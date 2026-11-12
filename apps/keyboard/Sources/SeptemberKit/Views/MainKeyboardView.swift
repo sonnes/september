@@ -37,7 +37,7 @@ public struct MainKeyboardView<Header: View>: View {
                 KeyView(
                     key: key,
                     tint: tint,
-                    isActive: isActive(key),
+                    face: key.face(under: controller.modifiers),
                     width: widths[index],
                     hold: KeyHold(
                         behavior: { controller.holdBehavior(for: key) },
@@ -58,13 +58,6 @@ public struct MainKeyboardView<Header: View>: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(row.id.rawValue) row")
-    }
-
-    /// Latched and locked modifiers light up, so the user can see the state
-    /// they are about to type in.
-    private func isActive(_ key: KeyDefinition) -> Bool {
-        guard case .modifier(let modifier) = key.action else { return false }
-        return controller.modifiers.active.contains(modifier)
     }
 }
 

@@ -1,4 +1,5 @@
 keyboardLayoutTests()
+keyFaceTests()
 modifierStateTests()
 keyCodeMapTests()
 modifierNameTests()

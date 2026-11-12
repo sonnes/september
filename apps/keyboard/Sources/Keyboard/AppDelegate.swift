@@ -30,6 +30,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var write: WriteController!
     /// Held strongly: the tap's callback does not retain it.
     private var modifierTap: ModifierTap?
+    private var otherInput: OtherInputMonitor?
+    /// SIGTERM and SIGINT, for example from `make stop`, skip
+    /// `applicationWillTerminate`. These handlers release the modifiers first.
+    private var signalSources: [DispatchSourceSignal] = []
     private var tracker = FrontAppTracker(ownPID: ProcessInfo.processInfo.processIdentifier)
     private var isWriteInFront = false
     /// How to read the text near the field in each app.
@@ -119,6 +123,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         watchFocus()
         startModifierTap()
+        let otherInput = OtherInputMonitor { [weak self] in self?.controller.otherInputPressed() }
+        otherInput.start()
+        self.otherInput = otherInput
+        releaseModifiersOnSignal()
         predictions.refreshAvailability()
         observers.append(
             NSWorkspace.shared.notificationCenter.addObserver(
@@ -152,6 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        controller?.releaseSystemModifiers()
         write?.save()
     }
 
@@ -324,6 +333,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     // MARK: - The modifiers of the hardware keyboard
+
+    private func releaseModifiersOnSignal() {
+        for number in [SIGTERM, SIGINT] {
+            signal(number, SIG_IGN)
+            let source = DispatchSource.makeSignalSource(signal: number, queue: .main)
+            source.setEventHandler { [weak self] in
+                MainActor.assumeIsolated {
+                    self?.controller.releaseSystemModifiers()
+                    NSApp.terminate(nil)
+                }
+            }
+            source.resume()
+            signalSources.append(source)
+        }
+    }
 
     /// Starts the tap only when macOS already allows it, so launch never
     /// prompts. The Predictions page of Settings asks.

@@ -6,7 +6,13 @@ import Foundation
 @MainActor
 public final class KeyboardController: ObservableObject {
     @Published public var style: KeyboardStyle = .rainbow
-    @Published public private(set) var modifiers = ModifierState()
+    @Published public private(set) var modifiers = ModifierState() {
+        didSet { syncSystemModifiers() }
+    }
+    /// The modifiers that the keyboard holds down at the OS. A tapped modifier
+    /// goes down at once, so a click or a key from another source gets it
+    /// too, as with Sticky Keys of macOS.
+    public private(set) var systemModifiers: Modifiers = []
     /// What we have typed since the last Return. Only shown when the app in
     /// front exposes no text of its own.
     private var echo = "" {
@@ -29,7 +35,10 @@ public final class KeyboardController: ObservableObject {
     /// In Talk mode, the keys type into `talk` and the app in front gets no
     /// events.
     @Published public var mode: KeyboardMode = .type {
-        didSet { accentChoices = [] }
+        didSet {
+            accentChoices = []
+            syncSystemModifiers()
+        }
     }
     /// The accents of a held letter, shown over the word row until the user
     /// presses a key. Empty when no accents show.
@@ -90,6 +99,8 @@ public final class KeyboardController: ObservableObject {
             return .once
         case .virtual(let virtual):
             return virtual.repeatsWhenHeld ? .repeats : .once
+        case .media(let media, _):
+            return !modifiers.holdsChord && media.repeatsWhenHeld ? .repeats : .once
         case .character(let character):
             guard modifiers.active.subtracting([.shift, .capsLock]).isEmpty else { return .once }
             guard character.count == 1, character.first?.isLetter == true else { return .repeats }
@@ -113,6 +124,11 @@ public final class KeyboardController: ObservableObject {
     }
 
     private func apply(_ key: KeyDefinition, modifiers: inout ModifierState) {
+        // A media key controls the Mac, not the text, so it works in Talk mode too.
+        if case .media(let media, _) = key.action, !modifiers.holdsChord {
+            sink.post(media: media)
+            return
+        }
         if mode == .talk { return talk.press(key, modifiers: &modifiers) }
         switch key.action {
         case .modifier(let modifier):
@@ -123,6 +139,9 @@ public final class KeyboardController: ObservableObject {
             let flags = modifiers.active.subtracting(.capsLock)
             if virtual == .return, flags.isEmpty { onSubmit?() }
             post(virtual, modifiers: flags)
+            modifiers.consume()
+        case .media(_, let function):
+            post(function, modifiers: modifiers.active.subtracting(.capsLock))
             modifiers.consume()
         }
     }
@@ -146,6 +165,30 @@ public final class KeyboardController: ObservableObject {
             hideField()
         }
         modifiers.consume()
+    }
+
+    /// A key from another source, such as the hardware keyboard, or a click
+    /// outside the keyboard. It uses up the latched modifiers, as Sticky Keys
+    /// of macOS does.
+    public func otherInputPressed() {
+        guard !modifiers.latched.isEmpty else { return }
+        modifiers.consume()
+    }
+
+    /// Releases each modifier that the keyboard holds at the OS. Call this
+    /// before the app quits, or the modifiers stay down.
+    public func releaseSystemModifiers() {
+        sink.post(Keystroke.modifierChanges(from: systemModifiers, to: []))
+        systemModifiers = []
+    }
+
+    /// Posts the downs and ups that make the OS hold the active modifiers.
+    /// In Talk mode the app in front gets no events, so the OS holds none.
+    private func syncSystemModifiers() {
+        let target = mode == .type ? modifiers.active.subtracting(.capsLock) : []
+        guard target != systemModifiers else { return }
+        sink.post(Keystroke.modifierChanges(from: systemModifiers, to: target))
+        systemModifiers = target
     }
 
     public func clearEcho() {
@@ -235,7 +278,9 @@ public final class KeyboardController: ObservableObject {
     private func send(text: String) {
         if let resolved = keyCodeMap.keystroke(for: text) {
             sink.post(
-                Keystroke.events(virtualKey: resolved.virtualKey, modifiers: resolved.modifiers)
+                Keystroke.events(
+                    virtualKey: resolved.virtualKey, modifiers: resolved.modifiers,
+                    held: systemModifiers)
             )
         } else {
             // Nothing on this layout produces the character — type it directly.
@@ -246,7 +291,8 @@ public final class KeyboardController: ObservableObject {
     /// Posts a named key. Without a chord, the echo follows what the key
     /// does to the text.
     private func post(_ virtual: VirtualKey, modifiers: Modifiers) {
-        sink.post(Keystroke.events(virtualKey: virtual.rawValue, modifiers: modifiers))
+        sink.post(
+            Keystroke.events(virtualKey: virtual.rawValue, modifiers: modifiers, held: systemModifiers))
         guard !isMirroring, !isFieldPrivate, modifiers.subtracting(.shift).isEmpty else { return }
         switch virtual {
         case .delete: echo = String(echo.dropLast())
@@ -267,7 +313,8 @@ public final class KeyboardController: ObservableObject {
         sink.post(
             Keystroke.events(
                 virtualKey: resolved.virtualKey,
-                modifiers: modifiers.union(resolved.modifiers)
+                modifiers: modifiers.union(resolved.modifiers),
+                held: systemModifiers
             )
         )
         return true

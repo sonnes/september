@@ -22,6 +22,9 @@ public enum Metrics {
     /// screen and takes its height from the keyboard beside it.
     public static let treeViewerWidth: CGFloat = 320
     public static let dualLabelGap: CGFloat = 2
+    /// The bar under the label of a locked modifier key. It is not in the
+    /// design system.
+    public static let lockBarSize = CGSize(width: 12, height: 2)
     public static let dualSecondaryLabelSize: CGFloat = 11
 
     public static let shortcutButton = CGSize(width: 120, height: 40)

@@ -157,7 +157,7 @@ The text on the clipboard at launch does not go into the history.
 | `speakPressed()` | Speak | See [Speak](#speak). |
 | `pressMine(_:)` | A button of Mine | Counts the press for the order of Mine, then does the action. |
 | `pressShortcut(_:)` | A shortcut suggestion | Presses the chord of the suggestion in the app. A latched modifier ends. |
-| `hardwareModifiersChanged(_:)` | `ModifierTap` | See [Shortcut Suggestions](#shortcut-suggestions). |
+| `hardwareModifiersChanged(_:)` | `ModifierTap` | See [Shortcut Suggestions](#shortcut-suggestions). The modifiers that the keyboard holds at the OS are not hardware modifiers, so the session removes them first. |
 | `toggleHistory()` | History | Shows the clipboard history in the place of the predictions, on its newest page, or shows the predictions again. An app change and a mode change close the history. |
 | `olderPage()`, `newerPage()` | Older and Newer | Turns the pages of the history. |
 | `pasteClip(_:)` | A copied text | See [The Clipboard](#the-clipboard). |

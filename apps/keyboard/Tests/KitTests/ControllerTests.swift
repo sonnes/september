@@ -7,14 +7,17 @@ final class RecordingSink: KeystrokeSink, @unchecked Sendable {
     var posted: [Keystroke] = []
     var typed: [String] = []
     var beeps = 0
+    var media: [MediaKey] = []
 
     func post(_ events: [Keystroke]) { posted.append(contentsOf: events) }
+    func post(media key: MediaKey) { media.append(key) }
     func type(_ text: String) { typed.append(text) }
     func beep() { beeps += 1 }
 
     func reset() {
         posted = []
         typed = []
+        media = []
     }
 
     /// Key-down events only — the shape a caller cares about.
@@ -104,7 +107,7 @@ func controllerTests() {
         let (controller, sink) = try makeController()
         controller.press(key("command-left"))
         controller.press(key("key-q"))
-        expect(sink.posted.isEmpty)
+        expectEqual(sink.downs.map(\.key), [55], "only the Command down of the latch")
         expectEqual(sink.beeps, 1)
         expectEqual(controller.modifiers.active, .command)
 
@@ -161,6 +164,135 @@ func controllerTests() {
         controller.press(key("f1"))
         expectEqual(sink.downs.map(\.key), [63, VirtualKey.f1.rawValue])
         expectEqual(sink.downs.last?.flags, .function)
+    }
+
+    test("an F-key with no modifier sends its media key") {
+        let (controller, sink) = try makeController()
+        controller.press(key("f8"))
+        expectEqual(sink.media, [.playPause])
+        expect(sink.posted.isEmpty, "no F8 keystroke")
+    }
+
+    test("an F-key under a latched command sends the F-key with command") {
+        let (controller, sink) = try makeController()
+        controller.press(key("command-left"))
+        controller.press(key("f8"))
+        expectEqual(sink.downs.map(\.key), [55, VirtualKey.f8.rawValue])
+        expectEqual(sink.downs.last?.flags, .command)
+        expect(sink.media.isEmpty)
+        sink.reset()
+        controller.press(key("f8"))
+        expectEqual(sink.media, [.playPause], "the latched command is used up")
+    }
+
+    test("an F-key under caps lock still sends its media key") {
+        let (controller, sink) = try makeController()
+        controller.press(key("capslock"))
+        controller.press(key("f12"))
+        expectEqual(sink.media, [.volumeUp])
+    }
+
+    test("a media key works in Talk mode and types nothing") {
+        let (controller, sink) = try makeController()
+        controller.mode = .talk
+        controller.press(key("f8"))
+        expectEqual(sink.media, [.playPause])
+        expectEqual(controller.talk.text, "")
+    }
+
+    test("volume and brightness repeat while held, play or pause does not") {
+        let (controller, _) = try makeController()
+        expectEqual(controller.holdBehavior(for: key("f12")), .repeats)
+        expectEqual(controller.holdBehavior(for: key("f1")), .repeats)
+        expectEqual(controller.holdBehavior(for: key("f8")), .once)
+    }
+
+    test("a tapped modifier goes down at the OS at once") {
+        let (controller, sink) = try makeController()
+        controller.press(key("shift-left"))
+        expectEqual(sink.posted, [Keystroke(virtualKey: 56, flags: .shift, isDown: true)])
+    }
+
+    test("a key after a latched modifier is posted inside it, and then the modifier goes up") {
+        let (controller, sink) = try makeController()
+        controller.press(key("command-left"))
+        sink.reset()
+        controller.press(key("key-c"))
+        expectEqual(sink.posted, [
+            Keystroke(virtualKey: 8, flags: .command, isDown: true),
+            Keystroke(virtualKey: 8, flags: .command, isDown: false),
+            Keystroke(virtualKey: 55, flags: [], isDown: false),
+        ])
+    }
+
+    test("a locked modifier stays down at the OS until the third tap") {
+        let (controller, sink) = try makeController()
+        controller.press(key("command-left"))
+        controller.press(key("command-left"))
+        expectEqual(sink.posted.count, 1, "the second tap posts nothing")
+        sink.reset()
+        controller.press(key("key-c"))
+        expectEqual(sink.posted.map(\.virtualKey), [8, 8], "no Command up after a chord")
+        sink.reset()
+        controller.press(key("command-right"))
+        expectEqual(sink.posted, [Keystroke(virtualKey: 55, flags: [], isDown: false)])
+    }
+
+    test("two latched modifiers go down in order and up in reverse") {
+        let (controller, sink) = try makeController()
+        controller.press(key("command-left"))
+        controller.press(key("shift-left"))
+        sink.reset()
+        controller.press(key("key-z"))
+        expectEqual(sink.posted.map(\.virtualKey), [6, 6, 55, 56])
+        expectEqual(sink.posted.first?.flags, [.command, .shift])
+        expectEqual(sink.posted.last?.flags, [])
+    }
+
+    test("caps lock is never held at the OS") {
+        let (controller, sink) = try makeController()
+        controller.press(key("capslock"))
+        expect(sink.posted.isEmpty)
+    }
+
+    test("a key or a click from another source uses up a latched modifier and keeps a locked one") {
+        let (controller, sink) = try makeController()
+        controller.press(key("shift-left"))
+        controller.press(key("command-left"))
+        controller.press(key("command-left"))
+        sink.reset()
+        controller.otherInputPressed()
+        expectEqual(controller.modifiers.active, .command)
+        expectEqual(sink.posted, [Keystroke(virtualKey: 56, flags: .command, isDown: false)])
+        sink.reset()
+        controller.otherInputPressed()
+        expect(sink.posted.isEmpty)
+    }
+
+    test("Talk mode releases the modifiers at the OS and holds none") {
+        let (controller, sink) = try makeController()
+        controller.press(key("option-left"))
+        sink.reset()
+        controller.mode = .talk
+        expectEqual(sink.posted, [Keystroke(virtualKey: 58, flags: [], isDown: false)])
+        sink.reset()
+        controller.press(key("control"))
+        expect(sink.posted.isEmpty, "the app in front gets no events in Talk mode")
+        controller.mode = .type
+        expectEqual(sink.posted, [
+            Keystroke(virtualKey: 59, flags: .control, isDown: true),
+            Keystroke(virtualKey: 58, flags: [.control, .option], isDown: true),
+        ], "Type mode holds the modifiers that are still on")
+    }
+
+    test("a quit releases every modifier that the keyboard holds at the OS") {
+        let (controller, sink) = try makeController()
+        controller.press(key("control"))
+        controller.press(key("control"))
+        sink.reset()
+        controller.releaseSystemModifiers()
+        expectEqual(sink.posted, [Keystroke(virtualKey: 59, flags: [], isDown: false)])
+        expectEqual(controller.systemModifiers, [])
     }
 
     test("fn and a letter make a shortcut, not text") {

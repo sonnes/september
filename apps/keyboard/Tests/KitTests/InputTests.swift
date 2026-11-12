@@ -84,6 +84,16 @@ func keyCodeMapTests() {
 }
 
 func keystrokeTests() {
+    test("a modifier that is already down is not pressed again") {
+        let events = Keystroke.events(virtualKey: 8, modifiers: [.command, .shift], held: .command)
+        expectEqual(events, [
+            Keystroke(virtualKey: 56, flags: [.command, .shift], isDown: true),
+            Keystroke(virtualKey: 8, flags: [.command, .shift], isDown: true),
+            Keystroke(virtualKey: 8, flags: [.command, .shift], isDown: false),
+            Keystroke(virtualKey: 56, flags: .command, isDown: false),
+        ])
+    }
+
     let z: UInt16 = 6
 
     test("a plain character is one down and one up") {

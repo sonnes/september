@@ -48,7 +48,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`rectangle`/`phrases`/`write`/`write-documents.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
-| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ModifierTap`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings window, snapshots |
+| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ModifierTap`, `OtherInputMonitor`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings window, snapshots |
 | `Sources/WriteLab` | Write Lab: the Write paper on its own, with a stand-in for the keyboard bar (`make lab`) |
 | `Tests/KitTests` | tests + the harness |
 
@@ -191,6 +191,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `WindowActivation` shows the window on top with `orderFrontRegardless()`,
   and the window takes the focus when the app becomes active. Do not use
   `activate(ignoringOtherApps:)`.
+- A latched or locked modifier is down at the OS. If the process dies by
+  SIGKILL or a crash, the modifier stays down. To clear it, press and release
+  that key on the hardware keyboard.
 - `make run` and `make dev` show the keyboard on the screen of the user. Stop
   it with `make stop` when the check is done.
 - Do not test with the pointer of the user. To read the keyboard or press

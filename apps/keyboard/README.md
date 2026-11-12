@@ -27,7 +27,7 @@ Sources/
     Views/          keys, shortcut buttons, panels, the keyboard screen, the views of each part
     Resources/      Panels/{text,system,rectangle,phrases,write,write-documents}.json,
                     Context/<bundle id>.json
-  Keyboard/         the app: floating panels, CGEvent sink, focus watcher, modifier tap, tree reader,
+  Keyboard/         the app: floating panels, CGEvent sink, focus watcher, modifier tap, other input monitor, tree reader,
                     menu bar, the Settings window
   WriteLab/         the Write paper on its own, with a stand-in for the keyboard bar
 Tests/KitTests/     tests (see "Tests" below)
@@ -309,8 +309,9 @@ Control, Voice Control) acts at once.
 A held key obeys the keyboard settings of macOS. `KeyPresser` applies them,
 and each press reads them again:
 
-- Key repeat: Delete, Space, and the characters that are not letters repeat
-  after the delay of System Settings, at its rate. If key repeat is off, no key
+- Key repeat: Delete, Space, the volume and brightness keys, and the
+  characters that are not letters repeat after the delay of System Settings,
+  at its rate. If key repeat is off, no key
   repeats. The modifiers, Return, Escape, Tab, chords, and the shortcut buttons
   do not repeat.
 - Press and hold: if `ApplePressAndHoldEnabled` is on (the macOS default), a
@@ -323,7 +324,25 @@ and each press reads them again:
   lets go before the delay, nothing happens. The keyboard reads `slowKey` and
   `slowKeyDelay` from `com.apple.universalaccess`.
 - Sticky Keys: one tap on a modifier latches it for the next key, a second tap
-  locks it, and a third tap releases it, as Sticky Keys of macOS does.
+  locks it, and a third tap releases it, as Sticky Keys of macOS does. A
+  tapped modifier goes down at the OS at once, so a click or a key from the
+  hardware keyboard gets it too: Shift-click and Command-click work. A key
+  from another source, or a click outside the keyboard, uses up a latched
+  modifier. `OtherInputMonitor` listens for them with global monitors, which
+  need the Accessibility permission and not Input Monitoring. In Talk mode the
+  OS holds no modifier. Before the app quits, also on SIGTERM and SIGINT, it
+  releases the modifiers that it holds. A latched modifier key lights up. A locked modifier key has a stronger fill
+  and a bar under its label. Shift shows a filled arrow when it is latched and
+  the caps lock arrow when it is locked.
+
+The keys show the state of the modifiers. While shift or caps lock is on, the
+letters show capitals and the dual keys light up their shifted symbol.
+
+The F-row sends the media keys of an Apple keyboard and shows their icons:
+brightness, Mission Control, Spotlight, Dictation, Do Not Disturb, the track
+keys, and volume. While fn, Control, Option, Shift, or Command is on, the row
+shows F1 to F12 and sends the F-key with the modifiers. Caps lock does not
+change the row. The media keys work in Talk mode too.
 
 ## Render snapshots
 

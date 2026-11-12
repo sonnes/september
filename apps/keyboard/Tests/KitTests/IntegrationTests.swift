@@ -479,6 +479,19 @@ private func shortcutTests() async {
         expect(parts.session.shortcuts.isEmpty, "the release hides the shortcuts at once")
     }
 
+    await asyncTest("a modifier that the keyboard holds at the OS is not a hardware modifier") {
+        let parts = try makeParts()
+        parts.controller.focusChanged(to: field("Hi", caret: 2))
+        parts.controller.press(commandKey)
+        parts.controller.press(commandKey)
+        // The OS adds the held Command to the flags of a hardware Shift.
+        parts.session.hardwareModifiersChanged([.command, .shift])
+        parts.clock.advance(to: KeyboardSession.modifierHoldDelay)
+        parts.controller.press(commandKey)
+        await parts.session.settle()
+        expect(parts.session.shortcuts.isEmpty, "the third tap hides the shortcuts")
+    }
+
     await asyncTest("a quick hardware chord shows no shortcuts") {
         let parts = try makeParts()
         parts.controller.focusChanged(to: field("Hi", caret: 2))

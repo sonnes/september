@@ -50,7 +50,8 @@ public enum KeyboardLayout {
                     id: "f\(number)",
                     kind: .function,
                     label: "F\(number)",
-                    action: .virtual(VirtualKey.function(number)!)
+                    action: .media(
+                        MediaKey.onFunctionKey(number)!, function: VirtualKey.function(number)!)
                 )
             )
         }

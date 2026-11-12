@@ -178,7 +178,10 @@ public final class KeyboardSession: ObservableObject {
     public func hardwareModifiersChanged(_ modifiers: Modifiers) {
         pendingHold?.cancel()
         pendingHold = nil
-        let held = modifiers.intersection(AppShortcut.filterModifiers)
+        // The OS adds the modifiers that the keyboard holds to the flags of a
+        // hardware key, so they are not hardware modifiers.
+        let held = modifiers.subtracting(controller.systemModifiers)
+            .intersection(AppShortcut.filterModifiers)
         guard !held.isDisjoint(with: [.command, .control]) else {
             heldModifiers = []
             scheduleUpdate()
