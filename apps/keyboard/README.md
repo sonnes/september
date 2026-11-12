@@ -123,6 +123,9 @@ keys. A row of word completions sits on top of the keys. Cut, Copy, Paste, and
 History are at the left of the input bar. Speak, Type, Talk, Write, and
 Settings are at the right of the input bar. In Type mode, Arrange is between
 Write and Settings. The input bar is as wide as the keys and sits over them.
+The input bar shows one line: the line of the field that holds the caret. A
+field of many lines, such as a Markdown editor or a contenteditable field,
+shows only that line. The predictions and Speak still read the whole text.
 The clipboard buttons sit past the left edge of the keys, so the keyboard
 window has a clear space at the left of the keys.
 

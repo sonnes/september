@@ -120,6 +120,27 @@ public enum InputMirror: Equatable, Sendable {
         return text.isEmpty
     }
 
+    /// The three runs of the one line that the bar draws: the line of the
+    /// field that holds the caret. A selection that crosses lines ends at the
+    /// end of its first line. Offsets are UTF-16, as in `split`.
+    public static func caretLine(
+        _ text: String,
+        caret: Int,
+        selectionLength: Int
+    ) -> (before: String, selected: String, after: String) {
+        let string = text as NSString
+        let caret = min(max(0, caret), string.length)
+        let before = string.rangeOfCharacter(
+            from: .newlines, options: .backwards, range: NSRange(location: 0, length: caret))
+        let start = before.location == NSNotFound ? 0 : before.location + before.length
+        let after = string.rangeOfCharacter(
+            from: .newlines, range: NSRange(location: caret, length: string.length - caret))
+        let end = after.location == NSNotFound ? string.length : after.location
+        let line = string.substring(with: NSRange(location: start, length: end - start))
+        let selected = min(max(0, selectionLength), end - caret)
+        return split(line, caret: caret - start, selectionLength: selected)
+    }
+
     /// The three runs the bar draws: text before the caret, the selection, and
     /// the rest. Split on UTF-16 offsets, the units the field reports.
     public static func split(
