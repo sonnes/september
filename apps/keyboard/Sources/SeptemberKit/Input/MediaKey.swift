@@ -19,6 +19,9 @@ public enum MediaKey: Sendable, Hashable, CaseIterable {
         case system(Int32)
         /// A key event with this key code.
         case key(UInt16)
+        /// Opens the app at this path. macOS ignores some posted keys, such
+        /// as the Mission Control key, so the key opens the app instead.
+        case app(String)
     }
 
     /// The media key on F1 to F12, in the order of an Apple keyboard.
@@ -31,7 +34,7 @@ public enum MediaKey: Sendable, Hashable, CaseIterable {
         switch self {
         case .brightnessDown: .system(3)
         case .brightnessUp: .system(2)
-        case .missionControl: .key(160)
+        case .missionControl: .app("/System/Applications/Mission Control.app")
         case .spotlight: .key(177)
         case .dictation: .key(176)
         case .doNotDisturb: .key(178)

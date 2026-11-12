@@ -364,7 +364,8 @@ The F-row sends the media keys of an Apple keyboard and shows their icons:
 brightness, Mission Control, Spotlight, Dictation, Do Not Disturb, the track
 keys, and volume. While fn, Control, Option, Shift, or Command is on, the row
 shows F1 to F12 and sends the F-key with the modifiers. Caps lock does not
-change the row. The media keys work in Talk mode too.
+change the row. The media keys work in Talk mode too. macOS ignores a posted
+Mission Control key, so F3 opens `/System/Applications/Mission Control.app`.
 
 ## Render snapshots
 

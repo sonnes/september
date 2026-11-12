@@ -33,6 +33,8 @@ final class CGEventSink: KeystrokeSink {
         switch key.event {
         case .key(let code):
             post(Keystroke.events(virtualKey: code, modifiers: []))
+        case .app(let path):
+            NSWorkspace.shared.open(URL(fileURLWithPath: path))
         case .system(let type):
             for isDown in [true, false] {
                 let state = isDown ? 0xA : 0xB

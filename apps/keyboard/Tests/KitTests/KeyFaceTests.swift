@@ -39,6 +39,10 @@ func keyFaceTests() {
         expectEqual(key("shift-left").face(under: held).glyph, .symbol("shift.fill"))
     }
 
+    test("Mission Control opens its app, because macOS ignores a posted Mission Control key") {
+        expectEqual(MediaKey.missionControl.event, .app("/System/Applications/Mission Control.app"))
+    }
+
     test("caps lock does not change the F-row") {
         expectEqual(key("f8").face(under: state(.capsLock)).glyph, .symbol("playpause.fill"))
     }
