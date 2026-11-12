@@ -1,3 +1,5 @@
+import CoreGraphics
+
 /// One key event to post. The sink turns these into CGEvents; keeping them as
 /// plain values means the whole sequencing story is testable.
 public struct Keystroke: Sendable, Equatable {
@@ -62,6 +64,8 @@ public protocol KeystrokeSink: AnyObject {
     func post(_ events: [Keystroke])
     /// A media or system control, such as Play or Pause.
     func post(media key: MediaKey)
+    /// One step of scroll at `point`, in screen coordinates from the top left.
+    func scroll(_ direction: ScrollDirection, at point: CGPoint)
     /// Literal text, injected as a unicode string so emoji and non-layout
     /// characters work without a matching physical key.
     func type(_ text: String)

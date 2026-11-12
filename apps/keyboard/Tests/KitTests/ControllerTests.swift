@@ -8,8 +8,10 @@ final class RecordingSink: KeystrokeSink, @unchecked Sendable {
     var typed: [String] = []
     var beeps = 0
     var media: [MediaKey] = []
+    var scrolls: [(direction: ScrollDirection, point: CGPoint)] = []
 
     func post(_ events: [Keystroke]) { posted.append(contentsOf: events) }
+    func scroll(_ direction: ScrollDirection, at point: CGPoint) { scrolls.append((direction, point)) }
     func post(media key: MediaKey) { media.append(key) }
     func type(_ text: String) { typed.append(text) }
     func beep() { beeps += 1 }
@@ -332,6 +334,32 @@ func controllerTests() {
         controller.mode = .type
         controller.releaseSystemModifiers()
         expect(sink.posted.isEmpty)
+    }
+
+    test("a scroll button scrolls where the pointer last rested, in Type and Talk mode") {
+        let (controller, sink) = try makeController()
+        controller.pointerRested(at: CGPoint(x: 300, y: 200))
+        controller.perform(.scroll(.down))
+        controller.mode = .talk
+        controller.perform(.scroll(.up))
+        expectEqual(sink.scrolls.map(\.direction), [.down, .up])
+        expectEqual(sink.scrolls.first?.point, CGPoint(x: 300, y: 200))
+        expect(sink.posted.isEmpty, "a scroll presses no key")
+    }
+
+    test("a scroll button beeps when the pointer has rested nowhere yet") {
+        let (controller, sink) = try makeController()
+        controller.perform(.scroll(.down))
+        expect(sink.scrolls.isEmpty)
+        expectEqual(sink.beeps, 1)
+    }
+
+    test("a scroll keeps a latched modifier for the next key") {
+        let (controller, _) = try makeController()
+        controller.pointerRested(at: .zero)
+        controller.press(key("shift-left"))
+        controller.perform(.scroll(.down))
+        expectEqual(controller.modifiers.active, .shift)
     }
 
     test("fn and a letter make a shortcut, not text") {

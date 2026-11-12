@@ -91,9 +91,14 @@ private func panelFileTests() {
                 .shortcut(Shortcut(modifiers: [], key: .virtual($0)))
             })
         let system = Set(store.system.buttons.map(\.id))
-        for id in ["find", "mission-control", "page-up", "page-down", "zoom-out", "zoom-in"] {
+        for id in ["find", "mission-control", "zoom-out", "zoom-in"] {
             expect(system.contains(id), "System has no \(id)")
         }
+        let scrolls = store.system.buttons.compactMap { button -> ScrollDirection? in
+            if case .scroll(let direction) = button.action { return direction }
+            return nil
+        }
+        expectEqual(scrolls, [.up, .down])
     }
 
     test("the Rectangle panel presses the recommended shortcuts of Rectangle") {

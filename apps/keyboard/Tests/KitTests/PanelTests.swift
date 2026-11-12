@@ -62,6 +62,16 @@ func panelTests() {
         expect((try? decode(bad)) == nil, "unknown action decoded anyway")
     }
 
+    test("a scroll action names its direction, and an unknown direction is rejected") {
+        let json = """
+            {"title": "X", "columns": 1, "buttons": [
+              {"id": "s", "label": "Scroll Down", "action": {"type": "scroll", "direction": "down"}}]}
+            """
+        expectEqual(try decode(json).buttons.first?.action, .scroll(.down))
+        let bad = json.replacingOccurrences(of: "\"down\"", with: "\"sideways\"")
+        expect((try? decode(bad)) == nil, "an unknown direction decoded anyway")
+    }
+
     test("an uppercase key letter is rejected, in a shortcut and in a sequence") {
         for action in [
             #"{"type": "shortcut", "modifiers": ["command"], "key": "T"}"#,

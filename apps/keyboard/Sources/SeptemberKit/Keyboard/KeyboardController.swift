@@ -146,8 +146,24 @@ public final class KeyboardController: ObservableObject {
         }
     }
 
+    /// The place where the pointer last rested outside the keyboard. A
+    /// scroll button scrolls it.
+    public private(set) var scrollPoint: CGPoint?
+
+    /// The pointer rested outside the keyboard, at `point` in screen
+    /// coordinates from the top left.
+    public func pointerRested(at point: CGPoint) {
+        scrollPoint = point
+    }
+
     public func perform(_ action: PanelAction) {
         accentChoices = []
+        // A scroll moves what the user reads, so it works in Talk mode too,
+        // and it keeps a latched modifier for the next key.
+        if case .scroll(let direction) = action {
+            guard let scrollPoint else { return sink.beep() }
+            return sink.scroll(direction, at: scrollPoint)
+        }
         if mode == .talk { return talk.perform(action, modifiers: &modifiers) }
         switch action {
         case .shortcut(let shortcut):
@@ -163,6 +179,8 @@ public final class KeyboardController: ObservableObject {
             guard let text = try? privateTexts.text(for: id) else { break }
             sink.type(text)
             hideField()
+        case .scroll:
+            return
         }
         modifiers.consume()
     }

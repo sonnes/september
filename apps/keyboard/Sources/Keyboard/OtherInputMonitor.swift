@@ -18,11 +18,18 @@ import SeptemberKit
 final class OtherInputMonitor {
     private let onInput: () -> Void
     private let onModifiers: (Modifiers) -> Void
+    private let pointer: PointerRestTracker
     private var monitors: [Any] = []
 
-    init(onInput: @escaping () -> Void, onModifiers: @escaping (Modifiers) -> Void) {
+    /// - Parameter pointer: gets each move and click of the pointer outside
+    ///   the keyboard, so a scroll button knows what to scroll.
+    init(
+        onInput: @escaping () -> Void, onModifiers: @escaping (Modifiers) -> Void,
+        pointer: PointerRestTracker
+    ) {
         self.onInput = onInput
         self.onModifiers = onModifiers
+        self.pointer = pointer
     }
 
     /// A click acts on the button up, so a drag keeps the modifier, as a
@@ -32,7 +39,17 @@ final class OtherInputMonitor {
         let mask: NSEvent.EventTypeMask = [.keyDown, .leftMouseUp, .rightMouseUp, .otherMouseUp]
         if let monitor = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] event in
             guard !Self.isOwn(event), !(event.type == .keyDown && event.isARepeat) else { return }
-            MainActor.assumeIsolated { self?.onInput() }
+            let location = event.type == .leftMouseUp ? event.cgEvent?.location : nil
+            MainActor.assumeIsolated {
+                self?.onInput()
+                if let location { self?.pointer.clicked(at: location) }
+            }
+        }) {
+            monitors.append(monitor)
+        }
+        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: { [weak self] event in
+            guard let location = event.cgEvent?.location else { return }
+            MainActor.assumeIsolated { self?.pointer.moved(to: location) }
         }) {
             monitors.append(monitor)
         }

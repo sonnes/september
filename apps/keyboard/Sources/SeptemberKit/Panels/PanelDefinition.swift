@@ -10,6 +10,8 @@ public enum PanelAction: Sendable, Hashable {
     /// The text of a private button of My Panel, by the ID of the button. The
     /// text is in the Keychain.
     case privateText(String)
+    /// Scrolls the place where the pointer last rested outside the keyboard.
+    case scroll(ScrollDirection)
 }
 
 extension PanelAction {
@@ -19,6 +21,7 @@ extension PanelAction {
     /// selection. A chord with Command or Control acts once, so a long dwell
     /// does not press a window or app command again and again.
     public var holdBehavior: HoldBehavior {
+        if case .scroll = self { return .repeats }
         guard case .shortcut(let shortcut) = self,
             case .virtual(let key) = shortcut.key,
             key.repeatsWhenHeld,
@@ -55,7 +58,7 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
         case .shortcut(let shortcut): shortcut.display
         case .sequence(let steps): steps.map(\.display).joined(separator: " ")
         case .text(let text): Self.marks(text)
-        case .privateText: nil
+        case .privateText, .scroll: nil
         }
     }
 
@@ -64,7 +67,7 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
         case .shortcut(let shortcut): "\(label), \(shortcut.spokenName)"
         case .sequence(let steps):
             "\(label), \(steps.map(\.spokenName).joined(separator: ", then "))"
-        case .text, .privateText: label
+        case .text, .privateText, .scroll: label
         }
     }
 
@@ -164,7 +167,7 @@ extension PanelButton: Decodable {
 
 extension PanelAction: Decodable {
     enum CodingKeys: String, CodingKey {
-        case type, modifiers, key, keys, text
+        case type, modifiers, key, keys, text, direction
     }
 
     /// One step of a sequence: `{"modifiers": ["control"], "key": "c"}`.
@@ -201,6 +204,13 @@ extension PanelAction: Decodable {
             self = .sequence(try steps.map { try $0.shortcut })
         case "text":
             self = .text(try container.decode(String.self, forKey: .text))
+        case "scroll":
+            let name = try container.decode(String.self, forKey: .direction)
+            guard let direction = ScrollDirection(rawValue: name) else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .direction, in: container, debugDescription: "unknown scroll direction '\(name)'")
+            }
+            self = .scroll(direction)
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type,

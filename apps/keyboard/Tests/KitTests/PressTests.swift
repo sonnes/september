@@ -60,6 +60,25 @@ private func heldKeyTests() {
         expectEqual(PanelAction.shortcut(Shortcut(modifiers: [], key: .virtual(.delete))).holdBehavior, .repeats)
     }
 
+    test("a scroll button repeats") {
+        expectEqual(PanelAction.scroll(.down).holdBehavior, .repeats)
+    }
+
+    test("the pointer rests after it stays still for the rest delay, or at once on a click") {
+        let clock = FakeClock()
+        var rested: [CGPoint] = []
+        let tracker = PointerRestTracker(scheduler: clock) { rested.append($0) }
+        tracker.moved(to: CGPoint(x: 1, y: 1))
+        clock.advance(to: PointerRestTracker.restDelay / 2)
+        tracker.moved(to: CGPoint(x: 2, y: 2))
+        clock.advance(to: PointerRestTracker.restDelay * 2)
+        expectEqual(rested, [CGPoint(x: 2, y: 2)], "a pointer that passes by does not rest")
+        tracker.clicked(at: CGPoint(x: 3, y: 3))
+        expectEqual(rested.last, CGPoint(x: 3, y: 3))
+        clock.advance(to: PointerRestTracker.restDelay * 10)
+        expectEqual(rested.count, 2)
+    }
+
     test("a panel button with Command or Control, a letter, a sequence, or text acts once") {
         let down = Shortcut(modifiers: [.control, .option], key: .virtual(.down))
         let actions: [PanelAction] = [

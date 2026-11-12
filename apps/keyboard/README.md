@@ -187,9 +187,21 @@ line, and selection moves are in the grid above the arrows. The arrows are the
 buttons wide.
 
 The System keypad has three columns. It holds Undo, Redo, Select All, Save,
-New, Open, Print, and Close, and then Find, Mission Control, Page Up, Page
-Down, the zoom keys, Full Screen, Screenshot, and Quit. No keypad repeats
-Cut, Copy, or Paste.
+New, Open, Print, and Close, and then Find, Mission Control, Scroll Up,
+Scroll Down, the zoom keys, Full Screen, Screenshot, and Quit. No keypad
+repeats Cut, Copy, or Paste.
+
+Scroll Up and Scroll Down scroll the place where the pointer last rested
+outside the keyboard, as the scroll menu of Dwell of macOS does. The pointer
+rests when it stays still for 0.4 seconds, or where the user clicks.
+`PointerRestTracker` finds that place from the global monitors of
+`OtherInputMonitor`. A held scroll button repeats at the key repeat rate of
+macOS. Each step is 40 pixels. `CGEventSink` posts the scroll to the app of
+the window at that place, because the pointer is on the keyboard. A scroll
+works in Talk mode too. If the pointer has rested nowhere yet, the keyboard
+beeps. In panel JSON, a scroll button is
+`{"type": "scroll", "direction": "down"}`. The directions are `up`, `down`,
+`left`, and `right`.
 
 The Rectangle keypad presses the shortcuts of
 [Rectangle](https://rectangleapp.com), the window manager. It shows only when

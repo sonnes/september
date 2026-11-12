@@ -120,8 +120,8 @@ only what needs a running app — the panel, the event sink, the menu bar.
   nothing for a password field. Never keep text typed into an
   `AXSecureTextField`. See `docs/concepts/input-mirroring.md`.
 - **Panels are data.** New shortcuts are JSON in `Resources/Panels`, not Swift.
-  A button presses a `shortcut`, presses a `sequence` of shortcuts, or types
-  `text`. The file name is the panel's identity. `PanelStore` throws on a
+  A button presses a `shortcut`, presses a `sequence` of shortcuts, types
+  `text`, or does a `scroll`. The file name is the panel's identity. `PanelStore` throws on a
   missing or broken file, and the app shows the error and quits.
 - **Context rules are data.** The rule that reads the text near the field in
   an app is `Resources/Context/<bundle id>.json`, not Swift. Add one app at a

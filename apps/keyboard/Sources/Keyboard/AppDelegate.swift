@@ -125,7 +125,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         startModifierTap()
         let otherInput = OtherInputMonitor(
             onInput: { [weak self] in self?.controller.otherInputPressed() },
-            onModifiers: { [weak self] in self?.controller.macModifiersChanged($0) })
+            onModifiers: { [weak self] in self?.controller.macModifiersChanged($0) },
+            pointer: PointerRestTracker { [weak self] in self?.controller.pointerRested(at: $0) })
         otherInput.start()
         self.otherInput = otherInput
         releaseModifiersOnSignal()

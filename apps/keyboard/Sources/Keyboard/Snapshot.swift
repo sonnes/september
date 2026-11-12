@@ -331,6 +331,7 @@ enum Snapshot {
 private final class SilentSink: KeystrokeSink {
     func post(_ events: [Keystroke]) {}
     func post(media key: MediaKey) {}
+    func scroll(_ direction: ScrollDirection, at point: CGPoint) {}
     func type(_ text: String) {}
     func beep() {}
 }
