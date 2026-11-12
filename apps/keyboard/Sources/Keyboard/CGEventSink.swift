@@ -28,13 +28,20 @@ final class CGEventSink: KeystrokeSink {
 
     /// Posts a media key. Volume, brightness, and the track keys are
     /// system-defined events (subtype 8), as a hardware keyboard sends them.
-    /// The other keys are key events with the key code of an Apple keyboard.
+    /// macOS ignores the other keys from an app, so Mission Control opens its
+    /// app, Spotlight presses its shortcut, Dictation presses its menu item,
+    /// and Do Not Disturb runs a Shortcut.
     func post(media key: MediaKey) {
         switch key.event {
-        case .key(let code):
-            post(Keystroke.events(virtualKey: code, modifiers: []))
         case .app(let path):
             NSWorkspace.shared.open(URL(fileURLWithPath: path))
+        case .spotlight:
+            guard let hotKey = SpotlightHotKey.current() else { return beep() }
+            post(Keystroke.events(virtualKey: hotKey.virtualKey, modifiers: hotKey.modifiers))
+        case .dictation:
+            if !Self.startDictation() { beep() }
+        case .shortcut(let name):
+            runShortcut(name)
         case .system(let type):
             for isDown in [true, false] {
                 let state = isDown ? 0xA : 0xB
@@ -51,6 +58,40 @@ final class CGEventSink: KeystrokeSink {
                 event?.cgEvent?.post(tap: .cghidEventTap)
             }
         }
+    }
+
+    /// Presses the Start Dictation item of the menu bar of the app in front.
+    /// Returns false when the app has no such item.
+    private static func startDictation() -> Bool {
+        guard let app = NSWorkspace.shared.frontmostApplication else { return false }
+        let root = AXUIElementCreateApplication(app.processIdentifier)
+        guard let bar = root.element(kAXMenuBarAttribute) else { return false }
+        for menuBarItem in bar.children {
+            for menu in menuBarItem.children {
+                for item in menu.children {
+                    guard let title = item.string(kAXTitleAttribute), DictationMenu.isStartItem(title) else {
+                        continue
+                    }
+                    return AXUIElementPerformAction(item, kAXPressAction as CFString) == .success
+                }
+            }
+        }
+        return false
+    }
+
+    /// Runs a Shortcut of the Shortcuts app. Beeps when it does not run, for
+    /// example when the user has no Shortcut with this name.
+    private func runShortcut(_ name: String) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/shortcuts")
+        process.arguments = ["run", name]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        process.terminationHandler = { process in
+            guard process.terminationStatus != 0 else { return }
+            DispatchQueue.main.async { NSSound.beep() }
+        }
+        do { try process.run() } catch { beep() }
     }
 
     /// Posts one step of scroll to the app of the window at `point`. The

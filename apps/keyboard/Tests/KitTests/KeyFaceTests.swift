@@ -43,6 +43,32 @@ func keyFaceTests() {
         expectEqual(MediaKey.missionControl.event, .app("/System/Applications/Mission Control.app"))
     }
 
+    test("F4, F5, and F6 use routes that macOS accepts from an app") {
+        expectEqual(MediaKey.spotlight.event, .spotlight)
+        expectEqual(MediaKey.dictation.event, .dictation)
+        expectEqual(MediaKey.doNotDisturb.event, .shortcut(MediaKey.doNotDisturbShortcut))
+    }
+
+    test("the Spotlight shortcut comes from the settings of macOS") {
+        let custom: [String: Any] = [
+            "64": ["enabled": 1, "value": ["parameters": [65535, 3, 1_572_864]]]
+        ]
+        let hotKey = SpotlightHotKey(symbolicHotKeys: custom)
+        expectEqual(hotKey?.virtualKey, 3)
+        expectEqual(hotKey?.modifiers, [.command, .option])
+        expect(SpotlightHotKey(symbolicHotKeys: ["64": ["enabled": 0]]) == nil, "the user turned it off")
+        let standard = SpotlightHotKey(symbolicHotKeys: [:])
+        expectEqual(standard?.virtualKey, 49)
+        expectEqual(standard?.modifiers, .command)
+    }
+
+    test("the Dictation menu item is found by its title") {
+        expect(DictationMenu.isStartItem("Start Dictation…"))
+        expect(DictationMenu.isStartItem("Start Dictation..."))
+        expect(!DictationMenu.isStartItem("Stop Dictation"))
+        expect(!DictationMenu.isStartItem("Emoji & Symbols"))
+    }
+
     test("caps lock does not change the F-row") {
         expectEqual(key("f8").face(under: state(.capsLock)).glyph, .symbol("playpause.fill"))
     }

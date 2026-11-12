@@ -364,8 +364,22 @@ The F-row sends the media keys of an Apple keyboard and shows their icons:
 brightness, Mission Control, Spotlight, Dictation, Do Not Disturb, the track
 keys, and volume. While fn, Control, Option, Shift, or Command is on, the row
 shows F1 to F12 and sends the F-key with the modifiers. Caps lock does not
-change the row. The media keys work in Talk mode too. macOS ignores a posted
-Mission Control key, so F3 opens `/System/Applications/Mission Control.app`.
+change the row. The media keys work in Talk mode too.
+
+macOS ignores the Mission Control, Spotlight, Dictation, and Do Not Disturb
+keys when an app posts them. Thus these keys take other routes:
+
+- F3 opens `/System/Applications/Mission Control.app`.
+- F4 presses the Spotlight shortcut of System Settings, symbolic hot key 64
+  of `com.apple.symbolichotkeys`. If the user turned the shortcut off, the
+  keyboard beeps.
+- F5 presses the Start Dictation item of the Edit menu of the app in front.
+  If the app has no such item, the keyboard beeps. The match is on the
+  English title.
+- F6 runs the Shortcut "Toggle Do Not Disturb". macOS gives an app no other
+  way to change Do Not Disturb. To make the Shortcut, add the Set Focus
+  action to a new Shortcut. Set the action to toggle Do Not Disturb. If the
+  Shortcut is missing, the keyboard beeps.
 
 ## Render snapshots
 
