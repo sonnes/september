@@ -20,6 +20,18 @@ func modifierStateTests() {
         expectEqual(state.active, [])
     }
 
+    test("a modifier that macOS holds is on and shows as latched until macOS releases it") {
+        var state = ModifierState()
+        state.setMac(.shift)
+        expectEqual(state.active, .shift)
+        expectEqual(state.look(of: .shift), .latched)
+        expectEqual(state.own, [])
+        state.consume()
+        expectEqual(state.active, .shift)
+        state.setMac([])
+        expectEqual(state.active, [])
+    }
+
     test("modifiers combine") {
         var state = ModifierState()
         state.tap(.shift)

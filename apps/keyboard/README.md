@@ -335,6 +335,13 @@ and each press reads them again:
   and a bar under its label. Shift shows a filled arrow when it is latched and
   the caps lock arrow when it is locked.
 
+The keyboard also reads the modifier flags of macOS. `OtherInputMonitor`
+gets them with a global monitor. A modifier that macOS holds comes from a
+key that the user holds on the hardware keyboard, or from Sticky Keys of
+macOS. This modifier lights its key, and each key of the keyboard carries it.
+The keyboard posts no down or up for it, and only macOS releases it. The
+shortcut suggestions still wait for the hold delay of a hardware modifier.
+
 The keys show the state of the modifiers. While shift or caps lock is on, the
 letters show capitals and the dual keys light up their shifted symbol.
 

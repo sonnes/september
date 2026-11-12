@@ -492,6 +492,15 @@ private func shortcutTests() async {
         expect(parts.session.shortcuts.isEmpty, "the third tap hides the shortcuts")
     }
 
+    await asyncTest("a Command that macOS holds waits for the hold delay too") {
+        let parts = try makeParts()
+        parts.controller.focusChanged(to: field("Hi", caret: 2))
+        parts.controller.macModifiersChanged(.command)
+        parts.session.hardwareModifiersChanged(.command)
+        await parts.session.settle()
+        expect(parts.session.shortcuts.isEmpty, "a quick chord does not make the stack blink")
+    }
+
     await asyncTest("a quick hardware chord shows no shortcuts") {
         let parts = try makeParts()
         parts.controller.focusChanged(to: field("Hi", caret: 2))

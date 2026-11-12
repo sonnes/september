@@ -295,6 +295,36 @@ func controllerTests() {
         expectEqual(controller.systemModifiers, [])
     }
 
+    test("a modifier that macOS holds goes into the next key without a posted down") {
+        let (controller, sink) = try makeController()
+        controller.macModifiersChanged(.shift)
+        expectEqual(controller.modifiers.active, .shift)
+        expect(sink.posted.isEmpty, "macOS already holds Shift")
+        controller.press(key("key-a"))
+        expectEqual(sink.posted.map(\.virtualKey), [0, 0])
+        expectEqual(sink.downs.first?.flags, .shift)
+        expectEqual(controller.input, .local(text: "A"))
+        expectEqual(controller.modifiers.active, .shift, "macOS releases its own modifier")
+        controller.macModifiersChanged([])
+        expectEqual(controller.modifiers.active, [])
+    }
+
+    test("a modifier that the keyboard holds at the OS is not one that macOS holds") {
+        let (controller, _) = try makeController()
+        controller.press(key("command-left"))
+        controller.macModifiersChanged([.command, .option])
+        expectEqual(controller.modifiers.mac, .option)
+    }
+
+    test("a modifier that macOS holds is never posted, also after Talk mode") {
+        let (controller, sink) = try makeController()
+        controller.macModifiersChanged(.command)
+        controller.mode = .talk
+        controller.mode = .type
+        controller.releaseSystemModifiers()
+        expect(sink.posted.isEmpty)
+    }
+
     test("fn and a letter make a shortcut, not text") {
         let (controller, sink) = try makeController()
         controller.press(key("fn"))

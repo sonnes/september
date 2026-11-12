@@ -502,7 +502,7 @@ public final class KeyboardSession: ObservableObject {
     private func shortcutSuggestions(mode: KeyboardMode) -> [AppShortcut] {
         // Talk mode sends no keys to the app. The Write window has its panel.
         guard mode == .type, !isWriteInFront else { return [] }
-        let on = controller.modifiers.active.union(heldModifiers)
+        let on = controller.modifiers.own.union(heldModifiers)
         let byModifier = !on.isDisjoint(with: [.command, .control])
         let hasTextInput = InputBarVisibility.wantsBar(
             mode: mode, focusedField: controller.focusedField, isFieldPrivate: controller.isFieldPrivate,

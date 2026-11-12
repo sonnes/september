@@ -26,7 +26,7 @@ public enum ModifierLook: Sendable, Equatable {
 extension ModifierState {
     public func look(of modifier: Modifiers) -> ModifierLook {
         if locked.contains(modifier) { return .locked }
-        if latched.contains(modifier) { return .latched }
+        if latched.contains(modifier) || mac.contains(modifier) { return .latched }
         return .off
     }
 
