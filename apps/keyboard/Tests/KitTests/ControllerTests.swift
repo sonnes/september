@@ -166,6 +166,15 @@ func controllerTests() {
         expectEqual(sink.downs.last?.flags, .function)
     }
 
+    test("an F-key under an fn that macOS holds sends the F-key and no fn down") {
+        let (controller, sink) = try makeController()
+        controller.macModifiersChanged(.function)
+        controller.press(key("f1"))
+        expectEqual(sink.posted.map(\.virtualKey), [VirtualKey.f1.rawValue, VirtualKey.f1.rawValue])
+        expectEqual(sink.downs.first?.flags, .function)
+        expect(sink.media.isEmpty)
+    }
+
     test("an F-key with no modifier sends its media key") {
         let (controller, sink) = try makeController()
         controller.press(key("f8"))
