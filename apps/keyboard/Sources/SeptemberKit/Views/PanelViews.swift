@@ -131,7 +131,7 @@ public struct WritePanelGrid: View {
     /// The rows of buttons, with an empty slot (`nil`) in each free cell.
     private var rows: [KeypadRow<PanelButton?>] {
         let filled: [KeypadRow<PanelButton?>] = PanelLayout.rows(PanelLayout.fitting(panel.buttons)).map { row in
-            if row.count == 1, row[0].isText { return .wide(row[0]) }
+            if row.count == 1, row[0].action.isText { return .wide(row[0]) }
             let cells = row.map(Optional.some)
             return .cells(cells + Array(repeating: nil, count: PanelLayout.columns - cells.count))
         }

@@ -51,7 +51,7 @@ public struct ShortcutButtonView: View {
                 .font(Typography.shortcutSymbol)
                 .foregroundStyle(Color(Tokens.shortcutLabel))
                 .accessibilityHidden(true)
-        } else if let hint = button.hint {
+        } else if let hint = button.action.hint {
             Text(hint)
                 .font(Typography.shortcutKeys)
                 .foregroundStyle(Color(Tokens.shortcutLabel))
@@ -71,7 +71,7 @@ public struct ShortcutButtonView: View {
     /// shows its own text, so it needs no name.
     @ViewBuilder
     private var tip: some View {
-        if isHovered, button.hint != nil {
+        if isHovered, button.action.hint != nil {
             // A frame with no height at the top edge of the button holds the
             // tip at its bottom, so the tip grows up from the button.
             ShortcutTip(text: button.label)
@@ -88,14 +88,14 @@ public struct ShortcutButtonView: View {
     }
 
     private var fill: ThemeColor {
-        let base = button.isText ? Tokens.key : Tokens.keySpecial
+        let base = button.action.isText ? Tokens.key : Tokens.keySpecial
         if isPressed { return base.pressed }
         return isHovered ? Tokens.keyActive : base
     }
 
     private var stroke: ThemeColor {
         if isHovered { return Tokens.accent }
-        return button.isText ? Tokens.strokeStandard : Tokens.strokeSpecial
+        return button.action.isText ? Tokens.strokeStandard : Tokens.strokeSpecial
     }
 }
 

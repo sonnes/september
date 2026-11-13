@@ -53,7 +53,7 @@ private let saveKeys = Shortcut(modifiers: .command, key: .character("s"))
 private let pastePlain = Shortcut(modifiers: [.shift, .command], key: .character("v"))
 private let interrupt = Shortcut(modifiers: .control, key: .character("c"))
 
-private func button(_ id: String, _ action: UserAction, name: String? = nil) -> UserButton {
+private func button(_ id: String, _ action: PanelAction, name: String? = nil) -> UserButton {
     UserButton(id: id, name: name ?? id, action: action)
 }
 
@@ -76,7 +76,7 @@ private func userButtonTests() {
             button("a", .shortcut(pastePlain)),
             button("b", .sequence([interrupt, interrupt])),
             button("c", .text("See you soon")),
-            button("d", .privateText),
+            button("d", .privateText("d")),
             button("e", .shortcut(Shortcut(modifiers: [], key: .virtual(.f12)))),
         ]
         let data = try JSONEncoder().encode(buttons)
@@ -99,16 +99,17 @@ private func userButtonTests() {
     }
 
     test("a button shows its keys, and a text button shows its name") {
-        expectEqual(button("a", .shortcut(pastePlain)).keysLabel, "⇧⌘V")
-        expectEqual(button("b", .sequence([interrupt, interrupt])).keysLabel, "⌃C ⌃C")
-        expectEqual(button("c", .text("Hi there"), name: "Greeting").keysLabel, nil)
-        expect(button("c", .text("Hi")).isWide)
-        expect(button("d", .privateText).isWide)
-        expect(!button("a", .shortcut(pastePlain)).isWide)
+        expectEqual(PanelAction.shortcut(pastePlain).keysLabel, "⇧⌘V")
+        expectEqual(PanelAction.sequence([interrupt, interrupt]).keysLabel, "⌃C ⌃C")
+        expectEqual(PanelAction.text("Hi there").keysLabel, nil)
+        expect(PanelAction.privateText("d").hint == nil)
+        expect(PanelAction.text("Hi").isText)
+        expect(PanelAction.privateText("d").isText)
+        expect(!PanelAction.shortcut(pastePlain).isText)
     }
 
     test("the accessibility label names a private button and never holds text") {
-        let home = button("d", .privateText, name: "Home Address")
+        let home = button("d", .privateText("d"), name: "Home Address")
         expectEqual(home.accessibilityLabel, "Home Address, private text")
         expectEqual(
             button("a", .shortcut(pastePlain), name: "Paste as Text").accessibilityLabel,
@@ -120,9 +121,8 @@ private func userButtonTests() {
 
     test("a text action hides its text when it is printed") {
         let secret = "4111 1111"
-        expect(!String(describing: UserAction.text(secret)).contains(secret))
-        expect(!String(reflecting: UserAction.text(secret)).contains(secret))
-        expect(!String(describing: NewButtonAction.text(secret)).contains(secret))
+        expect(!String(describing: PanelAction.text(secret)).contains(secret))
+        expect(!String(reflecting: PanelAction.text(secret)).contains(secret))
         expect(!String(reflecting: NewButton(name: "Card", action: .text(secret))).contains(secret))
     }
 }
@@ -140,7 +140,7 @@ private func userPanelStoreTests() {
     test("new private text goes to the keychain, and the table holds only its name") {
         let (store, texts, parts) = try makeStore()
         let id = try store.add(NewButton(name: "Home Address", action: .text("1 Main Street")))
-        expectEqual(store.buttons.map(\.action), [.privateText])
+        expectEqual(store.buttons.map(\.action), [.privateText(id)])
         expectEqual(texts.texts[id], "1 Main Street")
         expect(try parts.tableText().contains("Home Address"))
         expect(try !parts.tableText().contains("1 Main Street"), "the table holds the private text")
@@ -191,10 +191,10 @@ private func userPanelStoreTests() {
         let id = try store.add(NewButton(name: "Phone", action: .text("555 0100")))
 
         try store.setPrivate(true, for: id)
-        expectEqual(store.buttons.first?.action, .privateText)
+        expectEqual(store.buttons.first?.action, .privateText(id))
         expectEqual(texts.texts[id], "555 0100")
         expect(try !parts.tableText().contains("555 0100"))
-        expectEqual(try parts.store().buttons.first?.action, .privateText)
+        expectEqual(try parts.store().buttons.first?.action, .privateText(id))
 
         try store.setPrivate(false, for: id)
         expectEqual(store.buttons.first?.action, .text("555 0100"))
@@ -232,7 +232,7 @@ private func userPanelStoreTests() {
         let added = try store.importButtons(imported, textAsPrivate: true)
         expectEqual(added, 3)
         expectEqual(store.buttons.map(\.action), [
-            .shortcut(pastePlain), .sequence([interrupt, interrupt]), .privateText,
+            .shortcut(pastePlain), .sequence([interrupt, interrupt]), .privateText(store.buttons[2].id),
         ])
         expectEqual(Array(texts.texts.values), ["12-3456-78"])
         expect(try !parts.tableText().contains("12-3456-78"))
@@ -264,7 +264,7 @@ private func singles(_ count: Int, from start: Int = 0) -> [UserButton] {
 }
 
 private func wides(_ count: Int, from start: Int = 0) -> [UserButton] {
-    (start..<start + count).map { button("t\($0)", .privateText) }
+    (start..<start + count).map { button("t\($0)", .privateText("t\($0)")) }
 }
 
 private func ids(_ cell: MineCell) -> String {
@@ -401,21 +401,14 @@ private func privateTextControllerTests() {
         expect(!controller.isFieldPrivate)
     }
 
-    test("a user button presses its keys, its sequence, or its private text") {
+    test("the controller presses a sequence, or private text") {
         let (controller, sink, _) = try privateController()
-        controller.perform(button("seq", .sequence([interrupt, interrupt])))
+        controller.perform(.sequence([interrupt, interrupt]))
         expectEqual(sink.downs.map(\.key), [59, 8, 59, 8])
         sink.reset()
-        controller.perform(button("home", .privateText, name: "Home"))
+        controller.perform(.privateText("home"))
         expectEqual(sink.typed, ["1 Main Street"])
         expect(controller.isFieldPrivate)
-    }
-
-    test("a private button has a spoken label with no text") {
-        let panelButton = PanelButton(
-            id: "home", label: "Home Address", symbol: nil, action: .privateText("home"))
-        expectEqual(panelButton.accessibilityLabel, "Home Address")
-        expect(panelButton.hint == nil)
     }
 }
 

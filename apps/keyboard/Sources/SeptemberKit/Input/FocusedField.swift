@@ -88,6 +88,14 @@ public struct FocusedField: Equatable, Sendable {
         let selectionLength = min(max(0, selection?.length ?? 0), length - caret)
         return .mirrored(text: text, caret: caret, selectionLength: selectionLength)
     }
+
+    /// The field with no text, for a field that holds private text.
+    var withoutText: FocusedField {
+        var field = self
+        field.text = nil
+        field.selection = nil
+        return field
+    }
 }
 
 /// What the input bar is showing: the focused field's own text, our echo of

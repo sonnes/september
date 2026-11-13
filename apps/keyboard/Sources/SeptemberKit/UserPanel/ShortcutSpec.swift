@@ -15,11 +15,7 @@ public enum ShortcutSpec {
 
     /// The spec that `parse` reads back to the same shortcuts.
     public static func format(_ shortcuts: [Shortcut]) -> String {
-        shortcuts.map { shortcut in
-            let coding = ShortcutCoding(shortcut)
-            return (coding.modifiers + [coding.key]).joined(separator: "+")
-        }
-        .joined(separator: " ")
+        shortcuts.map { $0.names.joined(separator: "+") }.joined(separator: " ")
     }
 
     private static let modifierNames: [String: Modifiers] = [

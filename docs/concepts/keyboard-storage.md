@@ -202,7 +202,7 @@ CREATE TABLE user_button (
   id        TEXT PRIMARY KEY,
   position  INTEGER NOT NULL UNIQUE,   -- the order of the settings
   name      TEXT NOT NULL,
-  action    TEXT NOT NULL              -- the JSON of UserAction
+  action    TEXT NOT NULL              -- the JSON of PanelAction
 );
 ```
 

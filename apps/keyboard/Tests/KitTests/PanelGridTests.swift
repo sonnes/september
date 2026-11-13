@@ -132,9 +132,9 @@ private func panelFileTests() {
         let heading = PanelButton(id: "h", label: "Heading", symbol: nil, action: .text("# "))
         let clear = PanelButton(id: "c", label: "Clear", symbol: nil, action: .text("/clear"))
         expect(PanelLayout.slots([heading]) == 1)
-        expect(heading.hint == "#")
+        expect(heading.action.hint == "#")
         expect(PanelLayout.slots([clear]) == 2)
-        expect(clear.hint == nil)
+        expect(clear.action.hint == nil)
     }
 
     test("an arrow block may not reuse the ID of a button") {

@@ -93,7 +93,7 @@ public struct MyPanelSettingsPage: View {
 
     private func row(_ button: UserButton) -> some View {
         HStack(spacing: Metrics.UserPanel.rowSpacing) {
-            KeysChip(text: button.keysLabel ?? "Text")
+            KeysChip(text: button.action.keysLabel ?? "Text")
             VStack(alignment: .leading, spacing: Metrics.UserPanel.rowDetailSpacing) {
                 Text(button.name)
                 Text(summary(button))
@@ -101,7 +101,7 @@ public struct MyPanelSettingsPage: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            if button.isWide {
+            if isTextButton(button) {
                 Toggle("Private", isOn: privateBinding(button))
                     .toggleStyle(.switch)
             }
@@ -125,12 +125,21 @@ public struct MyPanelSettingsPage: View {
         case .sequence: return "Sequence. \(uses)"
         case .text: return "Text. \(uses)"
         case .privateText: return "Text, in the Keychain. \(uses)"
+        case .scroll: return "Scroll. \(uses)"
+        }
+    }
+
+    /// A button whose text can move into the Keychain and back.
+    private func isTextButton(_ button: UserButton) -> Bool {
+        switch button.action {
+        case .text, .privateText: true
+        case .shortcut, .sequence, .scroll: false
         }
     }
 
     private func privateBinding(_ button: UserButton) -> Binding<Bool> {
         Binding {
-            button.action == .privateText
+            if case .privateText = button.action { true } else { false }
         } set: { isPrivate in
             run { try store.setPrivate(isPrivate, for: button.id) }
         }
@@ -200,7 +209,7 @@ struct AddButtonSheet: View {
                 case .keys, .sequence:
                     TextField("Keys", text: $keys, prompt: Text(kind == .keys ? "cmd+shift+v" : "ctrl+c ctrl+c"))
                     if let parsed = ShortcutSpec.parse(keys) {
-                        KeysChip(text: parsed.map(\.display).joined(separator: " "))
+                        KeysChip(text: PanelAction.sequence(parsed).keysLabel ?? "")
                     }
                 case .text:
                     if makesPrivate {
@@ -250,8 +259,8 @@ struct AddButtonSheet: View {
             return NewButton(name: trimmed.isEmpty ? parsed[0].display : trimmed, action: .shortcut(parsed[0]))
         case .sequence:
             guard let parsed = ShortcutSpec.parse(keys), parsed.count > 1 else { return nil }
-            let display = parsed.map(\.display).joined(separator: " ")
-            return NewButton(name: trimmed.isEmpty ? display : trimmed, action: .sequence(parsed))
+            let action = PanelAction.sequence(parsed)
+            return NewButton(name: trimmed.isEmpty ? action.keysLabel ?? "" : trimmed, action: action)
         case .text:
             guard !trimmed.isEmpty, !text.isEmpty else { return nil }
             return NewButton(name: trimmed, action: .text(text))

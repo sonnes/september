@@ -33,7 +33,7 @@ public struct ImportedPanel: Sendable, Hashable, Identifiable {
             + parts.compactMap { $0 }.joined(separator: ", ")
     }
 
-    private func count(_ matches: (NewButtonAction) -> Bool) -> Int {
+    private func count(_ matches: (PanelAction) -> Bool) -> Int {
         buttons.filter { matches($0.action) }.count
     }
 }
@@ -137,24 +137,20 @@ public struct AccessibilityKeyboardImporter: Sendable {
     /// The name of a button. A text button whose label is its own text gets a
     /// plain name, because the name shows on screen and the text can be a
     /// password.
-    private func name(_ label: String?, for action: NewButtonAction, unnamedText: inout Int) -> String {
-        switch action {
-        case .shortcut(let shortcut):
-            return label ?? shortcut.display
-        case .sequence(let keys):
-            return label ?? keys.map(\.display).joined(separator: " ")
-        case .text(let text):
-            if let label, label.caseInsensitiveCompare(text.trimmingCharacters(in: .whitespacesAndNewlines)) != .orderedSame {
-                return label
-            }
-            unnamedText += 1
-            return "Text \(unnamedText)"
+    private func name(_ label: String?, for action: PanelAction, unnamedText: inout Int) -> String {
+        if let keys = action.keysLabel { return label ?? keys }
+        if let label, case .text(let text) = action,
+            label.caseInsensitiveCompare(text.trimmingCharacters(in: .whitespacesAndNewlines)) != .orderedSame
+        {
+            return label
         }
+        unnamedText += 1
+        return "Text \(unnamedText)"
     }
 
     // MARK: - Actions
 
-    private func action(for actions: [[String: Any]]) -> NewButtonAction? {
+    private func action(for actions: [[String: Any]]) -> PanelAction? {
         if actions.count == 1 {
             let only = actions[0]
             let param = only["ActionParam"] as? [String: Any] ?? [:]
@@ -174,7 +170,7 @@ public struct AccessibilityKeyboardImporter: Sendable {
     }
 
     /// Text, or `nil` for the one-letter text of a standard key.
-    private func text(_ text: String?) -> NewButtonAction? {
+    private func text(_ text: String?) -> PanelAction? {
         guard let text, !text.isEmpty else { return nil }
         if text.count == 1, text.allSatisfy({ $0.isASCII }) { return nil }
         return .text(text)
@@ -182,7 +178,7 @@ public struct AccessibilityKeyboardImporter: Sendable {
 
     /// Keys from a list of `ActionPressKeyCode` actions: one shortcut, a
     /// sequence, or text when the keys only type characters.
-    private func keys(_ events: [[String: Any]]) -> NewButtonAction? {
+    private func keys(_ events: [[String: Any]]) -> PanelAction? {
         var pressed: [PressedKey] = []
         for event in events {
             guard event["ActionType"] as? String == "ActionPressKeyCode",

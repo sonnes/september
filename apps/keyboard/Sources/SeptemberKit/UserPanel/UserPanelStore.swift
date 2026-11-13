@@ -79,7 +79,7 @@ public final class UserPanelStore: ObservableObject {
 
     public func remove(id: String) throws {
         guard let index = buttons.firstIndex(where: { $0.id == id }) else { return }
-        if buttons[index].action == .privateText {
+        if case .privateText = buttons[index].action {
             try privateTexts.removeText(for: id)
         }
         try database.execute("DELETE FROM user_button WHERE id = ?", [.text(id)])
@@ -92,8 +92,8 @@ public final class UserPanelStore: ObservableObject {
         switch (buttons[index].action, isPrivate) {
         case (.text(let text), true):
             try privateTexts.setText(text, for: id)
-            try update(.privateText, of: id)
-            buttons[index].action = .privateText
+            try update(.privateText(id), of: id)
+            buttons[index].action = .privateText(id)
         case (.privateText, false):
             let text = try privateTexts.text(for: id) ?? ""
             try update(.text(text), of: id)
@@ -108,16 +108,11 @@ public final class UserPanelStore: ObservableObject {
 
     private func make(_ button: NewButton, textAsPrivate: Bool) throws -> UserButton {
         let id = UUID().uuidString
-        let action: UserAction
-        switch button.action {
-        case .shortcut(let shortcut): action = .shortcut(shortcut)
-        case .sequence(let keys): action = .sequence(keys)
-        case .text(let text) where textAsPrivate:
-            try privateTexts.setText(text, for: id)
-            action = .privateText
-        case .text(let text): action = .text(text)
+        guard textAsPrivate, case .text(let text) = button.action else {
+            return UserButton(id: id, name: button.name, action: button.action)
         }
-        return UserButton(id: id, name: button.name, action: action)
+        try privateTexts.setText(text, for: id)
+        return UserButton(id: id, name: button.name, action: .privateText(id))
     }
 
     /// Keys are the same button when they press the same keys. Text is the
@@ -151,7 +146,7 @@ public final class UserPanelStore: ObservableObject {
         }
     }
 
-    private func update(_ action: UserAction, of id: String) throws {
+    private func update(_ action: PanelAction, of id: String) throws {
         try database.execute(
             "UPDATE user_button SET action = ? WHERE id = ?", [.text(try Self.json(action)), .text(id)])
     }
@@ -161,13 +156,14 @@ public final class UserPanelStore: ObservableObject {
             guard let id = row[0].text, let name = row[1].text, let action = row[2].text else {
                 throw DatabaseError.mismatch("a user_button row has no text")
             }
-            return UserButton(
-                id: id, name: name, action: try JSONDecoder().decode(UserAction.self, from: Data(action.utf8)))
+            let decoder = JSONDecoder()
+            decoder.userInfo[PanelAction.buttonID] = id
+            return UserButton(id: id, name: name, action: try decoder.decode(PanelAction.self, from: Data(action.utf8)))
         }
     }
 
     /// The JSON text of `action` in the `action` column.
-    static func json(_ action: UserAction) throws -> String {
+    static func json(_ action: PanelAction) throws -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         return String(decoding: try encoder.encode(action), as: UTF8.self)

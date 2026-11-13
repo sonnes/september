@@ -156,12 +156,6 @@ private func wiringTests() {
         expectEqual(talk.text, "cup of tea, ")
     }
 
-    test("a sequence of My Panel presses as one sequence action") {
-        let escape = Shortcut(modifiers: [], key: .virtual(.escape))
-        let button = UserButton(id: "r", name: "Rewind", action: .sequence([escape, escape]))
-        expectEqual(button.panelActions, [.sequence([escape, escape])])
-    }
-
     test("the tree hides the value of the focused field") {
         let tree = AXTree(
             appName: "Messages",
@@ -1033,6 +1027,59 @@ private func sessionTests() async {
         expect(!error.isEmpty)
         expect(!error.contains("Secret"), "the error quotes a stored row")
         expect(parts.session.mineButtons.isEmpty)
+    }
+
+    await asyncTest("each stored row shape of My Panel loads, presses, and is written the same way") {
+        let rows: [(id: String, name: String, json: String)] = [
+            ("a", "Paste", #"{"key":"v","modifiers":["shift","command"],"type":"shortcut"}"#),
+            ("b", "Exit", #"{"keys":[{"key":"c","modifiers":["control"]},{"key":"c","modifiers":["control"]}],"type":"sequence"}"#),
+            ("c", "Greeting", #"{"text":"Hello there","type":"text"}"#),
+            ("d", "Home", #"{"type":"privateText"}"#),
+            ("e", "Upper", #"{"key":"V","modifiers":["command"],"type":"shortcut"}"#),
+            ("f", "Help", #"{"key":"f12","modifiers":[],"type":"shortcut"}"#),
+        ]
+        let database = memoryDatabase()
+        for (position, row) in rows.enumerated() {
+            try database.execute(
+                "INSERT INTO user_button (id, position, name, action) VALUES (?, ?, ?, ?)",
+                [.text(row.id), .int(Int64(position)), .text(row.name), .text(row.json)])
+        }
+        let texts = MemoryPrivateTexts()
+        texts.texts["d"] = "1 Main Street"
+        let defaults = UserDefaults(suiteName: "kit-rows-\(UUID().uuidString)")!
+        let store = try UserPanelStore(database: database, defaults: defaults, privateTexts: texts)
+        let parts = try makeSession(userPanel: .success(store))
+        parts.controller.privateTexts = texts
+
+        let pastePlain = Shortcut(modifiers: [.shift, .command], key: .character("v"))
+        let interrupt = Shortcut(modifiers: .control, key: .character("c"))
+        let upper = Shortcut(modifiers: .command, key: .character("V"))
+        let help = Shortcut(modifiers: [], key: .virtual(.f12))
+        expectEqual(store.buttons.map(\.id), rows.map(\.id))
+        expectEqual(
+            store.buttons.filter { $0.id != "d" }.map(\.action),
+            [.shortcut(pastePlain), .sequence([interrupt, interrupt]), .text("Hello there"), .shortcut(upper),
+             .shortcut(help)])
+
+        let home = try expectValue(store.buttons.first { $0.id == "d" })
+        parts.session.pressMine(home)
+        expectEqual(parts.sink.typed, ["1 Main Street"])
+
+        store.makeNewTextPrivate = false
+        try store.add(NewButton(name: "Paste", action: .shortcut(pastePlain)))
+        try store.add(NewButton(name: "Exit", action: .sequence([interrupt, interrupt])))
+        try store.add(NewButton(name: "Greeting", action: .text("Hello there")))
+        try store.add(NewButton(name: "Upper", action: .shortcut(upper)))
+        try store.add(NewButton(name: "Help", action: .shortcut(help)))
+        let written = try database.query("SELECT action FROM user_button WHERE position >= ? ORDER BY position", [
+            .int(Int64(rows.count))
+        ]).compactMap { $0[0].text }
+        expectEqual(written, rows.filter { $0.id != "d" }.map(\.json))
+
+        try store.setPrivate(false, for: "d")
+        try store.setPrivate(true, for: "d")
+        let privateRow = try database.query("SELECT action FROM user_button WHERE id = 'd'").first?[0].text
+        expectEqual(privateRow, #"{"type":"privateText"}"#)
     }
 
     await asyncTest("a focus move ends the private state of the bar") {

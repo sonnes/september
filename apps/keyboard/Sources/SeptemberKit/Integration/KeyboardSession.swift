@@ -208,7 +208,7 @@ public final class KeyboardSession: ObservableObject {
     /// A press on My Panel. It counts toward the order of My Panel.
     public func pressMine(_ button: UserButton) {
         userPanelUsage.record(button.id)
-        controller.perform(button)
+        controller.perform(button.action)
     }
 
     // MARK: - The clipboard

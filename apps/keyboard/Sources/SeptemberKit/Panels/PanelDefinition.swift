@@ -1,7 +1,7 @@
 import Foundation
 
-/// What a panel button does: press a key combination, press several in
-/// order, or type a phrase.
+/// What a button does: press a key combination, press several in order, or
+/// type a phrase. The panels and My Panel use it.
 public enum PanelAction: Sendable, Hashable {
     case shortcut(Shortcut)
     /// Key combinations pressed one after the other, such as esc esc.
@@ -31,6 +31,74 @@ extension PanelAction {
     }
 }
 
+// MARK: - Presentation
+
+extension PanelAction {
+    /// The keys that the action presses, such as "⌃C ⌃C", or `nil` when it
+    /// presses no keys.
+    public var keysLabel: String? {
+        switch self {
+        case .shortcut(let shortcut): shortcut.display
+        case .sequence(let steps): steps.map(\.display).joined(separator: " ")
+        case .text, .privateText, .scroll: nil
+        }
+    }
+
+    /// The keys printed on the button: the keys it presses, or text of
+    /// marks only, such as `#`.
+    public var hint: String? {
+        if case .text(let text) = self { return Self.marks(text) }
+        return keysLabel
+    }
+
+    /// The spoken name of a button with this action. It never holds the text
+    /// of a private button.
+    public func accessibilityLabel(name: String) -> String {
+        switch self {
+        case .shortcut(let shortcut): "\(name), \(shortcut.spokenName)"
+        case .sequence(let steps): "\(name), \(steps.map(\.spokenName).joined(separator: ", then "))"
+        case .privateText: "\(name), private text"
+        case .text, .scroll: name
+        }
+    }
+
+    /// An action that types words. Its button shows its name or text and
+    /// takes a whole row of a two-column grid. Text of marks only, such as
+    /// `# `, is a key instead.
+    public var isText: Bool {
+        switch self {
+        case .text(let text): Self.marks(text) == nil
+        case .privateText: true
+        case .shortcut, .sequence, .scroll: false
+        }
+    }
+
+    /// The text without spaces, if it has no letters or digits.
+    private static func marks(_ text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.rangeOfCharacter(from: .alphanumerics) == nil else {
+            return nil
+        }
+        return trimmed
+    }
+}
+
+// Text can be private, so a printed action never shows it. This keeps text
+// out of logs and out of the failure messages of the tests.
+extension PanelAction: CustomStringConvertible, CustomDebugStringConvertible {
+    public var description: String {
+        switch self {
+        case .shortcut: "shortcut(\(keysLabel ?? ""))"
+        case .sequence: "sequence(\(keysLabel ?? ""))"
+        case .text: "text(hidden)"
+        case .privateText: "privateText"
+        case .scroll(let direction): "scroll(\(direction.rawValue))"
+        }
+    }
+
+    public var debugDescription: String { description }
+}
+
 /// One button in a shortcut panel.
 public struct PanelButton: Sendable, Hashable, Identifiable {
     public let id: String
@@ -52,40 +120,7 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
         self.action = action
     }
 
-    /// The keys printed on the button, if it presses keys.
-    public var hint: String? {
-        switch action {
-        case .shortcut(let shortcut): shortcut.display
-        case .sequence(let steps): steps.map(\.display).joined(separator: " ")
-        case .text(let text): Self.marks(text)
-        case .privateText, .scroll: nil
-        }
-    }
-
-    public var accessibilityLabel: String {
-        switch action {
-        case .shortcut(let shortcut): "\(label), \(shortcut.spokenName)"
-        case .sequence(let steps):
-            "\(label), \(steps.map(\.spokenName).joined(separator: ", then "))"
-        case .text, .privateText, .scroll: label
-        }
-    }
-
-    /// A button that types words. It shows the text and takes a whole row of
-    /// a two-column grid. Text of marks only, such as `# `, is a key instead.
-    public var isText: Bool {
-        if case .text(let text) = action { return Self.marks(text) == nil }
-        return false
-    }
-
-    /// The text without spaces, if it has no letters or digits.
-    private static func marks(_ text: String) -> String? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, trimmed.rangeOfCharacter(from: .alphanumerics) == nil else {
-            return nil
-        }
-        return trimmed
-    }
+    public var accessibilityLabel: String { action.accessibilityLabel(name: label) }
 }
 
 /// A part of the screen, in fractions of its width and height, from the top
@@ -163,47 +198,68 @@ extension PanelButton: Decodable {
     enum CodingKeys: String, CodingKey {
         case id, label, symbol, region, action
     }
+
+    /// A button of a panel file. The file is checked more strictly than a
+    /// row of My Panel: a key is lowercase, and a sequence has keys.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let action = try container.decode(PanelAction.self, forKey: .action)
+        let keys: [Shortcut]
+        switch action {
+        case .shortcut(let shortcut): keys = [shortcut]
+        case .sequence(let steps):
+            guard !steps.isEmpty else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .action, in: container, debugDescription: "a sequence has no keys")
+            }
+            keys = steps
+        case .text, .privateText, .scroll: keys = []
+        }
+        // A shifted key names "shift" among the modifiers.
+        for case .character(let character) in keys.map(\.key) where character != character.lowercased() {
+            throw PanelDecodingError.uppercaseKey(character)
+        }
+        self.init(
+            id: try container.decode(String.self, forKey: .id),
+            label: try container.decode(String.self, forKey: .label),
+            symbol: try container.decodeIfPresent(String.self, forKey: .symbol),
+            region: try container.decodeIfPresent(WindowRegion.self, forKey: .region),
+            action: action)
+    }
 }
 
-extension PanelAction: Decodable {
+/// The JSON of an action: `{"type": "shortcut", "modifiers": ["command"],
+/// "key": "s"}`. The panel files and the rows of My Panel use it. A private
+/// text action has no text and no ID in its JSON, so it decodes only with the
+/// ID of its button.
+extension PanelAction: Codable {
     enum CodingKeys: String, CodingKey {
-        case type, modifiers, key, keys, text, direction
+        case type, keys, text, direction
     }
 
-    /// One step of a sequence: `{"modifiers": ["control"], "key": "c"}`.
-    private struct Step: Decodable {
-        let modifiers: [String]?
-        let key: String
-
-        var shortcut: Shortcut {
-            get throws { try PanelAction.shortcut(modifiers: modifiers ?? [], key: key) }
-        }
-    }
-
-    /// A shortcut of panel JSON. An uppercase letter is rejected: a shifted
-    /// key names "shift" among the modifiers.
-    private static func shortcut(modifiers: [String], key: String) throws -> Shortcut {
-        guard key.count != 1 || key == key.lowercased() else { throw PanelDecodingError.uppercaseKey(key) }
-        return Shortcut(modifiers: try Modifiers(names: modifiers), key: try Shortcut.Key(name: key))
-    }
+    /// The key of `Decoder.userInfo` that holds the ID of the button.
+    static let buttonID = CodingUserInfoKey(rawValue: "buttonID")!
 
     public init(from decoder: any Decoder) throws {
+        try self.init(from: decoder, buttonID: decoder.userInfo[Self.buttonID] as? String)
+    }
+
+    init(from decoder: any Decoder, buttonID: String?) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(String.self, forKey: .type)
         switch type {
         case "shortcut":
-            let names = try container.decodeIfPresent([String].self, forKey: .modifiers) ?? []
-            let key = try container.decode(String.self, forKey: .key)
-            self = .shortcut(try PanelAction.shortcut(modifiers: names, key: key))
+            self = .shortcut(try Shortcut(from: decoder))
         case "sequence":
-            let steps = try container.decode([Step].self, forKey: .keys)
-            guard !steps.isEmpty else {
-                throw DecodingError.dataCorruptedError(
-                    forKey: .keys, in: container, debugDescription: "a sequence has no keys")
-            }
-            self = .sequence(try steps.map { try $0.shortcut })
+            self = .sequence(try container.decode([Shortcut].self, forKey: .keys))
         case "text":
             self = .text(try container.decode(String.self, forKey: .text))
+        case "privateText":
+            guard let id = buttonID else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .type, in: container, debugDescription: "private text needs the ID of its button")
+            }
+            self = .privateText(id)
         case "scroll":
             let name = try container.decode(String.self, forKey: .direction)
             guard let direction = ScrollDirection(rawValue: name) else {
@@ -215,9 +271,62 @@ extension PanelAction: Decodable {
             throw DecodingError.dataCorruptedError(
                 forKey: .type,
                 in: container,
-                debugDescription: "unknown panel action type '\(type)'"
+                debugDescription: "unknown action type '\(type)'"
             )
         }
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .shortcut(let shortcut):
+            try container.encode("shortcut", forKey: .type)
+            try shortcut.encode(to: encoder)
+        case .sequence(let steps):
+            try container.encode("sequence", forKey: .type)
+            try container.encode(steps, forKey: .keys)
+        case .text(let text):
+            try container.encode("text", forKey: .type)
+            try container.encode(text, forKey: .text)
+        case .privateText:
+            try container.encode("privateText", forKey: .type)
+        case .scroll(let direction):
+            try container.encode("scroll", forKey: .type)
+            try container.encode(direction.rawValue, forKey: .direction)
+        }
+    }
+}
+
+/// A shortcut in JSON: `{"modifiers": ["command"], "key": "s"}`. The
+/// modifiers can be left out.
+extension Shortcut: Codable {
+    enum CodingKeys: String, CodingKey {
+        case modifiers, key
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let names = try container.decodeIfPresent([String].self, forKey: .modifiers) ?? []
+        self.init(
+            modifiers: try Modifiers(names: names),
+            key: try Key(name: try container.decode(String.self, forKey: .key)))
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(names.dropLast(), forKey: .modifiers)
+        try container.encode(names.last, forKey: .key)
+    }
+
+    /// The names of the modifiers, then the name of the key, as JSON and
+    /// `ShortcutSpec` write them.
+    var names: [String] {
+        let key =
+            switch key {
+            case .character(let character): character
+            case .virtual(let virtual): String(describing: virtual)
+            }
+        return modifiers.heldKeys.map(\.name) + [key]
     }
 }
 
@@ -230,14 +339,6 @@ extension Shortcut.Key {
             self = .virtual(virtual)
         } else {
             throw PanelDecodingError.unknownKey(name)
-        }
-    }
-
-    /// The name in panel JSON: the character, or the name of the virtual key.
-    public var name: String {
-        switch self {
-        case .character(let character): character
-        case .virtual(let virtual): String(describing: virtual)
         }
     }
 }

@@ -198,7 +198,7 @@ private func legacyImportTests() {
         let store = try UserPanelStore(
             database: run(folder, defaults: defaults), defaults: defaults, privateTexts: MemoryPrivateTexts())
         expectEqual(store.buttons.map(\.id), ["b", "a", "c"])
-        expectEqual(store.buttons.map(\.action), [.shortcut(saveKeys), .privateText, .text("Hello")])
+        expectEqual(store.buttons.map(\.action), [.shortcut(saveKeys), .privateText("a"), .text("Hello")])
         expect(!store.makeNewTextPrivate)
     }
 }

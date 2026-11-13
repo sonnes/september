@@ -28,7 +28,7 @@ public struct MinePanelView: View {
             }
         }
 
-        KeypadGrid(rows: rows, columns: MinePages.columns) { cell, width in
+        KeypadGrid(rows: rows, columns: PanelLayout.columns) { cell, width in
             cellView(cell, width: width, pages: pages.count)
         }
         .accessibilityElement(children: .contain)
@@ -79,22 +79,21 @@ struct MineButtonView: View {
 
     @ViewBuilder
     private var label: some View {
-        switch button.action {
-        case .shortcut, .sequence:
-            Text(button.keysLabel ?? button.name)
+        if let hint = button.action.hint {
+            Text(hint)
                 .font(Typography.shortcutKeys)
                 .foregroundStyle(Color(Tokens.shortcutLabel))
                 .lineLimit(1)
                 .minimumScaleFactor(Metrics.Keypad.keysMinimumScale)
-        case .text:
-            name
-        case .privateText:
+        } else if case .privateText = button.action {
             HStack(spacing: Metrics.UserPanel.lockSpacing) {
                 Image(systemName: "lock.fill")
                     .font(Typography.UserPanel.lock)
                     .foregroundStyle(Color(Tokens.accent))
                 name
             }
+        } else {
+            name
         }
     }
 
@@ -109,13 +108,13 @@ struct MineButtonView: View {
 
     private var fill: ThemeColor {
         if isHovered { return Tokens.keyActive }
-        let base = button.isWide ? Tokens.key : Tokens.keySpecial
+        let base = button.action.isText ? Tokens.key : Tokens.keySpecial
         return isPressed ? base.pressed : base
     }
 
     private var stroke: ThemeColor {
         if isHovered { return Tokens.accent }
-        return button.isWide ? Tokens.strokeStandard : Tokens.strokeSpecial
+        return button.action.isText ? Tokens.strokeStandard : Tokens.strokeSpecial
     }
 }
 
