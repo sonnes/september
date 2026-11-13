@@ -183,6 +183,12 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
 
     /// Sets the width of the paper and centres the text column on it.
     private func setWidth(_ width: CGFloat) {
+        Self.configure(editor, width: width)
+    }
+
+    /// Sets the width of `editor` and centres the text column on it, with
+    /// the margins of the paper. The snapshots use it to draw the paper.
+    public static func configure(_ editor: WriteTextView, width: CGFloat) {
         let side = max(Metrics.WriteEditor.sideMargin, (width - Metrics.WriteEditor.textWidth) / 2)
         editor.textContainerInset = NSSize(width: side, height: Metrics.WriteEditor.paperMargin)
         editor.setFrameSize(NSSize(width: width, height: editor.frame.height))

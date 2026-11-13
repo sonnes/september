@@ -242,12 +242,10 @@ enum Snapshot {
     }
 
     /// The sheet of the Write paper with `markdown` in the native editor, at
-    /// `width`, as tall as its text. The margins are the ones that
-    /// `WritePaperController` sets.
+    /// `width`, as tall as its text.
     private static func paperSheet(_ markdown: String, width: CGFloat) -> NSImage {
         let editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: width, height: 400))
-        let side = max(Metrics.WriteEditor.sideMargin, (width - Metrics.WriteEditor.textWidth) / 2)
-        editor.textContainerInset = NSSize(width: side, height: Metrics.WriteEditor.paperMargin)
+        WritePaperController.configure(editor, width: width)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: width, height: 400), styleMask: [.borderless],
             backing: .buffered, defer: false)
@@ -259,7 +257,6 @@ enum Snapshot {
         window.setContentSize(NSSize(width: width, height: height))
         view.frame = NSRect(x: 0, y: 0, width: width, height: height)
         editor.frame = view.bounds
-        editor.load(markdown)
         view.layoutSubtreeIfNeeded()
         editor.display()
 

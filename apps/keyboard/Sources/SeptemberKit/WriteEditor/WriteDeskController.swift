@@ -43,6 +43,9 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     public private(set) var desk = WriteDesk(documents: [], current: nil)
     /// The title of the document of the last Move to Trash, while Undo shows.
     public private(set) var undoTitle: String?
+    /// The error that the notice shows, such as a failed save. It shows in
+    /// place of Undo.
+    public private(set) var failure: String?
     public private(set) var isOpen = false
 
     public var onCommand: ((WriteDeskCommand) -> Void)?
@@ -50,8 +53,9 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     public var onQueryChange: ((String) -> Void)?
     /// Called when the time for Undo ends.
     public var onUndoEnd: (() -> Void)?
-    /// The lines of a document for its card.
-    public var preview: (WriteDocument) -> [String] = { _ in [] }
+    /// The lines of a document for its card. If the read fails, the notice
+    /// shows the error.
+    public var preview: (WriteDocument) throws -> [String] = { _ in [] }
     private weak var host: (any WriteHost)?
 
     private let root = DeskRootView()
@@ -62,6 +66,9 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     private let actions = NSStackView()
     private let notice = DeskPillView(fill: Tokens.keyText)
     private let noticeText = NSTextField(labelWithString: "")
+    private lazy var undoButton = DeskActionButton(title: "Undo", style: .primary) { [weak self] in
+        self?.onCommand?(.undo)
+    }
     private var cards: [CardKey: WriteCardView] = [:]
     private var area: CGRect = .zero
     private var centre: CGFloat = 0
@@ -175,12 +182,16 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         onQueryChange?(query)
     }
 
+    /// Shows an error in the notice, such as a failed save. Nil hides it.
+    public func showNotice(_ text: String?) {
+        failure = text
+        updateNotice()
+    }
+
     /// Shows Undo for the document of a Move to Trash, for 8 seconds.
     public func showUndo(title: String) {
         undoTitle = title
-        noticeText.stringValue = "Moved “\(title)” to the Trash"
-        notice.isHidden = false
-        relayout(animated: true)
+        updateNotice()
         undoTimer?.invalidate()
         undoTimer = Timer.scheduledTimer(withTimeInterval: Motion.undoTime, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
@@ -191,12 +202,27 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     }
 
     public func hideUndo() {
-        let wasShown = undoTitle != nil
         undoTitle = nil
-        notice.isHidden = true
         undoTimer?.invalidate()
         undoTimer = nil
-        if wasShown, isOpen { relayout(animated: true) }
+        updateNotice()
+    }
+
+    /// The notice shows the error, or else Undo.
+    private func updateNotice() {
+        let wasShown = !notice.isHidden
+        fillNotice()
+        if isOpen, wasShown || !notice.isHidden { relayout(animated: true) }
+    }
+
+    private func fillNotice() {
+        if let failure {
+            noticeText.stringValue = failure
+        } else if let undoTitle {
+            noticeText.stringValue = "Moved “\(undoTitle)” to the Trash"
+        }
+        undoButton.isHidden = failure != nil
+        notice.isHidden = failure == nil && undoTitle == nil
     }
 
     // MARK: - Layout
@@ -263,9 +289,16 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         case .newDocument:
             card = WriteCardView(newDocument: ())
         case .document(let document):
+            var lines: [String] = []
+            do {
+                lines = try preview(document)
+            } catch {
+                // The layout of the notice comes after the cards.
+                failure = (error as NSError).localizedDescription
+                fillNotice()
+            }
             card = WriteCardView(
-                title: document.title, lines: preview(document),
-                date: WriteDocument.dateLabel(document.modified))
+                title: document.title, lines: lines, date: WriteDocument.dateLabel(document.modified))
         }
         card.frame = frame
         root.addSubview(card, positioned: .below, relativeTo: findBox)
@@ -372,9 +405,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         noticeText.textColor = NSColor(Tokens.background)
         noticeText.lineBreakMode = .byTruncatingMiddle
         noticeText.translatesAutoresizingMaskIntoConstraints = false
-        let undo = DeskActionButton(title: "Undo", style: .primary) { [weak self] in
-            self?.onCommand?(.undo)
-        }
+        let undo = undoButton
         undo.translatesAutoresizingMaskIntoConstraints = false
         notice.addSubview(noticeText)
         notice.addSubview(undo)

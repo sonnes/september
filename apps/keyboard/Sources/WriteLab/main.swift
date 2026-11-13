@@ -288,8 +288,7 @@ enum LabSnapshot {
     static func render(_ markdown: String, to url: URL, dark: Bool) -> Bool {
         let width: CGFloat = 595
         let editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: width, height: 400))
-        let side = max(Metrics.WriteEditor.sideMargin, (width - Metrics.WriteEditor.textWidth) / 2)
-        editor.textContainerInset = NSSize(width: side, height: Metrics.WriteEditor.paperMargin)
+        WritePaperController.configure(editor, width: width)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: width, height: 400), styleMask: [.borderless], backing: .buffered,
             defer: false)
@@ -304,7 +303,6 @@ enum LabSnapshot {
         window.setContentSize(NSSize(width: width, height: height))
         content.frame = NSRect(x: 0, y: 0, width: width, height: height)
         editor.frame = content.bounds
-        editor.load(markdown)
         content.layoutSubtreeIfNeeded()
         editor.display()
 

@@ -12,7 +12,8 @@ import Foundation
 public final class WriteModel: ObservableObject {
     @Published public private(set) var documents: [WriteDocument] = []
     @Published public private(set) var current: WriteDocument?
-    /// The last error of the folder, for the paper to show. It never holds document text.
+    /// The last error of the folder, for the paper and the desk to show. It
+    /// never holds document text.
     @Published public private(set) var failure: String?
     /// The document of the last Move to Trash, until Undo or the next move.
     @Published public private(set) var trashed: WriteDocument?

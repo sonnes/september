@@ -286,7 +286,9 @@ animates. `WritePaper` holds the rule.
 has no Save command. A document that the user opens and does not edit is not
 saved.
 Command-N starts a new document. A `[[` link opens the document with that
-title. If a save fails, the error shows at the top of the paper.
+title. If a save fails, the error shows at the top of the paper. While the
+desk is open, the error shows in the notice of the desk, in place of Undo.
+If the desk cannot read the file of a card, the notice shows that error.
 
 Command-O, or the Documents key of the Write panel, turns the paper into the
 desk. The paper shrinks into its card, and the other documents rise out of

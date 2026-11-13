@@ -250,6 +250,30 @@ func writeControllerTests() {
         expectEqual(host.closed, [write.desk.window])
     }
 
+    test("an error of the folder shows on the desk") {
+        let (write, _, url) = try deskWrite(["New.md": "# New"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        write.showDesk()
+        expectEqual(write.desk.failure, nil)
+
+        try FileManager.default.removeItem(at: url)
+        try Data().write(to: url)
+        write.desk.onCommand?(.duplicate)
+        expect(write.desk.failure != nil, "the desk shows the error")
+        expectEqual(write.desk.failure, write.model.failure)
+    }
+
+    test("a card whose file cannot be read shows the error on the desk") {
+        let (write, _, url) = try deskWrite(["New.md": "# New", "Locked.md": "# Locked"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        let locked = url.appendingPathComponent("Locked.md")
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: locked.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: locked.path) }
+
+        write.showDesk()
+        expect(write.desk.failure != nil, "the desk shows the error")
+    }
+
     test("New Document saves the open document and starts an empty one") {
         let (write, _, url) = try deskWrite(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }

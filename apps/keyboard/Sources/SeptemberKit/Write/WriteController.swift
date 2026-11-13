@@ -87,12 +87,14 @@ public final class WriteController: WriteReading {
         paper.window.onNewDocument = { [weak self] in self?.newDocument() }
         paper.window.onShowDocuments = { [weak self] in self?.showDesk() }
         paper.onClose = { [weak self] in self?.save() }
-        failure = model.$failure.sink { [weak paper] text in paper?.showNotice(text) }
+        failure = model.$failure.sink { [weak paper, weak desk] text in
+            paper?.showNotice(text)
+            desk?.showNotice(text)
+        }
 
         let library = model.library
         desk.preview = { document in
-            let text = (try? library.read(document)) ?? ""
-            return DocumentLibrary.preview(of: text, lines: WriteDesk.cardLines)
+            DocumentLibrary.preview(of: try library.read(document), lines: WriteDesk.cardLines)
         }
         desk.onCommand = { [weak self] command in self?.perform(command) }
         desk.onQueryChange = { [weak self] _ in
