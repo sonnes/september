@@ -47,7 +47,6 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     /// place of Undo.
     public private(set) var failure: String?
     public private(set) var isOpen = false
-    private var layingOut = false
 
     public var onCommand: ((WriteDeskCommand) -> Void)?
     public var onQueryChange: ((String) -> Void)?
@@ -210,10 +209,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     private func updateNotice() {
         let wasShown = !notice.isHidden
         fillNotice()
-        // A card that cannot read its file shows an error while the layout
-        // runs. That layout places the notice after the cards.
-        guard !layingOut else { return }
-        if isOpen, wasShown || !notice.isHidden { relayout(animated: true) }
+        if isOpen, wasShown || !notice.isHidden { placeChrome(animated: true) }
     }
 
     private func fillNotice() {
@@ -229,13 +225,23 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     // MARK: - Layout
 
     private func relayout(animated: Bool) {
-        layingOut = true
-        defer { layingOut = false }
-        let items = desk.items
-        let layout = WriteDeskLayout(area: area, centre: centre, count: items.count, selection: desk.selection)
-        let origin = area.origin
-        let local = { (rect: CGRect) in rect.offsetBy(dx: -origin.x, dy: -origin.y) }
+        placeCards(animated: animated)
+        placeChrome(animated: animated)
+    }
 
+    private var layout: WriteDeskLayout {
+        WriteDeskLayout(area: area, centre: centre, count: desk.items.count, selection: desk.selection)
+    }
+
+    private func local(_ rect: CGRect) -> CGRect {
+        rect.offsetBy(dx: -area.origin.x, dy: -area.origin.y)
+    }
+
+    /// Places the cards in view, and makes the card of a document that comes
+    /// into view. A card reads its file, and a read error shows in the notice.
+    private func placeCards(animated: Bool) {
+        let items = desk.items
+        let layout = layout
         var shown: Set<CardKey> = []
         for (offset, index) in layout.visible.enumerated() {
             let item = items[index]
@@ -261,7 +267,12 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
             card.removeFromSuperview()
             cards[key] = nil
         }
+    }
 
+    /// Places the Find field, the notice, the actions, and the blur behind them.
+    private func placeChrome(animated: Bool) {
+        let layout = layout
+        let origin = area.origin
         findBox.frame = local(layout.find)
         notice.frame = local(layout.notice)
         count.stringValue = desk.count
