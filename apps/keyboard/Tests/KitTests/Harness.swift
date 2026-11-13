@@ -36,10 +36,12 @@ func asyncTest(_ name: String, _ body: () async throws -> Void) async {
 
 private func begin(_ name: String) -> Int {
     Run.current = name
+    Watchdog.shared.started(name)
     return Run.passed + Run.failures.count
 }
 
 private func end(_ name: String, checks: Int) {
+    Watchdog.shared.ended()
     if Run.passed + Run.failures.count == checks {
         Run.failures.append("\(name) — ran no expect")
     }
@@ -79,4 +81,46 @@ func summarize() -> Never {
 func freshDefaults() -> UserDefaults {
     let file = Run.defaultsFolder.appendingPathComponent("\(UUID().uuidString).plist")
     return UserDefaults(suiteName: file.path)!
+}
+
+/// Stops the run when one test runs longer than `limit`. The fakes wait
+/// with no deadline, so a test that hangs waits forever without it. The
+/// watchdog prints the name of the test and exits with status 1.
+final class Watchdog: @unchecked Sendable {
+    static let limit: TimeInterval = 10
+    static let shared = Watchdog()
+
+    // The lock guards `name` and `start`: the tests set them on the main
+    // thread, and the timer reads them on a background queue.
+    private let lock = NSLock()
+    private var name: String?
+    private var start = Date()
+    private let timer = DispatchSource.makeTimerSource(queue: .global())
+
+    private init() {
+        timer.schedule(deadline: .now() + 1, repeating: 1)
+        timer.setEventHandler { [unowned self] in check() }
+        timer.resume()
+    }
+
+    func started(_ test: String) {
+        lock.withLock {
+            name = test
+            start = Date()
+        }
+    }
+
+    func ended() {
+        lock.withLock { name = nil }
+    }
+
+    private func check() {
+        let hung = lock.withLock { () -> String? in
+            guard let name, Date().timeIntervalSince(start) > Self.limit else { return nil }
+            return name
+        }
+        guard let hung else { return }
+        print("✗ \(hung) — ran longer than \(Int(Self.limit)) s")
+        exit(1)
+    }
 }
