@@ -12,7 +12,6 @@ final class WriteOverlay {
     private let view = OverlayView()
     private let caret = CALayer()
     private var lastCaret: CGRect?
-    private var blink: DispatchWorkItem?
 
     init(textView: WriteTextView) {
         self.textView = textView
@@ -41,7 +40,7 @@ final class WriteOverlay {
             return
         }
         caret.isHidden = false
-        caret.backgroundColor = view.resolved(NSColor(Tokens.writeAccent))
+        caret.backgroundColor = view.resolved(NSColor(Tokens.accent))
         let glide = textView.lastInputWasKey && !reduceMotion && lastCaret != nil && lastCaret != frame
         move(to: frame, glide: glide)
         lastCaret = frame
@@ -79,19 +78,14 @@ final class WriteOverlay {
     private func restartBlink() {
         caret.removeAnimation(forKey: "blink")
         caret.opacity = 1
-        blink?.cancel()
-        let work = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            let animation = CAKeyframeAnimation(keyPath: "opacity")
-            animation.values = Motion.caretBlinkValues
-            animation.keyTimes = Motion.caretBlinkKeyTimes.map { NSNumber(value: $0) }
-            animation.timingFunctions = Array(repeating: CAMediaTimingFunction(name: .default), count: 3)
-            animation.duration = Motion.caretBlink
-            animation.repeatCount = .infinity
-            caret.add(animation, forKey: "blink")
-        }
-        blink = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + Motion.caretIdle, execute: work)
+        let animation = CAKeyframeAnimation(keyPath: "opacity")
+        animation.values = Motion.caretBlinkValues
+        animation.keyTimes = Motion.caretBlinkKeyTimes.map { NSNumber(value: $0) }
+        animation.timingFunctions = Array(repeating: CAMediaTimingFunction(name: .default), count: 3)
+        animation.beginTime = caret.convertTime(CACurrentMediaTime(), from: nil) + Motion.caretIdle
+        animation.duration = Motion.caretBlink
+        animation.repeatCount = .infinity
+        caret.add(animation, forKey: "blink")
     }
 
     // MARK: - To-do items
@@ -127,9 +121,11 @@ final class WriteOverlay {
     func animateTask(at location: Int, checked: Bool) {
         guard textView.window != nil, !reduceMotion, let box = taskBox(at: location) else { return }
         let layer = TaskLayer(frame: box, checked: checked, in: view)
+        CATransaction.begin()
+        CATransaction.setCompletionBlock { layer.removeFromSuperlayer() }
         view.layer?.addSublayer(layer)
         layer.play(checked: checked)
-        DispatchQueue.main.asyncAfter(deadline: .now() + Motion.taskPop + 0.05) { layer.removeFromSuperlayer() }
+        CATransaction.commit()
     }
 }
 
@@ -162,7 +158,7 @@ private final class TaskLayer: CALayer {
         let bounds = CGRect(origin: .zero, size: frame.size)
         // The cover hides the box that the text draws under the motion.
         cover.frame = bounds.insetBy(dx: -1, dy: -1)
-        cover.backgroundColor = view.resolved(NSColor(Tokens.writePaper))
+        cover.backgroundColor = view.resolved(NSColor(Tokens.key))
         addSublayer(cover)
 
         let radius = M.taskBoxRadius * WriteStyle.bodySize
@@ -170,7 +166,7 @@ private final class TaskLayer: CALayer {
         box.frame = bounds
         box.path = CGPath(roundedRect: inset, cornerWidth: radius, cornerHeight: radius, transform: nil)
         box.lineWidth = M.taskBoxBorder
-        let accent = view.resolved(NSColor(Tokens.writeAccent))
+        let accent = view.resolved(NSColor(Tokens.accent))
         let border = view.resolved(NSColor(Tokens.writeTaskBorder))
         box.fillColor = checked ? accent : NSColor.clear.cgColor
         box.strokeColor = checked ? accent : border
@@ -178,7 +174,7 @@ private final class TaskLayer: CALayer {
 
         mark.frame = bounds
         mark.path = WriteLayoutFragment.checkMark(in: bounds).cgPath
-        mark.strokeColor = view.resolved(NSColor(Tokens.writePaper))
+        mark.strokeColor = view.resolved(NSColor(Tokens.key))
         mark.fillColor = nil
         mark.lineWidth = M.taskBoxBorder * 1.3
         mark.lineCap = .round

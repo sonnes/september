@@ -8,7 +8,6 @@ import Foundation
 @MainActor
 public final class TalkSession: ObservableObject {
     @Published public private(set) var text = ""
-    /// The Talk history.
     public let said: SaidList
     /// The voice that speaks the bar and the Said list.
     public var speech: (any SpeechOutput)?
@@ -21,7 +20,7 @@ public final class TalkSession: ObservableObject {
     /// ends.
     private var speaking: String?
 
-    public init(said: SaidList = SaidList()) {
+    public init(said: SaidList) {
         self.said = said
     }
 
@@ -35,8 +34,7 @@ public final class TalkSession: ObservableObject {
             modifiers.tap(modifier)
             return
         case .character(let character):
-            let chord = modifiers.active.subtracting([.shift, .capsLock])
-            if chord.isEmpty {
+            if modifiers.chord.isEmpty {
                 if modifiers.active.contains(.shift), let secondary = key.secondaryLabel {
                     text += secondary
                 } else {
@@ -50,6 +48,8 @@ public final class TalkSession: ObservableObject {
             case .return where returnSpeaks: speak()
             default: break
             }
+        case .function:
+            break
         }
         modifiers.consume()
     }

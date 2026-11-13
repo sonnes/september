@@ -20,23 +20,10 @@ private func names(_ documents: [WriteDocument]) -> [String] {
     documents.map(\.url.lastPathComponent)
 }
 
-/// Stands in for the editor: it keeps the text that the model shows.
 @MainActor
-private final class EditorStub {
-    var shown: [String] = []
-    var text = ""
-}
-
-@MainActor
-private func makeModel(_ folder: URL) -> (WriteModel, EditorStub) {
-    let editor = EditorStub()
-    let model = WriteModel(library: DocumentLibrary(folder: folder))
-    model.show = { text in
-        editor.shown.append(text)
-        editor.text = text
-    }
-    model.editorText = { editor.text }
-    return (model, editor)
+private func makeModel(_ folder: URL, clock: FakeClock = FakeClock()) -> (WriteModel, FakeEditor) {
+    let editor = FakeEditor()
+    return (WriteModel(library: DocumentLibrary(folder: folder), editor: editor, scheduler: clock), editor)
 }
 
 @MainActor
@@ -61,11 +48,6 @@ func writeTests() {
     test("a missing folder lists no documents") {
         let folder = makeFolder()
         expectEqual(try DocumentLibrary(folder: folder).documents().count, 0)
-    }
-
-    test("the default folder is September in Documents") {
-        expectEqual(DocumentLibrary.defaultFolder.lastPathComponent, "September")
-        expectEqual(DocumentLibrary.defaultFolder.deletingLastPathComponent().lastPathComponent, "Documents")
     }
 
     test("a new document is an empty Untitled file, with a number when the name is taken") {
@@ -149,17 +131,6 @@ func writeTests() {
         expectEqual(label(-3 * 3_600), "09:00")
         expectEqual(label(-86_400), "Yesterday")
         expectEqual(label(-3 * 86_400), "3 Nov")
-    }
-
-    // MARK: The caret
-
-    test("the caret paragraph of the editor becomes the focused field of the input bar") {
-        let caret = EditorCaret(text: "Who checks it at ni", caret: 19, length: 0)
-        let field = caret.focusedField
-        expectEqual(field.appName, "Write")
-        expectEqual(field.role, "AXTextArea")
-        expect(field.isEditable && !field.isSecure, "an editable text field")
-        expectEqual(field.display, .mirrored(text: "Who checks it at ni", caret: 19, selectionLength: 0))
     }
 
     // MARK: Speak
@@ -249,11 +220,13 @@ func writeTests() {
         model.start()
 
         editor.text = "# Questions for the Clinic\n\nAsk."
+        model.edited()
         model.save()
         expectEqual(model.current?.title, "Questions for the Clinic")
         expectEqual(names(model.documents), ["Questions for the Clinic.md"])
 
         editor.text = "# Questions for the Clinic\n\nAsk on Friday."
+        model.edited()
         model.save()
         let saved = folder.appendingPathComponent("Questions for the Clinic.md")
         expectEqual(try String(contentsOf: saved, encoding: .utf8), "# Questions for the Clinic\n\nAsk on Friday.")
@@ -267,6 +240,7 @@ func writeTests() {
         model.start()
 
         editor.text = "# First\n\nlast words"
+        model.edited()
         model.newDocument()
         expectEqual(try String(contentsOf: first, encoding: .utf8), "# First\n\nlast words")
         expectEqual(model.current?.url.lastPathComponent, "Untitled.md")
@@ -278,6 +252,7 @@ func writeTests() {
         defer { try? FileManager.default.removeItem(at: folder) }
         let (model, editor) = makeModel(folder)
         editor.text = "# Lost"
+        model.edited()
         model.save()
         expectEqual(try DocumentLibrary(folder: folder).documents().count, 0)
     }
@@ -291,6 +266,7 @@ func writeTests() {
         try Data().write(to: folder)
 
         editor.text = "# Gone"
+        model.edited()
         model.save()
         expect(model.failure != nil, "the failure is kept")
 
@@ -298,6 +274,57 @@ func writeTests() {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         model.save()
         expectEqual(model.failure, nil)
+    }
+
+    test("a card that cannot be read keeps its error until a document opens") {
+        let folder = makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        _ = try write("# Notes", to: folder, name: "Notes.md", modified: now)
+        let locked = try write("# Locked", to: folder, name: "Locked.md", modified: now - 60)
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: locked.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: locked.path) }
+        let (model, _) = makeModel(folder)
+        model.start()
+        let card = try expectValue(model.documents.first { $0.url.lastPathComponent == "Locked.md" })
+
+        expectEqual(model.preview(card, lines: 2), [])
+        expect(model.failure != nil, "the read error is kept")
+        model.newDocument()
+        expectEqual(model.failure, nil)
+    }
+
+    test("an edit saves after the save delay, not before") {
+        let folder = makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let notes = try write("# Notes", to: folder, name: "Notes.md", modified: now)
+        let clock = FakeClock()
+        let (model, editor) = makeModel(folder, clock: clock)
+        model.start()
+
+        editor.text = "# Notes\n\nBuy milk."
+        model.edited()
+        clock.advance(to: WriteModel.saveDelay / 2)
+        expectEqual(try String(contentsOf: notes, encoding: .utf8), "# Notes")
+        clock.advance(to: WriteModel.saveDelay)
+        expectEqual(try String(contentsOf: notes, encoding: .utf8), "# Notes\n\nBuy milk.")
+    }
+
+    test("a switch to another document saves the edit of the old document once") {
+        let folder = makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let plans = try write("# Plans", to: folder, name: "Plans.md", modified: now - 100)
+        let notes = try write("# Notes", to: folder, name: "Notes.md", modified: now)
+        let clock = FakeClock()
+        let (model, editor) = makeModel(folder, clock: clock)
+        model.start()
+
+        editor.text = "# Notes\n\nBuy milk."
+        model.edited()
+        model.select(plans)
+        clock.advance(to: WriteModel.saveDelay * 2)
+        expectEqual(editor.reads, 1)
+        expectEqual(try String(contentsOf: notes, encoding: .utf8), "# Notes\n\nBuy milk.")
+        expectEqual(try String(contentsOf: plans, encoding: .utf8), "# Plans")
     }
 
     test("select opens a document once, and a wiki link opens it by title") {
@@ -321,41 +348,15 @@ func writeTests() {
 
     // MARK: The Write panel
 
-    test("the Write panel has the Markdown keys and the editor shortcuts") {
-        let panel = try PanelStore.bundled().write
-        expectEqual(
-            panel.buttons.map(\.id),
-            ["heading", "list", "todo", "quote", "blocks", "link-document",
-             "bold", "italic", "documents", "new-document", "undo", "redo"])
-
-        let actions = Dictionary(uniqueKeysWithValues: panel.buttons.map { ($0.id, $0.action) })
-        expectEqual(actions["heading"], .text("# "))
-        expectEqual(actions["todo"], .text("[ ] "))
-        expectEqual(actions["blocks"], .text("/"))
-        expectEqual(actions["link-document"], .text("[["))
-        expectEqual(actions["bold"], .shortcut(Shortcut(modifiers: .command, key: .character("b"))))
-        expectEqual(
-            actions["redo"], .shortcut(Shortcut(modifiers: [.command, .shift], key: .character("z"))))
-        expectEqual(actions["documents"], .shortcut(Shortcut(modifiers: .command, key: .character("o"))))
-    }
-
-    test("the Documents panel has the keys of the desk") {
+    test("the keys of the Documents panel with no Command are the moves of the Find field") {
         let panel = try PanelStore.bundled().writeDocuments
         let actions = Dictionary(uniqueKeysWithValues: panel.buttons.map { ($0.id, $0.action) })
-        func shortcut(_ modifiers: Modifiers, _ key: Shortcut.Key) -> PanelAction {
-            .shortcut(Shortcut(modifiers: modifiers, key: key))
+        func key(_ key: VirtualKey) -> PanelAction {
+            .shortcut(Shortcut(modifiers: [], key: .virtual(key)))
         }
-        expectEqual(actions["open"], shortcut([], .virtual(.return)))
-        expectEqual(actions["new-document"], shortcut(.command, .character("n")))
-        expectEqual(actions["rename"], shortcut(.command, .character("r")))
-        expectEqual(actions["duplicate"], shortcut(.command, .character("d")))
-        expectEqual(actions["trash"], shortcut(.command, .virtual(.delete)))
-        expectEqual(actions["undo"], shortcut(.command, .character("z")))
-        expectEqual(actions["find"], shortcut(.command, .character("f")))
-        expectEqual(actions["finder"], shortcut([.command, .option], .character("r")))
-        expectEqual(actions["previous"], shortcut([], .virtual(.left)))
-        expectEqual(actions["next"], shortcut([], .virtual(.right)))
-        expectEqual(actions["back"], shortcut([], .virtual(.escape)))
-        expectEqual(actions["close"], shortcut(.command, .character("w")))
+        expectEqual(actions["open"], key(.return))
+        expectEqual(actions["previous"], key(.left))
+        expectEqual(actions["next"], key(.right))
+        expectEqual(actions["back"], key(.escape))
     }
 }

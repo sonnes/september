@@ -12,11 +12,6 @@ public enum Typography {
     public static let bannerText = Font.system(size: 12)
     public static let bannerAction = Font.system(size: 12, weight: .medium)
 
-    public static let shortcutButtonIcon = Font.system(size: 14)
-    public static let shortcutButtonText = Font.system(size: 11, weight: .medium)
-    public static let shortcutRowIcon = Font.system(size: 12)
-    public static let shortcutRowText = Font.system(size: 10)
-
     public static let treeTitle = Font.system(size: 13, weight: .medium)
     public static let treeRefreshIcon = Font.system(size: 12, weight: .medium)
     public static let treeMessage = Font.system(size: 12)
@@ -26,11 +21,6 @@ public enum Typography {
     public static func treeRole(focused: Bool) -> Font {
         .system(size: 11, weight: focused ? .semibold : .regular, design: .monospaced)
     }
-
-    public static let galleryTitle = Font.system(size: 24, weight: .semibold, design: .monospaced)
-    public static let galleryCaption = Font.system(size: 12)
-    public static let gallerySampleTitle = Font.system(size: 12, weight: .medium, design: .monospaced)
-    public static let galleryNote = Font.system(size: 10)
 
     public static func keyLabel(_ kind: KeyKind) -> Font {
         .system(size: Metrics.labelSize(for: kind), weight: kind == .function ? .medium : .regular)

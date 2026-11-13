@@ -10,6 +10,15 @@ public enum HoldBehavior: Equatable, Sendable {
     /// A letter. If press and hold is on, a held letter shows `choices` and
     /// does not repeat. If press and hold is off, the letter repeats.
     case letter(choices: [String])
+
+    /// What a held key does, on the keyboard or on a panel button. A key that
+    /// repeats on a hardware keyboard, such as an arrow or Delete, repeats
+    /// without Command or Control. Thus a held key moves the caret, extends
+    /// the selection, or pages. With Command or Control, the key acts once, so
+    /// a long dwell does not do a window or app command again and again.
+    public static func forKey(_ key: VirtualKey, modifiers: Modifiers) -> HoldBehavior {
+        key.repeatsWhenHeld && modifiers.isDisjoint(with: [.command, .control]) ? .repeats : .once
+    }
 }
 
 /// Work that a `DelayScheduler` can stop before it runs.
@@ -25,7 +34,6 @@ public protocol DelayScheduler {
     func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any ScheduledWork
 }
 
-/// Schedules work on the main queue.
 public struct MainQueueScheduler: DelayScheduler {
     public init() {}
 

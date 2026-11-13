@@ -8,6 +8,7 @@ MainActor.assumeIsolated { AXDump.run(arguments: CommandLine.arguments) }
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate
-// Accessory: no Dock icon, no menu bar takeover, never becomes the active app.
+// Accessory: no Dock icon and no menu bar. The app becomes active only for
+// Write and Settings.
 app.setActivationPolicy(.accessory)
 app.run()

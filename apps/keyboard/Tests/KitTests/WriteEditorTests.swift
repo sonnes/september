@@ -26,6 +26,29 @@ func writeEditorTests() {
         expectEqual(editor(text).markdown, text)
     }
 
+    test("one typed character reports the caret and the layout once") {
+        let view = editor("Hi")
+        var carets: [EditorCaret] = []
+        var layouts = 0
+        view.onCaretChange = { carets.append($0) }
+        view.onLayoutChange = { layouts += 1 }
+
+        type(view, "!")
+        expectEqual(carets, [EditorCaret(text: "Hi!", caret: 3, length: 0)])
+        expectEqual(layouts, 1)
+    }
+
+    test("a Markdown mark that makes a block reports the caret once for its key") {
+        let view = editor()
+        var carets: [EditorCaret] = []
+        view.onCaretChange = { carets.append($0) }
+
+        type(view, "#")
+        carets = []
+        type(view, " ")
+        expectEqual(carets, [EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: true)])
+    }
+
     test("the text of the editor has no Markdown marks") {
         let view = editor("# Title\n\n- **bold** item\n- [ ] task")
         expectEqual(view.string, "Title\nbold item\ntask")
@@ -171,6 +194,31 @@ func writeEditorTests() {
         expectEqual(carets.last, EditorCaret(text: "hi", caret: 2, length: 0))
     }
 
+    test("a load is not an edit, and a typed character after it is") {
+        let view = editor()
+        var edits = 0
+        view.onTextChange = { edits += 1 }
+        view.load("# Plans")
+        view.loadNewDocument()
+        expectEqual(edits, 0)
+        type(view, "!")
+        expectEqual(edits, 1)
+    }
+
+    test("a change that AppKit approves and does not make does not stop the edit reports") {
+        let view = editor("Hi")
+        end(view)
+        var edits = 0
+        var carets: [EditorCaret] = []
+        view.onTextChange = { edits += 1 }
+        view.onCaretChange = { carets.append($0) }
+        expect(view.shouldChangeText(in: NSRange(location: 2, length: 0), replacementString: "x"))
+        view.setSelectedRange(NSRange(location: 1, length: 0))
+        expectEqual(carets, [EditorCaret(text: "Hi", caret: 1, length: 0)])
+        type(view, "!")
+        expectEqual(edits, 1)
+    }
+
     test("Speak reads the selection, or the whole document without marks") {
         let view = editor("# Title\n\n- **one**")
         expectEqual(view.speech, EditorSpeech(selection: "", markdown: "# Title\n\n- **one**"))
@@ -213,7 +261,6 @@ func writePaperTests() {
     }
 
     test("on a full page, the text moves up so the typing line stays at the bottom") {
-        // The visible part is 600 points of a 2000-point text, with a margin of 48.
         let origin = WritePaper.scrollOrigin(
             caretMaxY: 1500, current: 0, visibleHeight: 600, contentHeight: 2000, margin: 48)
         expect(close(origin, 948), "origin \(origin)")

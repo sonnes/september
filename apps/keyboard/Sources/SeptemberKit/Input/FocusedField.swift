@@ -6,7 +6,7 @@ import Foundation
 public struct FocusedField: Equatable, Sendable {
     /// `nil` when the owning process reports no name.
     public var appName: String?
-    /// `AXTextField`, `AXTextArea`, `AXComboBox`… — kept for diagnostics.
+    /// `AXTextField`, `AXTextArea`, `AXComboBox`, or another role.
     public var role: String
     /// `AXSecureTextField`, `AXDesktop`… `nil` when the element has none.
     public var subrole: String?
@@ -34,6 +34,13 @@ public struct FocusedField: Equatable, Sendable {
         self.isSecure = isSecure
         self.text = text
         self.selection = selection
+    }
+
+    /// The subrole of a password field.
+    public static let secureSubrole = "AXSecureTextField"
+
+    public static func isSecure(subrole: String?) -> Bool {
+        subrole == secureSubrole
     }
 
     /// The roles of a text input. Terminal exposes a text area with no
@@ -79,6 +86,14 @@ public struct FocusedField: Equatable, Sendable {
         let caret = min(max(0, selection?.location ?? length), length)
         let selectionLength = min(max(0, selection?.length ?? 0), length - caret)
         return .mirrored(text: text, caret: caret, selectionLength: selectionLength)
+    }
+
+    /// The field with no text, for a field that holds private text.
+    var withoutText: FocusedField {
+        var field = self
+        field.text = nil
+        field.selection = nil
+        return field
     }
 }
 

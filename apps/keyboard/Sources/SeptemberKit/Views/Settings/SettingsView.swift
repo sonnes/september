@@ -46,13 +46,13 @@ private struct SettingsSidebarRow: View {
         } icon: {
             Image(systemName: page.symbol)
                 .font(Typography.settingsIcon)
-                .foregroundStyle(Color(Tokens.settingsIconGlyph))
+                .foregroundStyle(Color(Tokens.onAccent))
                 .frame(width: Metrics.Settings.iconSize, height: Metrics.Settings.iconSize)
                 .background(
                     RoundedRectangle(
                         cornerRadius: Metrics.Settings.iconCornerRadius, style: .continuous
                     )
-                    .fill(Color(Tokens.settingsIcon(page)))
+                    .fill(Color(page.iconFill))
                 )
                 .accessibilityHidden(true)
         }

@@ -39,32 +39,8 @@ public struct KeyboardScreen: View {
         self.settings = settings
     }
 
-    /// The distance from the left edge of the window to the keys and the
-    /// bar. The clipboard buttons fit in this space. The app keeps the keys
-    /// in place when the mode changes.
-    public static func keysInset(_ mode: KeyboardMode) -> CGFloat {
-        max(cardKeysInset(mode), clipboardReach)
-    }
-
-    /// The clear space at the left of the keys card in Type mode, or of the
-    /// Talk card in Talk mode, under the clipboard buttons.
-    public static func cardInset(_ mode: KeyboardMode) -> CGFloat {
-        keysInset(mode) - cardKeysInset(mode)
-    }
-
-    /// The clipboard buttons and the gap between them and the bar.
-    private static let clipboardReach = Metrics.Clipboard.buttonsWidth + Metrics.TopRow.spacing
-
-    /// The distance from the left edge of the card to the keys.
-    private static func cardKeysInset(_ mode: KeyboardMode) -> CGFloat {
-        switch mode {
-        case .type: Metrics.Detached.keysSidePadding
-        case .talk: Metrics.surfacePadding + Metrics.Talk.phrasesWidth + Metrics.sectionSpacing
-        }
-    }
-
     public var body: some View {
-        let inset = Self.keysInset(controller.mode)
+        let inset = KeyboardPosition.keysInset(controller.mode)
         VStack(alignment: .leading, spacing: 0) {
             if !permission.isTrusted {
                 PermissionBanner()
@@ -97,7 +73,7 @@ public struct KeyboardScreen: View {
                     arrange: arrange,
                     settings: settings)
             }
-            .padding(.leading, inset - Self.clipboardReach)
+            .padding(.leading, inset - Metrics.Screen.clipboardReach)
             .padding(.bottom, Metrics.TopRow.keysTop)
 
             Group {
@@ -106,7 +82,7 @@ public struct KeyboardScreen: View {
                 case .talk: talkKeys
                 }
             }
-            .padding(.leading, Self.cardInset(controller.mode))
+            .padding(.leading, KeyboardPosition.cardInset(controller.mode))
         }
     }
 

@@ -4,7 +4,7 @@ import Foundation
 ///
 /// The text comes from `packages/core/rules/prompts/suggestions.ts`, with
 /// these changes for the Mac:
-/// - It asks for three predictions, the rows of the stack.
+/// - It asks for `count` predictions, the rows of the stack.
 /// - It has no search prompt. A press types at the caret and cannot replace
 ///   the typed words, so each prediction must continue them.
 /// - It asks for the words after the typed words only. The on-device model
@@ -16,7 +16,8 @@ import Foundation
 /// - In Type mode, the prompt can hold the app, the window, and the text near
 ///   the field (`ScreenContext`).
 public struct SuggestionPrompt: Equatable, Sendable {
-    /// The count of predictions in one answer.
+    /// The count of predictions in one answer. The prediction stack and a
+    /// page of the clipboard history have this many rows.
     public static let count = 3
     /// The most characters of the field that go to the model.
     public static let maxTypedCharacters = 500

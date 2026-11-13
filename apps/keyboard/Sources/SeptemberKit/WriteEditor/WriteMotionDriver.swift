@@ -1,8 +1,8 @@
 import AppKit
 import QuartzCore
 
-/// Runs one animation at a time, and calls `step` with the progress about
-/// 120 times a second. A new run starts from where the last one stopped, so
+/// Runs one animation at a time, and calls `step` with the progress at each
+/// tick of its timer. A new run starts from where the last one stopped, so
 /// a paper that grows a line at a time never jumps.
 ///
 /// The paper moves its window frame and its scroll with this driver. It uses
@@ -16,8 +16,6 @@ final class WriteMotionDriver: NSObject {
     private var duration: TimeInterval = 0
     private var curve = CubicCurve.easeOut
     private var step: ((Double) -> Void)?
-
-    var isRunning: Bool { step != nil }
 
     func run(duration: TimeInterval, curve: CubicCurve, step: @escaping (Double) -> Void) {
         guard duration > 0 else {

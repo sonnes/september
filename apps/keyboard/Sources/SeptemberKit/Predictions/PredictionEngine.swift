@@ -24,9 +24,6 @@ import Foundation
 public final class PredictionEngine: ObservableObject {
     /// The rows of the stack, best first.
     @Published public private(set) var stripes: [PredictionStripe] = []
-    /// True while the stripes belong to an older text and new ones are on
-    /// the way.
-    @Published public private(set) var isStale = false
     /// The completions of the word at the caret, best first.
     @Published public private(set) var words: [WordCompletion] = []
     /// The message that the stack shows in place of predictions.
@@ -190,8 +187,6 @@ public final class PredictionEngine: ObservableObject {
         refresh()
     }
 
-    /// Sets the baseline of a new field, or marks the field as typed when its
-    /// text changed.
     private func noteTyping(_ input: InputMirror, mode: PredictionMode) {
         guard let baseline, baseline.mode == mode, baseline.input.kind == input.kind else {
             baseline = (input, mode)
@@ -201,8 +196,6 @@ public final class PredictionEngine: ObservableObject {
         if input.text != baseline.input.text { hasTyped = true }
     }
 
-    /// True when the user typed in the field and the text before the caret
-    /// holds a letter.
     private func wantsSentences(_ context: PredictionContext) -> Bool {
         hasTyped && context.typed.contains(where: \.isLetter)
     }
@@ -229,12 +222,10 @@ public final class PredictionEngine: ObservableObject {
         ask(context)
     }
 
-    /// Cancels the request and forgets the model rows.
     private func stopAsking() {
         cancel()
         predictions = []
         requested = nil
-        isStale = false
     }
 
     private func refreshWords() {
@@ -269,8 +260,6 @@ public final class PredictionEngine: ObservableObject {
         for input: InputMirror, availability: PredictionAvailability, sentences: Bool
     ) -> PredictionNotice? {
         if case .secure = input { return .passwordField }
-        // A state with no text that is not a password field holds private text.
-        if !input.holdsText { return .privateText }
         if sentences, availability != .ready { return .appleIntelligence(availability) }
         return nil
     }
@@ -311,7 +300,6 @@ public final class PredictionEngine: ObservableObject {
     private func ask(_ context: PredictionContext) {
         cancel()
         requested = context
-        isStale = !predictions.isEmpty
         let generation = generation
         let predictor = predictor
         let delay = delay
@@ -334,7 +322,6 @@ public final class PredictionEngine: ObservableObject {
             }
             guard let self, self.generation == generation else { return }
             self.predictions = Array((sentences ?? []).prefix(SuggestionPrompt.count))
-            self.isStale = false
             self.restripe()
         }
     }

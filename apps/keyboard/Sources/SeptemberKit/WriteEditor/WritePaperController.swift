@@ -20,27 +20,15 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
     private let notice = NSTextField(labelWithString: "")
     /// The frame of the full page. The paper grows up to it.
     private var page: CGRect = .zero
-    private var pendingFit = false
     private let frameMotion = WriteMotionDriver()
     private let scrollMotion = WriteMotionDriver()
-    /// The frame that the paper moves to.
     private var targetFrame: CGRect?
 
-    /// Called with `true` when the paper becomes the key window, and with
-    /// `false` when it stops being the key window.
-    public var onKeyChanged: ((Bool) -> Void)?
-    /// Called when the paper closes.
     public var onClose: (() -> Void)?
-    /// Brings the paper to the front with the focus. The keyboard passes
-    /// `AppActivation.bringToFront`, which handles a press through `AXPress`.
-    public var bringToFront: (NSWindow) -> Void = { window in
-        NSApp.activate()
-        window.makeKeyAndOrderFront(nil)
-    }
-    /// Called when the paper closes, so that it does not wait for the focus.
-    public var windowClosed: (NSWindow) -> Void = { _ in }
+    private weak var host: (any WriteHost)?
 
-    override public init() {
+    public init(host: any WriteHost) {
+        self.host = host
         window = WritePaperWindow(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: true)
         editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
         super.init()
@@ -63,7 +51,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         sheet.addSubview(scrollView)
 
         notice.font = Typography.writeNotice
-        notice.textColor = NSColor(Tokens.writeMuted)
+        notice.textColor = NSColor(Tokens.labelSecondary)
         notice.isHidden = true
         notice.translatesAutoresizingMaskIntoConstraints = false
         sheet.addSubview(notice)
@@ -81,7 +69,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         editor.autoresizingMask = []
         editor.minSize = .zero
         editor.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
-        editor.onLayoutChange = { [weak self] in self?.scheduleFit() }
+        editor.onLayoutChange = { [weak self] in self?.fit() }
     }
 
     public var isOpen: Bool { window.isVisible }
@@ -153,7 +141,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
             window.setFrame(frame, display: false)
             window.invalidateShadow()
         }
-        bringToFront(window)
+        host?.bringToFront(window)
         window.makeFirstResponder(editor)
         scrollToCaret(animated: false)
         guard animates else {
@@ -166,7 +154,6 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         move(to: frame, duration: Motion.paperOpen, fadeIn: true)
     }
 
-    /// Moves the paper to `frame`, from where it is now.
     private func move(to frame: CGRect, duration: TimeInterval, fadeIn: Bool = false) {
         targetFrame = frame
         let from = window.frame
@@ -186,33 +173,63 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
 
     // MARK: - Size
 
-    /// The paper as tall as its text, on the page.
     private var paperFrame: CGRect {
         WritePaper.paper(height: editor.contentHeight, on: page)
     }
 
-    /// Sets the width of the paper and centres the text column on it.
     private func setWidth(_ width: CGFloat) {
+        Self.configure(editor, width: width)
+    }
+
+    /// Sets the width of `editor` and centres the text column on it, with
+    /// the margins of the paper.
+    private static func configure(_ editor: WriteTextView, width: CGFloat) {
         let side = max(Metrics.WriteEditor.sideMargin, (width - Metrics.WriteEditor.textWidth) / 2)
         editor.textContainerInset = NSSize(width: side, height: Metrics.WriteEditor.paperMargin)
         editor.setFrameSize(NSSize(width: width, height: editor.frame.height))
     }
 
-    /// Fits the paper to the text once per turn of the run loop, after the
-    /// edits of one key press are done.
-    private func scheduleFit() {
-        guard window.isVisible, !pendingFit else { return }
-        pendingFit = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            pendingFit = false
-            fit()
+    /// Draws the sheet of the paper with `markdown` in the editor, at `width`
+    /// and as tall as its text, with no window on the screen. The snapshots
+    /// and Write Lab use it. With no `appearance`, the sheet takes the
+    /// appearance of the app.
+    public static func renderSheet(
+        _ markdown: String, width: CGFloat, appearance: NSAppearance? = nil
+    ) -> NSBitmapImageRep? {
+        let editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: width, height: 400))
+        configure(editor, width: width)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: width, height: 400), styleMask: [.borderless],
+            backing: .buffered, defer: false)
+        window.appearance = appearance
+        let content = NSView(frame: window.contentLayoutRect)
+        window.contentView = content
+        content.addSubview(editor)
+        editor.load(markdown)
+        let height = editor.contentHeight
+        window.setContentSize(NSSize(width: width, height: height))
+        content.frame = NSRect(x: 0, y: 0, width: width, height: height)
+        editor.frame = content.bounds
+        content.layoutSubtreeIfNeeded()
+        editor.display()
+
+        guard let rep = content.bitmapImageRepForCachingDisplay(in: content.bounds) else { return nil }
+        let draw = {
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+            NSColor(Tokens.key).setFill()
+            content.bounds.fill()
+            NSGraphicsContext.restoreGraphicsState()
+            content.cacheDisplay(in: content.bounds, to: rep)
         }
+        if let appearance { appearance.performAsCurrentDrawingAppearance(draw) } else { draw() }
+        return rep
     }
 
-    /// Grows or shrinks the paper to its text, then keeps the caret line in
-    /// view.
+    /// Grows or shrinks the open paper to its text, then keeps the caret line
+    /// in view.
     private func fit() {
+        guard window.isVisible else { return }
         let frame = paperFrame
         if targetFrame != frame {
             if reduceMotion {
@@ -257,19 +274,19 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
 
     public func windowDidBecomeKey(_ notification: Notification) {
         editor.overlay.update()
-        onKeyChanged?(true)
+        host?.writeKeyChanged(true)
     }
 
     public func windowDidResignKey(_ notification: Notification) {
         editor.overlay.update()
-        onKeyChanged?(false)
+        host?.writeKeyChanged(false)
     }
 
     public func windowWillClose(_ notification: Notification) {
         frameMotion.stop()
         scrollMotion.stop()
         targetFrame = nil
-        windowClosed(window)
+        host?.windowClosed(window)
         onClose?()
     }
 }
@@ -292,7 +309,7 @@ private final class PaperSheetView: NSView {
     /// AppKit calls this again when the appearance changes, so the colour
     /// follows light and dark.
     override func updateLayer() {
-        layer?.backgroundColor = NSColor(Tokens.writePaper).cgColor
+        layer?.backgroundColor = NSColor(Tokens.key).cgColor
     }
 }
 

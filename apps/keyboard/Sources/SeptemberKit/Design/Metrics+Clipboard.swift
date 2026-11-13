@@ -7,14 +7,9 @@ extension Metrics {
     /// clipboard history mock.
     public enum Clipboard {
         public static let buttonCount = 4
-        /// The four buttons, as wide as the same number of mode buttons.
         public static let buttonsWidth: CGFloat =
             TopRow.modeCircle * CGFloat(buttonCount) + TopRow.modeSpacing * CGFloat(buttonCount - 1)
 
-        /// The history has the rows of the prediction stack, and two copied
-        /// texts in each row.
-        public static let columns = 2
-        public static let rows = 3
         public static let spacing: CGFloat = Predictions.rowSpacing
         public static let clipHeight: CGFloat = Predictions.tileHeight
         public static let clipHorizontalPadding: CGFloat = 12

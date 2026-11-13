@@ -1,5 +1,7 @@
+import CoreGraphics
 import SeptemberKit
 
+@MainActor
 func modifierStateTests() {
     test("a tapped modifier applies to exactly one keystroke") {
         var state = ModifierState()
@@ -18,6 +20,38 @@ func modifierStateTests() {
         expectEqual(state.active, .command, "locked modifiers survive a keystroke")
         state.tap(.command)
         expectEqual(state.active, [])
+    }
+
+    test("a modifier that macOS holds is on and shows as latched until macOS releases it") {
+        let (controller, _) = try makeController()
+        controller.macModifiersChanged(.shift)
+        var state = controller.modifiers
+        expectEqual(state.active, .shift)
+        expectEqual(state.look(of: .shift), .latched)
+        state.consume()
+        expectEqual(state.active, .shift)
+        controller.macModifiersChanged([])
+        expectEqual(controller.modifiers.active, [])
+    }
+
+    test("the flags of a key leave out caps lock, and a chord also leaves out shift") {
+        var state = ModifierState()
+        state.tap(.capsLock)
+        state.tap(.shift)
+        expectEqual(state.flags, .shift)
+        expectEqual(state.chord, [])
+        expect(state.holdsChord, "shift turns the F-row into F-keys")
+        let (controller, _) = try makeController()
+        controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "shift-left" }!)
+        controller.macModifiersChanged(.command)
+        expectEqual(controller.modifiers.flags, [.shift, .command])
+        expectEqual(controller.modifiers.chord, .command)
+    }
+
+    test("caps lock alone holds no chord") {
+        var state = ModifierState()
+        state.tap(.capsLock)
+        expect(!state.holdsChord)
     }
 
     test("modifiers combine") {
@@ -51,7 +85,6 @@ func modifierStateTests() {
 }
 
 func keyCodeMapTests() {
-    // A stub of a US layout: keycode 0 is "a", 18 is "1", shift changes both.
     let map = KeyCodeMap { code, modifiers in
         switch (code, modifiers.contains(.shift)) {
         case (0, false): "a"
@@ -84,6 +117,16 @@ func keyCodeMapTests() {
 }
 
 func keystrokeTests() {
+    test("a modifier that is already down is not pressed again") {
+        let events = Keystroke.events(virtualKey: 8, modifiers: [.command, .shift], held: .command)
+        expectEqual(events, [
+            Keystroke(virtualKey: 56, flags: [.command, .shift], isDown: true),
+            Keystroke(virtualKey: 8, flags: [.command, .shift], isDown: true),
+            Keystroke(virtualKey: 8, flags: [.command, .shift], isDown: false),
+            Keystroke(virtualKey: 56, flags: .command, isDown: false),
+        ])
+    }
+
     let z: UInt16 = 6
 
     test("a plain character is one down and one up") {
@@ -124,5 +167,28 @@ func modifierNameTests() {
 
     test("an unknown modifier name is rejected") {
         expect((try? Modifiers(names: ["hyper"])) == nil)
+    }
+
+    test("event flags convert to the modifiers that they hold, without caps lock") {
+        let flags: CGEventFlags = [.maskCommand, .maskShift, .maskSecondaryFn, .maskAlphaShift]
+        expectEqual(Modifiers(eventFlags: flags), [.command, .shift, .function])
+        expectEqual(Modifiers(eventFlags: [.maskControl, .maskAlternate]).eventFlags, [.maskControl, .maskAlternate])
+    }
+
+    test("the device flags give each left and right modifier key that the hardware holds") {
+        let keys: [(UInt64, Modifiers)] = [
+            (0x1, .control), (0x2000, .control), (0x2, .shift), (0x4, .shift),
+            (0x8, .command), (0x10, .command), (0x20, .option), (0x40, .option),
+        ]
+        for (bit, modifier) in keys {
+            expectEqual(Modifiers(deviceFlags: CGEventFlags(rawValue: bit)), modifier, "bit \(bit)")
+        }
+        expectEqual(Modifiers(deviceFlags: CGEventFlags(rawValue: 0x8 | 0x4)), [.command, .shift])
+    }
+
+    test("the device flags leave out a modifier that only the posted flags hold") {
+        // The keyboard posts Command with no device bit. The hardware holds Shift.
+        let flags = CGEventFlags(rawValue: CGEventFlags.maskCommand.rawValue | CGEventFlags.maskShift.rawValue | 0x2)
+        expectEqual(Modifiers(deviceFlags: flags), .shift)
     }
 }

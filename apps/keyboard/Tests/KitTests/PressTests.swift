@@ -8,6 +8,8 @@ func pressTests() {
     heldKeyTests()
 }
 
+private let english = try! AccentTable.bundled("en")
+
 private func layoutKey(_ id: String) -> KeyDefinition {
     KeyboardLayout.rows.lazy.flatMap(\.keys).first { $0.id == id }!
 }
@@ -15,7 +17,7 @@ private func layoutKey(_ id: String) -> KeyDefinition {
 @MainActor
 private func heldKeyTests() {
     test("the accent table holds the accents of macOS for each letter") {
-        let table = AccentTable.english
+        let table = try AccentTable.bundled("en")
         expect(table.choices(for: "e").contains("é"))
         expect(table.choices(for: "E").contains("É"))
         expect(table.choices(for: "n").contains("ñ"))
@@ -26,9 +28,9 @@ private func heldKeyTests() {
     test("a letter holds as a letter with its accents in the case it types") {
         let (controller, _) = try makeController()
         let e = layoutKey("key-e")
-        expectEqual(controller.holdBehavior(for: e), .letter(choices: AccentTable.english.choices(for: "e")))
+        expectEqual(controller.holdBehavior(for: e), .letter(choices: english.choices(for: "e")))
         controller.press(layoutKey("shift-left"))
-        expectEqual(controller.holdBehavior(for: e), .letter(choices: AccentTable.english.choices(for: "E")))
+        expectEqual(controller.holdBehavior(for: e), .letter(choices: english.choices(for: "E")))
     }
 
     test("caps lock gives the accents of the capital letter") {
@@ -36,7 +38,7 @@ private func heldKeyTests() {
         controller.press(layoutKey("capslock"))
         expectEqual(
             controller.holdBehavior(for: layoutKey("key-a")),
-            .letter(choices: AccentTable.english.choices(for: "A")))
+            .letter(choices: english.choices(for: "A")))
     }
 
     test("a chord does not repeat") {
@@ -50,6 +52,82 @@ private func heldKeyTests() {
         expectEqual(controller.holdBehavior(for: layoutKey("delete")), .repeats)
         expectEqual(controller.holdBehavior(for: layoutKey("space")), .repeats)
         expectEqual(controller.holdBehavior(for: layoutKey("key-1")), .repeats)
+    }
+
+    test("a keyboard arrow repeats, alone or with Shift or Option") {
+        let (controller, _) = try makeController()
+        let left = KeyDefinition(id: "left", kind: .special, label: "←", action: .virtual(.left))
+        expectEqual(controller.holdBehavior(for: left), .repeats)
+        controller.press(layoutKey("shift-left"))
+        expectEqual(controller.holdBehavior(for: left), .repeats)
+        controller.press(layoutKey("option-left"))
+        expectEqual(controller.holdBehavior(for: left), .repeats)
+    }
+
+    test("a keyboard arrow or Delete under a latched Command or Control acts once") {
+        let left = KeyDefinition(id: "left", kind: .special, label: "←", action: .virtual(.left))
+        for id in ["command-left", "control"] {
+            let (controller, _) = try makeController()
+            controller.press(layoutKey(id))
+            expectEqual(controller.holdBehavior(for: left), .once, id)
+            expectEqual(controller.holdBehavior(for: layoutKey("delete")), .once, id)
+        }
+    }
+
+    test("an arrow with fn repeats, as Page Down does on a hardware keyboard") {
+        let button = PanelAction.shortcut(Shortcut(modifiers: .function, key: .virtual(.down)))
+        expectEqual(button.holdBehavior, .repeats)
+        expectEqual(HoldBehavior.forKey(.down, modifiers: [.function, .shift]), .repeats)
+    }
+
+    test("an arrow or Delete on My Panel repeats") {
+        for key in [VirtualKey.left, .delete] {
+            let button = UserButton(
+                id: "b", name: "Move", action: .shortcut(Shortcut(modifiers: .shift, key: .virtual(key))))
+            expectEqual(button.action.holdBehavior, .repeats, "\(key)")
+        }
+    }
+
+    test("a panel arrow repeats, alone or with Shift or Option") {
+        for modifiers in [Modifiers(), .shift, .option, [.shift, .option]] {
+            let action = PanelAction.shortcut(Shortcut(modifiers: modifiers, key: .virtual(.down)))
+            expectEqual(action.holdBehavior, .repeats, "\(modifiers)")
+        }
+        expectEqual(PanelAction.shortcut(Shortcut(modifiers: [], key: .virtual(.delete))).holdBehavior, .repeats)
+    }
+
+    test("a scroll button repeats") {
+        expectEqual(PanelAction.scroll(.down).holdBehavior, .repeats)
+    }
+
+    test("the pointer rests after it stays still for the rest delay, or at once on a click") {
+        let clock = FakeClock()
+        var rested: [CGPoint] = []
+        let tracker = PointerRestTracker(scheduler: clock) { rested.append($0) }
+        tracker.moved(to: CGPoint(x: 1, y: 1))
+        clock.advance(to: PointerRestTracker.restDelay / 2)
+        tracker.moved(to: CGPoint(x: 2, y: 2))
+        clock.advance(to: PointerRestTracker.restDelay * 2)
+        expectEqual(rested, [CGPoint(x: 2, y: 2)], "a pointer that passes by does not rest")
+        tracker.clicked(at: CGPoint(x: 3, y: 3))
+        expectEqual(rested.last, CGPoint(x: 3, y: 3))
+        clock.advance(to: PointerRestTracker.restDelay * 10)
+        expectEqual(rested.count, 2)
+    }
+
+    test("a panel button with Command or Control, a letter, a sequence, or text acts once") {
+        let down = Shortcut(modifiers: [.control, .option], key: .virtual(.down))
+        let actions: [PanelAction] = [
+            .shortcut(down),
+            .shortcut(Shortcut(modifiers: .command, key: .virtual(.down))),
+            .shortcut(Shortcut(modifiers: [], key: .virtual(.return))),
+            .shortcut(Shortcut(modifiers: .command, key: .character("c"))),
+            .sequence([Shortcut(modifiers: [], key: .virtual(.down))]),
+            .text("hi"),
+        ]
+        for action in actions {
+            expectEqual(action.holdBehavior, .once, "\(action)")
+        }
     }
 
     test("the modifiers, Return, Escape, and Tab do not repeat") {
@@ -103,50 +181,6 @@ private func heldKeyTests() {
     }
 }
 
-/// A clock that moves only when a test moves it.
-@MainActor
-final class FakeClock: DelayScheduler {
-    private final class Item: ScheduledWork {
-        let at: TimeInterval
-        let order: Int
-        let work: @MainActor () -> Void
-        var isCancelled = false
-
-        init(at: TimeInterval, order: Int, work: @escaping @MainActor () -> Void) {
-            self.at = at
-            self.order = order
-            self.work = work
-        }
-
-        func cancel() { isCancelled = true }
-    }
-
-    private(set) var now: TimeInterval = 0
-    private var items: [Item] = []
-    private var order = 0
-
-    func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any ScheduledWork {
-        order += 1
-        let item = Item(at: now + delay, order: order, work: work)
-        items.append(item)
-        return item
-    }
-
-    /// Runs each piece of work that is due by `time`, in order.
-    func advance(to time: TimeInterval) {
-        while let next = items
-            .filter({ !$0.isCancelled && $0.at <= time })
-            .min(by: { ($0.at, $0.order) < ($1.at, $1.order) })
-        {
-            items.removeAll { $0 === next }
-            now = next.at
-            next.work()
-        }
-        now = time
-    }
-}
-
-/// Counts what a press does.
 @MainActor
 final class PressLog {
     var acts = 0
@@ -344,13 +378,8 @@ private func keyTimingTests() {
     }
 
     test("key timing reads Slow Keys and press and hold from the defaults") {
-        let suite = "september-test-\(UUID().uuidString)"
-        let global = UserDefaults(suiteName: suite + "-global")!
-        let access = UserDefaults(suiteName: suite + "-access")!
-        defer {
-            removeDefaults(suite + "-global")
-            removeDefaults(suite + "-access")
-        }
+        let global = freshDefaults()
+        let access = freshDefaults()
         global.set(false, forKey: "ApplePressAndHoldEnabled")
         access.set(true, forKey: "slowKey")
         access.set(500, forKey: "slowKeyDelay")

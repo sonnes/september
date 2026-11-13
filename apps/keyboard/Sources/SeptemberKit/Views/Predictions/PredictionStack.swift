@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// The three sentence predictions above the input bar. The best row is next
+/// The sentence predictions above the input bar. The best row is next
 /// to the bar. The stack has no background.
 ///
 /// A notice takes the place of the rows for a password field, for private
@@ -40,7 +40,6 @@ public struct PredictionStack: View {
                         PredictionRow(stripe: stripe, mode: mode, onType: onType)
                     }
                 }
-                .opacity(engine.isStale ? Metrics.Predictions.staleOpacity : 1)
             }
         }
         .frame(

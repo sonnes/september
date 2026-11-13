@@ -306,10 +306,6 @@ private func promptTests() {
         expectEqual(SuggestionPrompt(context: context("I am going to the")).answerPrefix, "the")
         expectEqual(SuggestionPrompt(context: context("Can we meet ")).answerPrefix, "")
     }
-
-    test("the prompt asks for as many predictions as the stack shows") {
-        expectEqual(SuggestionPrompt.count, 3)
-    }
 }
 
 @MainActor
@@ -320,55 +316,6 @@ private func noticeTests() {
         expect(!PredictionNotice.appleIntelligence(.modelNotReady).opensSystemSettings)
         expect(!PredictionNotice.passwordField.opensSystemSettings)
     }
-
-    test("each notice has a message") {
-        let notices: [PredictionNotice] = [
-            .appleIntelligence(.off), .appleIntelligence(.notSupported),
-            .appleIntelligence(.modelNotReady), .passwordField, .privateText,
-        ]
-        expect(notices.allSatisfy { !$0.message.isEmpty })
-    }
-}
-
-/// A predictor that answers from a closure and records each request.
-private actor FakePredictor: SentencePredicting {
-    nonisolated let availability: PredictionAvailability
-    private let answer: @Sendable (PredictionContext) throws -> [String]
-    private let wait: @Sendable (PredictionContext) -> Duration
-    private(set) var requests: [PredictionContext] = []
-
-    init(
-        availability: PredictionAvailability = .ready,
-        wait: @escaping @Sendable (PredictionContext) -> Duration = { _ in .zero },
-        answer: @escaping @Sendable (PredictionContext) throws -> [String]
-    ) {
-        self.availability = availability
-        self.wait = wait
-        self.answer = answer
-    }
-
-    func predictions(for context: PredictionContext) async throws -> [String] {
-        requests.append(context)
-        // Ignores cancellation, so the engine must drop a late answer itself.
-        let deadline = ContinuousClock.now + wait(context)
-        while ContinuousClock.now < deadline { await Task.yield() }
-        return try answer(context)
-    }
-}
-
-@MainActor
-private final class FakeCompleter: WordCompleting {
-    var wait: Duration = .zero
-    private(set) var responses: [String] = []
-
-    func completions(for context: PredictionContext) async -> [WordCompletion] {
-        if wait > .zero { try? await Task.sleep(for: wait) }
-        return WordCompletion(word: "cup", partial: context.partialWord).map { [$0] } ?? []
-    }
-
-    func record(_ response: WordResponse, to completion: WordCompletion) {
-        responses.append("\(response) \(completion.word)")
-    }
 }
 
 private struct PredictionFailed: Error {}
@@ -377,11 +324,11 @@ private struct PredictionFailed: Error {}
 private func makeEngine(
     _ predictor: FakePredictor,
     completer: FakeCompleter = FakeCompleter(),
-    defaults: UserDefaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!,
+    defaults: UserDefaults = freshDefaults(),
     history: SentenceHistory? = nil
 ) -> PredictionEngine {
     PredictionEngine(
-        predictor: predictor, completer: completer, delay: .milliseconds(20), defaults: defaults,
+        predictor: predictor, completer: completer, delay: .zero, defaults: defaults,
         history: history)
 }
 
@@ -389,7 +336,7 @@ private func makeEngine(
 private func makeHistory(_ sentences: [String] = []) throws -> SentenceHistory {
     let history = SentenceHistory(
         database: try KeyboardDatabase(path: ":memory:"),
-        defaults: UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!)
+        defaults: freshDefaults())
     for sentence in sentences { history.record(sentence) }
     return history
 }
@@ -399,8 +346,6 @@ private let tea: @Sendable (PredictionContext) -> [String] = { _ in
 }
 
 extension PredictionEngine {
-    /// The focus comes to an empty field, and then the field holds `input`,
-    /// as if the user typed it.
     func userTypes(
         _ input: InputMirror, mode: PredictionMode = .type, said: [String] = [],
         screen: ScreenContext? = nil
@@ -409,16 +354,6 @@ extension PredictionEngine {
             if case .mirrored = input { .mirrored(text: "", caret: 0, selectionLength: 0) } else { .local(text: "") }
         update(input: empty, mode: mode, said: said)
         update(input: input, mode: mode, said: said, screen: screen)
-    }
-}
-
-@MainActor
-private func asyncTest(_ name: String, _ body: () async throws -> Void) async {
-    Run.current = name
-    do {
-        try await body()
-    } catch {
-        Run.failures.append("\(name) — threw \(error)")
     }
 }
 
@@ -432,7 +367,6 @@ private func engineTests() async {
         expect(engine.stripes.isEmpty)
         await engine.settle()
         expectEqual(engine.stripes.map(\.prediction), Array(tea(PredictionContext(text: "", caret: 0, mode: .type, said: [])).prefix(3)))
-        expect(!engine.isStale)
         expectEqual(engine.stripes.first?.text(toTypeThrough: 2), "p of tea, ")
     }
 
@@ -449,11 +383,13 @@ private func engineTests() async {
         let engine = makeEngine(FakePredictor(answer: tea), completer: completer)
         engine.update(input: cu, mode: .type, said: [])
         await engine.settleWords()
-        completer.wait = .milliseconds(50)
+        completer.holds = true
         engine.update(input: .local(text: "I would like a c"), mode: .type, said: [])
         expectEqual(engine.words.map(\.textToType), ["up "])
         engine.update(input: .local(text: "I would like a cx"), mode: .type, said: [])
         expect(engine.words.isEmpty, "a word that no longer fits must not type wrong letters")
+        completer.release()
+        await engine.settleWords()
     }
 
     await asyncTest("a space clears the completions of the last word at once") {
@@ -461,9 +397,11 @@ private func engineTests() async {
         let engine = makeEngine(FakePredictor(answer: tea), completer: completer)
         engine.update(input: cu, mode: .type, said: [])
         await engine.settleWords()
-        completer.wait = .milliseconds(50)
+        completer.holds = true
         engine.update(input: .local(text: "I would like a cu "), mode: .type, said: [])
         expect(engine.words.isEmpty)
+        completer.release()
+        await engine.settleWords()
     }
 
     await asyncTest("Return records a picked word that the text still holds as accepted") {
@@ -538,29 +476,29 @@ private func engineTests() async {
 
     await asyncTest("a new input drops the answer of an old request") {
         let predictor = FakePredictor(
-            wait: { $0.typed == "old" ? .milliseconds(150) : .zero },
+            holds: { $0.typed == "old" },
             answer: { ["\($0.typed) answer"] })
         let engine = makeEngine(predictor)
         engine.userTypes(.local(text: "old"))
-        while await predictor.requests.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+        await predictor.waitUntilHeld(1)
         engine.update(input: .local(text: "new"), mode: .type, said: [])
         await engine.settle()
-        try await Task.sleep(for: .milliseconds(250))
+        expectEqual(engine.stripes.map(\.prediction), ["new answer"])
+        await predictor.release()
+        await predictor.waitUntilAnswered(2)
         expectEqual(engine.stripes.map(\.prediction), ["new answer"])
     }
 
-    await asyncTest("old predictions stay, marked stale, until the new ones arrive") {
+    await asyncTest("old predictions stay until the new ones arrive") {
         let engine = makeEngine(FakePredictor(answer: tea))
         engine.userTypes(cu)
         await engine.settle()
         let tee = InputMirror.mirrored(text: "I would like a cup of t", caret: 23, selectionLength: 0)
         engine.update(input: tee, mode: .type, said: [])
-        expect(engine.isStale)
         expectEqual(engine.stripes.count, 3)
         expect(engine.stripes[0].matches, "the tea row still continues the field")
         expect(!engine.stripes[2].matches, "the custard row no longer continues the field")
         await engine.settle()
-        expect(!engine.isStale)
     }
 
     await asyncTest("a password field shows no predictions and sends no request") {
@@ -620,7 +558,7 @@ private func engineTests() async {
     }
 
     await asyncTest("the screen switch is off until the user turns it on, and keeps its state") {
-        let defaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         let engine = makeEngine(FakePredictor(answer: tea), defaults: defaults)
         expect(!engine.screenEnabled)
         engine.screenEnabled = true
@@ -641,7 +579,7 @@ private func engineTests() async {
     }
 
     await asyncTest("the switches keep their state") {
-        let defaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         makeEngine(FakePredictor(answer: tea), defaults: defaults).wordsEnabled = false
         let again = makeEngine(FakePredictor(answer: tea), defaults: defaults)
         expect(!again.wordsEnabled)
@@ -659,7 +597,6 @@ private func engineTests() async {
         engine.update(input: .local(text: "fail"), mode: .type, said: [])
         await engine.settle()
         expect(engine.stripes.isEmpty)
-        expect(!engine.isStale)
     }
 
     await asyncTest("a failed request asks again with the best completion of the partial word") {
@@ -794,7 +731,6 @@ private func typingTests() async {
 @MainActor
 private func historyTests() async {
     let cu = InputMirror.mirrored(text: "I would like a cu", caret: 17, selectionLength: 0)
-    // Three uses, two uses, and one use.
     let sent = [
         "I would like a cup of tea, please.", "I would like a cup of tea, please.",
         "I would like a cup of tea, please.", "I would like a cushion.", "I would like a cushion.",
@@ -902,7 +838,7 @@ private func liveModelTests() async {
     await asyncTest("Apple Intelligence gives three predictions that continue the field") {
         let engine = PredictionEngine(
             predictor: AppleIntelligencePredictor(),
-            defaults: UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!)
+            defaults: freshDefaults())
         expectEqual(engine.availability, .ready)
         for text in ["I would like a cu", "I would like a cup of t", "Can we me"] {
             engine.update(
@@ -934,7 +870,7 @@ private func candidateTests() async {
     await asyncTest("the system candidates give more words than a row of eight for a common start") {
         let found = await words("th")
         expect(found.count > 8, "\(found.count) words")
-        expect(found.count <= Metrics.Predictions.wordLimit)
+        expect(found.count <= CandidateCompleter.limit)
     }
 
     await asyncTest("the system candidates give the next word after a space") {

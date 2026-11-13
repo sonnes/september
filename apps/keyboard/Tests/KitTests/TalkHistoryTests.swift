@@ -51,38 +51,8 @@ func talkHistoryTests() {
         expect(SaidList(database: open(folder), now: { now }).lines.isEmpty)
     }
 
-    test("the Talk history moves the lines of its old JSON file into the database") {
-        let folder = folder()
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let json = folder.appendingPathComponent("talk-history.json")
-        let old = [
-            SaidLine(text: "Thank you", date: now.addingTimeInterval(-60)),
-            SaidLine(text: "Hello", date: now.addingTimeInterval(-120)),
-            SaidLine(text: "Last month", date: now.addingTimeInterval(-31 * 24 * 3600)),
-        ]
-        try JSONEncoder().encode(old).write(to: json)
-        let said = SaidList(database: open(folder), importing: json, now: { now })
-        expectEqual(said.lines, Array(old.prefix(2)))
-        expect(!FileManager.default.fileExists(atPath: json.path))
-        expectEqual(SaidList(database: open(folder), importing: json, now: { now }).lines, Array(old.prefix(2)))
-    }
-
-    test("a broken old Talk history file is moved aside, not overwritten") {
-        let folder = folder()
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let json = folder.appendingPathComponent("talk-history.json")
-        try Data("not json".utf8).write(to: json)
-        let said = SaidList(database: open(folder), importing: json, now: { now })
-        expect(said.lines.isEmpty)
-        let aside = folder.appendingPathComponent("talk-history.broken.json")
-        expectEqual(try String(contentsOf: aside, encoding: .utf8), "not json")
-        expect(!FileManager.default.fileExists(atPath: json.path))
-        said.add("Hello", at: now)
-        expectEqual(SaidList(database: open(folder), importing: json, now: { now }).lines.map(\.text), ["Hello"])
-    }
-
     test("the predictions get only the lines of the last hour, oldest first") {
-        let said = SaidList(now: { now })
+        let said = SaidList(database: memoryDatabase(), now: { now })
         said.add("This morning", at: now.addingTimeInterval(-3 * 3600))
         said.add("A while ago", at: now.addingTimeInterval(-50 * 60))
         said.add("Just now", at: now)

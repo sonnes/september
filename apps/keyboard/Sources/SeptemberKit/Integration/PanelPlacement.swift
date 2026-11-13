@@ -11,16 +11,20 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
 
     public var id: Self { self }
 
-    /// The name of the saved frame in `UserDefaults`.
     public var frameName: String { "September Keyboard Panel \(rawValue)" }
 
-    /// The bundle ID of Rectangle.
     public static let rectangleBundleID = "com.knollsoft.Rectangle"
 
     /// The panels that show. The Rectangle panel shows only when Rectangle
     /// is installed, because its shortcuts do nothing without it.
     public static func shown(rectangleInstalled: Bool) -> [DetachedPanel] {
         allCases.filter { $0 != .rectangle || rectangleInstalled }
+    }
+
+    /// The panels show only in Type mode. Talk mode holds Phrases in the
+    /// keyboard window.
+    public static func isShown(in mode: KeyboardMode) -> Bool {
+        mode == .type
     }
 }
 
@@ -110,7 +114,6 @@ public enum PanelPlacement {
         return CGPoint(x: left + leftPanels, y: screen.minY + margin)
     }
 
-    /// True when a saved frame is on one of the screens.
     public static func isVisible(_ frame: CGRect, on screens: [CGRect]) -> Bool {
         screens.contains { $0.intersects(frame) }
     }
@@ -123,7 +126,6 @@ public enum PanelPlacement {
 /// they are on the screen.
 @MainActor
 public struct KeyboardPosition {
-    /// The name of the saved place in `UserDefaults`.
     public static let key = "September Keyboard Window Origin"
     private let defaults: UserDefaults
 
@@ -166,15 +168,34 @@ public struct KeyboardPosition {
     /// clipboard buttons.
     public static func keysOrigin(ofWindow origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
         let type = typeOrigin(of: origin, in: mode)
-        return CGPoint(x: type.x + KeyboardScreen.cardInset(.type), y: type.y)
+        return CGPoint(x: type.x + cardInset(.type), y: type.y)
     }
 
     /// The corner of the Type mode window whose keys card is at `keys`.
     public static func typeWindowOrigin(forKeys keys: CGPoint) -> CGPoint {
-        CGPoint(x: keys.x - KeyboardScreen.cardInset(.type), y: keys.y)
+        CGPoint(x: keys.x - cardInset(.type), y: keys.y)
+    }
+
+    /// The distance from the left edge of the window to the keys and the bar
+    /// in `mode`. The app keeps the keys in place when the mode changes.
+    public static func keysInset(_ mode: KeyboardMode) -> CGFloat {
+        Metrics.Screen.keysInset(cardKeysInset: cardKeysInset(mode))
+    }
+
+    /// The clear space at the left of the keys card in Type mode, or of the
+    /// Talk card in Talk mode, under the clipboard buttons.
+    public static func cardInset(_ mode: KeyboardMode) -> CGFloat {
+        Metrics.Screen.cardInset(cardKeysInset: cardKeysInset(mode))
+    }
+
+    private static func cardKeysInset(_ mode: KeyboardMode) -> CGFloat {
+        switch mode {
+        case .type: Metrics.Screen.typeCardKeysInset
+        case .talk: Metrics.Screen.talkCardKeysInset
+        }
     }
 
     private static func shift(_ mode: KeyboardMode) -> CGFloat {
-        KeyboardScreen.keysInset(mode) - KeyboardScreen.keysInset(.type)
+        keysInset(mode) - keysInset(.type)
     }
 }

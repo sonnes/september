@@ -1,31 +1,58 @@
 import Foundation
 
+/// The editor of a `WriteModel`.
+@MainActor
+public protocol WriteEditing: AnyObject {
+    /// Shows the Markdown of a document. An empty text is a new document.
+    func show(_ text: String)
+    /// The Markdown of the editor, for a save.
+    var text: String { get }
+}
+
 /// The documents of Write: the document list, the open document, and the
 /// saves of the editor text.
 ///
-/// The model shows a document in the editor through `show`, and reads the
-/// text of the editor through `editorText`. Before another document opens,
-/// the model saves the open document.
+/// The model shows a document in its `WriteEditing` editor, and reads the
+/// text of the editor for each save. The editor calls `edited()` after
+/// each edit. The model saves the edits `saveDelay` after the last edit, and
+/// before another document opens. A load of a document is not an edit, so it
+/// saves nothing.
 @MainActor
 public final class WriteModel: ObservableObject {
     @Published public private(set) var documents: [WriteDocument] = []
     @Published public private(set) var current: WriteDocument?
-    /// The last error of the folder, for the paper to show. It never holds document text.
+    /// The last error of the folder, for the paper and the desk to show. A
+    /// list or an open of a document that succeeds clears it. It never holds
+    /// document text.
     @Published public private(set) var failure: String?
     /// The document of the last Move to Trash, until Undo or the next move.
     @Published public private(set) var trashed: WriteDocument?
     /// Where the last Move to Trash put the file.
     private var trashedFile: URL?
 
-    /// Shows the Markdown of a document in the editor. An empty text is a new document.
-    public var show: (String) -> Void = { _ in }
-    /// The Markdown in the editor now.
-    public var editorText: () -> String = { "" }
-
     public let library: DocumentLibrary
+    private let editor: any WriteEditing
 
-    public init(library: DocumentLibrary) {
+    public static let saveDelay: TimeInterval = 0.12
+
+    private let scheduler: any DelayScheduler
+    private var isEdited = false
+    private var pendingSave: (any ScheduledWork)?
+
+    public init(
+        library: DocumentLibrary, editor: any WriteEditing, scheduler: any DelayScheduler = MainQueueScheduler()
+    ) {
         self.library = library
+        self.editor = editor
+        self.scheduler = scheduler
+    }
+
+    /// The user changed the text in the editor. The model saves it
+    /// `saveDelay` after the last edit.
+    public func edited() {
+        isEdited = true
+        pendingSave?.cancel()
+        pendingSave = scheduler.schedule(after: Self.saveDelay) { [weak self] in self?.save() }
     }
 
     /// Lists the folder and opens the newest document, or a new one.
@@ -117,15 +144,28 @@ public final class WriteModel: ObservableObject {
         select(document.url)
     }
 
-    /// Saves the text of the editor to the open document. The file takes the
-    /// name of its first heading.
-    public func save() {
-        guard let url = current?.url else { return }
+    /// The first `lines` lines of `document`, for its card on the desk. If
+    /// the read fails, the model keeps the error and the card has no lines.
+    public func preview(_ document: WriteDocument, lines: Int) -> [String] {
         do {
-            let saved = try library.save(editorText(), to: url)
+            return DocumentLibrary.preview(of: try library.read(document), lines: lines)
+        } catch {
+            report(error)
+            return []
+        }
+    }
+
+    /// Saves the edits of the editor to the open document now. The file takes
+    /// the name of its first heading. With no edits, the save does nothing.
+    public func save() {
+        pendingSave?.cancel()
+        pendingSave = nil
+        guard isEdited, let url = current?.url else { return }
+        do {
+            let saved = try library.save(editor.text, to: url)
+            isEdited = false
             reload()
             current = documents.first { $0.url == saved } ?? WriteDocument(url: saved, modified: Date())
-            failure = nil
         } catch {
             report(error)
         }
@@ -135,7 +175,8 @@ public final class WriteModel: ObservableObject {
         do {
             let text = try library.read(document)
             current = document
-            show(text)
+            failure = nil
+            editor.show(text)
         } catch {
             report(error)
         }
@@ -144,6 +185,7 @@ public final class WriteModel: ObservableObject {
     private func reload() {
         do {
             documents = try library.documents()
+            failure = nil
         } catch {
             report(error)
         }

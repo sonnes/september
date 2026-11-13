@@ -73,7 +73,7 @@ private struct EmptyWordSlot: View {
             .strokeBorder(
                 Color(Tokens.strokeStandard),
                 style: StrokeStyle(
-                    lineWidth: Metrics.Predictions.strokeWidth, dash: Metrics.Predictions.emptySlotDash))
+                    lineWidth: Metrics.Predictions.strokeWidth, dash: Metrics.emptySlotDash))
             .frame(maxWidth: .infinity, minHeight: Metrics.Predictions.wordHeight)
             .accessibilityHidden(true)
     }

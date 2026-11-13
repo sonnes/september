@@ -19,7 +19,7 @@ documents.
 | A secret | Keychain | The ElevenLabs key (`com.september.keyboard`) and the text of each private button (`com.september.keyboard.private`) |
 | A document of the user | Markdown files | The Write documents in `~/Documents/September/` |
 | A definition that ships with the app | JSON in the bundle | Panels, accents, and context rules in `Sources/SeptemberKit/Resources/` |
-| A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history, the Said list of Talk mode, the clipboard history, and the buttons of My Panel and their presses |
+| A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history, the Said list of Talk mode, the clipboard history, the buttons of My Panel and their presses, and the presses of the shortcut suggestions |
 
 ## The Database
 
@@ -41,8 +41,12 @@ documents.
   or a test failure never prints the text.
 
 `AppDelegate` opens one `KeyboardDatabase` at launch and gives it to each
-store. A store that gets no database uses a database in memory. The snapshots
-and most tests use this database.
+store. Each store takes the database as a parameter. The snapshots and most
+tests give the stores a database in memory (`":memory:"`).
+
+`KeyboardDatabase.folder` is the folder of the keyboard files,
+`~/Library/Application Support/September Keyboard/`. `KeyboardDatabase.defaultURL`
+is `keyboard.sqlite` in this folder.
 
 The stores that own the database run on the main actor. A search reads one
 index and returns in less than one millisecond.
@@ -51,29 +55,28 @@ index and returns in less than one millisecond.
 
 Older versions of the keyboard kept the Said list in `talk-history.json`, the
 clipboard history in `clipboard-history.json`, the presses of My Panel in
-`my-panel-usage.json`, and the buttons of My Panel in `my-panel.json`. At
-launch, each store moves the rows of its file into its table:
+`my-panel-usage.json`, and the buttons of My Panel in `my-panel.json`.
 
-1. The store decodes the file.
-2. The store inserts the rows in one transaction. A row that is already in
-   the table stays as it is.
-3. After the commit, the store removes the file.
+At launch, `AppDelegate` calls `LegacyImport.run(database:folder:)` before it
+makes the stores. `LegacyImport` is in the `Integration` folder, because it
+reads the old files of several features. It lists each old file once, with
+its decoder and the insert of its rows. For each file in the folder, it does these steps:
 
-`KeyboardDatabase.importJSON` does these steps for each store except
-`UserPanelStore`. If the file does not decode, it moves to
-`<name>.broken.json`, and the table gets no rows. If the transaction fails, the file stays, and the next launch
+1. It decodes the file.
+2. It inserts the rows in one transaction. A row that is already in the table
+   stays as it is.
+3. After the commit, it removes the file.
+
+If a file does not decode, it moves to `<name>.broken.json`, and the table
+gets no rows. If the transaction fails, the file stays, and the next launch
 tries again. A second import of the same file changes nothing, because the
 insert ignores the rows that are already in the table.
 
-`my-panel.json` is the exception. If it does not decode, it stays where it
-is, and My Panel shows an error. The store does not use `importJSON`, because
-`importJSON` moves a broken file aside. See "The Buttons of My Panel".
-
 The import is not a step of `KeyboardDatabase.migrations`. The steps hold SQL
-only, and they do not know the file formats of the stores.
+only, and they do not know the formats of the old files.
 
-At launch, `KeyboardDatabase.removeStaleFiles` removes `usage.json` and
-`learned.json` from the folder of the database. No store reads these files.
+`LegacyImport.run` also removes `usage.json` and `learned.json` from the
+folder. No part of the keyboard reads these files.
 
 ## The Sentence History
 
@@ -109,6 +112,16 @@ no new ones.
 
 `PredictionEngine.submit(keepsSentences:)` is the only caller of `record(_:)`.
 See [keyboard-session.md](keyboard-session.md).
+
+## The Text Log
+
+`TextLog` keeps dated texts in one table, for a maximum age and up to a
+maximum count. The Said list and the clipboard history use it. The table has
+the columns `id`, `text`, and one date column. A new row with the same unique
+key replaces the old row. Each read removes the old rows and the rows after
+the newest `limit` in SQL. Then it gives the rows that stay, newest first.
+`TextLogEntry` is the type of one row. `SaidLine` and `ClipboardItem` are its
+names in the two stores.
 
 ## The Said List
 
@@ -176,8 +189,27 @@ row. At launch, the store removes each row whose weight is now less than
 0.01. The store holds the rows in memory, so the views do not read the
 database.
 
-The old file kept the counts under the key `my-panel`, with dates in seconds
-since 2001. The import changes the dates to seconds since 1970.
+The old file `my-panel-usage.json` kept the counts under the key
+`my-panel`, with dates in seconds since 2001. The import changes the dates to
+seconds since 1970.
+
+## The Presses of the Shortcut Suggestions
+
+`UsageStore` also owns the `shortcut_use` table. Each row holds the presses
+of one shortcut suggestion in one app. The ID is the bundle ID of the app and
+the keys of the shortcut, such as `com.apple.Notes command+l`. The table holds
+no menu names and no text that the user typed.
+
+```sql
+CREATE TABLE shortcut_use (
+  shortcut_id  TEXT PRIMARY KEY,
+  weight       REAL NOT NULL,          -- the weight at `updated_at`
+  updated_at   REAL NOT NULL           -- seconds since 1970
+) WITHOUT ROWID;
+```
+
+The weights decay as the presses of My Panel do. The suggestions show the
+most pressed shortcuts first, and a tie keeps the menu bar order.
 
 ## The Buttons of My Panel
 
@@ -189,7 +221,7 @@ CREATE TABLE user_button (
   id        TEXT PRIMARY KEY,
   position  INTEGER NOT NULL UNIQUE,   -- the order of the settings
   name      TEXT NOT NULL,
-  action    TEXT NOT NULL              -- the JSON of UserAction
+  action    TEXT NOT NULL              -- the JSON of PanelAction
 );
 ```
 
@@ -207,9 +239,11 @@ The store keeps the buttons in memory, so the views do not read the
 database. Each change writes the table first and then changes `buttons`. If
 the write fails, the method throws and the panel stays as it was.
 
-At launch, the store moves the buttons of `my-panel.json` into the table in
-one transaction, in the order of the file. It sets the switch from the file.
-After the commit, it removes the file. A button whose ID or position is
-already in the table stays as it is. The store throws if the file does not
-decode, if the transaction fails, or if a row of the table does not decode. My Panel then shows an error
-and keeps the file as it is, so the buttons of the user are not lost.
+The import of `my-panel.json` writes the buttons in the order of the file,
+and it sets the switch from the file. A button whose ID or position is
+already in the table stays as it is.
+
+The store throws if a row of the table does not decode. My Panel then shows
+an error, and the table stays as it is. The error message has one fixed text
+for each kind of error, because the text of a decoding error can quote a
+row.

@@ -66,7 +66,7 @@ public enum ScreenContextExtractor {
     static let skippedRoles: Set<String> = [
         "AXTextField", "AXTextArea", "AXComboBox", "AXSearchField", "AXMenuBar", "AXMenu",
     ]
-    static let skippedSubroles: Set<String> = ["AXLandmarkNavigation", "AXSecureTextField"]
+    static let skippedSubroles: Set<String> = ["AXLandmarkNavigation", FocusedField.secureSubrole]
 
     private struct Walk<Node: ContextNode> {
         let isExpired: () -> Bool

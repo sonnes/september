@@ -4,7 +4,12 @@ import SeptemberKit
 @MainActor
 func storageTests() {
     databaseTests()
+    legacyImportTests()
     sentenceHistoryTests()
+}
+
+func memoryDatabase() -> KeyboardDatabase {
+    try! KeyboardDatabase(path: ":memory:")
 }
 
 private func temporaryFolder() throws -> URL {
@@ -34,18 +39,6 @@ private func databaseTests() {
         expectEqual(rows.map { $0[0] }, [.text("Hello.")])
         let mode = try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? Int
         expectEqual(mode, 0o600)
-    }
-
-    test("removing the stale files deletes usage.json and learned.json, and keeps the other files") {
-        let folder = try temporaryFolder()
-        let names = ["usage.json", "learned.json", "my-panel-usage.json", "keyboard.sqlite"]
-        for name in names {
-            try Data("{}".utf8).write(to: folder.appendingPathComponent(name))
-        }
-        KeyboardDatabase.removeStaleFiles(in: folder)
-        let left = try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
-        expectEqual(left, ["keyboard.sqlite", "my-panel-usage.json"])
-        KeyboardDatabase.removeStaleFiles(in: folder)
     }
 
     test("the write-ahead files of the database are readable only by the user") {
@@ -112,12 +105,110 @@ private func databaseTests() {
 }
 
 @MainActor
+private func legacyImportTests() {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let saveKeys = Shortcut(modifiers: .command, key: .character("s"))
+
+    func write(_ text: String, to name: String, in folder: URL) throws {
+        try Data(text.utf8).write(to: folder.appendingPathComponent(name))
+    }
+
+    func open(_ folder: URL) -> KeyboardDatabase {
+        KeyboardDatabase.open(at: folder.appendingPathComponent("keyboard.sqlite"))
+    }
+
+    func run(_ folder: URL, defaults: UserDefaults = freshDefaults())
+        -> KeyboardDatabase
+    {
+        let database = open(folder)
+        LegacyImport.run(database: database, folder: folder, defaults: defaults)
+        return database
+    }
+
+    test("the legacy import moves each file once, moves a broken file aside, and removes the stale files") {
+        let folder = try temporaryFolder()
+        let lines = try String(
+            decoding: JSONEncoder().encode([SaidLine(text: "Hello", date: now)]), as: UTF8.self)
+        try write(lines, to: "talk-history.json", in: folder)
+        try write("{ not json", to: "my-panel.json", in: folder)
+        try write("{}", to: "usage.json", in: folder)
+        try write("{}", to: "learned.json", in: folder)
+        try write("{}", to: "notes.json", in: folder)
+
+        let database = run(folder)
+        expectEqual(try database.query("SELECT count(*) FROM talk_line"), [[.int(1)]])
+        expectEqual(try database.query("SELECT count(*) FROM user_button"), [[.int(0)]])
+        let aside = folder.appendingPathComponent("my-panel.broken.json")
+        expectEqual(try String(contentsOf: aside, encoding: .utf8), "{ not json")
+        let left = try FileManager.default.contentsOfDirectory(atPath: folder.path)
+            .filter { $0.hasSuffix(".json") }.sorted()
+        expectEqual(left, ["my-panel.broken.json", "notes.json"])
+
+        try write(lines, to: "talk-history.json", in: folder)
+        expectEqual(try run(folder).query("SELECT count(*) FROM talk_line"), [[.int(1)]])
+    }
+
+    test("the legacy import moves the old clipboard history into the clip table") {
+        let folder = try temporaryFolder()
+        let old = [
+            ClipboardItem(text: "14 Elm Road", date: now.addingTimeInterval(-60)),
+            ClipboardItem(text: "Ward 7, bed 12", date: now.addingTimeInterval(-120)),
+        ]
+        try JSONEncoder().encode(old).write(to: folder.appendingPathComponent("clipboard-history.json"))
+        let history = ClipboardHistory(
+            database: run(folder), defaults: freshDefaults(),
+            now: { now })
+        expectEqual(history.items, old)
+    }
+
+    test("the legacy import moves the old Talk history into the talk_line table") {
+        let folder = try temporaryFolder()
+        let old = [
+            SaidLine(text: "Thank you", date: now.addingTimeInterval(-60)),
+            SaidLine(text: "Hello", date: now.addingTimeInterval(-120)),
+        ]
+        try JSONEncoder().encode(old).write(to: folder.appendingPathComponent("talk-history.json"))
+        expectEqual(SaidList(database: run(folder), now: { now }).lines, old)
+    }
+
+    test("the legacy import moves the old counts of My Panel, and keeps a count that the table has") {
+        let folder = try temporaryFolder()
+        UsageStore(database: open(folder), now: { now }).record("keep")
+        // `UsageStore` wrote its dates in seconds since 2001.
+        let at = now.timeIntervalSinceReferenceDate
+        try write(
+            "{\"apps\": {\"my-panel\": {\"keep\": {\"weight\": 9, \"updated\": \(at)}, \"save\": {\"weight\": 4, \"updated\": \(at)}}}}",
+            to: "my-panel-usage.json", in: folder)
+        let usage = UsageStore(database: run(folder), now: { now })
+        expectEqual(usage.uses(of: "keep"), 1)
+        expectEqual(usage.uses(of: "save"), 4)
+    }
+
+    test("the legacy import moves the buttons of My Panel and the private text switch") {
+        let folder = try temporaryFolder()
+        try write(
+            """
+            {"makeNewTextPrivate": false, "buttons": [
+              {"id": "b", "name": "Save", "action": {"type": "shortcut", "modifiers": ["command"], "key": "s"}},
+              {"id": "a", "name": "Home", "action": {"type": "privateText"}},
+              {"id": "c", "name": "Hi", "action": {"type": "text", "text": "Hello"}}]}
+            """, to: "my-panel.json", in: folder)
+        let defaults = freshDefaults()
+        let store = try UserPanelStore(
+            database: run(folder, defaults: defaults), defaults: defaults, privateTexts: MemoryPrivateTexts())
+        expectEqual(store.buttons.map(\.id), ["b", "a", "c"])
+        expectEqual(store.buttons.map(\.action), [.shortcut(saveKeys), .privateText("a"), .text("Hello")])
+        expect(!store.makeNewTextPrivate)
+    }
+}
+
+@MainActor
 private func sentenceHistoryTests() {
     let day: TimeInterval = 24 * 3600
 
     func makeHistory(
         now: @escaping () -> Date = Date.init, limit: Int = SentenceHistory.rowLimit,
-        defaults: UserDefaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        defaults: UserDefaults = freshDefaults()
     ) throws -> SentenceHistory {
         SentenceHistory(
             database: try KeyboardDatabase(path: ":memory:"), defaults: defaults, now: now, limit: limit)
@@ -216,7 +307,7 @@ private func sentenceHistoryTests() {
     }
 
     test("the history is on by default, and turning it off removes every sentence") {
-        let defaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         let history = try makeHistory(defaults: defaults)
         expect(history.isEnabled)
         history.record("Hello there.")
@@ -230,7 +321,7 @@ private func sentenceHistoryTests() {
 
     test("the sentences of a history file stay across launches") {
         let url = try temporaryFolder().appendingPathComponent("keyboard.sqlite")
-        let defaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         SentenceHistory(database: KeyboardDatabase.open(at: url), defaults: defaults).record("Good night.")
         let again = SentenceHistory(database: KeyboardDatabase.open(at: url), defaults: defaults)
         expectEqual(again.matches(for: "Good"), ["Good night."])

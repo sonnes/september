@@ -8,9 +8,7 @@ public enum ElevenLabsError: Error, Equatable, Sendable {
     case quotaEmpty
     /// The keyboard has no key or no voice.
     case notConnected
-    /// The reply was not in the expected form.
     case badResponse
-    /// The request did not reach ElevenLabs.
     case unreachable
     /// ElevenLabs refused the request with this message.
     case service(String)

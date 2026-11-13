@@ -6,7 +6,6 @@ public struct EditorCaret: Equatable, Sendable {
     public let text: String
     public let caret: Int
     public let length: Int
-    /// True when the whole document has no text.
     public let documentIsEmpty: Bool
 
     public init(text: String, caret: Int, length: Int, documentIsEmpty: Bool = false) {
@@ -14,13 +13,6 @@ public struct EditorCaret: Equatable, Sendable {
         self.caret = caret
         self.length = length
         self.documentIsEmpty = documentIsEmpty
-    }
-
-    /// The paragraph as a focused field, for `KeyboardController.focusChanged(to:)`.
-    public var focusedField: FocusedField {
-        FocusedField(
-            appName: "Write", role: "AXTextArea", isEditable: true, isSecure: false,
-            text: text, selection: NSRange(location: caret, length: length))
     }
 }
 

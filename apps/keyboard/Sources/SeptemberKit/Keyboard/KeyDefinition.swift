@@ -1,16 +1,16 @@
 import CoreGraphics
 
-/// What pressing a key does.
 public enum KeyAction: Sendable, Hashable {
     /// Type a character, subject to the current shift / caps lock state.
     case character(String)
-    /// Post a named key (return, arrows, F5 …).
     case virtual(VirtualKey)
     /// Latch, lock or clear a modifier.
     case modifier(Modifiers)
+    /// An F-key by its number. It posts its media key. While a modifier
+    /// other than caps lock is on, it posts the F-key with the modifiers.
+    case function(Int)
 }
 
-/// A modifier combination plus the key it applies to.
 public struct Shortcut: Sendable, Hashable {
     public enum Key: Sendable, Hashable {
         case character(String)
@@ -46,7 +46,52 @@ public struct Shortcut: Sendable, Hashable {
     }
 }
 
-/// One key on the keyboard.
+/// A shortcut in JSON: `{"modifiers": ["command"], "key": "s"}`. The
+/// modifiers can be left out.
+extension Shortcut: Codable {
+    enum CodingKeys: String, CodingKey {
+        case modifiers, key
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let names = try container.decodeIfPresent([String].self, forKey: .modifiers) ?? []
+        self.init(
+            modifiers: try Modifiers(names: names),
+            key: try Key(name: try container.decode(String.self, forKey: .key)))
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(names.dropLast(), forKey: .modifiers)
+        try container.encode(names.last, forKey: .key)
+    }
+
+    /// The names of the modifiers, then the name of the key, as JSON and
+    /// `ShortcutSpec` write them.
+    var names: [String] {
+        let key =
+            switch key {
+            case .character(let character): character
+            case .virtual(let virtual): String(describing: virtual)
+            }
+        return modifiers.heldKeys.map(\.name) + [key]
+    }
+}
+
+extension Shortcut.Key {
+    /// A single character is typed as-is; anything longer names a virtual key.
+    public init(name: String) throws {
+        if name.count == 1 {
+            self = .character(name)
+        } else if let virtual = VirtualKey(name: name) {
+            self = .virtual(virtual)
+        } else {
+            throw PanelDecodingError.unknownKey(name)
+        }
+    }
+}
+
 public struct KeyDefinition: Sendable, Hashable, Identifiable {
     public let id: String
     public let kind: KeyKind
@@ -90,6 +135,7 @@ public struct KeyDefinition: Sendable, Hashable, Identifiable {
     private static func spokenName(of action: KeyAction, label: String) -> String {
         switch action {
         case .virtual(let virtual): virtual.spokenName
+        case .function(let number): VirtualKey.function(number)?.spokenName ?? label
         case .modifier(let modifier) where !modifier.spokenName.isEmpty: modifier.spokenName
         case .modifier, .character: label.capitalized
         }

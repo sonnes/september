@@ -1,10 +1,41 @@
 import AppKit
 import Combine
 
+/// The app around Write. Write calls it when a window of Write takes or
+/// leaves the focus, and when the panel or the caret changes.
+@MainActor
+public protocol WriteHost: AnyObject {
+    /// Brings the paper or the desk to the front with the focus. The keyboard
+    /// does this in a way that also works after a press through `AXPress`.
+    func bringToFront(_ window: NSWindow)
+    /// The paper or the desk closed, so that its window does not wait for
+    /// the focus.
+    func windowClosed(_ window: NSWindow)
+    /// True when the paper or the desk becomes the key window, and false when
+    /// it stops being the key window.
+    func writeKeyChanged(_ isKey: Bool)
+    /// The desk opened or closed.
+    func writePanelChanged(_ panel: WritePanel)
+    /// The paragraph at the caret after each edit or caret move, or the Find
+    /// query while the desk is open. The keyboard cannot read its own window
+    /// through the accessibility API, so the input bar reads the editor here.
+    func writeCaretMoved(_ caret: EditorCaret)
+}
+
+/// What the session reads from Write: the caret for the input bar, and the
+/// text for Speak.
+@MainActor
+public protocol WriteReading: AnyObject {
+    /// The paragraph at the caret, or the Find query on the desk.
+    var caret: EditorCaret { get }
+    /// The selection and the document for Speak, or the Find query on the desk.
+    var speech: EditorSpeech { get }
+}
+
 /// Write: the paper with the native editor, and the desk with the documents
 /// in the folder of Write.
 ///
-/// The editor saves the open document 0.12 seconds after the last edit, and
+/// The model saves the open document a short time after the last edit, and
 /// before another document opens, so Write has no Save command. A link to
 /// a document opens that document. A web link opens in the browser.
 ///
@@ -12,90 +43,57 @@ import Combine
 /// and the other documents rise out of the bar as cards. The open card grows
 /// back into the paper.
 @MainActor
-public final class WriteController {
+public final class WriteController: WriteReading {
     public let model: WriteModel
     public let paper: WritePaperController
     public let desk: WriteDeskController
-    /// Called with the paragraph at the caret after each edit or caret move,
-    /// and with the Find query while the desk is open. The keyboard cannot
-    /// read its own window through the accessibility API, so the input bar
-    /// reads the editor here.
-    public var onCaretChange: ((EditorCaret) -> Void)?
-    /// Called with the panel of Write when the desk opens or closes.
-    public var onPanelChange: ((String) -> Void)?
-    /// Called with `true` when the paper or the desk becomes the key window,
-    /// and with `false` when it stops being the key window.
-    public var onKeyChanged: ((Bool) -> Void)? {
-        didSet {
-            paper.onKeyChanged = onKeyChanged
-            desk.onKeyChanged = onKeyChanged
-        }
-    }
-    /// Brings the paper or the desk to the front with the focus. The keyboard
-    /// passes `AppActivation.bringToFront`, which handles a press through
-    /// `AXPress`.
-    public var bringToFront: (NSWindow) -> Void = { window in
-        NSApp.activate()
-        window.makeKeyAndOrderFront(nil)
-    } {
-        didSet {
-            paper.bringToFront = bringToFront
-            desk.bringToFront = bringToFront
-        }
-    }
-    /// Called when Write closes, so that its window does not wait for the focus.
-    public var windowClosed: (NSWindow) -> Void = { _ in } {
-        didSet { paper.windowClosed = windowClosed }
-    }
-
-    /// The time between the last edit and the save.
-    static let saveDelay: TimeInterval = 0.12
+    private weak var host: (any WriteHost)?
 
     private let openURL: (URL) -> Void
     private let reveal: (URL) -> Void
     private var started = false
-    private var pendingSave: DispatchWorkItem?
     private var failure: AnyCancellable?
     /// Where the paper opened last: the desk uses the same space.
     private var placement: (bar: CGRect?, floor: CGFloat, screen: CGRect, margin: CGFloat)?
 
     /// - Parameters:
+    ///   - host: the app around Write. Write keeps a weak reference to it.
     ///   - openURL: opens a web or mail link.
     ///   - reveal: shows a file in Finder.
+    ///   - scheduler: the clock of the delayed save.
     public init(
+        host: any WriteHost,
         library: DocumentLibrary = DocumentLibrary(),
         openURL: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) },
-        reveal: @escaping (URL) -> Void = { NSWorkspace.shared.activateFileViewerSelecting([$0]) }
+        reveal: @escaping (URL) -> Void = { NSWorkspace.shared.activateFileViewerSelecting([$0]) },
+        scheduler: any DelayScheduler = MainQueueScheduler()
     ) {
-        model = WriteModel(library: library)
-        paper = WritePaperController()
-        desk = WriteDeskController()
+        self.host = host
+        paper = WritePaperController(host: host)
+        model = WriteModel(library: library, editor: paper.editor, scheduler: scheduler)
+        desk = WriteDeskController(host: host)
         self.openURL = openURL
         self.reveal = reveal
 
         let editor = paper.editor
-        model.show = { [weak editor] text in
-            guard let editor else { return }
-            if text.isEmpty { editor.loadNewDocument() } else { editor.load(text) }
-        }
-        model.editorText = { [weak editor] in editor?.markdown ?? "" }
-        editor.onTextChange = { [weak self] in self?.scheduleSave() }
-        editor.onCaretChange = { [weak self] caret in self?.onCaretChange?(caret) }
+        editor.onTextChange = { [weak model] in model?.edited() }
+        editor.onCaretChange = { [weak self] caret in self?.host?.writeCaretMoved(caret) }
         editor.onOpenLink = { [weak self] link in self?.open(link) }
         paper.window.onNewDocument = { [weak self] in self?.newDocument() }
         paper.window.onShowDocuments = { [weak self] in self?.showDesk() }
         paper.onClose = { [weak self] in self?.save() }
-        failure = model.$failure.sink { [weak paper] text in paper?.showNotice(text) }
+        failure = model.$failure.sink { [weak paper, weak desk] text in
+            paper?.showNotice(text)
+            desk?.showNotice(text)
+        }
 
-        let library = model.library
-        desk.preview = { document in
-            let text = (try? library.read(document)) ?? ""
-            return DocumentLibrary.preview(of: text, lines: Metrics.WriteDesk.cardLines)
+        desk.preview = { [weak model] document in
+            model?.preview(document, lines: WriteDesk.cardLines) ?? []
         }
         desk.onCommand = { [weak self] command in self?.perform(command) }
         desk.onQueryChange = { [weak self] _ in
             guard let self else { return }
-            onCaretChange?(caret)
+            self.host?.writeCaretMoved(caret)
         }
         desk.onUndoEnd = { [weak self] in self?.model.forgetTrash() }
     }
@@ -114,19 +112,14 @@ public final class WriteController {
         start()
         placement = (bar, floor, screen, margin)
         if desk.isOpen {
-            bringToFront(desk.window)
+            host?.bringToFront(desk.window)
             return
         }
         if model.current == nil { model.start() }
         paper.show(from: bar, floor: floor, screen: screen, margin: margin)
     }
 
-    /// True while the desk of documents is open.
-    public var isDeskOpen: Bool { desk.isOpen }
-
-    /// The panel of Write: the Documents keys while the desk is open,
-    /// and the Write keys on the paper.
-    public var panel: String { desk.isOpen ? WritePanel.documentsID : WritePanel.id }
+    public var panel: WritePanel { desk.isOpen ? .desk : .paper }
 
     /// Opens the desk. The open document saves first, and the paper shrinks
     /// into its card.
@@ -137,41 +130,26 @@ public final class WriteController {
         let (area, centre) = deskArea
         desk.show(documents: model.documents, current: model.current?.url, area: area, centre: centre)
         paper.shrink(into: desk.cardFrame(of: model.current?.url))
-        onPanelChange?(panel)
+        host?.writePanelChanged(panel)
     }
 
     /// Saves the open document now. Call it before the app quits.
     public func save() {
-        pendingSave?.cancel()
-        pendingSave = nil
         model.save()
     }
 
-    /// True while the paper or the desk is the key window.
-    public var isKey: Bool { paper.window.isKeyWindow || desk.window.isKeyWindow }
-
-    /// The paragraph at the caret, or the Find query on the desk.
     public var caret: EditorCaret {
         guard desk.isOpen else { return paper.editor.caret }
         let query = desk.desk.query
         return EditorCaret(text: query, caret: (query as NSString).length, length: 0)
     }
 
-    /// The selection and the document for Speak, or the Find query on the desk.
     public var speech: EditorSpeech {
         desk.isOpen ? EditorSpeech(selection: desk.desk.query, markdown: "") : paper.editor.speech
     }
 
-    private func scheduleSave() {
-        guard started else { return }
-        pendingSave?.cancel()
-        let save = DispatchWorkItem { [weak self] in self?.save() }
-        pendingSave = save
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.saveDelay, execute: save)
-    }
-
-    private func newDocument() {
-        pendingSave?.cancel()
+    /// Starts a new document on the paper. The open document saves first.
+    public func newDocument() {
         model.newDocument()
     }
 
@@ -236,23 +214,21 @@ public final class WriteController {
         model.forgetTrash()
         desk.hide(opening: item.url, newDocument: item == .newDocument)
         paper.reopen(from: start)
-        onPanelChange?(panel)
-        onCaretChange?(caret)
+        host?.writePanelChanged(panel)
+        host?.writeCaretMoved(caret)
     }
 
-    /// Closes Write from the desk.
     private func closeDesk() {
         save()
         model.forgetTrash()
         desk.hide()
-        windowClosed(desk.window)
-        onPanelChange?(panel)
+        host?.windowClosed(desk.window)
+        host?.writePanelChanged(panel)
     }
 
     private func open(_ link: WriteLink) {
         switch link {
         case .wiki(let target):
-            pendingSave?.cancel()
             model.openLink(title: target)
         case .url(let text):
             guard let url = URL(string: text),
@@ -261,4 +237,12 @@ public final class WriteController {
             openURL(url)
         }
     }
+}
+
+extension WriteTextView: WriteEditing {
+    public func show(_ text: String) {
+        if text.isEmpty { loadNewDocument() } else { load(text) }
+    }
+
+    public var text: String { markdown }
 }

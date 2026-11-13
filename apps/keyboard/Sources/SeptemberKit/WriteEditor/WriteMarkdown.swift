@@ -287,7 +287,6 @@ private struct BlockParser {
         return assemble(found)
     }
 
-    /// Turns the found blocks into blocks with their source and gaps.
     private func assemble(_ found: [Found]) -> [WriteBlock] {
         let all = lines.joined(separator: "\n") + (endsWithNewline ? "\n" : "")
         let offsets = lineOffsets()

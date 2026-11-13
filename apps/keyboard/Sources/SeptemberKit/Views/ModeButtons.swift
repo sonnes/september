@@ -33,8 +33,7 @@ public struct ModeButtons: View {
                 setMode(.talk)
             }
             ModeButton(title: "Write", symbol: "pencil", isOn: false, label: "Open Write", action: write)
-            // The panels show only in Type mode.
-            if mode == .type {
+            if DetachedPanel.isShown(in: mode) {
                 ModeButton(
                     title: "Arrange", symbol: "rectangle.3.group", isOn: false,
                     label: "Arrange the panels around the keyboard", action: arrange)

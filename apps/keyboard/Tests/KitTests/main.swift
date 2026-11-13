@@ -1,4 +1,5 @@
 keyboardLayoutTests()
+keyFaceTests()
 modifierStateTests()
 keyCodeMapTests()
 modifierNameTests()
@@ -31,6 +32,4 @@ clipboardTests()
 storageTests()
 usageTests()
 shortcutSuggestionTests()
-#if DEBUG
-#endif
 summarize()

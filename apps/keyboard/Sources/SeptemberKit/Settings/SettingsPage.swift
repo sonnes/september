@@ -34,6 +34,18 @@ public enum SettingsPage: String, Sendable, Hashable, CaseIterable, Identifiable
         case .accessibility: "accessibility"
         }
     }
+
+    /// The fill of the sidebar icon.
+    public var iconFill: ThemeColor {
+        switch self {
+        case .voice, .accessibility: Tokens.Settings.blueIcon
+        case .speech: Tokens.Settings.purpleIcon
+        case .predictions: Tokens.Settings.orangeIcon
+        case .clipboard: Tokens.Settings.tealIcon
+        case .myPanel: Tokens.Settings.indigoIcon
+        case .look: Tokens.Settings.pinkIcon
+        }
+    }
 }
 
 /// A group of pages in the sidebar of the Settings window.

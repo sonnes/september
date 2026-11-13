@@ -61,7 +61,7 @@ public struct SpeakButton: View {
 
     private var label: ThemeColor {
         switch mode {
-        case .speak: Tokens.speakLabel
+        case .speak: Tokens.onAccent
         case .stop: Tokens.keyText
         case .off: Tokens.labelSecondary
         }

@@ -35,12 +35,9 @@ private struct DeskFolders {
 }
 
 @MainActor
-private func deskModel(_ folders: DeskFolders) -> (WriteModel, () -> String) {
-    var text = ""
-    let model = WriteModel(library: folders.library)
-    model.show = { text = $0 }
-    model.editorText = { text }
-    return (model, { text })
+private func deskModel(_ folders: DeskFolders) -> (WriteModel, FakeEditor) {
+    let editor = FakeEditor()
+    return (WriteModel(library: folders.library, editor: editor), editor)
 }
 
 private func doc(_ title: String, _ minutes: Double = 0) -> WriteDocument {
@@ -109,11 +106,10 @@ func writeDeskTests() {
         let folders = try DeskFolders()
         defer { folders.remove() }
         try folders.add("Plans.md", "# Plans", modified: now)
-        let (model, _) = deskModel(folders)
-        var text = "# Plans\n\nlast words"
-        model.editorText = { text }
+        let (model, editor) = deskModel(folders)
         model.start()
-        text = "# Plans\n\nlast words"
+        editor.text = "# Plans\n\nlast words"
+        model.edited()
 
         let copy = model.duplicate(model.documents[0].url)
         expectEqual(copy?.title, "Plans 2")
@@ -127,7 +123,7 @@ func writeDeskTests() {
         defer { folders.remove() }
         try folders.add("Old.md", "# Old", modified: now - 100)
         try folders.add("New.md", "# New", modified: now)
-        let (model, shown) = deskModel(folders)
+        let (model, editor) = deskModel(folders)
         model.start()
 
         model.moveToTrash(model.documents[0].url)
@@ -140,7 +136,7 @@ func writeDeskTests() {
         expectEqual(model.trashed, nil)
         expectEqual(model.documents.map(\.title), ["New", "Old"])
         model.select(try expectValue(back).url)
-        expectEqual(shown(), "# New")
+        expectEqual(editor.shown.last, "# New")
     }
 
     test("Move to Trash of another document keeps the open document") {
@@ -161,13 +157,13 @@ func writeDeskTests() {
         defer { folders.remove() }
         try folders.add("Old.md", "# Old", modified: now - 100)
         try folders.add("New.md", "# New", modified: now)
-        let (model, shown) = deskModel(folders)
+        let (model, editor) = deskModel(folders)
         model.start()
         model.moveToTrash(model.documents[0].url)
 
         model.select(model.documents[0].url)
         expectEqual(model.current?.title, "Old")
-        expectEqual(shown(), "# Old")
+        expectEqual(editor.shown.last, "# Old")
     }
 
     // MARK: WriteDesk
@@ -226,12 +222,12 @@ func writeDeskTests() {
         let area = CGRect(x: 0, y: 400, width: 1600, height: 600)
         let layout = WriteDeskLayout(area: area, centre: 800, count: 3, selection: 0)
         expectEqual(layout.visible, 0..<3)
-        let size = WriteDeskLayout.cardSize
-        let gap = WriteDeskLayout.cardGap
+        let size = Metrics.Desk.cardSize
+        let gap = Metrics.Desk.cardGap
         let width = 3 * size.width + 2 * gap
         expectEqual(layout.cards[0].minX, 800 - width / 2)
         expectEqual(layout.cards[2].maxX, 800 + width / 2)
-        expectEqual(layout.cards[0].minY, area.minY + WriteDeskLayout.bottomPadding)
+        expectEqual(layout.cards[0].minY, area.minY + Metrics.Desk.bottomPadding)
         expect(layout.find.minY > layout.actions.maxY, "the Find field is above the actions")
         expect(layout.actions.minY > layout.cards[0].maxY, "the actions are above the cards")
     }
@@ -241,7 +237,7 @@ func writeDeskTests() {
         let layout = WriteDeskLayout(area: area, centre: 800, count: 3, selection: 1)
         let backdrop = layout.backdrop(withNotice: false)
         for card in layout.cards {
-            expect(backdrop.contains(card.offsetBy(dx: 0, dy: WriteDeskLayout.selectedLift)), "a raised card is inside")
+            expect(backdrop.contains(card.offsetBy(dx: 0, dy: Metrics.Desk.selectedLift)), "a raised card is inside")
         }
         expect(backdrop.contains(layout.find), "the Find field is inside")
         expect(backdrop.maxY < layout.notice.maxY, "the notice is outside while it is hidden")

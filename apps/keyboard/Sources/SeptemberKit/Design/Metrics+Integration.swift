@@ -34,14 +34,40 @@ extension Metrics {
         public static let settingsGap: CGFloat = 8
         public static let modeCircle: CGFloat = 44
         public static let modeLabelSpacing: CGFloat = 5
-        public static let modeIcon: CGFloat = 18
         public static let modeBorder: CGFloat = 1
         public static let modeBorderOn: CGFloat = 2
     }
 }
 
+extension Metrics {
+    /// The keyboard window: the clipboard buttons, the bar, and the keys.
+    public enum Screen {
+        public static let clipboardReach = Clipboard.buttonsWidth + TopRow.spacing
+        /// The space from the left edge of the keys card to the keys, in
+        /// Type mode.
+        public static let typeCardKeysInset = Detached.keysSidePadding
+        /// The space from the left edge of the Talk card to the keys: the
+        /// Phrases panel and the gap after it.
+        public static let talkCardKeysInset = surfacePadding + Keypad.width + sectionSpacing
+
+        /// The distance from the left edge of the window to the keys and the
+        /// bar, for a card with the keys `cardKeysInset` from its left edge.
+        /// The clipboard buttons fit in this space.
+        public static func keysInset(cardKeysInset: CGFloat) -> CGFloat {
+            max(cardKeysInset, clipboardReach)
+        }
+
+        /// The clear space at the left of the card, under the clipboard
+        /// buttons.
+        public static func cardInset(cardKeysInset: CGFloat) -> CGFloat {
+            keysInset(cardKeysInset: cardKeysInset) - cardKeysInset
+        }
+    }
+}
+
 extension Metrics.Keypad {
-    /// The height of the grid of six rows. Mine and a message in place of a
+    /// The height of the grid. Mine and a message in place of a
     /// panel take the same height, so the window does not change size.
-    public static let gridHeight: CGFloat = buttonHeight * CGFloat(rows) + gap * CGFloat(rows - 1)
+    public static let gridHeight: CGFloat =
+        buttonHeight * CGFloat(PanelLayout.rowCount) + gap * CGFloat(PanelLayout.rowCount - 1)
 }

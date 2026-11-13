@@ -52,7 +52,7 @@ private struct SaidRow: View {
 
     var body: some View {
         let shape = RoundedRectangle(
-            cornerRadius: Metrics.Talk.buttonCornerRadius, style: .continuous)
+            cornerRadius: Metrics.Talk.saidRowCornerRadius, style: .continuous)
         HStack(spacing: Metrics.Talk.saidRowGap) {
             Image(systemName: isCurrent ? "waveform" : "arrow.counterclockwise")
                 .font(Typography.saidIcon)

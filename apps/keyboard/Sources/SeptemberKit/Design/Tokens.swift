@@ -90,8 +90,15 @@ public enum Tokens {
     public static let shortcutLabel = ThemeColor(
         light: RGBA(hex: 0x3C3C46), dark: RGBA(hex: 0xC0C0CC))
     public static let accent = ThemeColor(light: RGBA(hex: 0x0064D2), dark: RGBA(hex: 0x0A84FF))
+    /// Text and symbols on the accent: the label of Speak, a primary action
+    /// of the Write desk, and the glyph of a Settings sidebar icon.
+    public static let onAccent = ThemeColor(light: RGBA(hex: 0xFFFFFF), dark: RGBA(hex: 0xFFFFFF))
     /// A latched or locked modifier key.
     public static let keyActive = accent.opacity(0.18)
+    /// A locked modifier key. It is not in the design system. It is the
+    /// accent, stronger than `keyActive`, so a lock looks different from a
+    /// modifier that is on for one key.
+    public static let keyLocked = accent.opacity(0.36)
 
     /// The selection the focused field reports, drawn behind the mirrored text.
     /// It is not in the design system. It is the accent, dimmed so the text

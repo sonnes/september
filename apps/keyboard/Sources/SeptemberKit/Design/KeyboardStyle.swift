@@ -8,7 +8,6 @@ public enum KeyboardRow: String, Sendable, Hashable {
     case bottom
 }
 
-/// The two keyboard variants in the design system.
 public enum KeyboardStyle: String, Sendable, CaseIterable {
     case rainbow
     case mono

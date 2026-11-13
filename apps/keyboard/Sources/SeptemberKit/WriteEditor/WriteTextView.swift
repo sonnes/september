@@ -11,15 +11,15 @@ import AppKit
 /// menu, so the editor answers the Command shortcuts itself.
 @MainActor
 public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayoutManagerDelegate {
-    /// Called after each change of the text.
+    /// Called once after each edit that changes the text.
     public var onTextChange: (() -> Void)?
-    /// Called with the paragraph at the caret after each change of the text
-    /// or the selection.
+    /// Called once with the paragraph at the caret after each edit or each
+    /// change of the selection.
     public var onCaretChange: ((EditorCaret) -> Void)?
     /// Called when the user opens a link with Command-click.
     public var onOpenLink: ((WriteLink) -> Void)?
-    /// Called after the text or the selection changed and the overlay moved.
-    /// The paper uses it to grow and to scroll.
+    /// Called once after each edit or each change of the selection, after
+    /// the overlay moved. The paper uses it to grow and to scroll.
     public var onLayoutChange: (() -> Void)?
     /// When true, the editor does not scroll to the caret by itself. The
     /// paper scrolls the text instead.
@@ -31,8 +31,13 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
     /// The box of the empty last paragraph, which has no character to hold it.
     private var trailingBox: WriteBlockBox?
     lazy var overlay = WriteOverlay(textView: self)
-    /// True when the last change came from a key, not from the pointer.
     var lastInputWasKey = false
+    /// The number of edits in progress. One key press can make several
+    /// changes, such as the text and then a Markdown mark. The editor reports
+    /// them when the outermost edit ends.
+    private var editDepth = 0
+    private var textChanged = false
+    private var needsReport = false
 
     override public init(frame: NSRect) {
         let layoutManager = NSTextLayoutManager()
@@ -62,7 +67,7 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         isHorizontallyResizable = false
         autoresizingMask = [.width]
         insertionPointColor = .clear
-        selectedTextAttributes = [.backgroundColor: NSColor(Tokens.writeSelection)]
+        selectedTextAttributes = [.backgroundColor: NSColor(Tokens.selection)]
         linkTextAttributes = [:]
         setAccessibilityLabel("Document")
     }
@@ -75,25 +80,30 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
     // MARK: - Document
 
     /// Shows a Markdown document. Undo starts again, and the caret goes to
-    /// the end of the document.
+    /// the end of the document. A load is not an edit: it reports the caret,
+    /// but not a change of the text.
     public func load(_ markdown: String) {
-        let blocks = markdown.isEmpty ? [] : WriteMarkdown.parse(markdown).blocks
-        trailingBox = nil
-        let text = WriteText.attributed(blocks)
-        restyling = true
-        textStorage?.setAttributedString(text)
-        restyling = false
-        restyleAll()
-        ownUndo.removeAllActions()
-        setSelectedRange(NSRange(location: (string as NSString).length, length: 0))
-        didChange()
+        asLoad {
+            let blocks = markdown.isEmpty ? [] : WriteMarkdown.parse(markdown).blocks
+            trailingBox = nil
+            let text = WriteText.attributed(blocks)
+            restyling = true
+            textStorage?.setAttributedString(text)
+            restyling = false
+            restyleAll()
+            ownUndo.removeAllActions()
+            setSelectedRange(NSRange(location: (string as NSString).length, length: 0))
+            didChange()
+        }
     }
 
     /// Shows an empty document that starts with a heading.
     public func loadNewDocument() {
-        load("")
-        setKind(.heading(1), paragraphAt: 0)
-        ownUndo.removeAllActions()
+        asLoad {
+            load("")
+            setKind(.heading(1), paragraphAt: 0)
+            ownUndo.removeAllActions()
+        }
     }
 
     /// Selects the text of the first heading, so that the next key press
@@ -162,8 +172,10 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
 
     override public func insertText(_ string: Any, replacementRange: NSRange) {
         lastInputWasKey = true
-        super.insertText(string, replacementRange: replacementRange)
-        applyInputRules()
+        asOneEdit {
+            super.insertText(string, replacementRange: replacementRange)
+            applyInputRules()
+        }
     }
 
     override public func insertNewline(_ sender: Any?) {
@@ -172,6 +184,10 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
             return
         }
         lastInputWasKey = true
+        asOneEdit { newline(sender) }
+    }
+
+    private func newline(_ sender: Any?) {
         deleteSelection()
         let ns = string as NSString
         let location = selectedRange().location
@@ -217,6 +233,10 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
 
     override public func deleteBackward(_ sender: Any?) {
         lastInputWasKey = true
+        asOneEdit { deleteBack(sender) }
+    }
+
+    private func deleteBack(_ sender: Any?) {
         let selection = selectedRange()
         guard selection.length == 0 else { return super.deleteBackward(sender) }
         let ns = string as NSString
@@ -238,6 +258,10 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
 
     override public func insertTab(_ sender: Any?) {
         lastInputWasKey = true
+        asOneEdit { indent() }
+    }
+
+    private func indent() {
         let location = selectedRange().location
         let kind = kind(ofParagraph: WriteText.paragraph(at: location, in: string as NSString))
         if let depth = kind.listDepth {
@@ -353,7 +377,6 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         }
     }
 
-    /// Checks or unchecks the to-do item at `location`.
     public func toggleTask(at location: Int) {
         let paragraph = WriteText.paragraph(at: location, in: string as NSString)
         guard case .task(let checked, let depth) = kind(ofParagraph: paragraph) else { return }
@@ -401,9 +424,8 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
         guard !stillSelecting else { return }
         fixTypingAttributes()
-        onCaretChange?(caret)
-        overlay.update()
-        onLayoutChange?()
+        needsReport = true
+        reportIfDone()
     }
 
     override public func didChangeText() {
@@ -414,7 +436,35 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
     private func didChange() {
         let ns = string as NSString
         if let last = WriteText.paragraphs(ns).last, last.length > 0 { trailingBox = nil }
-        onTextChange?()
+        textChanged = true
+        needsReport = true
+        reportIfDone()
+    }
+
+    /// Runs `edit` as one edit: the editor reports its changes once, at the end.
+    private func asOneEdit(_ edit: () -> Void) {
+        editDepth += 1
+        edit()
+        editDepth -= 1
+        reportIfDone()
+    }
+
+    /// Runs `load` as one edit that reports no change of the text.
+    private func asLoad(_ load: () -> Void) {
+        asOneEdit {
+            load()
+            textChanged = false
+        }
+    }
+
+    private func reportIfDone() {
+        guard editDepth == 0 else { return }
+        if textChanged {
+            textChanged = false
+            onTextChange?()
+        }
+        guard needsReport else { return }
+        needsReport = false
         onCaretChange?(caret)
         overlay.update()
         onLayoutChange?()
@@ -436,7 +486,6 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         typingAttributes = WriteStyle.typingAttributes(box, marks: marks, link: link)
     }
 
-    /// The box of the paragraph at the caret.
     private func currentBox() -> WriteBlockBox {
         let ns = string as NSString
         let paragraph = WriteText.paragraph(at: min(selectedRange().location, ns.length), in: ns)
@@ -462,6 +511,10 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
 
     /// Sets the kind of the paragraph at `location`, as one step of undo.
     func setKind(_ kind: WriteBlockKind, paragraphAt location: Int) {
+        asOneEdit { changeKind(kind, paragraphAt: location) }
+    }
+
+    private func changeKind(_ kind: WriteBlockKind, paragraphAt location: Int) {
         guard let textStorage else { return }
         let ns = string as NSString
         let paragraph = WriteText.paragraph(at: min(location, ns.length), in: ns)

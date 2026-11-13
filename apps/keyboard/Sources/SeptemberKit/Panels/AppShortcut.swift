@@ -41,6 +41,22 @@ public struct AppShortcut: Equatable, Hashable, Sendable, Identifiable {
         return shortcuts
     }
 
+    /// The ID that counts the presses of this shortcut in the app with
+    /// `bundleID`. It holds the bundle ID and the keys, not the name.
+    public func usageID(app bundleID: String) -> String {
+        "\(bundleID) \(ShortcutSpec.format([shortcut]))"
+    }
+
+    /// The menu shortcuts of the app with `bundleID`, the most pressed first.
+    /// Shortcuts with the same count keep the menu bar order.
+    @MainActor
+    public static func ranked(_ menu: [AppShortcut], app bundleID: String, by usage: any ButtonUsage) -> [AppShortcut] {
+        let uses = menu.map { usage.uses(of: $0.usageID(app: bundleID)) }
+        return menu.indices
+            .sorted { uses[$0] != uses[$1] ? uses[$0] > uses[$1] : $0 < $1 }
+            .map { menu[$0] }
+    }
+
     /// The suggestions from the menu shortcuts. When modifiers are on, only
     /// the chords that hold all of them stay.
     public static func suggestions(menu: [AppShortcut], modifiers: Modifiers) -> [AppShortcut] {

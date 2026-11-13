@@ -1,3 +1,5 @@
+import Foundation
+
 /// An app that came to the front, as far as the shell can tell.
 public struct FrontApp: Equatable, Sendable {
     public let pid: Int32
@@ -11,6 +13,28 @@ public struct FrontApp: Equatable, Sendable {
     }
 }
 
+/// What the keyboard types into: another app, or Write with its panel.
+public enum FrontTarget: Equatable, Sendable {
+    case app(FrontApp)
+    case write(WritePanel)
+
+    /// The name of Write in the input bar.
+    public static let writeName = "Write"
+
+    public var isWrite: Bool {
+        if case .write = self { return true }
+        return false
+    }
+
+    /// The name of the app in front, or nil when the app gives none.
+    public var name: String? {
+        switch self {
+        case .app(let app): app.name
+        case .write: Self.writeName
+        }
+    }
+}
+
 /// Decides which app the keyboard types into: another app, or the Write
 /// window of the keyboard itself.
 ///
@@ -19,16 +43,9 @@ public struct FrontApp: Equatable, Sendable {
 /// window reports when it becomes key, and the tracker matches each app on
 /// its process ID, because two windows of one app have one bundle ID.
 public struct FrontAppTracker: Sendable {
-    public enum Switch: Equatable, Sendable {
-        /// The Write window is in front.
-        case write
-        /// Another app is in front, or no app.
-        case app(FrontApp?)
-    }
-
     private enum Front: Equatable {
         case write
-        case app(Int32?)
+        case app(Int32)
     }
 
     private let ownPID: Int32
@@ -39,23 +56,34 @@ public struct FrontAppTracker: Sendable {
     }
 
     /// macOS brought an app to the front. The keyboard itself is not an app
-    /// to type into: the Write window reports itself.
-    public mutating func appActivated(_ app: FrontApp?) -> Switch? {
-        guard app?.pid != ownPID else { return nil }
-        return move(to: .app(app?.pid), app: app)
+    /// to type into: the Write window reports itself. Nil when nothing
+    /// changed.
+    public mutating func appActivated(_ app: FrontApp?) -> FrontTarget? {
+        guard let app, app.pid != ownPID else { return nil }
+        return move(to: .app(app.pid), target: .app(app))
     }
 
     /// The Write window became key, or stopped being key. When it stops, the
-    /// app in front is read again.
-    public mutating func writeKeyChanged(_ isKey: Bool, front app: FrontApp?) -> Switch? {
-        if isKey { return move(to: .write, app: nil) }
-        guard app?.pid != ownPID else { return nil }
-        return move(to: .app(app?.pid), app: app)
+    /// app in front is read again. Nil when nothing changed.
+    public mutating func writeKeyChanged(_ isKey: Bool, panel: WritePanel, front app: FrontApp?) -> FrontTarget? {
+        if isKey { return move(to: .write, target: .write(panel)) }
+        return appActivated(app)
     }
 
-    private mutating func move(to next: Front, app: FrontApp?) -> Switch? {
+    private mutating func move(to next: Front, target: FrontTarget) -> FrontTarget? {
         guard next != front else { return nil }
         front = next
-        return next == .write ? .write : .app(app)
+        return target
     }
+}
+
+/// Reads the app in front for the session. The app reads it through
+/// accessibility, and the checks read it from memory.
+@MainActor
+public protocol FrontAppReading {
+    /// The menu items with a chord of the app.
+    func menuShortcuts(pid: pid_t) -> [AppShortcut]
+    /// The text near the focused field of the app, with the rule of the app.
+    /// Nil when the app shows no text to read.
+    func screenContext(app: FrontApp) async -> ScreenContext?
 }

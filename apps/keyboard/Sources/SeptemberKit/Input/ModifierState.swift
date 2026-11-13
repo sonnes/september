@@ -4,14 +4,31 @@
 public struct ModifierState: Sendable, Equatable {
     public private(set) var latched: Modifiers = []
     public private(set) var locked: Modifiers = []
+    /// The modifiers that macOS holds: the modifier keys that the user holds
+    /// on the hardware keyboard. They change only when macOS reports new
+    /// flags.
+    public internal(set) var mac: Modifiers = []
 
     public init() {}
 
-    public var active: Modifiers { latched.union(locked) }
+    public var active: Modifiers { own.union(mac) }
+    public var own: Modifiers { latched.union(locked) }
+    /// The modifiers that the keyboard holds at the OS: its own, without
+    /// caps lock, because macOS owns its toggle.
+    public var ownFlags: Modifiers { own.subtracting(.capsLock) }
+    /// The modifiers that a posted key holds. Caps lock is not one, because
+    /// macOS owns its toggle.
+    public var flags: Modifiers { active.subtracting(.capsLock) }
+    /// The modifiers that make a key a shortcut, such as ⌘C. Shift alone
+    /// only types the shifted character.
+    public var chord: Modifiers { flags.subtracting(.shift) }
+    /// True when a modifier other than caps lock is on. Then the F-row sends
+    /// F-keys, not media keys.
+    public var holdsChord: Bool { !flags.isEmpty }
+
     public var isCapsLockOn: Bool { locked.contains(.capsLock) }
 
     public mutating func tap(_ modifier: Modifiers) {
-        // Caps lock is a plain toggle — it never expires after one keystroke.
         if modifier == .capsLock {
             if locked.contains(.capsLock) {
                 locked.remove(.capsLock)

@@ -1,6 +1,5 @@
 import CoreGraphics
 
-/// One row of the main keyboard.
 public struct KeyRow: Sendable, Identifiable {
     public let id: KeyboardRow
     public let keys: [KeyDefinition]
@@ -50,7 +49,7 @@ public enum KeyboardLayout {
                     id: "f\(number)",
                     kind: .function,
                     label: "F\(number)",
-                    action: .virtual(VirtualKey.function(number)!)
+                    action: .function(number)
                 )
             )
         }

@@ -6,7 +6,13 @@ import Foundation
 @MainActor
 public final class KeyboardController: ObservableObject {
     @Published public var style: KeyboardStyle = .rainbow
-    @Published public private(set) var modifiers = ModifierState()
+    @Published public private(set) var modifiers = ModifierState() {
+        didSet { syncSystemModifiers() }
+    }
+    /// The modifiers that the keyboard holds down at the OS. A tapped modifier
+    /// goes down at once, so a click or a key from another source gets it
+    /// too, as with Sticky Keys of macOS.
+    private var systemModifiers: Modifiers = []
     /// What we have typed since the last Return. Only shown when the app in
     /// front exposes no text of its own.
     private var echo = "" {
@@ -24,17 +30,23 @@ public final class KeyboardController: ObservableObject {
     /// the focus moves. The bar hides the field, and the controller keeps none
     /// of its text, so predictions and learning never see it.
     @Published public private(set) var isFieldPrivate = false
-    /// Where private text buttons keep their text.
-    public var privateTexts: any PrivateTextStore = KeychainPrivateTextStore()
+    /// True while the bar hides the text of the field: private text, or a
+    /// password field. The predictions, Speak, the text on screen, the
+    /// clipboard history, and the tree viewer get no text of the field then.
+    public var hidesFieldText: Bool { input == .secure }
+    /// The store of the private text buttons. My Panel saves to the same store.
+    public let privateTexts: any PrivateTextStore
     /// In Talk mode, the keys type into `talk` and the app in front gets no
     /// events.
     @Published public var mode: KeyboardMode = .type {
-        didSet { accentChoices = [] }
+        didSet {
+            accentChoices = []
+            syncSystemModifiers()
+        }
     }
     /// The accents of a held letter, shown over the word row until the user
     /// presses a key. Empty when no accents show.
     @Published public private(set) var accentChoices: [String] = []
-    public var accents = AccentTable.english
     public let talk: TalkSession
     /// Called when the user submits the text in Type mode: a press on Return
     /// with no modifier.
@@ -43,6 +55,7 @@ public final class KeyboardController: ObservableObject {
     public let panels: PanelStore
 
     private let sink: any KeystrokeSink
+    private let accents: AccentTable
     /// The last key pressed, with the modifiers it had, so a repeat types
     /// the same thing after the latched modifiers are used up.
     private var lastPress: (id: String, modifiers: ModifierState)?
@@ -51,12 +64,16 @@ public final class KeyboardController: ObservableObject {
     public init(
         sink: any KeystrokeSink,
         panels: PanelStore,
+        accents: AccentTable,
         keyCodeMap: KeyCodeMap = SystemKeyboardLayout.currentMap(),
-        talk: TalkSession = TalkSession()
+        privateTexts: any PrivateTextStore,
+        talk: TalkSession
     ) {
+        self.privateTexts = privateTexts
         self.talk = talk
         self.sink = sink
         self.panels = panels
+        self.accents = accents
         self.keyCodeMap = keyCodeMap
     }
 
@@ -89,15 +106,17 @@ public final class KeyboardController: ObservableObject {
         case .modifier:
             return .once
         case .virtual(let virtual):
-            return virtual.repeatsWhenHeld ? .repeats : .once
+            return .forKey(virtual, modifiers: modifiers.flags)
+        case .function:
+            guard case .media(let media) = control(for: key.action, modifiers: modifiers) else { return .once }
+            return media.repeatsWhenHeld ? .repeats : .once
         case .character(let character):
-            guard modifiers.active.subtracting([.shift, .capsLock]).isEmpty else { return .once }
+            guard modifiers.chord.isEmpty else { return .once }
             guard character.count == 1, character.first?.isLetter == true else { return .repeats }
             return .letter(choices: accents.choices(for: modifiers.apply(to: character)))
         }
     }
 
-    /// Shows the accents of a held letter.
     public func showAccents(_ choices: [String]) {
         accentChoices = choices
     }
@@ -113,6 +132,7 @@ public final class KeyboardController: ObservableObject {
     }
 
     private func apply(_ key: KeyDefinition, modifiers: inout ModifierState) {
+        if let control = control(for: key.action, modifiers: modifiers) { return run(control) }
         if mode == .talk { return talk.press(key, modifiers: &modifiers) }
         switch key.action {
         case .modifier(let modifier):
@@ -120,17 +140,61 @@ public final class KeyboardController: ObservableObject {
         case .character(let character):
             type(character, secondary: key.secondaryLabel, modifiers: &modifiers)
         case .virtual(let virtual):
-            let flags = modifiers.active.subtracting(.capsLock)
-            if virtual == .return, flags.isEmpty { onSubmit?() }
-            post(virtual, modifiers: flags)
+            if virtual == .return, modifiers.flags.isEmpty { onSubmit?() }
+            post(virtual, modifiers: modifiers.flags)
+            modifiers.consume()
+        case .function(let number):
+            guard let virtual = VirtualKey.function(number) else { return sink.beep() }
+            post(virtual, modifiers: modifiers.flags)
             modifiers.consume()
         }
     }
 
+    /// A press that controls the Mac, not the text. It acts in Type and
+    /// Talk mode, and it keeps a latched modifier for the next key.
+    private enum MacControl {
+        case media(MediaKey)
+        case scroll(ScrollDirection)
+    }
+
+    private func control(for action: KeyAction, modifiers: ModifierState) -> MacControl? {
+        guard case .function(let number) = action, !modifiers.holdsChord else { return nil }
+        return MediaKey.onFunctionKey(number).map(MacControl.media)
+    }
+
+    private func run(_ control: MacControl) {
+        switch control {
+        case .media(let media):
+            sink.post(media: media)
+        case .scroll(let direction):
+            guard let scrollPoint else { return sink.beep() }
+            sink.scroll(direction, at: scrollPoint)
+        }
+    }
+
+    /// The place where the pointer last rested outside the keyboard. A
+    /// scroll button scrolls it.
+    private var scrollPoint: CGPoint?
+
+    /// The pointer rested outside the keyboard, at `point` in screen
+    /// coordinates from the top left.
+    public func pointerRested(at point: CGPoint) {
+        scrollPoint = point
+    }
+
+    // MARK: - Panel buttons
+
+    /// A press on a button of a panel, of My Panel, or of the shortcut
+    /// suggestions. The button sends only its own shortcut. A latched,
+    /// locked, or held modifier does not add to it. The press uses up the
+    /// latched modifiers.
     public func perform(_ action: PanelAction) {
         accentChoices = []
-        if mode == .talk { return talk.perform(action, modifiers: &modifiers) }
         switch action {
+        case .scroll(let direction):
+            return run(.scroll(direction))
+        case _ where mode == .talk:
+            return talk.perform(action, modifiers: &modifiers)
         case .shortcut(let shortcut):
             guard post(shortcut) else { return }
         case .sequence(let steps):
@@ -141,11 +205,49 @@ public final class KeyboardController: ObservableObject {
             sink.type(text)
             append(text)
         case .privateText(let id):
-            guard let text = try? privateTexts.text(for: id) else { break }
+            guard let text = try? privateTexts.text(for: id) else { return sink.beep() }
             sink.type(text)
             hideField()
         }
         modifiers.consume()
+    }
+
+    /// A key from another source, such as the hardware keyboard, or a click
+    /// outside the keyboard. It uses up the latched modifiers, as Sticky Keys
+    /// of macOS does.
+    public func otherInputPressed() {
+        guard !modifiers.latched.isEmpty else { return }
+        modifiers.consume()
+    }
+
+    /// macOS reports the modifier keys that the hardware holds. The keys
+    /// show these modifiers, and the next key carries them.
+    public func macModifiersChanged(_ mac: Modifiers) {
+        guard mac != modifiers.mac else { return }
+        modifiers.mac = mac
+    }
+
+    /// Releases each modifier that the keyboard holds at the OS. Call this
+    /// before the app quits, or the modifiers stay down.
+    public func releaseSystemModifiers() {
+        sink.post(Keystroke.modifierChanges(from: systemModifiers, to: []))
+        systemModifiers = []
+    }
+
+    /// The modifiers that are down at the OS: those that the keyboard holds and
+    /// those that macOS holds. A key event posts no down or up for them.
+    private var heldAtOS: Modifiers { systemModifiers.union(modifiers.mac) }
+
+    /// Posts the downs and ups that make the OS hold the active modifiers.
+    /// In Talk mode the app in front gets no events, so the OS holds none.
+    /// A modifier that macOS holds gets no down and no up until macOS lets
+    /// go of it.
+    private func syncSystemModifiers() {
+        let wanted = mode == .type ? modifiers.ownFlags : []
+        let target = wanted.subtracting(modifiers.mac).union(systemModifiers.intersection(modifiers.mac))
+        guard target != systemModifiers else { return }
+        sink.post(Keystroke.modifierChanges(from: systemModifiers, to: target))
+        systemModifiers = target
     }
 
     public func clearEcho() {
@@ -209,11 +311,9 @@ public final class KeyboardController: ObservableObject {
     // MARK: - Turning presses into keystrokes
 
     private func type(_ base: String, secondary: String?, modifiers: inout ModifierState) {
-        let chord = modifiers.active.subtracting([.shift, .capsLock])
+        let chord = modifiers.chord
 
         if chord.isEmpty {
-            // Plain typing: shift picks the secondary glyph on dual keys and
-            // uppercases letters.
             let text: String
             if modifiers.active.contains(.shift), let secondary {
                 text = secondary
@@ -235,10 +335,11 @@ public final class KeyboardController: ObservableObject {
     private func send(text: String) {
         if let resolved = keyCodeMap.keystroke(for: text) {
             sink.post(
-                Keystroke.events(virtualKey: resolved.virtualKey, modifiers: resolved.modifiers)
+                Keystroke.events(
+                    virtualKey: resolved.virtualKey, modifiers: resolved.modifiers,
+                    held: heldAtOS)
             )
         } else {
-            // Nothing on this layout produces the character — type it directly.
             sink.type(text)
         }
     }
@@ -246,7 +347,8 @@ public final class KeyboardController: ObservableObject {
     /// Posts a named key. Without a chord, the echo follows what the key
     /// does to the text.
     private func post(_ virtual: VirtualKey, modifiers: Modifiers) {
-        sink.post(Keystroke.events(virtualKey: virtual.rawValue, modifiers: modifiers))
+        sink.post(
+            Keystroke.events(virtualKey: virtual.rawValue, modifiers: modifiers, held: heldAtOS))
         guard !isMirroring, !isFieldPrivate, modifiers.subtracting(.shift).isEmpty else { return }
         switch virtual {
         case .delete: echo = String(echo.dropLast())
@@ -267,7 +369,8 @@ public final class KeyboardController: ObservableObject {
         sink.post(
             Keystroke.events(
                 virtualKey: resolved.virtualKey,
-                modifiers: modifiers.union(resolved.modifiers)
+                modifiers: modifiers.union(resolved.modifiers),
+                held: heldAtOS
             )
         )
         return true

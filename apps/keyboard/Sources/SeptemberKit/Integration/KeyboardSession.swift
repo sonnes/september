@@ -16,7 +16,6 @@ public final class KeyboardSession: ObservableObject {
     public enum PanelTab: Sendable, Hashable {
         /// The keys of the Write paper or the Write desk.
         case write
-        /// My Panel.
         case mine
     }
 
@@ -24,9 +23,10 @@ public final class KeyboardSession: ObservableObject {
     public let predictions: PredictionEngine
     public let speaker: Speaker
     public let userPanel: UserPanelStore?
-    /// The counts of My Panel.
     public let userPanelUsage: UsageStore
-    /// Why My Panel could not load its file. The file stays as it is.
+    /// The presses of the shortcut suggestions, by app.
+    private let shortcutUsage: UsageStore
+    /// Why My Panel could not load its buttons. The table stays as it is.
     public let userPanelError: String?
 
     @Published public private(set) var speakMode: SpeakButton.Mode = .off
@@ -43,9 +43,7 @@ public final class KeyboardSession: ObservableObject {
     @Published public private(set) var mineButtons: [UserButton] = []
     /// Shows the input bar and the suggestions only when there is text input.
     public let inputBar: InputBarVisibility
-    /// The texts that the user copied.
     public let clipboard: ClipboardHistory
-    /// The clipboard of macOS.
     public let pasteboard: any ClipboardAccess
     /// True while the clipboard history shows in the place of the predictions.
     @Published public private(set) var isHistoryOpen = false
@@ -54,41 +52,40 @@ public final class KeyboardSession: ObservableObject {
     /// True when Cut and Copy have something to act on: a selection, an app
     /// that shows no field, or text in the Talk bar.
     @Published public private(set) var canCutOrCopy = true
-    /// True when the clipboard holds text.
     @Published public private(set) var canPaste = false
     /// The shortcuts of the app in front that show in the place of the input
     /// bar: in Type mode with no text field in focus, and while Command or
     /// Control is on. Empty when the bar shows.
     @Published public private(set) var shortcuts: [AppShortcut] = []
-    /// Reads the menu items with a chord of the app in front. The app reads
-    /// the menu bar through accessibility. The session reads it only when a
-    /// suggestion needs it, and keeps the read until another app comes to the
-    /// front.
-    public var readMenu: () -> [AppShortcut] = { [] } {
-        didSet {
-            menu = nil
-            scheduleUpdate()
-        }
-    }
-    /// A modifier of the hardware keyboard shows the shortcuts after this
-    /// hold, so a quick chord does not make the bar blink.
+    /// A modifier that macOS holds shows the shortcuts after this hold, so a
+    /// quick chord does not make the bar blink.
     public static let modifierHoldDelay: TimeInterval = 0.4
-    @Published private var isWriteInFront = false
-    /// The bundle ID of the app in front.
-    private var frontBundleID: String?
+    /// The time before a read of the text on screen. Other apps move the
+    /// focus late after a switch.
+    public static let screenReadDelay: TimeInterval = 0.15
+    @Published private var front: FrontTarget?
+    private var tracker: FrontAppTracker
+    private var isWriteInFront: Bool { front?.isWrite == true }
     /// The text near the field of the app in front, from the last read.
     private var screen: ScreenContext?
-    /// False while the document of the Write window has no text.
     private var writeHasText = false
-    /// Reads what Speak reads in the Write window: the selection and the
-    /// document. The keyboard cannot read its own web view through the
-    /// accessibility API, so the app asks the editor page.
-    public var writeSpeech: () async -> EditorSpeech? = { nil }
+    /// The caret and the text for Speak of the Write window. The keyboard
+    /// cannot read its own window through the accessibility API.
+    private let write: any WriteReading
 
-    /// The menu shortcuts of the app in front, from the last read.
+    private let reader: any FrontAppReading
+    /// The menu shortcuts of the app in front, from the last read. The
+    /// session reads the menu only when a suggestion needs it, and keeps the
+    /// read until another app comes to the front.
     private var menu: [AppShortcut]?
-    /// The modifiers of the hardware keyboard that the user holds, after the
-    /// hold delay.
+    private var pendingScreenRead: (any ScheduledWork)?
+    private var screenRead: Task<Void, Never>?
+    private var fieldWasEmpty = true
+    /// True when the input bar has something to show, from the last change
+    /// of the field, the input, the mode, or the app in front.
+    private var wantsBar = false
+    private var clipboardWatcher: ClipboardWatcher?
+    /// The modifiers that macOS holds, after the hold delay.
     private var heldModifiers: Modifiers = []
     private var pendingHold: (any ScheduledWork)?
     private let scheduler: any DelayScheduler
@@ -98,8 +95,6 @@ public final class KeyboardSession: ObservableObject {
     private var wasSpeaking = false
     private var subscriptions: Set<AnyCancellable> = []
     private var pending: Task<Void, Never>?
-    /// The read of the Write window before Speak speaks it.
-    private var readingWrite: Task<Void, Never>?
     private var isScheduled = false
     private var needsRank = false
 
@@ -109,12 +104,19 @@ public final class KeyboardSession: ObservableObject {
         speaker: Speaker,
         userPanel: Result<UserPanelStore, any Error>,
         userPanelUsage: UsageStore,
+        shortcutUsage: UsageStore,
+        reader: any FrontAppReading,
+        write: any WriteReading,
         inputBar: InputBarVisibility = InputBarVisibility(),
-        clipboard: ClipboardHistory = ClipboardHistory(),
+        clipboard: ClipboardHistory,
         pasteboard: any ClipboardAccess = MemoryPasteboard(),
-        scheduler: any DelayScheduler = MainQueueScheduler()
+        scheduler: any DelayScheduler = MainQueueScheduler(),
+        ownPID: Int32 = ProcessInfo.processInfo.processIdentifier
     ) {
         self.scheduler = scheduler
+        tracker = FrontAppTracker(ownPID: ownPID)
+        self.reader = reader
+        self.write = write
         self.inputBar = inputBar
         self.clipboard = clipboard
         self.pasteboard = pasteboard
@@ -122,16 +124,14 @@ public final class KeyboardSession: ObservableObject {
         self.predictions = predictions
         self.speaker = speaker
         self.userPanelUsage = userPanelUsage
+        self.shortcutUsage = shortcutUsage
         switch userPanel {
         case .success(let store):
             self.userPanel = store
             userPanelError = nil
-        case .failure:
+        case .failure(let error):
             self.userPanel = nil
-            // The text of a decoding error can quote the file, and the file can
-            // hold the text of the user.
-            userPanelError =
-                "My Panel could not read my-panel.json. The keyboard keeps the file as it is. Fix the file or move it away, then open the keyboard again."
+            userPanelError = Self.userPanelMessage(for: error)
         }
 
         controller.talk.speech = speaker
@@ -142,6 +142,10 @@ public final class KeyboardSession: ObservableObject {
             self.predictions.submit(keepsSentences: !self.isWriteInFront)
         }
         controller.talk.onSpeak = { [weak self] in self?.predictions.submit() }
+        clipboardWatcher = ClipboardWatcher(
+            pasteboard: pasteboard, history: clipboard,
+            shouldSkip: { [weak self] in self?.controller.hidesFieldText ?? true },
+            onChange: { [weak self] in self?.pasteboardChanged() })
         rankUserPanel()
         observe()
         pasteboardChanged()
@@ -167,15 +171,19 @@ public final class KeyboardSession: ObservableObject {
     }
 
     /// A press on a shortcut suggestion. It presses the chord in the app and
-    /// ends a latched modifier.
+    /// ends a latched modifier. It counts toward the order of the shortcuts
+    /// of the app.
     public func pressShortcut(_ shortcut: AppShortcut) {
+        if case .app(let app) = front, let bundleID = app.bundleID {
+            shortcutUsage.record(shortcut.usageID(app: bundleID))
+        }
         controller.perform(.shortcut(shortcut.shortcut))
     }
 
-    /// The modifiers that the user holds on the hardware keyboard changed.
-    /// Command or Control shows the shortcuts after `modifierHoldDelay`. A
-    /// change while the shortcuts show, and a release, act at once.
-    public func hardwareModifiersChanged(_ modifiers: Modifiers) {
+    /// The modifiers that macOS holds changed. Command or Control shows the
+    /// shortcuts after `modifierHoldDelay`. A change while the shortcuts show,
+    /// and a release, act at once.
+    private func macModifiersChanged(_ modifiers: Modifiers) {
         pendingHold?.cancel()
         pendingHold = nil
         let held = modifiers.intersection(AppShortcut.filterModifiers)
@@ -199,7 +207,7 @@ public final class KeyboardSession: ObservableObject {
     /// A press on My Panel. It counts toward the order of My Panel.
     public func pressMine(_ button: UserButton) {
         userPanelUsage.record(button.id)
-        controller.perform(button)
+        controller.perform(button.action)
     }
 
     // MARK: - The clipboard
@@ -268,6 +276,13 @@ public final class KeyboardSession: ObservableObject {
         }
     }
 
+    /// Reads the clipboard for a new copy. The history keeps no copy while
+    /// the bar hides the text of the field. macOS has no notification for a
+    /// change of the clipboard, so the app calls this on a timer.
+    public func pollClipboard() {
+        clipboardWatcher?.poll()
+    }
+
     /// The clipboard changed. Paste turns on or off.
     public func pasteboardChanged() {
         let hasText = pasteboard.string()?.isEmpty == false
@@ -296,9 +311,13 @@ public final class KeyboardSession: ObservableObject {
             case .talk:
                 controller.talk.speak()
             case .type where isWriteInFront:
-                speakWrite()
+                guard let text = write.speech.text else { return }
+                // The bar shows only the paragraph at the caret, so no word
+                // of the bar lights up.
+                speaking = nil
+                speaker.speak(text)
             case .type:
-                guard let text = SpeakText(input: controller.input, isPrivate: controller.isFieldPrivate)
+                guard let text = SpeakText(input: controller.input, isPrivate: controller.hidesFieldText)
                 else { return }
                 speaking = text
                 speaker.speak(text.text)
@@ -309,28 +328,51 @@ public final class KeyboardSession: ObservableObject {
 
     // MARK: - The app in front
 
-    /// A different app came to the front. The last app's text goes first,
-    /// then My Panel takes its new order. `WritePanel.id` and
-    /// `WritePanel.documentsID` stand for Write.
-    public func appChanged(name: String?, bundleID: String?) {
-        controller.appChanged(name: name)
-        isHistoryOpen = false
-        isWriteInFront = WritePanel.isWrite(bundleID)
-        frontBundleID = bundleID
-        screen = nil
-        menu = nil
-        writePanel = controller.panels.writePanel(for: bundleID)
-        predictions.focusMoved()
-        rankUserPanel()
+    /// macOS brought an app to the front. The keyboard itself is not an app
+    /// to type into: the Write window reports itself.
+    public func appActivated(_ app: FrontApp?) {
+        tracker.appActivated(app).map(frontChanged)
     }
 
-    /// The app read the text near the field. A read of an app that is no
-    /// longer in front is dropped.
-    public func screenRead(_ screen: ScreenContext?) {
-        guard screen == nil || screen?.bundleID == frontBundleID else { return }
-        self.screen = screen
-        scheduleUpdate()
+    /// The Write window became key, or stopped being key. When it stops,
+    /// `app` is the app in front. Returns the new target, or nil when
+    /// nothing changed.
+    @discardableResult
+    public func writeKeyChanged(_ isKey: Bool, panel: WritePanel, front app: FrontApp?) -> FrontTarget? {
+        let target = tracker.writeKeyChanged(isKey, panel: panel, front: app)
+        target.map(frontChanged)
+        return target
     }
+
+    /// A different app or Write came to the front. The last app's text goes
+    /// first, then My Panel takes its new order. For Write, the bar then
+    /// shows the paragraph at the caret.
+    private func frontChanged(_ target: FrontTarget) {
+        controller.appChanged(name: target.name)
+        isHistoryOpen = false
+        front = target
+        menu = nil
+        if case .write(let panel) = target {
+            writePanel = controller.panels.writePanel(for: panel)
+        } else {
+            writePanel = nil
+        }
+        predictions.focusMoved()
+        rankUserPanel()
+        if target.isWrite { writeCaretMoved(write.caret) }
+        scheduleUpdate()
+        readScreenSoon()
+    }
+
+    /// The paper of Write turned into the desk, or the desk into the paper.
+    /// Only the keys of Write and the caret change.
+    public func writePanelChanged(_ panel: WritePanel) {
+        guard isWriteInFront else { return }
+        front = .write(panel)
+        writePanel = controller.panels.writePanel(for: panel)
+        writeCaretMoved(write.caret)
+    }
+
 
     /// The focus moved to a different element. Call it only for a new element,
     /// not for new text in the same one: private text stays hidden until the
@@ -338,14 +380,29 @@ public final class KeyboardSession: ObservableObject {
     public func focusMoved() {
         controller.focusMoved()
         predictions.focusMoved()
+        readScreenSoon()
+    }
+
+    /// The app in front reported its focused field, or new text in it. A
+    /// field that empties was sent, and the text above it changed, so the
+    /// session reads the screen again.
+    public func focusChanged(to field: FocusedField?) {
+        controller.focusChanged(to: field)
+        let isEmpty = field?.text?.isEmpty ?? true
+        if isEmpty, !fieldWasEmpty { readScreenSoon() }
+        fieldWasEmpty = isEmpty
     }
 
     /// The editor of the Write window reported the paragraph at the caret.
     /// The paragraph goes to the input bar. An empty document turns Speak
-    /// off.
-    public func writeCaretRead(_ caret: EditorCaret) {
+    /// off. Nothing changes while another app is in front.
+    public func writeCaretMoved(_ caret: EditorCaret) {
+        guard isWriteInFront else { return }
         writeHasText = !caret.documentIsEmpty
-        controller.focusChanged(to: caret.focusedField)
+        controller.focusChanged(
+            to: FocusedField(
+                appName: FrontTarget.writeName, role: "AXTextArea", isEditable: true, isSecure: false,
+                text: caret.text, selection: NSRange(location: caret.caret, length: caret.length)))
         scheduleUpdate()
     }
 
@@ -353,30 +410,59 @@ public final class KeyboardSession: ObservableObject {
     public func settle() async {
         // An update can start another one, such as the end of a speech that
         // empties the Talk bar.
-        for _ in 0..<4 {
-            await readingWrite?.value
+        repeat {
+            await screenRead?.value
             await pending?.value
             await Task.yield()
-        }
+        } while isScheduled
         await predictions.settle()
     }
 
     // MARK: - Private
 
-    /// Reads the Write window, then speaks. The bar shows only the paragraph
-    /// at the caret, so no word of the bar lights up.
-    private func speakWrite() {
-        guard readingWrite == nil else { return }
-        readingWrite = Task { [weak self] in
-            guard let self else { return }
-            let text = await self.writeSpeech()?.text
-            self.readingWrite = nil
-            guard let text, self.isWriteInFront, self.controller.mode == .type, !self.speaker.isSpeaking
-            else { return }
-            self.speaking = nil
-            self.speaker.speak(text)
-            self.update()
+    /// One fixed message for each kind of error. The text of a decoding error
+    /// can quote a stored row, and a row can hold the text of the user.
+    private static func userPanelMessage(for error: any Error) -> String {
+        switch error {
+        case is DecodingError:
+            "My Panel could not read one of its saved buttons. The keyboard keeps the saved buttons as they are."
+        default:
+            "My Panel could not read its buttons from the keyboard database. The keyboard keeps the saved buttons as they are."
         }
+    }
+
+    /// The one gate of the text on screen: the switch is on, the mode is
+    /// Type, another app is in front, and the bar shows the text of the field.
+    private var mayReadScreen: Bool {
+        predictions.screenEnabled && controller.mode == .type && !isWriteInFront && !controller.hidesFieldText
+    }
+
+    /// Reads the text on screen of the app in front after
+    /// `screenReadDelay`. A newer read cancels this one. The gate applies when
+    /// the read starts. A cancelled or refused read leaves no text on screen.
+    private func readScreenSoon() {
+        cancelScreenRead()
+        guard case .app(let app) = front else { return }
+        pendingScreenRead = scheduler.schedule(after: Self.screenReadDelay) { [weak self] in
+            guard let self else { return }
+            self.pendingScreenRead = nil
+            guard self.mayReadScreen, self.front == .app(app) else { return }
+            self.screenRead = Task { [weak self, reader] in
+                let screen = await reader.screenContext(app: app)
+                guard let self, !Task.isCancelled, self.front == .app(app) else { return }
+                self.screenRead = nil
+                self.screen = screen
+                self.scheduleUpdate()
+            }
+        }
+    }
+
+    private func cancelScreenRead() {
+        pendingScreenRead?.cancel()
+        pendingScreenRead = nil
+        screenRead?.cancel()
+        screenRead = nil
+        screen = nil
     }
 
     private func rankUserPanel() {
@@ -398,14 +484,12 @@ public final class KeyboardSession: ObservableObject {
         // The values come from the publishers: `@Published` publishes before
         // it stores the new value.
         controller.$focusedField
-            .combineLatest(controller.$input, controller.$mode, controller.$isFieldPrivate)
-            .combineLatest($isWriteInFront)
-            .sink { [weak self] values, isWriteInFront in
-                let (field, input, mode, isPrivate) = values
-                self?.inputBar.update(
-                    InputBarVisibility.wantsBar(
-                        mode: mode, focusedField: field, isFieldPrivate: isPrivate, input: input,
-                        isWriteInFront: isWriteInFront))
+            .combineLatest(controller.$input, controller.$mode, $front)
+            .sink { [weak self] field, input, mode, front in
+                let wantsBar = InputBarVisibility.wantsBar(
+                    mode: mode, focusedField: field, input: input, isWriteInFront: front?.isWrite == true)
+                self?.wantsBar = wantsBar
+                self?.inputBar.update(wantsBar)
             }
             .store(in: &subscriptions)
         controller.$mode
@@ -413,12 +497,21 @@ public final class KeyboardSession: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] _ in self?.isHistoryOpen = false }
             .store(in: &subscriptions)
-        // A button added in Settings shows at once. The user is in the Settings
-        // window, not aiming at the panel.
+        controller.$modifiers
+            .map(\.mac)
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] in self?.macModifiersChanged($0) }
+            .store(in: &subscriptions)
         predictions.$screenEnabled
             .dropFirst()
-            .sink { [weak self] _ in self?.scheduleUpdate() }
+            .sink { [weak self] isOn in
+                if isOn { self?.readScreenSoon() } else { self?.cancelScreenRead() }
+                self?.scheduleUpdate()
+            }
             .store(in: &subscriptions)
+        // A button added in Settings shows at once. The user is in the Settings
+        // window, not aiming at the panel.
         userPanel?.$buttons
             .dropFirst()
             .sink { [weak self] _ in self?.scheduleUpdate(rank: true) }
@@ -443,14 +536,15 @@ public final class KeyboardSession: ObservableObject {
     private func update() {
         let mode = controller.mode
         let talk = controller.talk
+        // The input of a field whose text the bar hides is `.secure`, so the
+        // predictions get no text. `isPrivate` tells private text from a
+        // password field for the notice.
         let isPrivate = mode == .type && controller.isFieldPrivate
         let input: InputMirror = mode == .talk ? .local(text: talk.text) : controller.input
-        let usesScreen = mode == .type && !isWriteInFront && predictions.screenEnabled
         predictions.update(
             input: input, mode: mode == .talk ? .talk : .type,
-            // The Talk history is for Talk mode only.
             said: mode == .talk ? talk.said.recentTexts : [], isPrivate: isPrivate,
-            screen: usesScreen ? screen : nil)
+            screen: mayReadScreen ? screen : nil)
 
         let isSpeaking = speaker.isSpeaking
         if wasSpeaking, !isSpeaking {
@@ -469,7 +563,7 @@ public final class KeyboardSession: ObservableObject {
             canSpeak =
                 isWriteInFront
                 ? writeHasText
-                : SpeakText(input: controller.input, isPrivate: controller.isFieldPrivate) != nil
+                : SpeakText(input: controller.input, isPrivate: controller.hidesFieldText) != nil
         }
         let speakMode = SpeakButton.Mode(isSpeaking: isSpeaking, canSpeak: canSpeak)
         if speakMode != self.speakMode { self.speakMode = speakMode }
@@ -499,13 +593,15 @@ public final class KeyboardSession: ObservableObject {
     private func shortcutSuggestions(mode: KeyboardMode) -> [AppShortcut] {
         // Talk mode sends no keys to the app. The Write window has its panel.
         guard mode == .type, !isWriteInFront else { return [] }
-        let on = controller.modifiers.active.union(heldModifiers)
+        let on = controller.modifiers.own.union(heldModifiers)
         let byModifier = !on.isDisjoint(with: [.command, .control])
-        let hasTextInput = InputBarVisibility.wantsBar(
-            mode: mode, focusedField: controller.focusedField, isFieldPrivate: controller.isFieldPrivate,
-            input: controller.input, isWriteInFront: isWriteInFront)
-        guard byModifier || !hasTextInput else { return [] }
-        if menu == nil { menu = readMenu() }
+        guard byModifier || !wantsBar else { return [] }
+        // The order is set when the menu is read, so a suggestion never moves
+        // while the app stays in front.
+        if menu == nil, case .app(let app) = front {
+            let shortcuts = reader.menuShortcuts(pid: app.pid)
+            menu = app.bundleID.map { AppShortcut.ranked(shortcuts, app: $0, by: shortcutUsage) } ?? shortcuts
+        }
         return AppShortcut.suggestions(menu: menu ?? [], modifiers: byModifier ? on : [])
     }
 

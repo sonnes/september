@@ -25,13 +25,16 @@ It runs on the main actor. The checks are in
 | The input bar | `InputBarVisibility` | Shows the bar and the suggestions only when there is text input. |
 | The clipboard | `ClipboardHistory`, `ClipboardAccess` | Pastes a copied text, and does Cut, Copy, and Paste in each mode. |
 
-The app sets two hooks:
+`init` takes a `FrontAppReading`. It reads the menu shortcuts and the text on
+screen of the app in front, for a process ID. The app passes
+`AXFrontAppReader`, which reads them through accessibility and holds the
+context rules. See [Shortcut Suggestions](#shortcut-suggestions) and
+[The Text on Screen](#the-text-on-screen).
 
-- `readMenu` reads the menu shortcuts of the app in front. See
-  [Shortcut Suggestions](#shortcut-suggestions).
-- `writeSpeech` reads the selection and the document of the Write paper, or
-  the Find query of the desk. The keyboard cannot read its own window through
-  the accessibility API.
+`init` also takes a `WriteReading`. It gives the paragraph at the caret and
+the text for Speak of the Write paper, or the Find query of the desk. The app
+passes its `WriteController`. The keyboard cannot read its own window through
+the accessibility API.
 
 The views read these values of the session:
 
@@ -43,7 +46,7 @@ The views read these values of the session:
 - `panelTab`: the Write tab or the Mine tab of My Panel. Without Write in
   front, My Panel shows only Mine.
 - `mineButtons`: the buttons of Mine, most used first.
-- `userPanelError`: the reason that My Panel could not read its file.
+- `userPanelError`: the reason that My Panel could not read its buttons.
 - `isHistoryOpen`: true while the clipboard history shows in the place of the
   predictions.
 - `historyPage`: the page of the history. Page 0 holds the newest texts.
@@ -53,7 +56,15 @@ The views read these values of the session:
 
 ## Start
 
-`init` does these steps in this order:
+`KeyboardAssembly` builds the controller and the session, and loads the
+Phrases panel. The app and `--snapshot` both use it. The app gives it the
+event sink, the database, the clipboard of macOS, the reader of the app in
+front, the voice, Write, and the predictions. `--snapshot` gives it sample
+parts and a scheduler with no delays. The assembly also makes
+`KeyboardSettings` from the defaults. A change of the style or of the Return
+key of Talk mode applies to the controller at once.
+
+`init` of the session does these steps in this order:
 
 1. It gives the voice to Talk mode (`controller.talk.speech`).
 2. It sends each chord of the keys to `chordPressed(_:)`.
@@ -76,7 +87,7 @@ An update does these steps in this order:
    the input is the Talk bar, and the lines of the last hour of the Talk
    history are the conversation. Private text gives the predictions no input.
    The engine shows sentence predictions only after the user types in the
-   field. `focusMoved()` and `appChanged(...)` start a new field.
+   field. `focusMoved()` and an app switch start a new field.
 2. If the speech ended after the last update, it tells Talk mode. Talk mode
    then empties the bar.
 3. It sets `speakMode`. In Type mode, Speak is on when the field has text to
@@ -86,8 +97,9 @@ An update does these steps in this order:
 6. It sets `shortcuts`. See [Shortcut Suggestions](#shortcut-suggestions).
 
 The input bar does not wait for the turn. The session takes the focused field,
-the input, the mode, the private state, and the Write paper from their
-publishers. Then it tells `InputBarVisibility` if the bar must show.
+the input, the mode, and the app in front from their publishers. Then it tells
+`InputBarVisibility` if the bar must show. The shortcut suggestions use the
+same result.
 
 My Panel ranks Mine again only when an app comes to the front, so a button
 never moves while the user aims at it. A change in the My Panel page of
@@ -100,13 +112,17 @@ Settings ranks Mine at once, because the user is in the Settings window.
 `FocusWatcher` follows the app in front. For a new app, the calls come in this
 order:
 
-1. `FrontAppTracker` decides between the Write paper and another app.
-2. `appChanged(name:bundleID:)`. The controller clears the text of the last
-   app. Then `writePanel` changes, and Mine takes its new order.
+1. `appActivated(_:)`. The `FrontAppTracker` of the session decides between
+   Write and another app. It gives a `FrontTarget`: `.app(FrontApp)` or
+   `.write(WritePanel)`. Nothing changes for the keyboard process itself or
+   for the app that is already in front.
+2. For a new target, the controller clears the text of the last app. The
+   clipboard history closes. Then `writePanel` changes, and Mine takes its
+   new order.
 3. `focusMoved()`. The private state of the last field ends.
-4. `controller.focusChanged(to:)` with the field of the new app.
+4. `focusChanged(to:)` with the field of the new app.
 
-If the field of the new app comes before `appChanged`, the controller clears
+If the field of the new app comes before `appActivated(_:)`, the controller clears
 it, and the bar stays empty. For this reason, `FocusWatcher.onAppChanged` is
 the only observer of the app switch.
 
@@ -115,35 +131,72 @@ the only observer of the app switch.
 1. `focusMoved()`, only for a different element. New text in the same element
    is not a focus move, so private text stays hidden until the focus leaves its
    field.
-2. `controller.focusChanged(to:)` with the new field.
+2. `focusChanged(to:)` with the new field. The session gives the field to
+   `controller.focusChanged(to:)`.
+
+### The text on screen
+
+The session decides when to read the text near the field, and if it can read
+it. It reads the text after these events:
+
+- Another app comes to the front.
+- `focusMoved()`.
+- `focusChanged(to:)` gives an empty field after a field with text. The user
+  sent the text, and the text above the field changed.
+- The switch `PredictionEngine.screenEnabled` turns on.
+
+The read waits `screenReadDelay` (0.15 seconds) on the scheduler of the
+session, because other apps move the focus late after a switch. A newer
+event cancels the read that waits or runs, so an app switch reads one time.
+When the wait ends, the session reads only if these conditions are true. The
+same gate decides if an update gives the text to the predictions:
+
+- The switch is on.
+- The keyboard is in Type mode.
+- Another app is in front, not Write.
+- The bar shows the text of the field (`controller.hidesFieldText` is
+  false): no private text and no password field.
+
+A read that ends after another app came to the front is dropped. Each new
+read clears the text of the last read. Thus a cancelled read and a read that
+the gate refused leave no text. Turning off the switch cancels the read.
 
 ### The Write paper
 
 The Write paper is in the keyboard process, and the keyboard cannot read its
 own window through the accessibility API. When the paper becomes the key
-window, the app calls `appChanged` with `WritePanel.id`. Then the editor
-reports the paragraph at the caret after each edit and each caret move. The
-app gives it to `writeCaretRead(_:)`. The session sends the paragraph to
-`controller.focusChanged(to:)` and records if the document has text.
+window, the app calls `writeKeyChanged(true, panel: .paper, front: nil)`, and
+the session reads the caret from its `WriteReading`. When the paper stops
+being the key window, the app gives the app in front, and the session
+returns it as the new target. Then the editor reports the paragraph at
+the caret after each edit and each caret move. The app is the `WriteHost` of
+`WriteController`, and it gives the paragraph to `writeCaretMoved(_:)`. The
+session makes a focused field named Write from the paragraph, sends it to
+`controller.focusChanged(to:)`, and records if the document has text. While another app is in front, the session ignores the
+caret of Write.
 
 The desk of Write is the other window of Write. When the paper turns into the
-desk, the app calls `appChanged` with `WritePanel.documentsID`, so the Write
-tab shows the Documents keys. The desk reports its Find query in place of
-the paragraph. When the desk turns back into the paper, the app calls
-`appChanged` with `WritePanel.id` again.
+desk, the app calls `writePanelChanged(.desk)`, so the Write tab shows the
+Documents keys, and the session reads the caret again. The desk reports its
+Find query in place of the paragraph.
+When the desk turns back into the paper, the app calls
+`writePanelChanged(.paper)`. A switch between the paper and the desk changes
+only the keys and the caret. The history, the echo, and the order of Mine
+stay.
 
 ### The clipboard changes
 
-macOS has no notification for a change of the clipboard. The app makes a
-`ClipboardWatcher`, and a timer calls `poll()` every 0.5 seconds. A poll with
-no change compares one number. For each change, the watcher adds the text to
-`ClipboardHistory` and calls `pasteboardChanged()`. The watcher keeps no copy
-in these conditions:
+macOS has no notification for a change of the clipboard. The session makes a
+`ClipboardWatcher`, and a timer of the app calls `pollClipboard()` every 0.5
+seconds. A poll with no change compares one number. For each change, the
+watcher adds the text to `ClipboardHistory` and calls `pasteboardChanged()`.
+The watcher keeps no copy in these conditions:
 
 - The copy has a type of `ClipboardWatcher.skippedTypes`. Password managers
   set these types (nspasteboard.org).
 - The copy is a file, or it has no plain text.
-- The focused field is a password field or holds private text.
+- The bar hides the text of the field (`controller.hidesFieldText`): the
+  field is a password field or holds private text.
 
 The text on the clipboard at launch does not go into the history.
 
@@ -152,12 +205,10 @@ The text on the clipboard at launch does not go into the history.
 | Call | From | What happens |
 |---|---|---|
 | `type(_:)` | A prediction tile | Types into the app in Type mode, or into the Talk bar in Talk mode. |
-| `screenRead(_:)` | `AppDelegate`, after a read of the text near the field | Keeps the text for the sentence predictions of Type mode. A read of an app that is no longer in front is dropped. A new app clears the text. |
 | `pickWord(_:)` | A word completion | Types the rest of the word as `type(_:)` does. The engine keeps the word until the user submits the text. |
 | `speakPressed()` | Speak | See [Speak](#speak). |
 | `pressMine(_:)` | A button of Mine | Counts the press for the order of Mine, then does the action. |
-| `pressShortcut(_:)` | A shortcut suggestion | Presses the chord of the suggestion in the app. A latched modifier ends. |
-| `hardwareModifiersChanged(_:)` | `ModifierTap` | See [Shortcut Suggestions](#shortcut-suggestions). |
+| `pressShortcut(_:)` | A shortcut suggestion | Presses the chord of the suggestion in the app. A latched modifier ends. The press counts toward the order of the shortcuts of the app. |
 | `toggleHistory()` | History | Shows the clipboard history in the place of the predictions, on its newest page, or shows the predictions again. An app change and a mode change close the history. |
 | `olderPage()`, `newerPage()` | Older and Newer | Turns the pages of the history. |
 | `pasteClip(_:)` | A copied text | See [The Clipboard](#the-clipboard). |
@@ -193,15 +244,19 @@ in the place of the input bar. Otherwise `shortcuts` is empty, and the bar
 shows. Talk mode and the Write window have no shortcuts.
 
 - The shortcuts come from `AppShortcut.suggestions(menu:modifiers:)`: the
-  menu items of the app with a chord, in menu bar order. Each chord shows one
-  time.
-- `readMenu` reads the menu shortcuts of the app in front. The app shell sets
-  it in each app change. The session calls it only when it needs shortcuts,
-  and keeps the result until the next app change.
+  menu items of the app with a chord. Each chord shows one time.
+- `AppShortcut.ranked(_:app:by:)` puts the shortcuts that the user pressed
+  most in this app first. A tie keeps the menu bar order. The session ranks
+  the menu when it reads it, so the order does not change while the app is in
+  front. `pressShortcut(_:)` adds one press in the `shortcut_use` table.
+- The session reads the menu with `FrontAppReading.menuShortcuts(pid:)` for
+  the app in front. It reads only when it needs shortcuts, and keeps the
+  result until the next app change.
 - The modifiers that are on are the modifiers of the keys, latched or locked,
-  and the modifiers that the user holds on the hardware keyboard. With
-  Command or Control on, only the chords that hold all these modifiers stay.
-- `hardwareModifiersChanged(_:)` waits `modifierHoldDelay` (0.4 seconds)
+  and the modifiers that macOS holds. With Command or Control on, only the
+  chords that hold all these modifiers stay.
+- The session reads the modifiers that macOS holds from
+  `controller.modifiers.mac`. It waits `modifierHoldDelay` (0.4 seconds)
   before a held Command or Control counts, so a quick chord does not change
   the stack. A release, or a change while the shortcuts show, counts at once.
 
@@ -211,9 +266,9 @@ shows. Talk mode and the Write window have no shortcuts.
 
 - During speech, it stops the voice. In Talk mode, the text stays in the bar.
 - In Talk mode, it speaks the bar, and the text goes to the Said list.
-- In Type mode with the Write paper in front, it reads `writeSpeech`. It
-  speaks the selection, or the whole document without its Markdown marks
-  (`MarkdownSpeech`).
+- In Type mode with the Write paper in front, it reads the speech of its
+  `WriteReading`. It speaks the selection, or the whole document without its
+  Markdown marks (`MarkdownSpeech`).
 - In Type mode in another app, it speaks the selection of the field, or the
   whole field (`SpeakText`). A password field and private text have nothing to
   read.
@@ -238,5 +293,8 @@ A press on a copied text closes the history.
 ## Checks
 
 `settle()` waits until the parts take the last change: the read of the Write
-window, the pending update, and the request of the predictions. A check calls
-`settle()` before it reads a result.
+window, the read of the text on screen, the pending update, and the request
+of the predictions. An update can start another update, so `settle()` waits
+again until no update is pending. The wait before a read of the text on screen
+runs on the scheduler, so a check moves its `FakeClock` past `screenReadDelay`.
+A check calls `settle()` before it reads a result.

@@ -33,12 +33,12 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Design` | tokens, metrics, typography, rainbow/mono styles |
 | `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController` |
 | `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map, the key settings of macOS (`KeyTiming`) and the timing of a held key (`KeyPresser`) |
-| `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `SpeakText`, `FrontAppTracker`, `PanelPlacement`, `KeyboardPosition`, `InputBarVisibility` |
-| `Sources/SeptemberKit/Panels` | panel model, JSON loading, the grid of the Write panels, the shortcut suggestions |
+| `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `KeyboardAssembly` (builds the controller and the session for the app and the snapshots), `SpeakText`, `FrontAppTracker`, `PanelPlacement`, `KeyboardPosition`, `InputBarVisibility`, and `LegacyImport` (the JSON files of older versions) |
+| `Sources/SeptemberKit/Panels` | panel model, JSON loading, the grid of Mine and the Write panels (`PanelLayout`), the shortcut suggestions |
 | `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence) and word completions |
 | `Sources/SeptemberKit/ScreenContext` | `ScreenContext`, the rule of each app (`ContextRule`), and `ScreenContextExtractor` |
 | `Sources/SeptemberKit/Speech` | `Speaker`, the macOS voices, ElevenLabs, the Keychain store |
-| `Sources/SeptemberKit/Storage` | `KeyboardDatabase` (`keyboard.sqlite` and its migrations) and `SentenceHistory` (the sentences that the user sent) |
+| `Sources/SeptemberKit/Storage` | `KeyboardDatabase` (`keyboard.sqlite` and its migrations), `SentenceHistory` (the sentences that the user sent), and `TextLog` (the dated texts of the Said list and the clipboard history) |
 | `Sources/SeptemberKit/Talk` | Talk mode, the Said list, the Phrases panel |
 | `Sources/SeptemberKit/UserPanel` | My Panel, private text, the Accessibility Keyboard import |
 | `Sources/SeptemberKit/Settings` | the Settings pages and `KeyboardSettings` |
@@ -48,7 +48,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`rectangle`/`phrases`/`write`/`write-documents.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
-| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ModifierTap`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings window, snapshots |
+| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `OtherInputMonitor`, `SystemPasteboard`, `MenuBarReader`, `AXFrontAppReader` (the menu and the text on screen for the session), `AXTreeReader`, `AXFocus` (the focus path, the password check, `AXManualAccessibility`, and the walk of the menu bar), the Settings window, snapshots |
 | `Sources/WriteLab` | Write Lab: the Write paper on its own, with a stand-in for the keyboard bar (`make lab`) |
 | `Tests/KitTests` | tests + the harness |
 
@@ -66,6 +66,12 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `test("…") { expect(…) }` and register the suite in
   `Tests/KitTests/main.swift`. Xcode is installed now, so swift-testing is
   available. The move to swift-testing is not done yet.
+- **The harness fails a test that checks nothing or hangs.** A test that runs
+  no `expect` fails. If one test runs longer than 10 s, the watchdog prints
+  its name and stops the run with status 1. For a defaults domain, call
+  `freshDefaults()`. Do not use `UserDefaults.standard` or a fixed suite
+  name. A fake that more than one suite uses goes in
+  `Tests/KitTests/Fakes.swift`.
 - **No literals in views.** Colours come from `Tokens`, sizes from `Metrics`,
   fonts from `Typography`. New values go in the design layer first.
 - **Every colour is a `ThemeColor`.** Keyboard follows the system appearance,
@@ -102,26 +108,34 @@ only what needs a running app — the panel, the event sink, the menu bar.
   and counts the presses of My Panel to rank its buttons. Put new wiring there,
   with a check in `Tests/KitTests/IntegrationTests.swift`. `AppDelegate` keeps
   only what needs a running app. See `docs/concepts/keyboard-session.md`.
+- **Write talks to the app through two ports.** `WriteController` calls its
+  `WriteHost` (the `AppDelegate`) to bring a window to the front, when a
+  window closes, and when the key window, the panel, or the caret changes.
+  The session reads the caret and the text for Speak through `WriteReading`.
+  Write uses no type of `Integration`.
 - **Private text stays private.** Never log or print the text of a field, a
   private text button, or an API key. Keep the text of a field only in the
-  sentence history. While `isFieldPrivate` is true,
-  the predictions, Speak, learning, and the tree viewer get no text of the
-  field. Call `KeyboardSession.focusMoved()` only when the focused element
+  sentence history. `KeyboardController.hidesFieldText` is the one privacy
+  check: it is true for private text and for a password field. While it is
+  true, the predictions, Speak, learning, the text on screen, the clipboard
+  history, and the tree viewer get no text of the field. Call `KeyboardSession.focusMoved()` only when the focused element
   changes, not when its value changes.
 - **An app switch is one ordered step.** `FocusWatcher.onAppChanged` clears the
-  last app's text through `KeyboardSession.appChanged` *before* the new app's
+  last app's text through `KeyboardSession.appActivated` *before* the new app's
   field is read. Do not observe `didActivateApplication` anywhere else: two
   observers of one notification cannot promise that order, and the bar ends up
-  stuck empty. The Write paper belongs to the keyboard process, so
-  `FrontAppTracker` decides between the Write paper and another app. It
-  matches apps on the process ID.
+  stuck empty. The Write paper belongs to the keyboard process, so the
+  `FrontAppTracker` of the session decides between Write and another app, and
+  gives a `FrontTarget`. It matches apps on the process ID. A switch between the
+  paper and the desk is not an app switch: it goes to
+  `KeyboardSession.writePanelChanged`.
 - **The input bar is a mirror, not a buffer.** It shows the focused field's own
   text (`InputMirror.mirrored`), our echo only when the app exposes none, and
   nothing for a password field. Never keep text typed into an
   `AXSecureTextField`. See `docs/concepts/input-mirroring.md`.
 - **Panels are data.** New shortcuts are JSON in `Resources/Panels`, not Swift.
-  A button presses a `shortcut`, presses a `sequence` of shortcuts, or types
-  `text`. The file name is the panel's identity. `PanelStore` throws on a
+  A button presses a `shortcut`, presses a `sequence` of shortcuts, types
+  `text`, or does a `scroll`. The file name is the panel's identity. `PanelStore` throws on a
   missing or broken file, and the app shows the error and quits.
 - **Context rules are data.** The rule that reads the text near the field in
   an app is `Resources/Context/<bundle id>.json`, not Swift. Add one app at a
@@ -161,7 +175,7 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `com.september.keyboard.private`: they are storage names, and a new name
   loses the saved key and the private text.
 - Never prompt for permission at launch. The banner and the menu item ask for
-  Accessibility. The Predictions page of Settings asks for Input Monitoring.
+  Accessibility.
 - Key code mapping goes through `UCKeyTranslate`, never a hardcoded US table,
   and rebuilds when the input source changes. A shortcut letter that the
   current layout lacks comes from the ASCII-capable layout, as macOS does.
@@ -191,6 +205,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `WindowActivation` shows the window on top with `orderFrontRegardless()`,
   and the window takes the focus when the app becomes active. Do not use
   `activate(ignoringOtherApps:)`.
+- A latched or locked modifier is down at the OS. If the process dies by
+  SIGKILL or a crash, the modifier stays down. To clear it, press and release
+  that key on the hardware keyboard.
 - `make run` and `make dev` show the keyboard on the screen of the user. Stop
   it with `make stop` when the check is done.
 - Do not test with the pointer of the user. To read the keyboard or press

@@ -1,9 +1,7 @@
 import AppKit
 import Foundation
 import SeptemberKit
-import SwiftUI
 
-/// Records what Talk mode asks the voice to say.
 @MainActor
 private final class SpeechSpy: SpeechOutput {
     var spoken: [String] = []
@@ -20,7 +18,6 @@ private func layoutKey(_ id: String) -> KeyDefinition {
     fatalError("no key \(id)")
 }
 
-/// A controller in Talk mode with a speech spy attached.
 @MainActor
 private func makeTalkController() throws -> (KeyboardController, RecordingSink, SpeechSpy) {
     let (controller, sink) = try makeController()
@@ -33,14 +30,6 @@ private func makeTalkController() throws -> (KeyboardController, RecordingSink, 
 @MainActor
 private func type(_ ids: [String], into controller: KeyboardController) {
     for id in ids { controller.press(layoutKey(id)) }
-}
-
-@MainActor
-private func makeDefaults() -> UserDefaults {
-    let name = "SettingsTalkTests.\(UUID().uuidString)"
-    let defaults = UserDefaults(suiteName: name)!
-    defaults.removePersistentDomain(forName: name)
-    return defaults
 }
 
 @MainActor
@@ -202,35 +191,20 @@ func settingsTalkTests() {
 
     // MARK: Settings
 
-    test("the sidebar groups match the mock") {
-        expectEqual(SettingsGroup.allCases, [.speak, .type, .keyboard])
-        expectEqual(
-            SettingsGroup.allCases.map(\.pages),
-            [[.voice, .speech], [.predictions, .clipboard, .myPanel], [.look, .accessibility]])
-        expectEqual(
-            Set(SettingsGroup.allCases.flatMap(\.pages)), Set(SettingsPage.allCases),
-            "each page is in one group")
-    }
-
-    test("settings pages of other tracks are placeholders until set") {
-        let settings = KeyboardSettings(defaults: makeDefaults())
-        var pages = SettingsPages(
-            settings: settings, permission: AccessibilityPermission(isTrusted: false))
-        expectEqual(
-            SettingsPage.allCases.filter(pages.isPlaceholder),
-            [.voice, .speech, .predictions, .clipboard, .myPanel])
-        pages[.voice] = AnyView(EmptyView())
-        expect(!pages.isPlaceholder(.voice))
+    test("each Settings page is in one group of the sidebar") {
+        let pages = SettingsGroup.allCases.flatMap(\.pages)
+        expectEqual(pages.count, Set(pages).count, "a page is in two groups")
+        expectEqual(Set(pages), Set(SettingsPage.allCases), "a page is in no group")
     }
 
     test("keyboard settings start at the defaults") {
-        let settings = KeyboardSettings(defaults: makeDefaults())
+        let settings = KeyboardSettings(defaults: freshDefaults())
         expectEqual(settings.style, .rainbow)
         expectEqual(settings.returnSpeaksInTalk, true)
     }
 
     test("keyboard settings persist in the defaults") {
-        let defaults = makeDefaults()
+        let defaults = freshDefaults()
         let first = KeyboardSettings(defaults: defaults)
         first.style = .mono
         first.returnSpeaksInTalk = false

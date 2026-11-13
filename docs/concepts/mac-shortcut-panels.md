@@ -9,6 +9,7 @@ package: keyboard
 Panels are on each side of the macOS keyboard. SYSTEM and My Panel are on the
 left. TEXT and RECTANGLE are on the right. RECTANGLE shows only when the
 Rectangle window manager is installed (`DetachedPanel.shown(rectangleInstalled:)`).
+The panels show only in Type mode (`DetachedPanel.isShown(in:)`).
 Cut, Copy, and Paste are buttons at the left of the input bar, so no keypad
 has them. While Write is in front, My Panel has a Write tab with the keys of
 the paper or of the desk. Each panel is a grid of buttons in a JSON file that
@@ -27,9 +28,19 @@ buttons with actions. September has no absolute layout and no modal editor.
 PanelDefinition   title, columns, buttons, arrows
   PanelButton     id, label, symbol (SF Symbol), region, action
     WindowRegion  x, y, width, height, in fractions of the screen
-    PanelAction   .shortcut(Shortcut) | .text(String)
+    PanelAction   .shortcut(Shortcut) | .sequence([Shortcut]) | .text(String)
+                  | .privateText(id) | .scroll(ScrollDirection)
   PanelBlock      columns, buttons
 ```
+
+My Panel uses the same `PanelAction` and the same JSON for its buttons. Only
+My Panel holds `.privateText`. Its JSON has no text and no ID, so it decodes
+only with the ID of its button. `PanelAction` gives the keys label, the hint,
+the spoken name, `isText`, and `holdBehavior` for both kinds of buttons. A
+held button repeats only for a scroll or a key that repeats with the modifiers
+of its own shortcut. `PanelLayout` places the buttons of a Write panel and of
+Mine. A text button takes a whole row, and a key button fills the gap that an
+earlier key button left.
 
 `arrows` is an optional `PanelBlock` below the grid, with columns of its own.
 The Text keypad uses it for an inverted T of arrow keys, in three columns. A
@@ -90,4 +101,6 @@ Key names are a single character (`"t"`) or a `VirtualKey` case name
 (`"return"`, `"pageDown"`, `"f5"`). Modifier names are `function`, `control`,
 `option`, `shift`, and `command`. A letter key is lowercase. For ⇧⌘T, write
 `"t"` and put `"shift"` in the modifiers. An unknown modifier or key, an
-uppercase letter, or an unknown action type stops the decoding with an error.
+uppercase letter, an empty sequence, or an unknown action type stops the
+decoding with an error. A row of My Panel does not get the checks for the
+uppercase letter and the empty sequence.

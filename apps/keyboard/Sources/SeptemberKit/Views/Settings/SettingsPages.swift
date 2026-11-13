@@ -2,8 +2,8 @@ import SwiftUI
 
 /// The view of each page of the Settings window.
 ///
-/// Look and Accessibility have their views from the start. The other pages
-/// show a placeholder until their view is set, for example
+/// Look and Accessibility have their views from the start. The app sets the
+/// view of each other page, for example
 /// `pages[.voice] = AnyView(VoiceSettingsPage(...))`.
 @MainActor
 public struct SettingsPages {
@@ -17,24 +17,7 @@ public struct SettingsPages {
     }
 
     public subscript(page: SettingsPage) -> AnyView {
-        get { views[page] ?? AnyView(SettingsPlaceholder(page: page)) }
+        get { views[page] ?? AnyView(EmptyView()) }
         set { views[page] = newValue }
-    }
-
-    public func isPlaceholder(_ page: SettingsPage) -> Bool {
-        views[page] == nil
-    }
-}
-
-/// A page that is not available yet.
-struct SettingsPlaceholder: View {
-    let page: SettingsPage
-
-    var body: some View {
-        ContentUnavailableView(
-            page.title,
-            systemImage: page.symbol,
-            description: Text("These settings are not available yet.")
-        )
     }
 }

@@ -71,8 +71,9 @@ public struct WordCompletion: Equatable, Hashable, Sendable {
 /// macOS learns from the responses that the keyboard records.
 @MainActor
 public final class CandidateCompleter: WordCompleting {
-    /// The most completions in the word row.
-    public static let limit = Metrics.Predictions.wordLimit
+    /// The most words that the word row asks for. The row shows the words
+    /// that fit.
+    public static let limit = 20
 
     private let checker = NSSpellChecker.shared
     private let tag = NSSpellChecker.uniqueSpellDocumentTag()

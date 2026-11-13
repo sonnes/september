@@ -16,22 +16,16 @@ extension Metrics {
         /// The mark in place of the words that the field already holds.
         public static let leadInPadding: CGFloat = 2
         public static let leadInOpacity: Double = 0.7
-        /// Old predictions while new ones are on the way.
-        public static let staleOpacity: Double = 0.55
-        /// Three rows. The stack keeps this height, so the input bar does not
-        /// move when the predictions change.
-        public static let stackHeight: CGFloat = tileHeight * 3 + rowSpacing * 2
-        /// The gap between the stack and the input bar.
-        public static let stackBottomSpacing: CGFloat = 14
+        /// One row for each prediction. The stack keeps this height, so the
+        /// input bar does not move when the predictions change.
+        public static let stackHeight: CGFloat =
+            tileHeight * CGFloat(SuggestionPrompt.count) + rowSpacing * CGFloat(SuggestionPrompt.count - 1)
 
         public static let noticeHeight: CGFloat = 58
         public static let noticeHorizontalPadding: CGFloat = 18
         public static let noticeCornerRadius: CGFloat = 14
         public static let noticeSpacing: CGFloat = 12
 
-        /// The most words that the word row asks for. The row shows the
-        /// words that fit.
-        public static let wordLimit = 20
         /// The space at each side of a word in its button.
         public static let wordPadding: CGFloat = 14
         /// The least width of a word button, so a short word is easy to hit.
@@ -46,7 +40,5 @@ extension Metrics {
         public static let wordRowBottomSpacing: CGFloat = 2
         /// An accent of a held letter is a square tile as high as a word.
         public static let accentTile: CGFloat = wordHeight
-        /// The dashes of an empty word slot.
-        public static let emptySlotDash: [CGFloat] = [4, 3]
     }
 }

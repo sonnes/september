@@ -99,6 +99,12 @@ func focusTests() {
         expectEqual(controller.input, .local(text: "x"))
     }
 
+    test("only the secure text field subrole marks a password field") {
+        expect(FocusedField.isSecure(subrole: FocusedField.secureSubrole))
+        expect(!FocusedField.isSecure(subrole: "AXSearchField"))
+        expect(!FocusedField.isSecure(subrole: nil))
+    }
+
     test("focusing a readable field mirrors it instead of our echo") {
         let (controller, _) = try makeController()
         controller.perform(.text("x"))

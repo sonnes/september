@@ -56,10 +56,9 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("September/Write Lab", isDirectory: true)
         seed(folder)
-        write = WriteController(library: DocumentLibrary(folder: folder))
+        write = WriteController(host: self, library: DocumentLibrary(folder: folder))
         NSApp.mainMenu = Self.menu()
 
-        write.onCaretChange = { [weak self] caret in self?.state.caret = caret }
         subscription = write.model.$current.sink { [weak self] document in
             self?.state.status = document?.title ?? ""
         }
@@ -78,7 +77,7 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
                     fflush(stdout)
                     self.frames += 1
                     LabSnapshot.capture(self.paper.window, to: URL(fileURLWithPath: "/tmp/writelab-\(self.frames).png"))
-                    if self.write.isDeskOpen {
+                    if self.write.panel == .desk {
                         LabSnapshot.capture(
                             self.write.desk.window, to: URL(fileURLWithPath: "/tmp/writelab-desk-\(self.frames).png"))
                     }
@@ -100,7 +99,7 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func newDocument() {
-        paper.window.onNewDocument?()
+        write.newDocument()
     }
 
     // MARK: Bar and paper
@@ -154,6 +153,22 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Quit Write Lab", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.submenu = menu
         return main
+    }
+}
+
+/// The lab is a regular app, so a window of Write activates it.
+extension LabDelegate: WriteHost {
+    func bringToFront(_ window: NSWindow) {
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func windowClosed(_ window: NSWindow) {}
+    func writeKeyChanged(_ isKey: Bool) {}
+    func writePanelChanged(_ panel: WritePanel) {}
+
+    func writeCaretMoved(_ caret: EditorCaret) {
+        state.caret = caret
     }
 }
 
@@ -271,39 +286,10 @@ enum LabSnapshot {
 
     /// Renders the paper with `markdown` at the width of an A4 page.
     static func render(_ markdown: String, to url: URL, dark: Bool) -> Bool {
-        let width: CGFloat = 595
-        let editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: width, height: 400))
-        let side = max(Metrics.WriteEditor.sideMargin, (width - Metrics.WriteEditor.textWidth) / 2)
-        editor.textContainerInset = NSSize(width: side, height: Metrics.WriteEditor.paperMargin)
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: width, height: 400), styleMask: [.borderless], backing: .buffered,
-            defer: false)
-        window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-        window.backgroundColor = NSColor(Tokens.writePaper)
-        let content = NSView(frame: window.contentLayoutRect)
-        content.wantsLayer = true
-        window.contentView = content
-        content.addSubview(editor)
-        editor.load(markdown)
-        let height = editor.contentHeight
-        window.setContentSize(NSSize(width: width, height: height))
-        content.frame = NSRect(x: 0, y: 0, width: width, height: height)
-        editor.frame = content.bounds
-        editor.load(markdown)
-        content.layoutSubtreeIfNeeded()
-        editor.display()
-
-        guard let rep = content.bitmapImageRepForCachingDisplay(in: content.bounds) else { return false }
-        NSAppearance(named: dark ? .darkAqua : .aqua)?.performAsCurrentDrawingAppearance {
-            let paper = NSColor(Tokens.writePaper)
-            NSGraphicsContext.saveGraphicsState()
-            NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-            paper.setFill()
-            content.bounds.fill()
-            NSGraphicsContext.restoreGraphicsState()
-            content.cacheDisplay(in: content.bounds, to: rep)
-        }
-        guard let data = rep.representation(using: .png, properties: [:]) else { return false }
+        let appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        guard let rep = WritePaperController.renderSheet(markdown, width: 595, appearance: appearance),
+            let data = rep.representation(using: .png, properties: [:])
+        else { return false }
         return (try? data.write(to: url)) != nil
     }
 }

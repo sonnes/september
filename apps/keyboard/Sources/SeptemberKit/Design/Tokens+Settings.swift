@@ -1,21 +1,16 @@
 extension Tokens {
-    /// The fill of each sidebar icon in the Settings window. The mock uses the
-    /// same fill in light and dark.
-    public static func settingsIcon(_ page: SettingsPage) -> ThemeColor {
-        let hex: UInt32
-        switch page {
-        case .voice, .accessibility: hex = 0x0A84FF
-        case .speech: hex = 0x8B5CF6
-        case .predictions: hex = 0xFF9F0A
-        // The shift row color of the keys.
-        case .clipboard: hex = 0x5AC8FA
-        case .myPanel: hex = 0x5E5CE6
-        case .look: hex = 0xFF375F
-        }
-        return ThemeColor(light: RGBA(hex: hex), dark: RGBA(hex: hex))
-    }
+    /// The fills of the icons in the sidebar of the Settings window. The mock
+    /// uses the same fill in light and dark.
+    public enum Settings {
+        public static let blueIcon = solid(Tokens.accent.dark)
+        public static let purpleIcon = solid(RGBA(hex: 0x8B5CF6))
+        public static let orangeIcon = solid(RGBA(hex: 0xFF9F0A))
+        public static let tealIcon = solid(Tokens.rowShift.dark)
+        public static let indigoIcon = solid(RGBA(hex: 0x5E5CE6))
+        public static let pinkIcon = solid(RGBA(hex: 0xFF375F))
 
-    /// The glyph on a sidebar icon.
-    public static let settingsIconGlyph = ThemeColor(
-        light: RGBA(hex: 0xFFFFFF), dark: RGBA(hex: 0xFFFFFF))
+        private static func solid(_ fill: RGBA) -> ThemeColor {
+            ThemeColor(light: fill, dark: fill)
+        }
+    }
 }

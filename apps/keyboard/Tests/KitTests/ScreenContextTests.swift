@@ -1,7 +1,6 @@
 import Foundation
 import SeptemberKit
 
-/// An element of a made-up tree, for the extractor.
 final class FakeContextNode: ContextNode {
     let role: String?
     let subrole: String?
@@ -137,13 +136,14 @@ func screenContextTests() {
         let window = FakeContextNode(
             "AXWindow",
             [
-                FakeContextNode("AXTextField", subrole: "AXSecureTextField", [.value: "hunter2"]),
-                FakeContextNode("AXComboBox", [.value: "search words"]),
+                FakeContextNode("AXStaticText", [.value: "Hello"]),
+                FakeContextNode("AXGroup", subrole: "AXSecureTextField", [FakeContextNode("AXStaticText", [.value: "hunter2"])]),
+                FakeContextNode("AXComboBox", [FakeContextNode("AXStaticText", [.value: "search words"])]),
                 composer,
             ])
         let screen = ScreenContextExtractor.extract(
             path: contextPath(to: composer, in: window), rule: nil, appName: nil)
-        expect(screen.lines.isEmpty)
+        expectEqual(screen.lines, ["Hello"])
     }
 
     test("the read stops when its time is up") {

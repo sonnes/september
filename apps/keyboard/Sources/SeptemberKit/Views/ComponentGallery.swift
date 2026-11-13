@@ -6,7 +6,7 @@ public struct ComponentGallery: View {
     public init() {}
 
     private func size(_ kind: KeyKind) -> String {
-        Metrics.describe(Metrics.size(for: kind))
+        describe(Metrics.size(for: kind))
     }
 
     private var samples: [(title: String, note: String, view: AnyView)] {
@@ -33,22 +33,22 @@ public struct ComponentGallery: View {
         return [
             (
                 "Key / Standard", "Primary alphanumeric key. \(size(.standard)).",
-                AnyView(KeyView(key: standard) {})
+                AnyView(KeyView(key: standard, face: standard.face(under: ModifierState())) {})
             ),
             (
                 "Key / Special", "Modifier and utility keys. \(size(.special)), flexible width.",
-                AnyView(KeyView(key: special) {})
+                AnyView(KeyView(key: special, face: special.face(under: ModifierState())) {})
             ),
             (
                 "Key / Function", "Function row keys. \(size(.function)).",
-                AnyView(KeyView(key: function) {})
+                AnyView(KeyView(key: function, face: function.face(under: ModifierState())) {})
             ),
             (
                 "Key / Dual", "Two-label key with primary and secondary glyphs. \(size(.dual)).",
-                AnyView(KeyView(key: dual) {})
+                AnyView(KeyView(key: dual, face: dual.face(under: ModifierState())) {})
             ),
             (
-                "Shortcut / Keys", "Keys only; the name shows on hover. \(Metrics.describe(buttonSize)).",
+                "Shortcut / Keys", "Keys only; the name shows on hover. \(describe(buttonSize)).",
                 AnyView(ShortcutButtonView(button: copy) {})
             ),
             (
@@ -59,44 +59,68 @@ public struct ComponentGallery: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: Metrics.Gallery.spacing) {
-            VStack(alignment: .leading, spacing: Metrics.Gallery.headerSpacing) {
+        VStack(alignment: .leading, spacing: Gallery.spacing) {
+            VStack(alignment: .leading, spacing: Gallery.headerSpacing) {
                 Text("Component Library")
-                    .font(Typography.galleryTitle)
+                    .font(Gallery.title)
                     .foregroundStyle(Color(Tokens.keyText))
                 Text("Reusable building blocks for the keyboard system.")
-                    .font(Typography.galleryCaption)
+                    .font(Gallery.caption)
                     .foregroundStyle(Color(Tokens.labelSecondary))
             }
 
             LazyVGrid(
                 columns: Array(
                     repeating: GridItem(
-                        .fixed(Metrics.Gallery.columnWidth), spacing: Metrics.Gallery.columnSpacing),
-                    count: Metrics.Gallery.columns),
+                        .fixed(Gallery.columnWidth), spacing: Gallery.columnSpacing),
+                    count: Gallery.columns),
                 alignment: .leading,
-                spacing: Metrics.Gallery.spacing
+                spacing: Gallery.spacing
             ) {
                 ForEach(Array(samples.enumerated()), id: \.offset) { _, sample in
-                    HStack(alignment: .top, spacing: Metrics.Gallery.sampleSpacing) {
-                        VStack(alignment: .leading, spacing: Metrics.Gallery.noteSpacing) {
+                    HStack(alignment: .top, spacing: Gallery.sampleSpacing) {
+                        VStack(alignment: .leading, spacing: Gallery.noteSpacing) {
                             Text(sample.title)
-                                .font(Typography.gallerySampleTitle)
+                                .font(Gallery.sampleTitle)
                                 .foregroundStyle(Color(Tokens.keyText))
                             Text(sample.note)
-                                .font(Typography.galleryNote)
+                                .font(Gallery.note)
                                 .foregroundStyle(Color(Tokens.labelSecondary))
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        .frame(width: Metrics.Gallery.noteWidth, alignment: .leading)
+                        .frame(width: Gallery.noteWidth, alignment: .leading)
                         Spacer(minLength: 0)
                         sample.view
                     }
                 }
             }
         }
-        .padding(Metrics.Gallery.padding)
-        .frame(width: Metrics.Gallery.width, alignment: .leading)
+        .padding(Gallery.padding)
+        .frame(width: Gallery.width, alignment: .leading)
         .background(Color(Tokens.background))
     }
+}
+
+/// The sizes and fonts of the component library page.
+private enum Gallery {
+    static let width: CGFloat = 1120
+    static let padding: CGFloat = 40
+    static let spacing: CGFloat = 28
+    static let headerSpacing: CGFloat = 6
+    static let columns = 3
+    static let columnWidth: CGFloat = 300
+    static let columnSpacing: CGFloat = 24
+    static let sampleSpacing: CGFloat = 16
+    static let noteSpacing: CGFloat = 4
+    static let noteWidth: CGFloat = 150
+
+    static let title = Font.system(size: 24, weight: .semibold, design: .monospaced)
+    static let caption = Font.system(size: 12)
+    static let sampleTitle = Font.system(size: 12, weight: .medium, design: .monospaced)
+    static let note = Font.system(size: 10)
+}
+
+/// "48×48", as the component library writes a size.
+private func describe(_ size: CGSize) -> String {
+    "\(Int(size.width))×\(Int(size.height))"
 }

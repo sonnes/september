@@ -5,9 +5,8 @@ import AppKit
 enum WriteStyle {
     typealias M = Metrics.WriteEditor
 
-    static var bodySize: CGFloat { CGFloat(Metrics.writeEditorTextSize) }
+    static var bodySize: CGFloat { M.textSize }
 
-    /// The text size of a block.
     static func size(_ kind: WriteBlockKind) -> CGFloat {
         switch kind {
         case .heading(let level): bodySize * M.headingScale[min(max(level, 1), 6) - 1]
@@ -39,12 +38,11 @@ enum WriteStyle {
     static func color(_ kind: WriteBlockKind) -> NSColor {
         switch kind {
         case .quote: NSColor(Tokens.writeQuote)
-        case .heading(let level) where level >= 4: level == 5 ? NSColor(Tokens.writeText) : NSColor(Tokens.writeQuote)
-        default: NSColor(Tokens.writeText)
+        case .heading(let level) where level >= 4: level == 5 ? NSColor(Tokens.keyText) : NSColor(Tokens.writeQuote)
+        default: NSColor(Tokens.keyText)
         }
     }
 
-    /// The left indent of the text of a block.
     static func indent(_ kind: WriteBlockKind) -> CGFloat {
         switch kind {
         case .bullet(let depth), .ordered(_, let depth):
@@ -113,14 +111,14 @@ enum WriteStyle {
                 .baselineOffset: baselineOffset(font, lineHeight: height),
             ]
             if marks.contains(.strike) { attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
-            if marks.contains(.code) { attributes[.backgroundColor] = NSColor(Tokens.writeCode) }
+            if marks.contains(.code) { attributes[.backgroundColor] = NSColor(Tokens.keySpecial) }
             text.setAttributes(merging: attributes, keep: [.writeBlock, .writeMarks, .writeLink, .writeOrdinal], in: run)
         }
         text.enumerateAttribute(.writeLink, in: range) { value, run, _ in
             guard value != nil else { return }
             text.addAttributes(
                 [
-                    .foregroundColor: NSColor(Tokens.writeAccent),
+                    .foregroundColor: NSColor(Tokens.accent),
                     .underlineStyle: NSUnderlineStyle.single.rawValue,
                 ], range: run)
         }

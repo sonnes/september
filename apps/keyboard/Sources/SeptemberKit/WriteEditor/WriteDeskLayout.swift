@@ -10,11 +10,6 @@ import CoreGraphics
 /// selected card. Frames use the coordinates of AppKit, with the origin at
 /// the bottom left.
 public struct WriteDeskLayout: Equatable, Sendable {
-    public static var cardSize: CGSize { Metrics.WriteDesk.cardSize }
-    public static var cardGap: CGFloat { Metrics.WriteDesk.cardGap }
-    public static var bottomPadding: CGFloat { Metrics.WriteDesk.bottomPadding }
-    public static var selectedLift: CGFloat { Metrics.WriteDesk.selectedLift }
-
     /// The indexes of the cards in view.
     public let visible: Range<Int>
     /// The frame of each card in view, in the order of `visible`.
@@ -34,8 +29,8 @@ public struct WriteDeskLayout: Equatable, Sendable {
     ///   - count: the number of cards.
     ///   - selection: the index of the selected card.
     public init(area: CGRect, centre bar: CGFloat, count: Int, selection: Int) {
-        let size = Self.cardSize
-        let gap = Self.cardGap
+        let size = Metrics.Desk.cardSize
+        let gap = Metrics.Desk.cardGap
         let fits = max(1, Int((area.width + gap) / (size.width + gap)))
         let shown = min(count, fits)
         let first = min(max(selection - shown / 2, 0), max(count - shown, 0))
@@ -44,7 +39,7 @@ public struct WriteDeskLayout: Equatable, Sendable {
         self.area = area
         let width = CGFloat(shown) * size.width + CGFloat(max(shown - 1, 0)) * gap
         let left = min(max(bar - width / 2, area.minX), area.maxX - width)
-        let bottom = area.minY + Self.bottomPadding
+        let bottom = area.minY + Metrics.Desk.bottomPadding
         cards = (0..<shown).map { index in
             CGRect(
                 x: left + CGFloat(index) * (size.width + gap), y: bottom, width: size.width,
@@ -52,12 +47,12 @@ public struct WriteDeskLayout: Equatable, Sendable {
         }
         centre = left + width / 2
 
-        let space = Metrics.WriteDesk.spacing
+        let space = Metrics.Desk.spacing
         actions = CGRect(
-            x: area.minX, y: bottom + size.height + Metrics.WriteDesk.selectedLift + space,
-            width: area.width, height: Metrics.WriteDesk.actionHeight)
-        find = Self.centred(Metrics.WriteDesk.findSize, on: centre, y: actions.maxY + space, in: area)
-        notice = Self.centred(Metrics.WriteDesk.noticeSize, on: centre, y: find.maxY + space, in: area)
+            x: area.minX, y: bottom + size.height + Metrics.Desk.selectedLift + space,
+            width: area.width, height: Metrics.Desk.actionHeight)
+        find = Self.centred(Metrics.Desk.findSize, on: centre, y: actions.maxY + space, in: area)
+        notice = Self.centred(Metrics.Desk.noticeSize, on: centre, y: find.maxY + space, in: area)
     }
 
     /// The frame of the blur behind the desk: around the cards, the actions,
@@ -68,14 +63,14 @@ public struct WriteDeskLayout: Equatable, Sendable {
     public func backdrop(withNotice: Bool, actionWidth: CGFloat = 0) -> CGRect {
         var rect = find
         for card in cards {
-            rect = rect.union(card).union(card.offsetBy(dx: 0, dy: Self.selectedLift))
+            rect = rect.union(card).union(card.offsetBy(dx: 0, dy: Metrics.Desk.selectedLift))
         }
         if actionWidth > 0 {
             rect = rect.union(Self.centred(
                 CGSize(width: actionWidth, height: actions.height), on: centre, y: actions.minY, in: area))
         }
         if withNotice { rect = rect.union(notice) }
-        let padding = Metrics.WriteDesk.backdropPadding
+        let padding = Metrics.Desk.backdropPadding
         return rect.insetBy(dx: -padding, dy: -padding).intersection(area)
     }
 

@@ -29,6 +29,13 @@ enum Snapshot {
         else { return }
 
         let path = arguments[index + 1]
+        Task { await render(to: path, arguments: arguments) }
+        // The main thread runs the render, and the render ends the process.
+        RunLoop.main.run()
+        fail("snapshot: the run loop stopped")
+    }
+
+    private static func render(to path: String, arguments: [String]) async -> Never {
         // A snapshot shows the keyboard as a trusted app sees it, with no banner.
         let permission = AccessibilityPermission(isTrusted: true)
 
@@ -45,7 +52,7 @@ enum Snapshot {
                     .padding(16))
         } else {
             do {
-                view = try keyboard(arguments: arguments, permission: permission)
+                view = try await keyboard(arguments: arguments, permission: permission)
             } catch {
                 fail("snapshot: \(error)")
             }
@@ -79,26 +86,25 @@ enum Snapshot {
 
     // MARK: - The keyboard
 
-    private static func keyboard(arguments: [String], permission: AccessibilityPermission) throws -> AnyView {
+    private static func keyboard(arguments: [String], permission: AccessibilityPermission) async throws -> AnyView {
         let defaults = UserDefaults(suiteName: "september-snapshot-\(UUID().uuidString)")!
-        let controller = KeyboardController(sink: SilentSink(), panels: try PanelStore.bundled())
-        controller.style = arguments.contains("--mono") ? .mono : .rainbow
+        let database = try KeyboardDatabase(path: ":memory:")
         let voice = SampleVoice()
-        let userPanel = try UserPanelStore(defaults: defaults, privateTexts: NoPrivateTexts())
-        let session = KeyboardSession(
-            controller: controller,
+        let reader = SampleReader()
+        let pasteboard = MemoryPasteboard()
+        let assembly = try KeyboardAssembly(
+            sink: SilentSink(), database: database, pasteboard: pasteboard, reader: reader,
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
+            write: SampleWrite(),
             predictions: PredictionEngine(
                 predictor: SamplePredictor(), delay: .zero, defaults: defaults,
-                history: SentenceHistory(database: try KeyboardDatabase(path: ":memory:"), defaults: defaults)),
-            speaker: Speaker(
-                settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
-            userPanel: .success(userPanel),
-            userPanelUsage: UsageStore(),
-            clipboard: ClipboardHistory(defaults: defaults, now: { Date().addingTimeInterval(-40 * 60) }),
-            pasteboard: MemoryPasteboard())
-        let content = WindowContent(
-            controller: controller, session: session, permission: permission,
-            phrases: try Phrases.bundled())
+                history: SentenceHistory(database: database, defaults: defaults)),
+            defaults: defaults, privateTexts: NoPrivateTexts(),
+            clipboardClock: { Date().addingTimeInterval(-40 * 60) }, scheduler: NoDelayScheduler())
+        let session = assembly.session
+        let controller = session.controller
+        assembly.settings.style = arguments.contains("--mono") ? .mono : .rainbow
+        let content = WindowContent(session: session, permission: permission, phrases: assembly.phrases)
 
         let typed = value(of: "--typed", in: arguments)
         let spoken = value(of: "--spoken", in: arguments).flatMap(Int.init)
@@ -106,7 +112,7 @@ enum Snapshot {
         // starts empty and the sample text comes after one settle.
         if arguments.contains("--talk") {
             controller.mode = .talk
-            settle(session)
+            await session.settle()
             for line in ["Nice try. Two chocolates, not six.", "Ask your mom. She is the boss.",
                 "Homework first, then Minecraft.", "Who won the match last night?"]
             {
@@ -119,44 +125,41 @@ enum Snapshot {
                 session.speakPressed()
             }
         } else if arguments.contains("--write") {
-            session.appChanged(name: "Write", bundleID: WritePanel.id)
+            session.writeKeyChanged(true, panel: .paper, front: nil)
             let line = typed ?? "Send the release notes before the we"
-            controller.focusChanged(to: EditorCaret(text: "", caret: 0, length: 0).focusedField)
-            settle(session)
-            controller.focusChanged(
-                to: EditorCaret(text: line, caret: (line as NSString).length, length: 0).focusedField)
+            await session.settle()
+            session.writeCaretMoved(EditorCaret(text: line, caret: (line as NSString).length, length: 0))
         } else {
-            session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS")
+            session.appActivated(FrontApp(pid: 0, name: "Messages", bundleID: "com.apple.MobileSMS"))
             let text = typed ?? "Are we still on for t"
             for sample in ["", text] {
-                controller.focusChanged(
+                session.focusChanged(
                     to: FocusedField(
                         appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false,
                         text: sample, selection: NSRange(location: (sample as NSString).length, length: 0)))
-                settle(session)
+                await session.settle()
             }
             if arguments.contains("--clipboard") {
-                addSampleCopies(to: session)
+                addSampleCopies(to: session, pasteboard: pasteboard)
                 session.toggleHistory()
             }
             if arguments.contains("--shortcuts") || arguments.contains("--command") {
-                session.readMenu = { sampleMenu }
+                reader.menu = sampleMenu
                 if arguments.contains("--command") {
                     controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "command-left" }!)
                 } else {
-                    controller.focusChanged(
+                    session.focusChanged(
                         to: FocusedField(
                             appName: "Messages", role: "AXButton", isEditable: false, isSecure: false,
                             text: nil, selection: nil))
                 }
             }
             if arguments.contains("--mine") {
+                guard let userPanel = session.userPanel else { fail("snapshot: \(session.userPanelError ?? "")") }
                 try addSampleButtons(to: userPanel)
-                // My Panel ranks its buttons when an app comes to the front.
-                session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS")
             }
         }
-        settle(session)
+        await session.settle()
 
         if arguments.contains("--talk") {
             return content.keyboard()
@@ -201,8 +204,8 @@ enum Snapshot {
 
     /// The keyboard window with the Write paper open above it, as
     /// `WritePaperController` places and draws it. The screen is a large one,
-    /// with 1,000 points above the keyboard. The keyboard floats above the
-    /// paper, so it is drawn last.
+    /// with room for the paper above the keyboard. The keyboard floats above
+    /// the paper, so it is drawn last.
     private static func paperScene(_ content: WindowContent, markdown: String) -> AnyView {
         let keyboard = content.keyboard()
         let keyboardSize = WindowContent.measure(keyboard)
@@ -212,12 +215,16 @@ enum Snapshot {
         // The input bar is as wide as the keys and sits over them.
         let bar = CGRect(x: keys.minX, y: window.maxY, width: keys.width, height: 0)
         let page = WritePaper.page(bar: bar, floor: window.maxY, screen: screen, margin: 24)
-        let sheet = paperSheet(markdown, width: page.width)
+        let sheet = NSImage(size: NSSize(width: page.width, height: 0))
+        if let rep = WritePaperController.renderSheet(markdown, width: page.width) {
+            sheet.size = rep.size
+            sheet.addRepresentation(rep)
+        }
         let paper = WritePaper.paper(height: sheet.size.height, on: page)
 
         let all = window.union(paper)
         // Room for the shadow of the paper.
-        let padding = Metrics.WriteDesk.spacing * 2
+        let padding = Metrics.Desk.spacing * 2
         func place(_ frame: CGRect) -> CGSize {
             CGSize(width: frame.minX - all.minX + padding, height: all.maxY - frame.maxY + padding)
         }
@@ -227,46 +234,12 @@ enum Snapshot {
                 Image(nsImage: sheet)
                     .clipShape(corners)
                     .shadow(
-                        color: Color(Tokens.writeCardShadow), radius: Metrics.WriteDesk.spacing,
-                        y: Metrics.WriteDesk.actionGap)
+                        color: Color(Tokens.writeCardShadow), radius: Metrics.Desk.spacing,
+                        y: Metrics.Desk.actionGap)
                     .offset(place(paper))
                 keyboard.offset(place(window))
             }
             .frame(width: all.width + padding * 2, height: all.height + padding * 2, alignment: .topLeading))
-    }
-
-    /// The sheet of the Write paper with `markdown` in the native editor, at
-    /// `width`, as tall as its text. The margins are the ones that
-    /// `WritePaperController` sets.
-    private static func paperSheet(_ markdown: String, width: CGFloat) -> NSImage {
-        let editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: width, height: 400))
-        let side = max(Metrics.WriteEditor.sideMargin, (width - Metrics.WriteEditor.textWidth) / 2)
-        editor.textContainerInset = NSSize(width: side, height: Metrics.WriteEditor.paperMargin)
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: width, height: 400), styleMask: [.borderless],
-            backing: .buffered, defer: false)
-        let view = NSView(frame: window.contentLayoutRect)
-        window.contentView = view
-        view.addSubview(editor)
-        editor.load(markdown)
-        let height = editor.contentHeight
-        window.setContentSize(NSSize(width: width, height: height))
-        view.frame = NSRect(x: 0, y: 0, width: width, height: height)
-        editor.frame = view.bounds
-        editor.load(markdown)
-        view.layoutSubtreeIfNeeded()
-        editor.display()
-
-        let image = NSImage(size: NSSize(width: width, height: height))
-        guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return image }
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-        NSColor(Tokens.writePaper).setFill()
-        view.bounds.fill()
-        NSGraphicsContext.restoreGraphicsState()
-        view.cacheDisplay(in: view.bounds, to: rep)
-        image.addRepresentation(rep)
-        return image
     }
 
     /// The value after a flag, such as the text of `--typed <text>`.
@@ -299,9 +272,8 @@ enum Snapshot {
         for sample in samples { try store.add(sample) }
     }
 
-    /// The sample copies of the clipboard history, oldest first. The history
-    /// dates each copy 40 minutes ago.
-    private static func addSampleCopies(to session: KeyboardSession) {
+    /// The sample copies of the clipboard history, oldest first.
+    private static func addSampleCopies(to session: KeyboardSession, pasteboard: MemoryPasteboard) {
         for text in [
             "Standup moved to 10:30", "Can you review my pull request today?",
             "https://raviatluri.in/articles/building-september", "Happy birthday! Save me a slice of cake.",
@@ -310,16 +282,8 @@ enum Snapshot {
         ] {
             session.clipboard.add(text)
         }
-        (session.pasteboard as? MemoryPasteboard)?.copy("brew install imagemagick webp")
+        pasteboard.copy("brew install imagemagick webp")
         session.pasteboardChanged()
-    }
-
-    /// Lets the predictions and the voice answer before the render.
-    private static func settle(_ session: KeyboardSession) {
-        let done = Date().addingTimeInterval(1)
-        while Date() < done {
-            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
-        }
     }
 
     private static func fail(_ message: String) -> Never {
@@ -330,6 +294,8 @@ enum Snapshot {
 
 private final class SilentSink: KeystrokeSink {
     func post(_ events: [Keystroke]) {}
+    func post(media key: MediaKey) {}
+    func scroll(_ direction: ScrollDirection, at point: CGPoint) {}
     func type(_ text: String) {}
     func beep() {}
 }
@@ -379,6 +345,35 @@ private final class SampleVoice: SpeechEngine {
     }
 
     func stop() {}
+}
+
+/// The menu of the sample app, and no text on screen.
+@MainActor
+private final class SampleReader: FrontAppReading {
+    var menu: [AppShortcut] = []
+
+    func menuShortcuts(pid: pid_t) -> [AppShortcut] { menu }
+    func screenContext(app: FrontApp) async -> ScreenContext? { nil }
+}
+
+/// Does the work of a delay at once, so the snapshot shows the state after
+/// the delay, such as an input bar that hid.
+private struct NoDelayScheduler: DelayScheduler {
+    private final class Done: ScheduledWork {
+        func cancel() {}
+    }
+
+    func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any ScheduledWork {
+        MainActor.assumeIsolated { work() }
+        return Done()
+    }
+}
+
+/// A new Write document with no text.
+@MainActor
+private final class SampleWrite: WriteReading {
+    let caret = EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: true)
+    let speech = EditorSpeech(selection: "", markdown: "")
 }
 
 private struct NoPrivateTexts: PrivateTextStore {

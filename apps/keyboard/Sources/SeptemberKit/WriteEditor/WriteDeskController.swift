@@ -27,8 +27,9 @@ public enum WriteDeskCommand: Equatable, Sendable {
 /// A blur of the screen sits behind the cards, the actions, and the Find
 /// field, so that they stand clear of the windows below.
 ///
-/// The cards rise out of the input bar when the desk opens, 30 ms apart, and
-/// go back down into it when the desk closes. With Reduce Motion on, the
+/// The cards rise out of the input bar when the desk opens,
+/// `Metrics.WriteMotion.cardStagger` apart, and go back down into it when the
+/// desk closes. With Reduce Motion on, the
 /// cards appear and go with no motion.
 ///
 /// The Find field takes the typing. The left and the right arrows move
@@ -37,46 +38,45 @@ public enum WriteDeskCommand: Equatable, Sendable {
 @MainActor
 public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldDelegate {
     typealias Motion = Metrics.WriteMotion
-    typealias Sizes = Metrics.WriteDesk
 
     public let window: WriteDeskWindow
-    /// The documents, the query, and the selected card.
     public private(set) var desk = WriteDesk(documents: [], current: nil)
     /// The title of the document of the last Move to Trash, while Undo shows.
     public private(set) var undoTitle: String?
+    /// The error that the notice shows, such as a failed save. It shows in
+    /// place of Undo.
+    public private(set) var failure: String?
     public private(set) var isOpen = false
 
     public var onCommand: ((WriteDeskCommand) -> Void)?
-    /// Called with the Find query after each change.
     public var onQueryChange: ((String) -> Void)?
     /// Called when the time for Undo ends.
     public var onUndoEnd: (() -> Void)?
-    /// Called with `true` when the desk becomes the key window, and with
-    /// `false` when it stops being the key window.
-    public var onKeyChanged: ((Bool) -> Void)?
     /// The lines of a document for its card.
     public var preview: (WriteDocument) -> [String] = { _ in [] }
-    /// Brings the desk to the front with the focus.
-    public var bringToFront: (NSWindow) -> Void = { window in
-        NSApp.activate()
-        window.makeKeyAndOrderFront(nil)
-    }
+    private weak var host: (any WriteHost)?
 
     private let root = DeskRootView()
     private let backdrop = NSVisualEffectView()
-    private let findBox = DeskPillView(fill: Tokens.writePaper)
+    private let findBox = DeskPillView(fill: Tokens.key)
     private let find = NSTextField()
     private let count = NSTextField(labelWithString: "")
     private let actions = NSStackView()
-    private let notice = DeskPillView(fill: Tokens.writeNoticeFill)
+    private let notice = DeskPillView(fill: Tokens.keyText)
     private let noticeText = NSTextField(labelWithString: "")
+    private lazy var undoButton = DeskActionButton(title: "Undo", style: .primary) { [weak self] in
+        self?.onCommand?(.undo)
+    }
     private var cards: [CardKey: WriteCardView] = [:]
     private var area: CGRect = .zero
     private var centre: CGFloat = 0
     private var undoTimer: Timer?
-    private var hideTimer: Timer?
+    /// The number of the last hide, so that only the motion of the last hide
+    /// orders the window out.
+    private var hideCount = 0
 
-    override public init() {
+    public init(host: any WriteHost) {
+        self.host = host
         window = WriteDeskWindow(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: true)
         super.init()
         window.isReleasedWhenClosed = false
@@ -103,8 +103,6 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     ///   - area: the space above the keyboard, on the screen.
     ///   - centre: the middle of the input bar.
     public func show(documents: [WriteDocument], current: URL?, area: CGRect, centre: CGFloat) {
-        hideTimer?.invalidate()
-        hideTimer = nil
         desk = WriteDesk(documents: documents, current: current)
         self.area = area
         self.centre = centre
@@ -116,7 +114,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         relayout(animated: false)
         fadeBackdrop(in: true)
         riseCards()
-        bringToFront(window)
+        host?.bringToFront(window)
         window.makeFirstResponder(find)
         onQueryChange?(desk.query)
     }
@@ -129,22 +127,27 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         hideUndo()
         let key: CardKey? = newDocument ? .newDocument : opening.map(CardKey.document)
         if let key { cards[key]?.isHidden = true }
-        fadeBackdrop(in: false)
         guard !reduceMotion else {
+            fadeBackdrop(in: false)
             window.orderOut(nil)
             return
         }
+        // The window goes when the last card is down.
+        hideCount += 1
+        let hide = hideCount
+        CATransaction.begin()
+        CATransaction.setCompletionBlock { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, !self.isOpen, self.hideCount == hide else { return }
+                self.window.orderOut(nil)
+            }
+        }
+        fadeBackdrop(in: false)
         let order = cards.values.sorted { $0.frame.minX < $1.frame.minX }
         for (index, card) in order.enumerated() where !card.isHidden {
             card.animateAway(delay: Double(index) * Motion.cardStagger)
         }
-        let duration = Motion.deskCards + Double(order.count) * Motion.cardStagger
-        hideTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self, !self.isOpen else { return }
-                self.window.orderOut(nil)
-            }
-        }
+        CATransaction.commit()
     }
 
     /// The frame of the card of a document on the screen, or of New
@@ -177,12 +180,16 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         onQueryChange?(query)
     }
 
-    /// Shows Undo for the document of a Move to Trash, for 8 seconds.
+    /// Shows an error in the notice, such as a failed save. Nil hides it.
+    public func showNotice(_ text: String?) {
+        failure = text
+        updateNotice()
+    }
+
+    /// Shows Undo for the document of a Move to Trash for `Motion.undoTime`.
     public func showUndo(title: String) {
         undoTitle = title
-        noticeText.stringValue = "Moved “\(title)” to the Trash"
-        notice.isHidden = false
-        relayout(animated: true)
+        updateNotice()
         undoTimer?.invalidate()
         undoTimer = Timer.scheduledTimer(withTimeInterval: Motion.undoTime, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
@@ -193,22 +200,48 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     }
 
     public func hideUndo() {
-        let wasShown = undoTitle != nil
         undoTitle = nil
-        notice.isHidden = true
         undoTimer?.invalidate()
         undoTimer = nil
-        if wasShown, isOpen { relayout(animated: true) }
+        updateNotice()
+    }
+
+    private func updateNotice() {
+        let wasShown = !notice.isHidden
+        fillNotice()
+        if isOpen, wasShown || !notice.isHidden { placeChrome(animated: true) }
+    }
+
+    private func fillNotice() {
+        if let failure {
+            noticeText.stringValue = failure
+        } else if let undoTitle {
+            noticeText.stringValue = "Moved “\(undoTitle)” to the Trash"
+        }
+        undoButton.isHidden = failure != nil
+        notice.isHidden = failure == nil && undoTitle == nil
     }
 
     // MARK: - Layout
 
     private func relayout(animated: Bool) {
-        let items = desk.items
-        let layout = WriteDeskLayout(area: area, centre: centre, count: items.count, selection: desk.selection)
-        let origin = area.origin
-        let local = { (rect: CGRect) in rect.offsetBy(dx: -origin.x, dy: -origin.y) }
+        placeCards(animated: animated)
+        placeChrome(animated: animated)
+    }
 
+    private var layout: WriteDeskLayout {
+        WriteDeskLayout(area: area, centre: centre, count: desk.items.count, selection: desk.selection)
+    }
+
+    private func local(_ rect: CGRect) -> CGRect {
+        rect.offsetBy(dx: -area.origin.x, dy: -area.origin.y)
+    }
+
+    /// Places the cards in view, and makes the card of a document that comes
+    /// into view. A card reads its file, and a read error shows in the notice.
+    private func placeCards(animated: Bool) {
+        let items = desk.items
+        let layout = layout
         var shown: Set<CardKey> = []
         for (offset, index) in layout.visible.enumerated() {
             let item = items[index]
@@ -216,7 +249,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
             shown.insert(key)
             let isSelected = index == desk.selection
             var frame = local(layout.cards[offset])
-            if isSelected { frame.origin.y += Sizes.selectedLift }
+            if isSelected { frame.origin.y += Metrics.Desk.selectedLift }
             let card = cards[key] ?? makeCard(for: item, key: key, frame: frame)
             card.isSelected = isSelected
             card.onPress = { [weak self] in self?.pressed(index: index) }
@@ -234,7 +267,12 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
             card.removeFromSuperview()
             cards[key] = nil
         }
+    }
 
+    /// Places the Find field, the notice, the actions, and the blur behind them.
+    private func placeChrome(animated: Bool) {
+        let layout = layout
+        let origin = area.origin
         findBox.frame = local(layout.find)
         notice.frame = local(layout.notice)
         count.stringValue = desk.count
@@ -266,8 +304,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
             card = WriteCardView(newDocument: ())
         case .document(let document):
             card = WriteCardView(
-                title: document.title, lines: preview(document),
-                date: WriteDocument.dateLabel(document.modified))
+                title: document.title, lines: preview(document), date: WriteDocument.dateLabel(document.modified))
         }
         card.frame = frame
         root.addSubview(card, positioned: .below, relativeTo: findBox)
@@ -305,7 +342,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         // The blur stays on while another app is in front, as the keyboard does.
         backdrop.state = .active
         backdrop.wantsLayer = true
-        backdrop.layer?.cornerRadius = Sizes.backdropCornerRadius
+        backdrop.layer?.cornerRadius = Metrics.Desk.backdropCornerRadius
         backdrop.layer?.cornerCurve = .continuous
         backdrop.layer?.masksToBounds = true
         root.addSubview(backdrop)
@@ -331,18 +368,18 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         find.drawsBackground = false
         find.focusRingType = .none
         find.font = Typography.writeFind
-        find.textColor = NSColor(Tokens.writeText)
+        find.textColor = NSColor(Tokens.keyText)
         find.placeholderString = "Find a document"
         find.delegate = self
         find.setAccessibilityLabel("Find a document")
         find.translatesAutoresizingMaskIntoConstraints = false
         count.font = Typography.writeFindCount
-        count.textColor = NSColor(Tokens.writeMuted)
+        count.textColor = NSColor(Tokens.labelSecondary)
         count.translatesAutoresizingMaskIntoConstraints = false
         count.setContentCompressionResistancePriority(.required, for: .horizontal)
         findBox.addSubview(find)
         findBox.addSubview(count)
-        let padding = Sizes.findPadding
+        let padding = Metrics.Desk.findPadding
         NSLayoutConstraint.activate([
             find.leadingAnchor.constraint(equalTo: findBox.leadingAnchor, constant: padding),
             find.centerYAnchor.constraint(equalTo: findBox.centerYAnchor),
@@ -365,27 +402,25 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
             actions.addArrangedSubview(button)
         }
         actions.orientation = .horizontal
-        actions.spacing = Sizes.actionGap
+        actions.spacing = Metrics.Desk.actionGap
         root.addSubview(actions)
     }
 
     private func setUpNotice() {
         noticeText.font = Typography.writeDeskAction
-        noticeText.textColor = NSColor(Tokens.writeNoticeText)
+        noticeText.textColor = NSColor(Tokens.background)
         noticeText.lineBreakMode = .byTruncatingMiddle
         noticeText.translatesAutoresizingMaskIntoConstraints = false
-        let undo = DeskActionButton(title: "Undo", style: .primary) { [weak self] in
-            self?.onCommand?(.undo)
-        }
+        let undo = undoButton
         undo.translatesAutoresizingMaskIntoConstraints = false
         notice.addSubview(noticeText)
         notice.addSubview(undo)
-        let padding = Sizes.findPadding
+        let padding = Metrics.Desk.findPadding
         NSLayoutConstraint.activate([
             noticeText.leadingAnchor.constraint(equalTo: notice.leadingAnchor, constant: padding),
             noticeText.centerYAnchor.constraint(equalTo: notice.centerYAnchor),
             undo.leadingAnchor.constraint(greaterThanOrEqualTo: noticeText.trailingAnchor, constant: padding / 2),
-            undo.trailingAnchor.constraint(equalTo: notice.trailingAnchor, constant: -Sizes.actionGap),
+            undo.trailingAnchor.constraint(equalTo: notice.trailingAnchor, constant: -Metrics.Desk.actionGap),
             undo.centerYAnchor.constraint(equalTo: notice.centerYAnchor),
         ])
         notice.isHidden = true
@@ -419,11 +454,11 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     // MARK: - NSWindowDelegate
 
     public func windowDidBecomeKey(_ notification: Notification) {
-        onKeyChanged?(true)
+        host?.writeKeyChanged(true)
     }
 
     public func windowDidResignKey(_ notification: Notification) {
-        onKeyChanged?(false)
+        host?.writeKeyChanged(false)
     }
 }
 
@@ -497,8 +532,8 @@ private final class DeskPillView: NSView {
         wantsLayer = true
         layer?.cornerCurve = .continuous
         layer?.shadowOpacity = 1
-        layer?.shadowRadius = Metrics.WriteDesk.spacing / 2
-        layer?.shadowOffset = CGSize(width: 0, height: -Metrics.WriteDesk.selectionRing)
+        layer?.shadowRadius = Metrics.Desk.spacing / 2
+        layer?.shadowOffset = CGSize(width: 0, height: -Metrics.Desk.selectionRing)
     }
 
     @available(*, unavailable)
@@ -537,17 +572,17 @@ final class DeskActionButton: NSButton {
         action = #selector(press)
         let text: ThemeColor =
             switch style {
-            case .primary: Tokens.writeOnAccent
-            case .plain: Tokens.writeText
-            case .danger: Tokens.writeDanger
+            case .primary: Tokens.onAccent
+            case .plain: Tokens.keyText
+            case .danger: Tokens.warning
             }
         // A dynamic colour follows light and dark when the title draws.
         attributedTitle = NSAttributedString(
             string: title, attributes: [.font: Typography.writeDeskAction, .foregroundColor: NSColor(text)])
         layer?.cornerCurve = .continuous
         layer?.shadowOpacity = 1
-        layer?.shadowRadius = Metrics.WriteDesk.actionGap / 2
-        layer?.shadowOffset = CGSize(width: 0, height: -Metrics.WriteDesk.selectionRing / 2)
+        layer?.shadowRadius = Metrics.Desk.actionGap / 2
+        layer?.shadowOffset = CGSize(width: 0, height: -Metrics.Desk.selectionRing / 2)
     }
 
     @available(*, unavailable)
@@ -556,13 +591,13 @@ final class DeskActionButton: NSButton {
     override var intrinsicContentSize: NSSize {
         let text = (title as NSString).size(withAttributes: [.font: Typography.writeDeskAction])
         return NSSize(
-            width: ceil(text.width) + 2 * Metrics.WriteDesk.actionPadding, height: Metrics.WriteDesk.actionHeight)
+            width: ceil(text.width) + 2 * Metrics.Desk.actionPadding, height: Metrics.Desk.actionHeight)
     }
 
     override var wantsUpdateLayer: Bool { true }
 
     override func updateLayer() {
-        let fill = style == .primary ? Tokens.writeAccent : Tokens.writePaper
+        let fill = style == .primary ? Tokens.accent : Tokens.key
         layer?.backgroundColor = NSColor(fill).cgColor
         layer?.shadowColor = NSColor(Tokens.writeCardShadow).cgColor
         layer?.cornerRadius = bounds.height / 2

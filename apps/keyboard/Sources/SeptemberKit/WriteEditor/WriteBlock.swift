@@ -88,7 +88,6 @@ public struct WriteSource: Equatable, Sendable {
     public let gap: String
     /// The text before the first block. Only the first block uses it.
     public let lead: String
-    /// True for the last block of the file.
     public let isLast: Bool
     /// The text after the last block of the file.
     public let trailing: String

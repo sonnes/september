@@ -1,16 +1,6 @@
 import Foundation
 import SeptemberKit
 
-/// Private text for the tests. The tests never touch the Keychain.
-final class MemoryPrivateTexts: PrivateTextStore, @unchecked Sendable {
-    var texts: [String: String] = [:]
-
-    func text(for id: String) throws -> String? { texts[id] }
-    func setText(_ text: String, for id: String) throws { texts[id] = text }
-    func removeText(for id: String) throws { texts[id] = nil }
-}
-
-/// Use counts for the tests, in place of a `UsageStore`.
 @MainActor
 final class FixedUsage: ButtonUsage {
     var counts: [String: Int] = [:]
@@ -23,20 +13,16 @@ func temporaryDirectory() -> URL {
         .appendingPathComponent("september-mypanel-tests-\(UUID().uuidString)")
 }
 
-/// A store on a database in memory, with its own defaults.
 @MainActor
 private struct PanelParts {
-    var database = try! KeyboardDatabase(path: ":memory:")
-    var defaults = UserDefaults(suiteName: "kit-mypanel-\(UUID().uuidString)")!
+    var database = memoryDatabase()
+    var defaults = freshDefaults()
     var texts = MemoryPrivateTexts()
 
-    func store(importing jsonURL: URL? = nil) throws -> UserPanelStore {
-        try UserPanelStore(
-            database: database, importing: jsonURL, defaults: defaults, privateTexts: texts)
+    func store() throws -> UserPanelStore {
+        try UserPanelStore(database: database, defaults: defaults, privateTexts: texts)
     }
 
-    /// The names and actions of the `user_button` table, in the order of
-    /// `position`, as one text.
     func tableText() throws -> String {
         try database.query("SELECT name, action FROM user_button ORDER BY position")
             .map { $0.compactMap(\.text).joined(separator: " ") }
@@ -50,23 +36,11 @@ private func makeStore() throws -> (UserPanelStore, MemoryPrivateTexts, PanelPar
     return (try parts.store(), parts.texts, parts)
 }
 
-private func writeFile(_ text: String) throws -> URL {
-    let file = temporaryDirectory().appendingPathComponent("my-panel.json")
-    try FileManager.default.createDirectory(
-        at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-    try Data(text.utf8).write(to: file)
-    return file
-}
-
-private func fileText(_ url: URL) -> String {
-    (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-}
-
 private let saveKeys = Shortcut(modifiers: .command, key: .character("s"))
 private let pastePlain = Shortcut(modifiers: [.shift, .command], key: .character("v"))
 private let interrupt = Shortcut(modifiers: .control, key: .character("c"))
 
-private func button(_ id: String, _ action: UserAction, name: String? = nil) -> UserButton {
+private func button(_ id: String, _ action: PanelAction, name: String? = nil) -> UserButton {
     UserButton(id: id, name: name ?? id, action: action)
 }
 
@@ -84,16 +58,19 @@ func userPanelTests() {
 
 @MainActor
 private func userButtonTests() {
-    test("each kind of user button round-trips through JSON") {
-        let buttons = [
+    test("each kind of user button decodes from the JSON of older versions") {
+        let json = """
+            [{"id": "a", "name": "a", "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "v"}},
+             {"id": "c", "name": "c", "action": {"type": "text", "text": "See you soon"}},
+             {"id": "d", "name": "d", "action": {"type": "privateText"}},
+             {"id": "e", "name": "e", "action": {"type": "shortcut", "key": "f12"}}]
+            """
+        expectEqual(try JSONDecoder().decode([UserButton].self, from: Data(json.utf8)), [
             button("a", .shortcut(pastePlain)),
-            button("b", .sequence([interrupt, interrupt])),
             button("c", .text("See you soon")),
-            button("d", .privateText),
+            button("d", .privateText("d")),
             button("e", .shortcut(Shortcut(modifiers: [], key: .virtual(.f12)))),
-        ]
-        let data = try JSONEncoder().encode(buttons)
-        expectEqual(try JSONDecoder().decode([UserButton].self, from: data), buttons)
+        ])
     }
 
     test("a sequence decodes from the JSON of the panels") {
@@ -112,16 +89,17 @@ private func userButtonTests() {
     }
 
     test("a button shows its keys, and a text button shows its name") {
-        expectEqual(button("a", .shortcut(pastePlain)).keysLabel, "⇧⌘V")
-        expectEqual(button("b", .sequence([interrupt, interrupt])).keysLabel, "⌃C ⌃C")
-        expectEqual(button("c", .text("Hi there"), name: "Greeting").keysLabel, nil)
-        expect(button("c", .text("Hi")).isWide)
-        expect(button("d", .privateText).isWide)
-        expect(!button("a", .shortcut(pastePlain)).isWide)
+        expectEqual(PanelAction.shortcut(pastePlain).keysLabel, "⇧⌘V")
+        expectEqual(PanelAction.sequence([interrupt, interrupt]).keysLabel, "⌃C ⌃C")
+        expectEqual(PanelAction.text("Hi there").keysLabel, nil)
+        expect(PanelAction.privateText("d").hint == nil)
+        expect(PanelAction.text("Hi").isText)
+        expect(PanelAction.privateText("d").isText)
+        expect(!PanelAction.shortcut(pastePlain).isText)
     }
 
     test("the accessibility label names a private button and never holds text") {
-        let home = button("d", .privateText, name: "Home Address")
+        let home = button("d", .privateText("d"), name: "Home Address")
         expectEqual(home.accessibilityLabel, "Home Address, private text")
         expectEqual(
             button("a", .shortcut(pastePlain), name: "Paste as Text").accessibilityLabel,
@@ -133,9 +111,8 @@ private func userButtonTests() {
 
     test("a text action hides its text when it is printed") {
         let secret = "4111 1111"
-        expect(!String(describing: UserAction.text(secret)).contains(secret))
-        expect(!String(reflecting: UserAction.text(secret)).contains(secret))
-        expect(!String(describing: NewButtonAction.text(secret)).contains(secret))
+        expect(!String(describing: PanelAction.text(secret)).contains(secret))
+        expect(!String(reflecting: PanelAction.text(secret)).contains(secret))
         expect(!String(reflecting: NewButton(name: "Card", action: .text(secret))).contains(secret))
     }
 }
@@ -153,7 +130,7 @@ private func userPanelStoreTests() {
     test("new private text goes to the keychain, and the table holds only its name") {
         let (store, texts, parts) = try makeStore()
         let id = try store.add(NewButton(name: "Home Address", action: .text("1 Main Street")))
-        expectEqual(store.buttons.map(\.action), [.privateText])
+        expectEqual(store.buttons.map(\.action), [.privateText(id)])
         expectEqual(texts.texts[id], "1 Main Street")
         expect(try parts.tableText().contains("Home Address"))
         expect(try !parts.tableText().contains("1 Main Street"), "the table holds the private text")
@@ -204,10 +181,10 @@ private func userPanelStoreTests() {
         let id = try store.add(NewButton(name: "Phone", action: .text("555 0100")))
 
         try store.setPrivate(true, for: id)
-        expectEqual(store.buttons.first?.action, .privateText)
+        expectEqual(store.buttons.first?.action, .privateText(id))
         expectEqual(texts.texts[id], "555 0100")
         expect(try !parts.tableText().contains("555 0100"))
-        expectEqual(try parts.store().buttons.first?.action, .privateText)
+        expectEqual(try parts.store().buttons.first?.action, .privateText(id))
 
         try store.setPrivate(false, for: id)
         expectEqual(store.buttons.first?.action, .text("555 0100"))
@@ -245,7 +222,7 @@ private func userPanelStoreTests() {
         let added = try store.importButtons(imported, textAsPrivate: true)
         expectEqual(added, 3)
         expectEqual(store.buttons.map(\.action), [
-            .shortcut(pastePlain), .sequence([interrupt, interrupt]), .privateText,
+            .shortcut(pastePlain), .sequence([interrupt, interrupt]), .privateText(store.buttons[2].id),
         ])
         expectEqual(Array(texts.texts.values), ["12-3456-78"])
         expect(try !parts.tableText().contains("12-3456-78"))
@@ -268,46 +245,6 @@ private func userPanelStoreTests() {
         expectEqual(store.buttons.map(\.action), [.text("Best, Sam")])
         expect(texts.texts.isEmpty)
     }
-
-    test("the store moves the buttons of my-panel.json into the table, then removes the file") {
-        let file = try writeFile("""
-            {"makeNewTextPrivate": false, "buttons": [
-              {"id": "b", "name": "Save", "action": {"type": "shortcut", "modifiers": ["command"], "key": "s"}},
-              {"id": "a", "name": "Home", "action": {"type": "privateText"}},
-              {"id": "c", "name": "Hi", "action": {"type": "text", "text": "Hello"}}]}
-            """)
-        let parts = PanelParts()
-        parts.texts.texts["a"] = "1 Main Street"
-        let store = try parts.store(importing: file)
-        expectEqual(store.buttons.map(\.id), ["b", "a", "c"])
-        expectEqual(store.buttons.map(\.action), [.shortcut(saveKeys), .privateText, .text("Hello")])
-        expect(!store.makeNewTextPrivate)
-        expect(!FileManager.default.fileExists(atPath: file.path), "the old file stayed")
-        expectEqual(try parts.store().buttons, store.buttons)
-        expect(!(try parts.store().makeNewTextPrivate))
-        expectEqual(parts.texts.texts["a"], "1 Main Street")
-    }
-
-    test("a second import of my-panel.json adds no button") {
-        let json = """
-            {"makeNewTextPrivate": true, "buttons": [
-              {"id": "b", "name": "Save", "action": {"type": "shortcut", "modifiers": ["command"], "key": "s"}}]}
-            """
-        let parts = PanelParts()
-        try parts.store(importing: try writeFile(json))
-        let store = try parts.store(importing: try writeFile(json))
-        expectEqual(store.buttons.map(\.id), ["b"])
-    }
-
-    test("a broken my-panel.json throws, stays as it is, and adds no button") {
-        let file = try writeFile("{ not json")
-        let parts = PanelParts()
-        expect((try? parts.store(importing: file)) == nil, "a broken file loaded anyway")
-        expectEqual(fileText(file), "{ not json")
-        expectEqual(try parts.tableText(), "")
-        expect(!FileManager.default.fileExists(
-            atPath: file.deletingPathExtension().appendingPathExtension("broken.json").path))
-    }
 }
 
 // MARK: - Pages of Mine
@@ -317,22 +254,22 @@ private func singles(_ count: Int, from start: Int = 0) -> [UserButton] {
 }
 
 private func wides(_ count: Int, from start: Int = 0) -> [UserButton] {
-    (start..<start + count).map { button("t\($0)", .privateText) }
+    (start..<start + count).map { button("t\($0)", .privateText("t\($0)")) }
 }
 
-private func ids(_ cell: MineCell) -> String {
+private func ids(_ cell: MineCell?) -> String {
     switch cell {
     case .button(let button): button.id
     case .page(let index, let count): "page \(index + 1)/\(count)"
-    case .empty: "-"
+    case nil: "-"
     }
 }
 
-private func describe(_ rows: [MineRow]) -> [String] {
+private func describe(_ rows: [KeypadRow<MineCell?>]) -> [String] {
     rows.map { row in
         switch row {
         case .wide(let cell): ids(cell)
-        case .pair(let left, let right): "\(ids(left)) \(ids(right))"
+        case .cells(let cells): cells.map(ids).joined(separator: " ")
         }
     }
 }
@@ -387,12 +324,13 @@ private func field(_ text: String?, secure: Bool = false) -> FocusedField {
 
 @MainActor
 private func privateController() throws -> (KeyboardController, RecordingSink, MemoryPrivateTexts) {
-    let (controller, sink) = try makeController()
     let texts = MemoryPrivateTexts()
     texts.texts["home"] = "1 Main Street"
-    controller.privateTexts = texts
+    let (controller, sink) = try makeController(privateTexts: texts)
     return (controller, sink, texts)
 }
+
+private let shift = KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "shift-left" }!
 
 @MainActor
 private func privateTextControllerTests() {
@@ -447,28 +385,35 @@ private func privateTextControllerTests() {
         expectEqual(controller.input, .local(text: "abc"))
     }
 
-    test("private text with no keychain item types nothing and hides nothing") {
+    test("private text with no keychain item beeps, types nothing, and keeps the modifier") {
         let (controller, sink, _) = try privateController()
+        controller.press(shift)
         controller.perform(.privateText("gone"))
         expect(sink.typed.isEmpty)
         expect(!controller.isFieldPrivate)
+        expectEqual(sink.beeps, 1)
+        expectEqual(controller.modifiers.active, .shift)
     }
 
-    test("a user button presses its keys, its sequence, or its private text") {
+    test("a private text that the Keychain fails to read beeps and keeps the modifier") {
+        let (controller, sink, texts) = try privateController()
+        texts.readError = CocoaError(.fileReadNoPermission)
+        controller.press(shift)
+        controller.perform(.privateText("home"))
+        expect(sink.typed.isEmpty)
+        expect(!controller.isFieldPrivate)
+        expectEqual(sink.beeps, 1)
+        expectEqual(controller.modifiers.active, .shift)
+    }
+
+    test("the controller presses a sequence, or private text") {
         let (controller, sink, _) = try privateController()
-        controller.perform(button("seq", .sequence([interrupt, interrupt])))
+        controller.perform(.sequence([interrupt, interrupt]))
         expectEqual(sink.downs.map(\.key), [59, 8, 59, 8])
         sink.reset()
-        controller.perform(button("home", .privateText, name: "Home"))
+        controller.perform(.privateText("home"))
         expectEqual(sink.typed, ["1 Main Street"])
         expect(controller.isFieldPrivate)
-    }
-
-    test("a private button has a spoken label with no text") {
-        let panelButton = PanelButton(
-            id: "home", label: "Home Address", symbol: nil, action: .privateText("home"))
-        expectEqual(panelButton.accessibilityLabel, "Home Address")
-        expect(panelButton.hint == nil)
     }
 }
 

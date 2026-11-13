@@ -12,7 +12,6 @@ public struct AXNode: Equatable, Sendable, Identifiable {
     public let value: String?
     /// The element the app has focused — the one keystrokes reach.
     public let isFocused: Bool
-    /// The keys of a menu item, when it has a shortcut.
     public let menuKeys: AXMenuKeys?
     /// False for a menu item that is off. Other elements are on.
     public let isEnabled: Bool
@@ -103,7 +102,6 @@ public struct AXTreeRow: Equatable, Sendable, Identifiable {
 
     public var isExpanded: Bool { !node.children.isEmpty }
 
-    /// How many children the row is not showing.
     public var hiddenChildren: Int { node.childCount - node.children.count }
 
     public var id: Int { node.id }

@@ -29,13 +29,11 @@ public struct PanelStore: Sendable {
         self.writeDocuments = writeDocuments
     }
 
-    /// The panel of Write for `WritePanel.id` or `WritePanel.documentsID`,
-    /// and nil for any other app.
-    public func writePanel(for bundleID: String?) -> PanelDefinition? {
-        switch bundleID {
-        case WritePanel.id: write
-        case WritePanel.documentsID: writeDocuments
-        default: nil
+    /// The keys of the paper or the desk of Write.
+    public func writePanel(for panel: WritePanel) -> PanelDefinition {
+        switch panel {
+        case .paper: write
+        case .desk: writeDocuments
         }
     }
 

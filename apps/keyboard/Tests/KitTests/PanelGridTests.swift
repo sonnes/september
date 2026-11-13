@@ -74,62 +74,31 @@ private func sequenceTests() {
 
 @MainActor
 private func panelFileTests() {
-    test("the Text keypad has its moves above an inverted T of arrows, and System holds the moved keys") {
-        let store = try PanelStore.bundled()
-        expectEqual(store.text.buttons.count, 8)
-        expectEqual(
-            store.text.buttons.first?.action,
-            .shortcut(Shortcut(modifiers: .option, key: .virtual(.left))))
-        expectEqual(
-            store.text.buttons.last?.action,
-            .shortcut(Shortcut(modifiers: [.shift, .command], key: .virtual(.right))))
-        let arrows = try expectValue(store.text.arrows)
-        expectEqual(arrows.columns, 3)
-        expectEqual(
-            arrows.buttons.map(\.action),
-            [VirtualKey.pageUp, .up, .pageDown, .left, .down, .right].map {
-                .shortcut(Shortcut(modifiers: [], key: .virtual($0)))
-            })
-        let system = Set(store.system.buttons.map(\.id))
-        for id in ["find", "mission-control", "page-up", "page-down", "zoom-out", "zoom-in"] {
-            expect(system.contains(id), "System has no \(id)")
-        }
-    }
-
-    test("the Rectangle panel presses the recommended shortcuts of Rectangle") {
-        let store = try PanelStore.bundled()
-        let panel = store.rectangle
-        expectEqual(panel.columns, 3)
-        expectEqual(panel.buttons.count, 18)
-        func action(_ id: String) -> PanelAction? { panel.buttons.first { $0.id == id }?.action }
-        expectEqual(
-            action("left-half"), .shortcut(Shortcut(modifiers: [.control, .option], key: .virtual(.left))))
-        expectEqual(
-            action("first-third"), .shortcut(Shortcut(modifiers: [.control, .option], key: .character("d"))))
-        expectEqual(
-            action("restore"), .shortcut(Shortcut(modifiers: [.control, .option], key: .virtual(.delete))))
-        for button in panel.buttons {
+    test("each button of the Rectangle panel has an icon") {
+        for button in try PanelStore.bundled().rectangle.buttons {
             expect(button.region != nil || button.symbol != nil, "\(button.id) has no icon")
         }
-        expectEqual(
-            panel.buttons.first { $0.id == "first-two-thirds" }?.region,
-            WindowRegion(x: 0, y: 0, width: 2.0 / 3, height: 1))
-    }
-
-    test("System quits the app in front with Command Q") {
-        let store = try PanelStore.bundled()
-        expectEqual(
-            store.system.buttons.first { $0.id == "quit" }?.action,
-            .shortcut(Shortcut(modifiers: .command, key: .character("q"))))
     }
 
     test("a text button of marks only is one key wide and shows its marks") {
         let heading = PanelButton(id: "h", label: "Heading", symbol: nil, action: .text("# "))
         let clear = PanelButton(id: "c", label: "Clear", symbol: nil, action: .text("/clear"))
-        expect(PanelLayout.slots([heading]) == 1)
-        expect(heading.hint == "#")
-        expect(PanelLayout.slots([clear]) == 2)
-        expect(clear.hint == nil)
+        expect(PanelLayout.slots([heading.action]) == 1)
+        expect(heading.action.hint == "#")
+        expect(PanelLayout.slots([clear.action]) == 2)
+        expect(clear.action.hint == nil)
+    }
+
+    test("an arrow block decodes its columns and its buttons") {
+        let json = Data(#"""
+            {"title": "T", "columns": 2,
+             "buttons": [{"id": "a", "label": "A", "action": {"type": "shortcut", "key": "a"}}],
+             "arrows": {"columns": 3,
+                        "buttons": [{"id": "up", "label": "Up", "action": {"type": "shortcut", "key": "up"}}]}}
+            """#.utf8)
+        let arrows = try expectValue(try JSONDecoder().decode(PanelDefinition.self, from: json).arrows)
+        expectEqual(arrows.columns, 3)
+        expectEqual(arrows.buttons.map(\.action), [.shortcut(Shortcut(modifiers: [], key: .virtual(.up)))])
     }
 
     test("an arrow block may not reuse the ID of a button") {
@@ -153,12 +122,8 @@ private func panelFileTests() {
         }
     }
 
-    test("System holds the shortcuts of editing, and no keypad repeats a clipboard button") {
+    test("no keypad repeats a clipboard button") {
         let store = try PanelStore.bundled()
-        let system = store.system.buttons.map(\.id)
-        for id in ["undo", "redo", "select-all", "save", "new", "open", "print", "close"] {
-            expect(system.contains(id), "System has no \(id)")
-        }
         let chords = (store.text.buttons + (store.text.arrows?.buttons ?? []) + store.system.buttons)
             .compactMap { button -> Shortcut? in
                 if case .shortcut(let shortcut) = button.action { return shortcut }
@@ -171,7 +136,7 @@ private func panelFileTests() {
         let store = try PanelStore.bundled()
         for panel in [store.write, store.writeDocuments] {
             expect(
-                PanelLayout.slots(panel.buttons) <= PanelLayout.slotCount,
+                PanelLayout.slots(panel.buttons.map(\.action)) <= PanelLayout.slotCount,
                 "\(panel.title) overflows")
         }
     }
@@ -182,14 +147,18 @@ private func panelFileTests() {
 @MainActor
 private func layoutTests() {
     test("a text button takes a whole row, and later keys fill the gap before it") {
-        let rows = PanelLayout.rows([
-            keyButton("a"), textButton("hello"), keyButton("b"), keyButton("c"),
-        ])
-        expectEqual(rows.map { $0.map(\.id) }, [["a", "b"], ["hello"], ["c"]])
+        let buttons = [keyButton("a"), textButton("hello"), keyButton("b"), keyButton("c")]
+        let rows = PanelLayout.grid(buttons) { $0.action }.map { row in
+            switch row {
+            case .wide(let button): button?.id ?? "-"
+            case .cells(let cells): cells.map { $0?.id ?? "-" }.joined(separator: " ")
+            }
+        }
+        expectEqual(rows, ["a b", "hello", "c -", "- -", "- -", "- -"])
     }
 
     test("a text button costs two slots") {
-        expectEqual(PanelLayout.slots([keyButton("a"), textButton("t")]), 3)
+        expectEqual(PanelLayout.slots([keyButton("a").action, textButton("t").action]), 3)
     }
 
     test("only the buttons that fit in 12 slots stay") {

@@ -13,12 +13,12 @@ Sources/
     Design/         tokens, metrics, typography, rainbow and mono styles
     Keyboard/       key definitions, the QWERTY layout, KeyboardController, PressTracker
     Input/          modifiers, keystrokes, layout-aware key code map
-    Integration/    the session that joins the parts, panel placement, the app in front
-    Panels/         panel model, JSON loading, the grid of the Write panels, the shortcut suggestions
+    Integration/    the session that joins the parts, the assembly that builds it, panel placement, the app in front, the import of old JSON files
+    Panels/         panel model, JSON loading, the grid of Mine and the Write panels, the shortcut suggestions
     Predictions/    sentence predictions and word completions
     ScreenContext/  the text near the focused field, and the rule of each app
     Speech/         the voice: macOS voices, Personal Voice, ElevenLabs
-    Storage/        the keyboard database (keyboard.sqlite) and the sentence history
+    Storage/        the keyboard database (keyboard.sqlite), the sentence history, and the text log
     Talk/           Talk mode, the Said list, the Phrases panel
     UserPanel/      My Panel, its use counts, private text, the Accessibility Keyboard import
     Settings/       the pages of the Settings window
@@ -27,8 +27,8 @@ Sources/
     Views/          keys, shortcut buttons, panels, the keyboard screen, the views of each part
     Resources/      Panels/{text,system,rectangle,phrases,write,write-documents}.json,
                     Context/<bundle id>.json
-  Keyboard/         the app: floating panels, CGEvent sink, focus watcher, modifier tap, tree reader,
-                    menu bar, the Settings window
+  Keyboard/         the app: floating panels, CGEvent sink, focus watcher, modifier tap, other input monitor, tree reader,
+                    menu bar, the shared accessibility reads (AXFocus), the Settings window
   WriteLab/         the Write paper on its own, with a stand-in for the keyboard bar
 Tests/KitTests/     tests (see "Tests" below)
 ```
@@ -171,7 +171,8 @@ of their own. By default they sit beside the keys. To move the keyboard window o
 panel, drag it by the grip at its top. A drag does not take focus from the app
 in front. The keyboard keeps the place of each window for the next launch. If
 a saved place is on no screen, the window goes back to its default place. The
-keyboard window and the panels never take focus.
+keyboard window and the panels never take focus. The panels show only in Type
+mode. `DetachedPanel.isShown(in:)` holds the rule.
 
 Arrange moves the panels back beside the keys, at the place where the keyboard
 is now. The menu bar item has the same command, Arrange Panels. System and
@@ -187,9 +188,23 @@ line, and selection moves are in the grid above the arrows. The arrows are the
 buttons wide.
 
 The System keypad has three columns. It holds Undo, Redo, Select All, Save,
-New, Open, Print, and Close, and then Find, Mission Control, Page Up, Page
-Down, the zoom keys, Full Screen, Screenshot, and Quit. No keypad repeats
-Cut, Copy, or Paste.
+New, Open, Print, and Close, and then Find, Mission Control, Scroll Up,
+Scroll Down, the zoom keys, Full Screen, Screenshot, and Quit. No keypad
+repeats Cut, Copy, or Paste.
+
+Scroll Up and Scroll Down scroll the place where the pointer last rested
+outside the keyboard, as the scroll menu of Dwell of macOS does. The pointer
+rests when it stays still for 0.4 seconds, or where the user clicks.
+`PointerRestTracker` finds that place from the global monitors of
+`OtherInputMonitor`. A held scroll button repeats at the key repeat rate of
+macOS. Each step is 40 pixels. `CGEventSink` posts the scroll to the app of
+the window at that place, because the pointer is on the keyboard. The
+scroll has no modifier flags, so a latched Shift does not turn it sideways.
+The Shift stays latched for the next key. A scroll works in Talk mode too.
+If the pointer has rested nowhere yet, the keyboard
+beeps. In panel JSON, a scroll button is
+`{"type": "scroll", "direction": "down"}`. The directions are `up`, `down`,
+`left`, and `right`.
 
 The Rectangle keypad presses the shortcuts of
 [Rectangle](https://rectangleapp.com), the window manager. It shows only when
@@ -254,8 +269,7 @@ At the first launch after an update, the keyboard moves the lines of
 `talk-history.json`, the texts of `clipboard-history.json`, the presses of
 `my-panel-usage.json`, and the buttons of `my-panel.json` into the database.
 Then it removes the files. If a file does not decode, the keyboard moves it to
-`<name>.broken.json`. A broken `my-panel.json` stays where it is, and My Panel
-shows an error, so the buttons of the user are not lost.
+`<name>.broken.json`, and the database gets no rows from it.
 At launch, the keyboard also removes `usage.json` and `learned.json`. No part
 of the keyboard reads these files.
 
@@ -268,10 +282,13 @@ as the user types. At the top of the page it stops, and the text moves up, so
 the typing line stays at the bottom. If Reduce Motion is on, nothing
 animates. `WritePaper` holds the rule.
 
-The editor saves the document 0.12 seconds after the last edit, so Write has
-no Save command. A document that the user did not edit saves byte for byte.
+`WriteModel` saves the document 0.12 seconds after the last edit, so Write
+has no Save command. A document that the user opens and does not edit is not
+saved.
 Command-N starts a new document. A `[[` link opens the document with that
-title. If a save fails, the error shows at the top of the paper.
+title. If a save fails, the error shows at the top of the paper. While the
+desk is open, the error shows in the notice of the desk, in place of Undo.
+If the desk cannot read the file of a card, the notice shows that error.
 
 Command-O, or the Documents key of the Write panel, turns the paper into the
 desk. The paper shrinks into its card, and the other documents rise out of
@@ -309,10 +326,16 @@ Control, Voice Control) acts at once.
 A held key obeys the keyboard settings of macOS. `KeyPresser` applies them,
 and each press reads them again:
 
-- Key repeat: Delete, Space, and the characters that are not letters repeat
-  after the delay of System Settings, at its rate. If key repeat is off, no key
-  repeats. The modifiers, Return, Escape, Tab, chords, and the shortcut buttons
-  do not repeat.
+- Key repeat: Delete, Space, an arrow, the volume and brightness keys, and
+  the characters that are not letters repeat after the delay of System
+  Settings, at its rate. If key repeat is off, no key repeats. One rule
+  covers the keys, the panel buttons, and the buttons of My Panel: an arrow,
+  Delete, or Space repeats when Command and Control are off. For a panel
+  button, only the modifiers of its own shortcut count. Thus a held
+  Down button keeps the caret moving, and a held Shift-Down button extends
+  the selection. With Command or Control, the key acts once. The modifiers,
+  Return, Escape, Tab, and a character with a chord do not repeat. A
+  sequence and text act once.
 - Press and hold: if `ApplePressAndHoldEnabled` is on (the macOS default), a
   held letter shows its accents over the word row and does not repeat. A press
   on an accent replaces the letter. A press on any key closes the accents. If
@@ -323,7 +346,53 @@ and each press reads them again:
   lets go before the delay, nothing happens. The keyboard reads `slowKey` and
   `slowKeyDelay` from `com.apple.universalaccess`.
 - Sticky Keys: one tap on a modifier latches it for the next key, a second tap
-  locks it, and a third tap releases it, as Sticky Keys of macOS does.
+  locks it, and a third tap releases it, as Sticky Keys of macOS does. A
+  tapped modifier goes down at the OS at once, so a click or a key from the
+  hardware keyboard gets it too: Shift-click and Command-click work. A key
+  from another source, or a click outside the keyboard, uses up a latched
+  modifier. A panel button sends only its own shortcut. A latched, locked, or
+  held modifier does not add to it, and the press uses up a latched modifier.
+  `KeyboardController.perform(_:)` holds the rule. `OtherInputMonitor` listens for them. Its global monitors get the
+  events of other apps. Its local monitors get the keys of Write and Settings,
+  but not a click on the keyboard. The monitors need the Accessibility
+  permission and not Input Monitoring. In Talk mode the
+  OS holds no modifier. Before the app quits, also on SIGTERM and SIGINT, it
+  releases the modifiers that it holds. A latched modifier key lights up. A locked modifier key has a stronger fill
+  and a bar under its label. Shift shows a filled arrow when it is latched and
+  the caps lock arrow when it is locked.
+
+The keyboard also reads the modifiers that macOS holds. `OtherInputMonitor`
+gets them from the same monitors, in the device bits of the event flags.
+These bits show only the left and right modifier keys of the hardware. The
+keyboard posts no device bits, so a modifier that the keyboard holds at the
+OS is not in them. fn has no device bit. A modifier that macOS holds lights
+its key, and each key of the keyboard carries it. The keyboard posts no down
+or up for it until macOS releases it. The shortcut suggestions wait for the
+hold delay of a modifier that macOS holds.
+
+The keys show the state of the modifiers. While shift or caps lock is on, the
+letters show capitals and the dual keys light up their shifted symbol.
+
+The F-row sends the media keys of an Apple keyboard and shows their icons:
+brightness, Mission Control, Spotlight, Dictation, Do Not Disturb, the track
+keys, and volume. While fn, Control, Option, Shift, or Command is on, the row
+shows F1 to F12 and sends the F-key with the modifiers. Caps lock does not
+change the row. The media keys work in Talk mode too.
+
+macOS ignores the Mission Control, Spotlight, Dictation, and Do Not Disturb
+keys when an app posts them. Thus these keys take other routes:
+
+- F3 opens `/System/Applications/Mission Control.app`.
+- F4 presses the Spotlight shortcut of System Settings, symbolic hot key 64
+  of `com.apple.symbolichotkeys`. If the user turned the shortcut off, the
+  keyboard beeps.
+- F5 presses the Start Dictation item of the Edit menu of the app in front.
+  If the app has no such item, the keyboard beeps. The match is on the
+  English title.
+- F6 runs the Shortcut "Toggle Do Not Disturb". macOS gives an app no other
+  way to change Do Not Disturb. To make the Shortcut, add the Set Focus
+  action to a new Shortcut. Set the action to toggle Do Not Disturb. If the
+  Shortcut is missing, the keyboard beeps.
 
 ## Render snapshots
 
@@ -519,22 +588,15 @@ bar in two cases:
 The shortcuts are panel buttons in one row, 12 at most. A button shows only
 its keys. Its name shows above it on hover, and its accessibility label holds
 the name and the keys. A press presses the keys in the app and ends a latched
-modifier. The shortcuts are the menu items of the app with a chord, in menu
-bar order. The keyboard reads the menu bar through accessibility when
-a suggestion needs it, and keeps the read until another app comes to the front.
+modifier. The shortcuts are the menu items of the app with a chord. The
+shortcuts that you press most in this app come first, and the others keep
+the menu bar order. The keyboard reads the menu bar through accessibility
+when a suggestion needs it, and keeps the read until another app comes to
+the front. The order is set at the read, so a shortcut does not move while
+the app stays in front.
 The suggestions leave out the Apple menu, which holds Log Out and Lock Screen,
 and the menu items that are off. The app menu, with Hide and Quit, comes last.
 Talk mode and the Write window show no shortcut suggestions.
-
-## Input Monitoring
-
-The shortcut suggestions of a held hardware modifier need Input Monitoring.
-The keyboard does not ask for it at launch.
-
-1. Open Settings, then the Predictions page.
-2. Click Open Input Monitoring Settings.
-3. Turn on Keyboard in the list.
-4. Quit the keyboard and open it again.
 
 ## Stored data
 
@@ -545,7 +607,9 @@ The Keychain holds the secrets:
 - If the September desktop app has a key in `com.september.desktop`, Settings
   can copy it. macOS asks one time before the keyboard reads it.
 - The text of each private text button is in the service
-  `com.september.keyboard.private`.
+  `com.september.keyboard.private`. If the Keychain has no text for a
+  button, or cannot read it, a press on the button types nothing and beeps.
+  The latched modifiers stay for the next key.
 
 Write keeps each document as a Markdown file in
 `~/Documents/September`. The sentence history, the Talk history, the clipboard

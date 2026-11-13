@@ -74,7 +74,6 @@ public final class Speaker: ObservableObject {
         }
     }
 
-    /// Ends the speech at once.
     public func stop() {
         generation += 1
         task?.cancel()

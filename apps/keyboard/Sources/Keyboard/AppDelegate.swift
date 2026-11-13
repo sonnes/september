@@ -17,29 +17,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let sink = CGEventSink()
     private let focusWatcher = FocusWatcher()
     private let treeModel = AXTreeModel()
-    private let keyboardSettings = KeyboardSettings()
-    private let inputMonitoring = InputMonitoringStatus()
     private let keyboardPosition = KeyboardPosition()
-    private var controller: KeyboardController!
-    private var session: KeyboardSession!
+    private var assembly: KeyboardAssembly!
+    private var session: KeyboardSession { assembly.session }
+    private var keyboardSettings: KeyboardSettings { assembly.settings }
+    private var controller: KeyboardController { session.controller }
     private var speech: SpeechServices!
-    /// The sentences that the user sent, in `keyboard.sqlite`.
     private var history: SentenceHistory!
     private var content: WindowContent!
     private var settingsWindow: SettingsWindowController!
     private var write: WriteController!
-    /// Held strongly: the tap's callback does not retain it.
-    private var modifierTap: ModifierTap?
-    private var tracker = FrontAppTracker(ownPID: ProcessInfo.processInfo.processIdentifier)
-    private var isWriteInFront = false
-    /// How to read the text near the field in each app.
-    private var contextRules = ContextRules(rules: [:])
-    /// The read of the text near the field that runs now.
-    private var screenRead: Task<Void, Never>?
-    private var fieldWasEmpty = true
-    private var clipboardWatcher: ClipboardWatcher?
+    /// Held strongly: the event monitors hold it weakly.
+    private var otherInput: OtherInputMonitor?
+    /// SIGTERM and SIGINT, for example from `make stop`, skip
+    /// `applicationWillTerminate`. These handlers release the modifiers first.
+    private var signalSources: [DispatchSourceSignal] = []
     private var clipboardTimer: Timer?
-    private var mode: KeyboardMode = .type
 
     /// The tree viewer is on by default — it is the window that shows why an
     /// app does or does not mirror.
@@ -54,48 +47,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let phrases: PanelDefinition
         let database = KeyboardDatabase.open(at: KeyboardDatabase.defaultURL)
-        KeyboardDatabase.removeStaleFiles(in: KeyboardDatabase.defaultURL.deletingLastPathComponent())
-        do {
-            controller = KeyboardController(
-                sink: sink, panels: try PanelStore.bundled(),
-                talk: TalkSession(said: SaidList(database: database, importing: SaidList.jsonURL)))
-            phrases = try Phrases.bundled()
-            contextRules = try ContextRules.bundled()
-        } catch {
-            fail(loadingPanels: error)
-            return
-        }
-
+        LegacyImport.run(database: database, folder: KeyboardDatabase.folder)
         speech = SpeechServices()
         speech.start()
         history = SentenceHistory(database: database)
         let predictions = PredictionEngine(history: history)
-        session = KeyboardSession(
-            controller: controller, predictions: predictions, speaker: speech.speaker,
-            userPanel: Result { try UserPanelStore(database: database, importing: UserPanelStore.jsonURL) },
-            userPanelUsage: UsageStore(database: database, importing: UsageStore.jsonURL),
-            clipboard: ClipboardHistory(database: database, importing: ClipboardHistory.jsonURL),
-            pasteboard: SystemPasteboard())
+        write = WriteController(host: self)
+        do {
+            assembly = try KeyboardAssembly(
+                sink: sink, database: database, pasteboard: SystemPasteboard(),
+                reader: AXFrontAppReader(rules: try ContextRules.bundled()), speaker: speech.speaker,
+                write: write, predictions: predictions)
+        } catch {
+            fail(loading: error)
+            return
+        }
         watchClipboard()
 
-        write = WriteController()
-        write.onKeyChanged = { [weak self] isKey in self?.writeKeyChanged(isKey) }
-        write.bringToFront = { AppActivation.bringToFront($0) }
-        write.windowClosed = { AppActivation.windowClosed($0) }
-        write.onPanelChange = { [weak self] _ in self?.writePanelChanged() }
-        write.onCaretChange = { [weak self] caret in self?.writeCaretChanged(caret) }
-        session.writeSpeech = { [weak self] in self?.write.speech }
         settingsWindow = SettingsWindowController(pages: makeSettingsPages())
         content = WindowContent(
-            controller: controller, session: session, permission: permission, phrases: phrases,
+            session: session, permission: permission, phrases: assembly.phrases,
             presser: KeyPresser(timing: { KeyTiming.current() }),
             write: { [weak self] in self?.showWrite() },
             arrange: { [weak self] in self?.arrangePanels() },
             settings: { [weak self] in self?.showSettings() })
-
-        followSettings()
 
         // The banner and the menu ask for permission, so starting Keyboard
         // never puts a system dialog in front of what the user was doing.
@@ -109,7 +85,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .store(in: &subscriptions)
         controller.$mode.dropFirst().removeDuplicates()
             .sink { [weak self] mode in
-                Task { @MainActor in self?.modeChanged(to: mode) }
+                // `@Published` sends the new mode before it stores it.
+                guard let previous = self?.controller.mode else { return }
+                Task { @MainActor in self?.modeChanged(from: previous, to: mode) }
             }
             .store(in: &subscriptions)
         // Private text in the field: the viewer drops the value of the field.
@@ -118,7 +96,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .store(in: &subscriptions)
 
         watchFocus()
-        startModifierTap()
+        let otherInput = OtherInputMonitor(
+            onInput: { [weak self] in self?.controller.otherInputPressed() },
+            onModifiers: { [weak self] in self?.controller.macModifiersChanged($0) },
+            pointer: PointerRestTracker { [weak self] in self?.controller.pointerRested(at: $0) })
+        otherInput.start()
+        self.otherInput = otherInput
+        releaseModifiersOnSignal()
         predictions.refreshAvailability()
         observers.append(
             NSWorkspace.shared.notificationCenter.addObserver(
@@ -148,10 +132,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         AppActivation.appBecameActive()
-        session?.predictions.refreshAvailability()
+        assembly?.session.predictions.refreshAvailability()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        assembly?.session.controller.releaseSystemModifiers()
         write?.save()
     }
 
@@ -163,7 +148,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         pages[.speech] = AnyView(SpeechPage(speech: speech, settings: keyboardSettings, said: controller.talk.said))
         pages[.predictions] = AnyView(
             PredictionsSettingsPage(
-                engine: session.predictions, history: history, inputMonitoring: inputMonitoring))
+                engine: session.predictions, history: history))
         pages[.clipboard] = AnyView(ClipboardSettingsPage(history: session.clipboard))
         if let store = session.userPanel {
             pages[.myPanel] = AnyView(MyPanelSettingsPage(store: store, usage: session.userPanelUsage))
@@ -176,35 +161,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// Adds each copy to the clipboard history. macOS has no notification for
-    /// a change of the clipboard, so the keyboard reads its change count every
-    /// 0.5 seconds.
+    /// a change of the clipboard, so the keyboard reads its change count on a
+    /// timer.
     private func watchClipboard() {
-        let watcher = ClipboardWatcher(
-            pasteboard: session.pasteboard, history: session.clipboard,
-            shouldSkip: { [weak self] in
-                guard let controller = self?.controller else { return true }
-                return controller.isFieldPrivate || controller.focusedField?.isSecure == true
-            },
-            onChange: { [weak self] in self?.session.pasteboardChanged() })
-        clipboardWatcher = watcher
-        clipboardTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
-            MainActor.assumeIsolated { watcher.poll() }
+        clipboardTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.session.pollClipboard() }
         }
-    }
-
-    /// The Look page and the Speech page change the keyboard at once.
-    private func followSettings() {
-        keyboardSettings.$style
-            .sink { [weak self] style in self?.controller.style = style }
-            .store(in: &subscriptions)
-        keyboardSettings.$returnSpeaksInTalk
-            .sink { [weak self] speaks in self?.controller.talk.returnSpeaks = speaks }
-            .store(in: &subscriptions)
     }
 
     private func showSettings(_ page: SettingsPage = .voice) {
         session.predictions.refreshAvailability()
-        startModifierTap()
         settingsWindow.show(page)
     }
 
@@ -214,93 +180,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Mirror the focused field of whatever app is in front, and re-read it
         // after every key we send — some apps never announce their own changes.
         focusWatcher.onChange = { [weak self] field in
-            guard let self else { return }
-            self.controller.focusChanged(to: field)
-            // A field that empties was sent, and the chat above it changed.
-            let isEmpty = field?.text?.isEmpty ?? true
-            if isEmpty, !self.fieldWasEmpty { self.readScreenSoon() }
-            self.fieldWasEmpty = isEmpty
+            self?.session.focusChanged(to: field)
         }
         focusWatcher.onFocusMoved = { [weak self] in
             self?.session.focusMoved()
-            self?.readScreenSoon()
             // The tree only needs rebuilding when focus lands somewhere else;
             // the text of the field it is already showing is caught by the
             // slow timer.
             self?.scheduleTreeRefresh()
         }
         focusWatcher.onAppChanged = { [weak self] app in
-            guard let self else { return }
-            self.apply(self.tracker.appActivated(app.map(FrontApp.init)), app: app)
+            self?.session.appActivated(app.map(FrontApp.init))
         }
         sink.afterPost = { [weak self] in
             self?.focusWatcher.refreshSoon()
         }
         focusWatcher.start()
-        session.predictions.$screenEnabled
-            .dropFirst()
-            .sink { [weak self] isOn in
-                if isOn { self?.readScreenSoon(enabled: true) } else { self?.screenRead?.cancel() }
-            }
-            .store(in: &subscriptions)
-    }
-
-    /// Reads the text near the field of the app in front, off the main
-    /// thread, when the user turned it on. A newer read cancels this one.
-    private func readScreenSoon(enabled: Bool? = nil) {
-        screenRead?.cancel()
-        guard enabled ?? session.predictions.screenEnabled, !isWriteInFront, mode == .type,
-            !controller.isFieldPrivate,
-            let app = NSWorkspace.shared.frontmostApplication,
-            app.processIdentifier != ProcessInfo.processInfo.processIdentifier
-        else { return }
-        let request = ScreenContextReader.Request(app: app, rules: contextRules)
-        screenRead = Task { [weak self] in
-            // Lets the focus settle after a switch.
-            try? await Task.sleep(for: .milliseconds(150))
-            guard !Task.isCancelled else { return }
-            let screen = await Task.detached { ScreenContextReader.read(request) }.value
-            guard !Task.isCancelled else { return }
-            self?.session.screenRead(screen)
-        }
-    }
-
-    private func writeKeyChanged(_ isKey: Bool) {
-        let front = NSWorkspace.shared.frontmostApplication
-        let change = tracker.writeKeyChanged(isKey, front: front.map(FrontApp.init))
-        apply(change, app: front)
-        // The app in front may have come forward while the Write paper was
-        // key. Follow it again, so its field shows in the bar.
-        if case .app = change { focusWatcher.refollow() }
-    }
-
-    private func apply(_ change: FrontAppTracker.Switch?, app: NSRunningApplication?) {
-        switch change {
-        case nil:
-            return
-        case .write:
-            isWriteInFront = true
-            session.readMenu = { [] }
-            session.appChanged(name: "Write", bundleID: write.panel)
-            session.writeCaretRead(write.caret)
-        case .app:
-            isWriteInFront = false
-            // Keep the process ID, not the app: macOS frees the app object of
-            // the activation notice soon after the notice.
-            let pid = app?.processIdentifier
-            session.readMenu = { pid.map(MenuBarReader.shortcuts(pid:)) ?? [] }
-            session.appChanged(name: app?.localizedName, bundleID: app?.bundleIdentifier)
-            startModifierTap()
-            readScreenSoon()
-        }
-    }
-
-    /// The paper turned into the desk, or the desk into the paper: the Write
-    /// tab changes between the Write keys and the Documents keys.
-    private func writePanelChanged() {
-        guard isWriteInFront else { return }
-        session.appChanged(name: "Write", bundleID: write.panel)
-        session.writeCaretRead(write.caret)
     }
 
     // MARK: - Write
@@ -316,29 +211,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             margin: FloatingPanel.margin)
     }
 
-    /// The keyboard cannot read its own window over accessibility, so the
-    /// editor reports the paragraph at the caret.
-    private func writeCaretChanged(_ caret: EditorCaret) {
-        guard isWriteInFront else { return }
-        session.writeCaretRead(caret)
-    }
-
     // MARK: - The modifiers of the hardware keyboard
 
-    /// Starts the tap only when macOS already allows it, so launch never
-    /// prompts. The Predictions page of Settings asks.
-    private func startModifierTap() {
-        guard modifierTap == nil else { return }
-        guard ModifierTap.isAllowed else {
-            inputMonitoring.isAllowed = false
-            return
-        }
-        let tap = ModifierTap { [weak self] modifiers in self?.session.hardwareModifiersChanged(modifiers) }
-        if tap.start() {
-            modifierTap = tap
-            inputMonitoring.isAllowed = true
-        } else {
-            inputMonitoring.isAllowed = false
+    private func releaseModifiersOnSignal() {
+        for number in [SIGTERM, SIGINT] {
+            signal(number, SIG_IGN)
+            let source = DispatchSource.makeSignalSource(signal: number, queue: .main)
+            source.setEventHandler { [weak self] in
+                MainActor.assumeIsolated {
+                    self?.controller.releaseSystemModifiers()
+                    NSApp.terminate(nil)
+                }
+            }
+            source.resume()
+            signalSources.append(source)
         }
     }
 
@@ -346,8 +232,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func showWindows() {
         let (root, size) = makeKeyboardRoot()
-        let keyboard = FloatingPanel(root: root, contentSize: size)
-        keyboard.placement = .free
+        let keyboard = FloatingPanel(root: root, contentSize: size, placement: .free)
         keyboardPanel = keyboard
 
         let rectangleInstalled =
@@ -376,8 +261,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let keys = CGRect(origin: KeyboardPosition.keysOrigin(ofWindow: origin, in: .type), size: keysSize)
         let defaults = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
         for panel in shown {
-            let window = FloatingPanel(root: content.panel(panel), contentSize: sizes[panel]!)
-            window.placement = .free
+            let window = FloatingPanel(root: content.panel(panel), contentSize: sizes[panel]!, placement: .free)
             // The panels sit above the keyboard window, whose clear corners
             // reach over them.
             window.level = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue + 1)
@@ -398,7 +282,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func arrangePanels() {
         guard let keyboard = keyboardPanel else { return }
         let keys = CGRect(
-            origin: KeyboardPosition.keysOrigin(ofWindow: keyboard.frame.origin, in: mode),
+            origin: KeyboardPosition.keysOrigin(ofWindow: keyboard.frame.origin, in: controller.mode),
             size: WindowContent.measure(content.keysCard()))
         let screen = (keyboard.screen ?? FloatingPanel.activeScreen)?.visibleFrame ?? keys
         let sizes = panels.mapValues(\.frame.size)
@@ -411,7 +295,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// its Type mode window.
     private func keyboardMoved() {
         guard let keyboardPanel else { return }
-        keyboardPosition.saved = KeyboardPosition.typeOrigin(of: keyboardPanel.frame.origin, in: mode)
+        keyboardPosition.saved = KeyboardPosition.typeOrigin(of: keyboardPanel.frame.origin, in: controller.mode)
     }
 
     private func panelSize(_ panel: DetachedPanel) -> CGSize {
@@ -441,26 +325,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// Rebuilds the keyboard window at its new size. The bottom left corner
-    /// stays, less `shift`.
-    private func refreshKeyboard(shift: CGFloat = 0) {
+    /// stays.
+    private func refreshKeyboard() {
         guard let keyboardPanel else { return }
         let origin = keyboardPanel.frame.origin
         let (root, size) = makeKeyboardRoot()
         keyboardPanel.update(root: root, contentSize: size)
-        keyboardPanel.setFrameOrigin(NSPoint(x: origin.x - shift, y: origin.y))
+        keyboardPanel.setFrameOrigin(origin)
         // The viewer takes its height from the keyboard beside it.
         showTreePanel(height: size.height)
     }
 
     /// Talk mode puts Phrases and the Said list in the keyboard window and
     /// hides the shortcut panels. The keys stay where they are on the screen.
-    private func modeChanged(to mode: KeyboardMode) {
-        let shift = KeyboardScreen.keysInset(mode) - KeyboardScreen.keysInset(self.mode)
-        self.mode = mode
-        refreshKeyboard(shift: shift)
-        guard keyboardPanel?.isVisible == true else { return }
+    private func modeChanged(from previous: KeyboardMode, to mode: KeyboardMode) {
+        guard let keyboardPanel else { return }
+        let typeOrigin = KeyboardPosition.typeOrigin(of: keyboardPanel.frame.origin, in: previous)
+        refreshKeyboard()
+        keyboardPanel.setFrameOrigin(KeyboardPosition.windowOrigin(typeOrigin, in: mode))
+        guard keyboardPanel.isVisible else { return }
         for window in panels.values {
-            if mode == .talk { window.orderOut(nil) } else { window.orderFront(nil) }
+            if DetachedPanel.isShown(in: mode) { window.orderFront(nil) } else { window.orderOut(nil) }
         }
     }
 
@@ -474,8 +359,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let treePanel {
             treePanel.update(root: root, contentSize: size)
         } else {
-            let treePanel = FloatingPanel(root: root, contentSize: size)
-            treePanel.placement = .bottomRight
+            let treePanel = FloatingPanel(root: root, contentSize: size, placement: .bottomRight)
             treePanel.orderFront(nil)
             self.treePanel = treePanel
         }
@@ -485,7 +369,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func refreshTree() {
         guard isTreeVisible else { return }
         let tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
-        treeModel.tree = controller.isFieldPrivate ? tree.hidingFocusedValue() : tree
+        treeModel.show(tree, hidingFocusedValue: controller.hidesFieldText)
     }
 
     /// Each read costs many round trips to the other app, so focus moves and
@@ -573,7 +457,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleKeyboard(_ sender: NSMenuItem) {
         guard let keyboardPanel else { return }
-        let windows = [keyboardPanel] + (mode == .type ? Array(panels.values) : [])
+        let windows = [keyboardPanel] + (DetachedPanel.isShown(in: controller.mode) ? Array(panels.values) : [])
         if keyboardPanel.isVisible {
             windows.forEach { $0.orderOut(nil) }
         } else {
@@ -619,9 +503,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         permission.openSettings()
     }
 
-    private func fail(loadingPanels error: any Error) {
+    /// A bundled file of the keyboard did not load: a panel, the accents,
+    /// the Phrases panel, or a context rule.
+    private func fail(loading error: any Error) {
         let alert = NSAlert()
-        alert.messageText = "September Keyboard could not load its shortcut panels."
+        alert.messageText = "September Keyboard could not load its bundled files."
         alert.informativeText = String(describing: error)
         NSApp.activate()
         alert.runModal()
@@ -629,6 +515,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
+}
+
+extension AppDelegate: WriteHost {
+    func bringToFront(_ window: NSWindow) {
+        AppActivation.bringToFront(window)
+    }
+
+    func windowClosed(_ window: NSWindow) {
+        AppActivation.windowClosed(window)
+    }
+
+    func writeKeyChanged(_ isKey: Bool) {
+        let front = NSWorkspace.shared.frontmostApplication.map(FrontApp.init)
+        let change = session.writeKeyChanged(isKey, panel: write.panel, front: front)
+        // The app in front may have come forward while the Write paper was
+        // key. Follow it again, so its field shows in the bar.
+        if case .app = change { focusWatcher.refollow() }
+    }
+
+    func writePanelChanged(_ panel: WritePanel) {
+        session.writePanelChanged(panel)
+    }
+
+    func writeCaretMoved(_ caret: EditorCaret) {
+        session.writeCaretMoved(caret)
+    }
 }
 
 /// The Speech page with the Return key setting of Talk mode and the Talk

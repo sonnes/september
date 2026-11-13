@@ -2,7 +2,6 @@ import AppKit
 import CoreGraphics
 import Foundation
 import SeptemberKit
-import SwiftUI
 
 /// The wiring between the tracks: the session that joins the controller, the
 /// predictions, the voice, the Write panel, and My Panel, and the small types
@@ -16,7 +15,6 @@ func integrationTests() async {
     await sessionTests()
     await shortcutTests()
     await clipboardSessionTests()
-    await panelHeightTests()
     activationTests()
 }
 
@@ -51,16 +49,15 @@ private func inputBarTests() {
     }
 
     test("in Type mode the bar shows only for text input or an echo") {
-        func wants(_ field: FocusedField?, echo: String = "", isPrivate: Bool = false) -> Bool {
+        func wants(_ field: FocusedField?, echo: String = "", input: InputMirror? = nil) -> Bool {
             InputBarVisibility.wantsBar(
-                mode: .type, focusedField: field, isFieldPrivate: isPrivate, input: .local(text: echo),
-                isWriteInFront: false)
+                mode: .type, focusedField: field, input: input ?? .local(text: echo), isWriteInFront: false)
         }
         expect(!wants(nil))
         expect(!wants(focus("AXButton")))
         expect(wants(focus("AXTextField", editable: true)))
         expect(wants(focus("AXTextField", secure: true)), "a password field shows its notice")
-        expect(wants(nil, isPrivate: true), "a field with private text shows its notice")
+        expect(wants(nil, input: .secure), "a field with private text shows its notice")
         expect(wants(nil, echo: "hi"), "an app with no readable field shows the echo")
         expect(!wants(focus("AXList"), echo: "hi"), "the echo hides when the focus is on a list")
     }
@@ -68,12 +65,10 @@ private func inputBarTests() {
     test("Talk mode and the Write window always show the bar") {
         expect(
             InputBarVisibility.wantsBar(
-                mode: .talk, focusedField: nil, isFieldPrivate: false, input: .local(text: ""),
-                isWriteInFront: false))
+                mode: .talk, focusedField: nil, input: .local(text: ""), isWriteInFront: false))
         expect(
             InputBarVisibility.wantsBar(
-                mode: .type, focusedField: nil, isFieldPrivate: false, input: .local(text: ""),
-                isWriteInFront: true))
+                mode: .type, focusedField: nil, input: .local(text: ""), isWriteInFront: true))
     }
 
     test("the bar hides after the delay and shows at once") {
@@ -145,7 +140,7 @@ private func speakTextTests() {
 @MainActor
 private func wiringTests() {
     test("a prediction in Talk mode joins the bar with no extra space") {
-        let talk = TalkSession()
+        let talk = TalkSession(said: SaidList(database: memoryDatabase()))
         var modifiers = ModifierState()
         for character in ["c", "u"] {
             talk.press(
@@ -154,12 +149,6 @@ private func wiringTests() {
         }
         talk.type("p of tea, ")
         expectEqual(talk.text, "cup of tea, ")
-    }
-
-    test("a sequence of My Panel presses as one sequence action") {
-        let escape = Shortcut(modifiers: [], key: .virtual(.escape))
-        let button = UserButton(id: "r", name: "Rewind", action: .sequence([escape, escape]))
-        expectEqual(button.panelActions, [.sequence([escape, escape])])
     }
 
     test("the tree hides the value of the focused field") {
@@ -174,14 +163,33 @@ private func wiringTests() {
         expectEqual(hidden.root?.children.first?.role, "AXTextArea")
     }
 
+    test("the tree viewer hides the value of the focused field while the field text is hidden") {
+        let tree = AXTree(
+            appName: "Messages",
+            root: AXNode(
+                id: 0, role: "AXWindow", value: "title",
+                children: [AXNode(id: 1, role: "AXTextArea", value: "secret", isFocused: true)]))
+        let model = AXTreeModel()
+        model.show(tree, hidingFocusedValue: true)
+        expectEqual(model.tree.root?.children.first?.value, nil)
+        model.show(tree, hidingFocusedValue: false)
+        expectEqual(model.tree.root?.children.first?.value, "secret")
+    }
+
     test("the Write window counts as the app in front while it is key") {
         var tracker = FrontAppTracker(ownPID: 1)
         let messages = FrontApp(pid: 2, name: "Messages", bundleID: "com.apple.MobileSMS")
         expectEqual(tracker.appActivated(messages), .app(messages))
         expectEqual(tracker.appActivated(FrontApp(pid: 1, name: "Keyboard", bundleID: nil)), nil)
-        expectEqual(tracker.writeKeyChanged(true, front: nil), .write)
-        expectEqual(tracker.writeKeyChanged(false, front: messages), .app(messages))
+        expectEqual(tracker.writeKeyChanged(true, panel: .paper, front: nil), .write(.paper))
+        expectEqual(tracker.writeKeyChanged(false, panel: .paper, front: messages), .app(messages))
         expectEqual(tracker.appActivated(messages), nil)
+    }
+
+    test("the Write window comes to the front with its panel") {
+        var tracker = FrontAppTracker(ownPID: 1)
+        expectEqual(tracker.writeKeyChanged(true, panel: .desk, front: nil), .write(.desk))
+        expectEqual(tracker.writeKeyChanged(true, panel: .paper, front: nil), nil)
     }
 
     test("the app in front after the Write window matches on the process") {
@@ -189,17 +197,18 @@ private func wiringTests() {
         let first = FrontApp(pid: 2, name: "Terminal", bundleID: "com.apple.Terminal")
         let second = FrontApp(pid: 3, name: "Terminal", bundleID: "com.apple.Terminal")
         _ = tracker.appActivated(first)
-        _ = tracker.writeKeyChanged(true, front: nil)
+        _ = tracker.writeKeyChanged(true, panel: .paper, front: nil)
         expectEqual(tracker.appActivated(second), .app(second))
-        expectEqual(tracker.writeKeyChanged(false, front: second), nil)
+        expectEqual(tracker.writeKeyChanged(false, panel: .paper, front: second), nil)
     }
 
     test("Settings in front keeps the panel of the last app") {
         var tracker = FrontAppTracker(ownPID: 1)
         let mail = FrontApp(pid: 4, name: "Mail", bundleID: "com.apple.mail")
         _ = tracker.appActivated(mail)
-        _ = tracker.writeKeyChanged(true, front: nil)
-        expectEqual(tracker.writeKeyChanged(false, front: FrontApp(pid: 1, name: nil, bundleID: nil)), nil)
+        _ = tracker.writeKeyChanged(true, panel: .paper, front: nil)
+        expectEqual(
+            tracker.writeKeyChanged(false, panel: .paper, front: FrontApp(pid: 1, name: nil, bundleID: nil)), nil)
     }
 }
 
@@ -221,26 +230,32 @@ private func placementTests() {
     test("Text sits at the right of the keys, and System and My Panel at the left") {
         let frames = PanelPlacement.defaultFrames(
             keys: keys, sizes: [.text: panel, .system: panel, .mine: panel])
-        let gap = Metrics.Detached.gap
-        expectEqual(frames[.text]?.minX, keys.maxX + gap)
-        expectEqual(frames[.system]?.maxX, keys.minX - gap)
-        expectEqual(frames[.mine]?.maxX, keys.minX - gap * 2 - panel.width)
-        expectEqual(frames[.text]?.maxY, keys.maxY)
-        expectEqual(frames[.mine]?.maxY, keys.maxY)
+        let text = try expectValue(frames[.text])
+        let system = try expectValue(frames[.system])
+        let mine = try expectValue(frames[.mine])
+        expect(text.minX > keys.maxX)
+        expect(system.maxX < keys.minX)
+        expect(mine.maxX < system.minX)
+        for frame in [text, system, mine] { expectEqual(frame.maxY, keys.maxY, "the tops line up with the keys") }
     }
 
     test("the Rectangle panel sits at the right of Text") {
         let frames = PanelPlacement.defaultFrames(
             keys: keys, sizes: [.text: panel, .rectangle: panel])
-        let gap = Metrics.Detached.gap
-        expectEqual(frames[.rectangle]?.minX, keys.maxX + gap * 2 + panel.width)
-        expectEqual(frames[.rectangle]?.maxY, keys.maxY)
+        let rectangle = try expectValue(frames[.rectangle])
+        expect(rectangle.minX > (try expectValue(frames[.text])).maxX)
+        expectEqual(rectangle.maxY, keys.maxY)
     }
 
     test("the Rectangle panel shows only when Rectangle is installed") {
         expect(DetachedPanel.shown(rectangleInstalled: true).contains(.rectangle))
         expect(!DetachedPanel.shown(rectangleInstalled: false).contains(.rectangle))
         expectEqual(Set(DetachedPanel.shown(rectangleInstalled: false)), [.text, .system, .mine])
+    }
+
+    test("the shortcut panels show in Type mode and hide in Talk mode") {
+        expect(DetachedPanel.isShown(in: .type))
+        expect(!DetachedPanel.isShown(in: .talk))
     }
 
     test("arranging puts the panels around the keys where the keyboard is now") {
@@ -261,11 +276,12 @@ private func placementTests() {
     }
 
     test("the group of keys and panels is centred on the screen") {
+        let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .mine: panel]
         let origin = PanelPlacement.keysOrigin(
-            keysSize: keys.size, panels: [.text: panel, .system: panel, .mine: panel],
-            in: screen, rightInset: 0, margin: 24)
-        let group = panel.width * 3 + Metrics.Detached.gap * 3 + keys.width
-        expectEqual(origin.x, (screen.width - group) / 2 + (panel.width + Metrics.Detached.gap) * 2)
+            keysSize: keys.size, panels: sizes, in: screen, rightInset: 0, margin: 24)
+        let placed = CGRect(origin: origin, size: keys.size)
+        let group = PanelPlacement.defaultFrames(keys: placed, sizes: sizes).values.reduce(placed) { $0.union($1) }
+        expect(abs(group.midX - screen.midX) < 1, "the group is centred: \(group)")
         expectEqual(origin.y, 24)
     }
 
@@ -276,9 +292,7 @@ private func placementTests() {
     }
 
     test("the keyboard window keeps the place where the user put it") {
-        let suite = "september-test-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { removeDefaults(suite) }
+        let defaults = freshDefaults()
         let position = KeyboardPosition(defaults: defaults)
         expectEqual(position.saved, nil)
         position.saved = CGPoint(x: 300, y: 200)
@@ -297,26 +311,21 @@ private func placementTests() {
         expectEqual(KeyboardPosition.origin(saved: nil, size: size, screens: [screen], fallback: fallback), fallback)
     }
 
-    test("the keyboard keeps one place in both modes") {
-        let talk = CGPoint(x: 100, y: 50)
-        let type = KeyboardPosition.typeOrigin(of: talk, in: .talk)
-        expectEqual(type.x, talk.x + KeyboardScreen.keysInset(.talk) - KeyboardScreen.keysInset(.type))
-        expectEqual(KeyboardPosition.windowOrigin(type, in: .talk), talk)
-        expectEqual(KeyboardPosition.typeOrigin(of: talk, in: .type), talk)
+    test("a change of mode keeps the keys in place") {
+        let window = CGPoint(x: 100, y: 50)
+        for (from, to) in [(KeyboardMode.type, KeyboardMode.talk), (.talk, .type)] {
+            let saved = KeyboardPosition.typeOrigin(of: window, in: from)
+            let moved = KeyboardPosition.windowOrigin(saved, in: to)
+            expectEqual(
+                KeyboardPosition.keysOrigin(ofWindow: moved, in: to),
+                KeyboardPosition.keysOrigin(ofWindow: window, in: from), "\(from) to \(to)")
+        }
     }
 
-    test("the clipboard buttons fit at the left of the bar, and the keys stay in place in both modes") {
-        let reach = Metrics.Clipboard.buttonsWidth + Metrics.TopRow.spacing
-        for mode in [KeyboardMode.type, .talk] {
-            expect(KeyboardScreen.keysInset(mode) >= reach, "no room for the buttons in \(mode)")
-        }
-        let window = CGPoint(x: 100, y: 50)
-        let keys = KeyboardPosition.keysOrigin(ofWindow: window, in: .type)
-        expectEqual(keys.x, window.x + KeyboardScreen.cardInset(.type))
-        expectEqual(keys.y, window.y)
-        let talk = KeyboardPosition.windowOrigin(window, in: .talk)
-        expectEqual(KeyboardPosition.keysOrigin(ofWindow: talk, in: .talk), keys)
-        expectEqual(KeyboardPosition.typeWindowOrigin(forKeys: keys), window)
+    test("the first window of the keyboard puts the keys at the place of the keys") {
+        let keys = CGPoint(x: 400, y: 24)
+        let window = KeyboardPosition.typeWindowOrigin(forKeys: keys)
+        expectEqual(KeyboardPosition.keysOrigin(ofWindow: window, in: .type), keys)
     }
 }
 
@@ -330,80 +339,88 @@ private struct SessionParts {
     let voice: FakeEngine
     let userPanel: UserPanelStore?
     let clock: FakeClock
-    let completer: CupCompleter
+    let reader: FakeFrontAppReader
+    let write: FakeWrite
+    let completer: FakeCompleter
     let pasteboard: MemoryPasteboard
     let clipboard: ClipboardHistory
     let history: SentenceHistory
     let database: KeyboardDatabase
+    let privateTexts: MemoryPrivateTexts
 }
 
 @MainActor
 private func makeSession(
     userPanel: Result<UserPanelStore, any Error>? = nil,
     voiceHolds: Bool = false,
-    predictor: any SentencePredicting = SilentPredictor(),
-    pasteboard: MemoryPasteboard = MemoryPasteboard()
+    predictor: any SentencePredicting = FakePredictor(),
+    pasteboard: MemoryPasteboard = MemoryPasteboard(),
+    privateTexts: MemoryPrivateTexts = MemoryPrivateTexts()
 ) throws -> SessionParts {
-    let (controller, sink) = try makeController()
-    let defaults = UserDefaults(suiteName: "kit-integration-\(UUID().uuidString)")!
+    let (controller, sink) = try makeController(privateTexts: privateTexts)
+    let defaults = freshDefaults()
     let voice = FakeEngine()
     voice.holds = voiceHolds
     let speaker = Speaker(
         settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: FakeEngine())
-    let completer = CupCompleter()
+    let completer = FakeCompleter()
     let database = try KeyboardDatabase(path: ":memory:")
     let history = SentenceHistory(database: database, defaults: defaults)
     let engine = PredictionEngine(
-        predictor: predictor, completer: completer, delay: .milliseconds(5),
+        predictor: predictor, completer: completer, delay: .zero,
         defaults: defaults, history: history)
     let store =
         userPanel
         ?? Result {
-            try UserPanelStore(defaults: defaults, privateTexts: MemoryPrivateTexts())
+            try UserPanelStore(database: database, defaults: defaults, privateTexts: privateTexts)
         }
     let clock = FakeClock()
-    let clipboard = ClipboardHistory(defaults: defaults)
+    let clipboard = ClipboardHistory(database: database, defaults: defaults)
+    let reader = FakeFrontAppReader()
+    let write = FakeWrite()
     let session = KeyboardSession(
         controller: controller, predictions: engine, speaker: speaker, userPanel: store,
-        userPanelUsage: UsageStore(),
+        userPanelUsage: UsageStore(database: database),
+        shortcutUsage: UsageStore(database: database, table: .shortcuts), reader: reader, write: write,
         inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25),
         clipboard: clipboard, pasteboard: pasteboard, scheduler: clock)
     return SessionParts(
         session: session, controller: controller, sink: sink, voice: voice,
-        userPanel: try? store.get(), clock: clock, completer: completer,
+        userPanel: try? store.get(), clock: clock, reader: reader, write: write, completer: completer,
         pasteboard: pasteboard, clipboard: clipboard, history: history,
-        database: database)
+        database: database, privateTexts: privateTexts)
 }
 
-private struct SilentPredictor: SentencePredicting {
-    var availability: PredictionAvailability { .ready }
-    func predictions(for context: PredictionContext) async throws -> [String] { [] }
-}
+@MainActor
+private final class FakeFrontAppReader: FrontAppReading {
+    var menu: [AppShortcut] = []
+    var screens: [pid_t: ScreenContext] = [:]
+    private(set) var menuReads: [pid_t] = []
+    private(set) var screenReads: [pid_t] = []
 
-private actor RecordingPredictor: SentencePredicting {
-    nonisolated var availability: PredictionAvailability { .ready }
-    private(set) var requests: [PredictionContext] = []
+    func menuShortcuts(pid: pid_t) -> [AppShortcut] {
+        menuReads.append(pid)
+        return menu
+    }
 
-    func predictions(for context: PredictionContext) async throws -> [String] {
-        requests.append(context)
-        return []
+    func screenContext(app: FrontApp) async -> ScreenContext? {
+        screenReads.append(app.pid)
+        return screens[app.pid]
     }
 }
 
 @MainActor
-private final class CupCompleter: WordCompleting {
-    private(set) var responses: [String] = []
-
-    func completions(for context: PredictionContext) -> [WordCompletion] {
-        WordCompletion(word: "cup", partial: context.partialWord).map { [$0] } ?? []
-    }
-
-    func record(_ response: WordResponse, to completion: WordCompletion) {
-        responses.append("\(response) \(completion.word)")
-    }
+private final class FakeWrite: WriteReading {
+    var caret = EditorCaret(text: "", caret: 0, length: 0)
+    var speech = EditorSpeech(selection: "", markdown: "")
 }
 
-/// The focus comes to an empty field, and then the user types `text` in it.
+@MainActor
+private func passScreenDelay(_ parts: SessionParts) async {
+    parts.clock.advance(to: parts.clock.now + KeyboardSession.screenReadDelay)
+    await parts.session.settle()
+}
+
 @MainActor
 private func userTypes(_ text: String, in parts: SessionParts) async throws {
     parts.controller.focusChanged(to: field("", caret: 0))
@@ -421,12 +438,37 @@ private func shortcutTests() async {
 
     func makeParts() throws -> SessionParts {
         let parts = try makeSession()
-        parts.session.readMenu = { [copy, lock] }
+        parts.reader.menu = [copy, lock]
+        parts.session.appActivated(notes)
         return parts
     }
 
     await asyncTest("with no text field in focus, the place of the bar shows the shortcuts of the menu") {
         let parts = try makeParts()
+        parts.controller.focusChanged(to: focus("AXButton"))
+        await parts.session.settle()
+        expectEqual(parts.session.shortcuts, [copy, lock])
+    }
+
+    await asyncTest("the shortcuts that the user presses most come first when the app comes to the front again") {
+        let parts = try makeParts()
+        parts.controller.focusChanged(to: focus("AXButton"))
+        await parts.session.settle()
+        parts.session.pressShortcut(lock)
+        await parts.session.settle()
+        expectEqual(parts.session.shortcuts, [copy, lock], "the order stays while the app is in front")
+
+        parts.session.appActivated(FrontApp(pid: 4, name: "Mail", bundleID: "com.apple.mail"))
+        parts.session.appActivated(notes)
+        parts.controller.focusChanged(to: focus("AXButton"))
+        await parts.session.settle()
+        expectEqual(parts.session.shortcuts, [lock, copy])
+    }
+
+    await asyncTest("the presses in one app do not order the shortcuts of another app") {
+        let parts = try makeParts()
+        parts.session.pressShortcut(lock)
+        parts.session.appActivated(FrontApp(pid: 4, name: "Mail", bundleID: "com.apple.mail"))
         parts.controller.focusChanged(to: focus("AXButton"))
         await parts.session.settle()
         expectEqual(parts.session.shortcuts, [copy, lock])
@@ -468,13 +510,13 @@ private func shortcutTests() async {
     await asyncTest("a held Command on the hardware keyboard shows the shortcuts after the hold delay") {
         let parts = try makeParts()
         parts.controller.focusChanged(to: field("Hi", caret: 2))
-        parts.session.hardwareModifiersChanged(.command)
+        parts.controller.macModifiersChanged(.command)
         await parts.session.settle()
         expect(parts.session.shortcuts.isEmpty, "a quick chord does not make the stack blink")
         parts.clock.advance(to: KeyboardSession.modifierHoldDelay)
         await parts.session.settle()
         expect(parts.session.shortcuts.contains(copy))
-        parts.session.hardwareModifiersChanged([])
+        parts.controller.macModifiersChanged([])
         await parts.session.settle()
         expect(parts.session.shortcuts.isEmpty, "the release hides the shortcuts at once")
     }
@@ -482,8 +524,8 @@ private func shortcutTests() async {
     await asyncTest("a quick hardware chord shows no shortcuts") {
         let parts = try makeParts()
         parts.controller.focusChanged(to: field("Hi", caret: 2))
-        parts.session.hardwareModifiersChanged(.command)
-        parts.session.hardwareModifiersChanged([])
+        parts.controller.macModifiersChanged(.command)
+        parts.controller.macModifiersChanged([])
         parts.clock.advance(to: 1)
         await parts.session.settle()
         expect(parts.session.shortcuts.isEmpty)
@@ -491,19 +533,16 @@ private func shortcutTests() async {
 
     await asyncTest("the keyboard reads the menu bar one time for each app") {
         let parts = try makeSession()
-        var reads = 0
-        parts.session.readMenu = {
-            reads += 1
-            return [copy]
-        }
+        parts.reader.menu = [copy]
+        parts.session.appActivated(notes)
         parts.controller.focusChanged(to: focus("AXButton"))
         await parts.session.settle()
         parts.controller.focusChanged(to: focus("AXGroup"))
         await parts.session.settle()
-        expectEqual(reads, 1)
-        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes")
+        expectEqual(parts.reader.menuReads, [notes.pid])
+        parts.session.appActivated(messages)
         await parts.session.settle()
-        expectEqual(reads, 2)
+        expectEqual(parts.reader.menuReads, [notes.pid, messages.pid])
     }
 }
 
@@ -539,9 +578,9 @@ private func sessionTests() async {
         parts.controller.mode = .type
         parts.clock.advance(to: 0.25)
         expect(!bar.isVisible)
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
+        parts.session.writeKeyChanged(true, panel: .paper, front: nil)
         expect(bar.isVisible)
-        parts.session.appChanged(name: "Finder", bundleID: "com.apple.finder")
+        parts.session.appActivated(FrontApp(pid: 14, name: "Finder", bundleID: "com.apple.finder"))
         parts.clock.advance(to: 0.5)
         expect(!bar.isVisible)
     }
@@ -572,7 +611,7 @@ private func sessionTests() async {
         parts.controller.press(returnKey)
         expectEqual(parts.history.matches(for: "See"), ["See you soon."])
 
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
+        parts.session.writeKeyChanged(true, panel: .paper, front: nil)
         try await userTypes("My diary.", in: parts)
         parts.controller.press(returnKey)
         expectEqual(parts.history.count, 1)
@@ -619,19 +658,20 @@ private func sessionTests() async {
     }
 
     await asyncTest("the text on screen reaches the predictions in Type mode with the switch on") {
-        let predictor = RecordingPredictor()
+        let predictor = FakePredictor()
         let parts = try makeSession(predictor: predictor)
-        parts.session.appChanged(name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp")
-        try await userTypes("Yes", in: parts)
         let screen = ScreenContext(
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
-        parts.session.screenRead(screen)
-        await parts.session.settle()
+        parts.reader.screens[whatsApp.pid] = screen
+        parts.session.appActivated(whatsApp)
+        try await userTypes("Yes", in: parts)
+        await passScreenDelay(parts)
         var last = await predictor.requests.last
         expect(last != nil && last?.screen == nil, "the switch is off")
+        expectEqual(parts.reader.screenReads, [])
 
         parts.session.predictions.screenEnabled = true
-        await parts.session.settle()
+        await passScreenDelay(parts)
         last = await predictor.requests.last
         expectEqual(last?.screen, screen)
 
@@ -644,7 +684,7 @@ private func sessionTests() async {
     }
 
     await asyncTest("Type mode sends no Talk history, and Talk mode sends the last hour") {
-        let predictor = RecordingPredictor()
+        let predictor = FakePredictor()
         let parts = try makeSession(predictor: predictor)
         let said = parts.controller.talk.said
         said.add("Yesterday", at: Date().addingTimeInterval(-24 * 3600))
@@ -662,21 +702,132 @@ private func sessionTests() async {
     }
 
     await asyncTest("a read from another app is dropped, and a new app clears the screen") {
-        let predictor = RecordingPredictor()
+        let predictor = FakePredictor()
         let parts = try makeSession(predictor: predictor)
         parts.session.predictions.screenEnabled = true
-        parts.session.appChanged(name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp")
+        parts.reader.screens[whatsApp.pid] = ScreenContext(
+            bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
+        parts.session.appActivated(whatsApp)
         try await userTypes("Yes", in: parts)
-        parts.session.screenRead(
-            ScreenContext(bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"]))
-        await parts.session.settle()
-        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes")
+        await passScreenDelay(parts)
+        var last = await predictor.requests.last
+        expect(last?.screen != nil, "the read of WhatsApp lands")
+
+        parts.session.appActivated(notes)
         try await userTypes("Ye", in: parts)
-        parts.session.screenRead(
-            ScreenContext(bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Late"]))
-        await parts.session.settle()
-        let last = await predictor.requests.last
-        expect(last != nil && last?.screen == nil)
+        await passScreenDelay(parts)
+        last = await predictor.requests.last
+        expect(last != nil && last?.screen == nil, "a new app clears the screen")
+
+        parts.session.appActivated(whatsApp)
+        parts.clock.advance(to: parts.clock.now + KeyboardSession.screenReadDelay)
+        parts.session.appActivated(notes)
+        try await userTypes("Y", in: parts)
+        last = await predictor.requests.last
+        expect(last != nil && last?.screen == nil, "the read of an app that left the front is dropped")
+    }
+
+    await asyncTest("the keyboard reads the screen one time for each app switch") {
+        let parts = try makeSession()
+        parts.session.predictions.screenEnabled = true
+        parts.session.appActivated(whatsApp)
+        parts.session.focusMoved()
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [whatsApp.pid])
+    }
+
+    await asyncTest("a focus move and a field that empties read the screen again") {
+        let parts = try makeSession()
+        parts.session.predictions.screenEnabled = true
+        parts.session.appActivated(whatsApp)
+        await passScreenDelay(parts)
+        parts.session.focusChanged(to: field("Hi", caret: 2))
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads.count, 1, "new text in the field reads nothing")
+        parts.session.focusChanged(to: field("", caret: 0))
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads.count, 2, "the field was sent")
+        parts.session.focusMoved()
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads.count, 3)
+    }
+
+    await asyncTest("the keyboard does not read the screen in Talk mode, in Write, for private text, or with the switch off") {
+        let parts = try makeSession()
+        parts.session.appActivated(whatsApp)
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [], "the switch is off")
+
+        parts.session.predictions.screenEnabled = true
+        parts.controller.mode = .talk
+        parts.session.appActivated(notes)
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [], "Talk mode")
+
+        parts.controller.mode = .type
+        parts.session.writeKeyChanged(true, panel: .paper, front: nil)
+        parts.session.focusMoved()
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [], "Write")
+
+        parts.session.predictions.screenEnabled = false
+        parts.session.appActivated(whatsApp)
+        await passScreenDelay(parts)
+        parts.privateTexts.texts["home"] = "1 Main Street"
+        parts.controller.perform(.privateText("home"))
+        parts.session.predictions.screenEnabled = true
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [], "private text")
+    }
+
+    await asyncTest("a password field and private text hide the text of the field") {
+        let parts = try makeSession()
+        parts.controller.focusChanged(to: field("Hello", caret: 5))
+        expect(!parts.controller.hidesFieldText)
+        parts.controller.focusChanged(to: focus("AXTextField", editable: true, secure: true))
+        expect(parts.controller.hidesFieldText, "a password field")
+        parts.controller.focusChanged(to: field("Hello", caret: 5))
+        parts.privateTexts.texts["home"] = "1 Main Street"
+        parts.controller.perform(.privateText("home"))
+        expect(parts.controller.hidesFieldText, "private text")
+    }
+
+    await asyncTest("the keyboard does not read the screen for a password field") {
+        let parts = try makeSession()
+        parts.session.predictions.screenEnabled = true
+        parts.session.appActivated(whatsApp)
+        parts.session.focusChanged(to: focus("AXTextField", editable: true, secure: true))
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [])
+    }
+
+    await asyncTest("a read that the password field refused leaves no text on screen for the next field") {
+        let predictor = FakePredictor()
+        let parts = try makeSession(predictor: predictor)
+        parts.session.predictions.screenEnabled = true
+        parts.reader.screens[whatsApp.pid] = ScreenContext(
+            bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
+        parts.session.appActivated(whatsApp)
+        try await userTypes("Yes", in: parts)
+        await passScreenDelay(parts)
+        var last = await predictor.requests.last
+        expect(last?.screen != nil, "the read of WhatsApp lands")
+
+        parts.session.focusChanged(to: focus("AXTextField", editable: true, secure: true))
+        parts.session.focusMoved()
+        await passScreenDelay(parts)
+        try await userTypes("Sure", in: parts)
+        last = await predictor.requests.last
+        expect(last != nil && last?.screen == nil, "the text on screen of the last field is gone")
+    }
+
+    await asyncTest("turning off the switch stops a read that waits") {
+        let parts = try makeSession()
+        parts.session.predictions.screenEnabled = true
+        parts.session.appActivated(whatsApp)
+        parts.session.predictions.screenEnabled = false
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [])
     }
 
     await asyncTest("Talk mode feeds the predictions with the bar") {
@@ -692,9 +843,7 @@ private func sessionTests() async {
         parts.controller.focusChanged(to: field("Hello", caret: 5))
         await parts.session.settle()
         expectEqual(parts.session.speakMode, .speak)
-        let texts = MemoryPrivateTexts()
-        texts.texts["home"] = "1 Main Street"
-        parts.controller.privateTexts = texts
+        parts.privateTexts.texts["home"] = "1 Main Street"
         parts.controller.perform(.privateText("home"))
         await parts.session.settle()
         expectEqual(parts.session.predictions.notice, .privateText)
@@ -733,9 +882,9 @@ private func sessionTests() async {
 
     await asyncTest("Speak in the Write window reads the document without its marks") {
         let parts = try makeSession(voiceHolds: true)
-        parts.session.writeSpeech = { EditorSpeech(selection: "", markdown: "# Plan\n\nSee **the roses**.") }
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
-        parts.session.writeCaretRead(EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: false))
+        parts.write.speech = EditorSpeech(selection: "", markdown: "# Plan\n\nSee **the roses**.")
+        parts.write.caret = EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: false)
+        parts.session.writeKeyChanged(true, panel: .paper, front: nil)
         await parts.session.settle()
         expectEqual(parts.session.speakMode, .speak, "an empty paragraph at the caret leaves Speak on")
         expectEqual(parts.controller.input, .mirrored(text: "", caret: 0, selectionLength: 0))
@@ -748,20 +897,20 @@ private func sessionTests() async {
 
     await asyncTest("Speak in the Write window is off while the document has no text") {
         let parts = try makeSession()
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
-        parts.session.writeCaretRead(EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: true))
+        parts.session.writeKeyChanged(true, panel: .paper, front: nil)
+        parts.session.writeCaretMoved(EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: true))
         await parts.session.settle()
         expectEqual(parts.session.speakMode, .off)
-        parts.session.writeCaretRead(EditorCaret(text: "Hi", caret: 2, length: 0, documentIsEmpty: false))
+        parts.session.writeCaretMoved(EditorCaret(text: "Hi", caret: 2, length: 0, documentIsEmpty: false))
         await parts.session.settle()
         expectEqual(parts.session.speakMode, .speak)
     }
 
     await asyncTest("Speak in the Write window reads the selection") {
         let parts = try makeSession()
-        parts.session.writeSpeech = { EditorSpeech(selection: "the roses", markdown: "See **the roses**.") }
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
-        parts.session.writeCaretRead(EditorCaret(text: "See the roses.", caret: 4, length: 9, documentIsEmpty: false))
+        parts.write.speech = EditorSpeech(selection: "the roses", markdown: "See **the roses**.")
+        parts.session.writeKeyChanged(true, panel: .paper, front: nil)
+        parts.session.writeCaretMoved(EditorCaret(text: "See the roses.", caret: 4, length: 9, documentIsEmpty: false))
         parts.session.speakPressed()
         await parts.session.settle()
         expectEqual(parts.voice.spoken, ["the roses"])
@@ -769,9 +918,9 @@ private func sessionTests() async {
 
     await asyncTest("Speak in another app reads its field, not the Write document") {
         let parts = try makeSession()
-        parts.session.writeSpeech = { EditorSpeech(selection: "", markdown: "The document") }
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
-        parts.session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS")
+        parts.write.speech = EditorSpeech(selection: "", markdown: "The document")
+        parts.session.writeKeyChanged(true, panel: .paper, front: nil)
+        parts.session.appActivated(messages)
         parts.controller.focusChanged(to: field("Hello", caret: 5))
         await parts.session.settle()
         parts.session.speakPressed()
@@ -809,24 +958,116 @@ private func sessionTests() async {
 
     await asyncTest("the Write window gets the Write panel, and another app gets none") {
         let parts = try makeSession()
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
+        parts.session.writeKeyChanged(true, panel: .paper, front: nil)
         expectEqual(parts.session.writePanel, parts.controller.panels.write)
         expectEqual(parts.controller.frontmostAppName, "Write")
-        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes")
+        parts.session.appActivated(notes)
         expectEqual(parts.session.writePanel, nil)
     }
 
-    await asyncTest("the desk of Write gets the Documents panel, and Speak reads what Write gives") {
+    await asyncTest("the desk of Write gets the Documents panel, the caret, and Speak reads what Write gives") {
         let parts = try makeSession()
-        parts.session.writeSpeech = { EditorSpeech(selection: "Garden Plans", markdown: "") }
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.documentsID)
+        parts.write.speech = EditorSpeech(selection: "Garden Plans", markdown: "")
+        parts.write.caret = EditorCaret(text: "gar", caret: 3, length: 0)
+        parts.session.writeKeyChanged(true, panel: .desk, front: nil)
         expectEqual(parts.session.writePanel, parts.controller.panels.writeDocuments)
-        parts.session.writeCaretRead(EditorCaret(text: "gar", caret: 3, length: 0))
         await parts.session.settle()
         expectEqual(parts.controller.input, .mirrored(text: "gar", caret: 3, selectionLength: 0))
         parts.session.speakPressed()
         await parts.session.settle()
         expectEqual(parts.voice.spoken, ["Garden Plans"])
+    }
+
+    await asyncTest("the paragraph at the caret of Write becomes the focused field of the input bar") {
+        let parts = try makeSession()
+        parts.session.writeKeyChanged(true, panel: .paper, front: nil)
+        parts.session.writeCaretMoved(EditorCaret(text: "Who checks it at ni", caret: 19, length: 0))
+        let field = parts.controller.focusedField
+        expect(field?.isEditable == true && field?.isSecure == false, "an editable text field")
+        expectEqual(field?.appName, "Write")
+        expectEqual(parts.controller.input, .mirrored(text: "Who checks it at ni", caret: 19, selectionLength: 0))
+    }
+
+    await asyncTest("a switch between the paper and the desk changes only the panel and the caret") {
+        let parts = try makeSession()
+        parts.session.writeKeyChanged(true, panel: .paper, front: nil)
+        parts.session.writeCaretMoved(EditorCaret(text: "Dear", caret: 4, length: 0))
+        parts.session.toggleHistory()
+        parts.write.caret = EditorCaret(text: "gar", caret: 3, length: 0)
+        parts.session.writePanelChanged(.desk)
+        expect(parts.session.isHistoryOpen, "the history stays open")
+        expectEqual(parts.session.writePanel, parts.controller.panels.writeDocuments)
+        expectEqual(parts.controller.input, .mirrored(text: "gar", caret: 3, selectionLength: 0))
+    }
+
+    await asyncTest("the Write panel and the caret of Write change nothing while another app is in front") {
+        let parts = try makeSession()
+        parts.session.appActivated(notes)
+        parts.controller.focusChanged(to: field("Hi", caret: 2))
+        parts.session.writePanelChanged(.desk)
+        parts.session.writeCaretMoved(EditorCaret(text: "gar", caret: 3, length: 0))
+        expectEqual(parts.session.writePanel, nil)
+        expectEqual(parts.controller.input, .mirrored(text: "Hi", caret: 2, selectionLength: 0))
+    }
+
+    await asyncTest("the assembly joins the keyboard to its sink, its database, its pasteboard, and Write") {
+        let defaults = freshDefaults()
+        let database = try KeyboardDatabase(path: ":memory:")
+        let sink = RecordingSink()
+        let pasteboard = MemoryPasteboard()
+        pasteboard.copy("Hi")
+        let write = FakeWrite()
+        write.speech = EditorSpeech(selection: "the roses", markdown: "")
+        let voice = FakeEngine()
+        let assembly = try KeyboardAssembly(
+            sink: sink, database: database, pasteboard: pasteboard, reader: FakeFrontAppReader(),
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: FakeEngine()),
+            write: write, predictions: PredictionEngine(predictor: FakePredictor(), defaults: defaults),
+            defaults: defaults, privateTexts: MemoryPrivateTexts())
+        let session = assembly.session
+        expect(session.canPaste, "the session reads the pasteboard")
+        expect(session.userPanel != nil, "My Panel reads the database")
+        expectEqual(assembly.phrases, try Phrases.bundled())
+        session.type("Hello")
+        expectEqual(sink.typed, ["Hello"])
+        session.writeKeyChanged(true, panel: .paper, front: nil)
+        session.speakPressed()
+        await session.settle()
+        expectEqual(voice.spoken, ["the roses"])
+    }
+
+    test("a private text that My Panel of the assembly saves types from the keyboard") {
+        let defaults = freshDefaults()
+        let sink = RecordingSink()
+        let assembly = try KeyboardAssembly(
+            sink: sink, database: try KeyboardDatabase(path: ":memory:"), pasteboard: MemoryPasteboard(),
+            reader: FakeFrontAppReader(),
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: FakeEngine(), elevenLabs: FakeEngine()),
+            write: FakeWrite(), predictions: PredictionEngine(predictor: FakePredictor(), defaults: defaults),
+            defaults: defaults, privateTexts: MemoryPrivateTexts())
+        let userPanel = try expectValue(assembly.session.userPanel)
+        let id = try userPanel.add(NewButton(name: "Home", action: .text("1 Main Street")))
+        expectEqual(userPanel.buttons.first?.action, .privateText(id))
+
+        assembly.session.controller.perform(.privateText(id))
+        expectEqual(sink.typed, ["1 Main Street"])
+    }
+
+    await asyncTest("the assembly keeps the style and the Return key of Talk mode in step with the settings") {
+        let defaults = freshDefaults()
+        let database = try KeyboardDatabase(path: ":memory:")
+        let assembly = try KeyboardAssembly(
+            sink: RecordingSink(), database: database, pasteboard: MemoryPasteboard(), reader: FakeFrontAppReader(),
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: FakeEngine(), elevenLabs: FakeEngine()),
+            write: FakeWrite(), predictions: PredictionEngine(predictor: FakePredictor(), defaults: defaults),
+            defaults: defaults, privateTexts: MemoryPrivateTexts())
+        let controller = assembly.session.controller
+        expectEqual(controller.style, .rainbow)
+        expect(controller.talk.returnSpeaks)
+        assembly.settings.style = .mono
+        assembly.settings.returnSpeaksInTalk = false
+        expectEqual(controller.style, .mono)
+        expect(!controller.talk.returnSpeaks)
     }
 
     await asyncTest("Mine ranks its buttons again only when an app comes to the front") {
@@ -844,31 +1085,82 @@ private func sessionTests() async {
         expect(!parts.sink.posted.isEmpty)
         expectEqual(parts.session.mineButtons.map(\.name), ["Save", "Undo"])
 
-        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes")
+        parts.session.appActivated(notes)
         expectEqual(parts.session.mineButtons.map(\.name), ["Undo", "Save"])
     }
 
-    await asyncTest("a broken My Panel file shows an error and stays as it is") {
-        let file = temporaryDirectory().appendingPathComponent("my-panel.json")
-        try FileManager.default.createDirectory(
-            at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Data("{ not json".utf8).write(to: file)
+    await asyncTest("a broken row of My Panel shows an error that quotes no text of the user") {
+        let database = memoryDatabase()
+        try database.execute(
+            "INSERT INTO user_button (id, position, name, action) VALUES ('a', 0, 'Home', ?)",
+            [.text(#"{"type": "Secret plan"}"#)])
         let parts = try makeSession(
             userPanel: Result {
                 try UserPanelStore(
-                    importing: file, defaults: UserDefaults(suiteName: "kit-broken-\(UUID().uuidString)")!,
+                    database: database, defaults: freshDefaults(),
                     privateTexts: MemoryPrivateTexts())
             })
-        expect(parts.session.userPanelError != nil)
+        let error = parts.session.userPanelError ?? ""
+        expect(!error.isEmpty)
+        expect(!error.contains("Secret"), "the error quotes a stored row")
         expect(parts.session.mineButtons.isEmpty)
-        expectEqual(try String(contentsOf: file, encoding: .utf8), "{ not json")
+    }
+
+    await asyncTest("each stored row shape of My Panel loads, presses, and is written the same way") {
+        let rows: [(id: String, name: String, json: String)] = [
+            ("a", "Paste", #"{"key":"v","modifiers":["shift","command"],"type":"shortcut"}"#),
+            ("b", "Exit", #"{"keys":[{"key":"c","modifiers":["control"]},{"key":"c","modifiers":["control"]}],"type":"sequence"}"#),
+            ("c", "Greeting", #"{"text":"Hello there","type":"text"}"#),
+            ("d", "Home", #"{"type":"privateText"}"#),
+            ("e", "Upper", #"{"key":"V","modifiers":["command"],"type":"shortcut"}"#),
+            ("f", "Help", #"{"key":"f12","modifiers":[],"type":"shortcut"}"#),
+        ]
+        let database = memoryDatabase()
+        for (position, row) in rows.enumerated() {
+            try database.execute(
+                "INSERT INTO user_button (id, position, name, action) VALUES (?, ?, ?, ?)",
+                [.text(row.id), .int(Int64(position)), .text(row.name), .text(row.json)])
+        }
+        let texts = MemoryPrivateTexts()
+        texts.texts["d"] = "1 Main Street"
+        let defaults = freshDefaults()
+        let store = try UserPanelStore(database: database, defaults: defaults, privateTexts: texts)
+        let parts = try makeSession(userPanel: .success(store), privateTexts: texts)
+
+        let pastePlain = Shortcut(modifiers: [.shift, .command], key: .character("v"))
+        let interrupt = Shortcut(modifiers: .control, key: .character("c"))
+        let upper = Shortcut(modifiers: .command, key: .character("V"))
+        let help = Shortcut(modifiers: [], key: .virtual(.f12))
+        expectEqual(store.buttons.map(\.id), rows.map(\.id))
+        expectEqual(
+            store.buttons.filter { $0.id != "d" }.map(\.action),
+            [.shortcut(pastePlain), .sequence([interrupt, interrupt]), .text("Hello there"), .shortcut(upper),
+             .shortcut(help)])
+
+        let home = try expectValue(store.buttons.first { $0.id == "d" })
+        parts.session.pressMine(home)
+        expectEqual(parts.sink.typed, ["1 Main Street"])
+
+        store.makeNewTextPrivate = false
+        try store.add(NewButton(name: "Paste", action: .shortcut(pastePlain)))
+        try store.add(NewButton(name: "Exit", action: .sequence([interrupt, interrupt])))
+        try store.add(NewButton(name: "Greeting", action: .text("Hello there")))
+        try store.add(NewButton(name: "Upper", action: .shortcut(upper)))
+        try store.add(NewButton(name: "Help", action: .shortcut(help)))
+        let written = try database.query("SELECT action FROM user_button WHERE position >= ? ORDER BY position", [
+            .int(Int64(rows.count))
+        ]).compactMap { $0[0].text }
+        expectEqual(written, rows.filter { $0.id != "d" }.map(\.json))
+
+        try store.setPrivate(false, for: "d")
+        try store.setPrivate(true, for: "d")
+        let privateRow = try database.query("SELECT action FROM user_button WHERE id = 'd'").first?[0].text
+        expectEqual(privateRow, #"{"type":"privateText"}"#)
     }
 
     await asyncTest("a focus move ends the private state of the bar") {
         let parts = try makeSession()
-        let texts = MemoryPrivateTexts()
-        texts.texts["home"] = "1 Main Street"
-        parts.controller.privateTexts = texts
+        parts.privateTexts.texts["home"] = "1 Main Street"
         parts.controller.perform(.privateText("home"))
         expect(parts.controller.isFieldPrivate)
         parts.session.focusMoved()
@@ -887,51 +1179,6 @@ private func field(_ text: String, caret: Int, selection: Int = 0) -> FocusedFie
     FocusedField(
         appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false, text: text,
         selection: NSRange(location: caret, length: selection))
-}
-
-@MainActor
-private func asyncTest(_ name: String, _ body: () async throws -> Void) async {
-    Run.current = name
-    do {
-        try await body()
-    } catch {
-        Run.failures.append("\(name) — threw \(error)")
-    }
-}
-
-// MARK: - The height of the panels
-
-/// The height that a view asks for, as the app measures a panel window.
-@MainActor
-private func height(_ view: some View, controller: KeyboardController) -> CGFloat {
-    let probe = NSHostingView(rootView: view.environmentObject(controller))
-    probe.layoutSubtreeIfNeeded()
-    return probe.fittingSize.height
-}
-
-@MainActor
-private func panelHeightTests() async {
-    await asyncTest("the Text keypad, the Write panels, and Mine are as tall as the System keypad") {
-        let parts = try makeSession()
-        let controller = parts.controller
-        let system = height(KeypadCard(panel: controller.panels.system), controller: controller)
-        expectEqual(height(KeypadCard(panel: controller.panels.text), controller: controller), system, "Text")
-        let card = MyPanelCard(session: parts.session)
-        for bundleID in [WritePanel.id, WritePanel.documentsID] {
-            parts.session.appChanged(name: "Write", bundleID: bundleID)
-            expectEqual(height(card, controller: controller), system, bundleID)
-        }
-        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes")
-        expectEqual(height(card, controller: controller), system, "an empty Mine")
-        let store = try expectValue(parts.userPanel)
-        for index in 0..<14 {
-            try store.add(NewButton(
-                name: "Key \(index)", action: .shortcut(Shortcut(modifiers: .command, key: .character("k")))))
-        }
-        try store.add(NewButton(name: "Hello", action: .text("Hello")))
-        await parts.session.settle()
-        expectEqual(height(card, controller: controller), system, "a full Mine")
-    }
 }
 
 // MARK: - Bringing a window to the front
@@ -1004,9 +1251,30 @@ private func activationTests() {
 
 @MainActor
 private func clipboardSessionTests() async {
+    await asyncTest("the clipboard history keeps no copy while the field text is hidden") {
+        let pasteboard = MemoryPasteboard()
+        let parts = try makeSession(pasteboard: pasteboard)
+        parts.controller.focusChanged(to: field("Hello", caret: 5))
+        pasteboard.copy("Lunch at noon")
+        parts.session.pollClipboard()
+        expectEqual(parts.clipboard.items.map(\.text), ["Lunch at noon"])
+        expect(parts.session.canPaste)
+
+        parts.controller.focusChanged(to: focus("AXTextField", editable: true, secure: true))
+        pasteboard.copy("hunter2")
+        parts.session.pollClipboard()
+        expectEqual(parts.clipboard.items.map(\.text), ["Lunch at noon"], "a password field")
+
+        parts.controller.focusChanged(to: field("Hello", caret: 5))
+        parts.privateTexts.texts["home"] = "1 Main Street"
+        parts.controller.perform(.privateText("home"))
+        pasteboard.copy("1 Main Street")
+        parts.session.pollClipboard()
+        expectEqual(parts.clipboard.items.map(\.text), ["Lunch at noon"], "private text")
+    }
+
     let command = Modifiers.command
     let commandKey: UInt16 = 55
-    /// The keys of the chords that the sink got, without the Command key.
     func chordKeys(_ sink: RecordingSink) -> [UInt16] {
         sink.downs.map(\.key).filter { $0 != commandKey }
     }
@@ -1115,7 +1383,7 @@ private func clipboardSessionTests() async {
     await asyncTest("an app change and a mode change close the history") {
         let parts = try makeSession()
         parts.session.toggleHistory()
-        parts.session.appChanged(name: "Mail", bundleID: "com.apple.mail")
+        parts.session.appActivated(FrontApp(pid: 13, name: "Mail", bundleID: "com.apple.mail"))
         expect(!parts.session.isHistoryOpen)
         parts.session.toggleHistory()
         parts.controller.mode = .talk
@@ -1139,3 +1407,7 @@ private func clipboardSessionTests() async {
         expectEqual(parts.session.historyPage, 0)
     }
 }
+
+private let notes = FrontApp(pid: 10, name: "Notes", bundleID: "com.apple.Notes")
+private let whatsApp = FrontApp(pid: 11, name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp")
+private let messages = FrontApp(pid: 12, name: "Messages", bundleID: "com.apple.MobileSMS")

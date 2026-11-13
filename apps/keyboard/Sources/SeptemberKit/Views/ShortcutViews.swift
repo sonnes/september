@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// A panel button. A shortcut button shows only its keys, and its name shows
-/// above it while the pointer or the gaze rests on it. A text button shows its
-/// text. In a keypad, a button with a region or a symbol shows that icon in
-/// place of its keys. The accessibility label is always the full name.
+/// A button of a keypad, Mine, Phrases, or a Write panel. A shortcut button
+/// shows only its keys, and its name shows above it while the pointer or the
+/// gaze rests on it. A text button shows its text, and a private text button
+/// shows a lock and its name only. In a keypad, a button with a region or a
+/// symbol shows that icon in place of its keys. The accessibility label is
+/// always the full name.
 public struct ShortcutButtonView: View {
     private let button: PanelButton
     private let width: CGFloat
@@ -32,7 +34,10 @@ public struct ShortcutButtonView: View {
             .overlay(shape.strokeBorder(Color(stroke), lineWidth: 1))
             .overlay(alignment: .top) { tip }
             .onHover { isHovered = $0 }
-            .pressable(label: button.accessibilityLabel, trigger: .down(.once)) { isPressed = $0 } action: {
+            .pressable(
+                label: button.accessibilityLabel,
+                trigger: .down(KeyHold(behavior: { [action = button.action] in action.holdBehavior }))
+            ) { isPressed = $0 } action: {
                 press()
             }
             .zIndex(isHovered ? 1 : 0)
@@ -48,27 +53,38 @@ public struct ShortcutButtonView: View {
                 .font(Typography.shortcutSymbol)
                 .foregroundStyle(Color(Tokens.shortcutLabel))
                 .accessibilityHidden(true)
-        } else if let hint = button.hint {
+        } else if let hint = button.action.hint {
             Text(hint)
                 .font(Typography.shortcutKeys)
                 .foregroundStyle(Color(Tokens.shortcutLabel))
                 .lineLimit(1)
                 .minimumScaleFactor(Metrics.Keypad.keysMinimumScale)
+        } else if case .privateText = button.action {
+            HStack(spacing: Metrics.UserPanel.lockSpacing) {
+                Image(systemName: "lock.fill")
+                    .font(Typography.UserPanel.lock)
+                    .foregroundStyle(Color(Tokens.accent))
+                text
+            }
         } else {
-            Text(button.label)
-                .font(Typography.shortcutText)
-                .foregroundStyle(Color(Tokens.keyText))
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .padding(.horizontal, Metrics.Keypad.textPadding)
+            text
         }
+    }
+
+    private var text: some View {
+        Text(button.label)
+            .font(Typography.shortcutText)
+            .foregroundStyle(Color(Tokens.keyText))
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .padding(.horizontal, Metrics.Keypad.textPadding)
     }
 
     /// The name of a shortcut button, drawn above the button. A text button
     /// shows its own text, so it needs no name.
     @ViewBuilder
     private var tip: some View {
-        if isHovered, button.hint != nil {
+        if isHovered, button.action.hint != nil {
             // A frame with no height at the top edge of the button holds the
             // tip at its bottom, so the tip grows up from the button.
             ShortcutTip(text: button.label)
@@ -85,14 +101,14 @@ public struct ShortcutButtonView: View {
     }
 
     private var fill: ThemeColor {
-        let base = button.isText ? Tokens.key : Tokens.keySpecial
+        let base = button.action.isText ? Tokens.key : Tokens.keySpecial
         if isPressed { return base.pressed }
         return isHovered ? Tokens.keyActive : base
     }
 
     private var stroke: ThemeColor {
         if isHovered { return Tokens.accent }
-        return button.isText ? Tokens.strokeStandard : Tokens.strokeSpecial
+        return button.action.isText ? Tokens.strokeStandard : Tokens.strokeSpecial
     }
 }
 
@@ -154,7 +170,8 @@ private struct TipArrow: Shape {
     }
 }
 
-/// An empty slot of the grid of a Write panel, drawn with a dashed border.
+/// An empty slot of the grid of Mine or a Write panel, drawn with a dashed
+/// border.
 struct EmptySlotView: View {
     let width: CGFloat
 
