@@ -6,7 +6,6 @@ import SwiftUI
 /// environment. The app and `--snapshot` build the same views.
 @MainActor
 struct WindowContent {
-    let controller: KeyboardController
     let session: KeyboardSession
     let permission: AccessibilityPermission
     let phrases: PanelDefinition
@@ -16,6 +15,8 @@ struct WindowContent {
     var write: () -> Void = {}
     var arrange: () -> Void = {}
     var settings: () -> Void = {}
+
+    private var controller: KeyboardController { session.controller }
 
     func keyboard() -> AnyView {
         AnyView(

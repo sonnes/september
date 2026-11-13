@@ -1002,6 +1002,32 @@ private func sessionTests() async {
         expectEqual(parts.controller.input, .mirrored(text: "Hi", caret: 2, selectionLength: 0))
     }
 
+    await asyncTest("the assembly joins the keyboard to its sink, its database, its pasteboard, and Write") {
+        let defaults = UserDefaults(suiteName: "kit-assembly-\(UUID().uuidString)")!
+        let database = try KeyboardDatabase(path: ":memory:")
+        let sink = RecordingSink()
+        let pasteboard = MemoryPasteboard()
+        pasteboard.copy("Hi")
+        let write = FakeWrite()
+        write.speech = EditorSpeech(selection: "the roses", markdown: "")
+        let voice = FakeEngine()
+        let assembly = try KeyboardAssembly(
+            sink: sink, database: database, pasteboard: pasteboard, reader: FakeFrontAppReader(),
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: FakeEngine()),
+            write: write, predictions: PredictionEngine(predictor: SilentPredictor(), defaults: defaults),
+            defaults: defaults, privateTexts: MemoryPrivateTexts())
+        let session = assembly.session
+        expect(session.canPaste, "the session reads the pasteboard")
+        expect(session.userPanel != nil, "My Panel reads the database")
+        expectEqual(assembly.phrases, try Phrases.bundled())
+        session.type("Hello")
+        expectEqual(sink.typed, ["Hello"])
+        session.frontChanged(.write(.paper))
+        session.speakPressed()
+        await session.settle()
+        expectEqual(voice.spoken, ["the roses"])
+    }
+
     await asyncTest("Mine ranks its buttons again only when an app comes to the front") {
         let parts = try makeSession()
         let store = try expectValue(parts.userPanel)

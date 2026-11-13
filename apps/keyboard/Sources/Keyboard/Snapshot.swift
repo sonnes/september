@@ -29,6 +29,13 @@ enum Snapshot {
         else { return }
 
         let path = arguments[index + 1]
+        Task { await render(to: path, arguments: arguments) }
+        // The main thread runs the render, and the render ends the process.
+        RunLoop.main.run()
+        fail("snapshot: the run loop stopped")
+    }
+
+    private static func render(to path: String, arguments: [String]) async -> Never {
         // A snapshot shows the keyboard as a trusted app sees it, with no banner.
         let permission = AccessibilityPermission(isTrusted: true)
 
@@ -45,7 +52,7 @@ enum Snapshot {
                     .padding(16))
         } else {
             do {
-                view = try keyboard(arguments: arguments, permission: permission)
+                view = try await keyboard(arguments: arguments, permission: permission)
             } catch {
                 fail("snapshot: \(error)")
             }
@@ -79,31 +86,25 @@ enum Snapshot {
 
     // MARK: - The keyboard
 
-    private static func keyboard(arguments: [String], permission: AccessibilityPermission) throws -> AnyView {
+    private static func keyboard(arguments: [String], permission: AccessibilityPermission) async throws -> AnyView {
         let defaults = UserDefaults(suiteName: "september-snapshot-\(UUID().uuidString)")!
         let database = try KeyboardDatabase(path: ":memory:")
-        let controller = KeyboardController(
-            sink: SilentSink(), panels: try PanelStore.bundled(),
-            talk: TalkSession(said: SaidList(database: database)))
-        controller.style = arguments.contains("--mono") ? .mono : .rainbow
         let voice = SampleVoice()
-        let userPanel = try UserPanelStore(database: database, defaults: defaults, privateTexts: NoPrivateTexts())
         let reader = SampleReader()
-        let session = KeyboardSession(
-            controller: controller,
+        let pasteboard = MemoryPasteboard()
+        let assembly = try KeyboardAssembly(
+            sink: SilentSink(), database: database, pasteboard: pasteboard, reader: reader,
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
+            write: SampleWrite(),
             predictions: PredictionEngine(
                 predictor: SamplePredictor(), delay: .zero, defaults: defaults,
                 history: SentenceHistory(database: database, defaults: defaults)),
-            speaker: Speaker(
-                settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
-            userPanel: .success(userPanel),
-            userPanelUsage: UsageStore(database: database),
-            reader: reader, write: SampleWrite(),
-            clipboard: ClipboardHistory(database: database, defaults: defaults, now: { Date().addingTimeInterval(-40 * 60) }),
-            pasteboard: MemoryPasteboard())
-        let content = WindowContent(
-            controller: controller, session: session, permission: permission,
-            phrases: try Phrases.bundled())
+            defaults: defaults, privateTexts: NoPrivateTexts(),
+            clipboardClock: { Date().addingTimeInterval(-40 * 60) }, scheduler: NoDelayScheduler())
+        let session = assembly.session
+        let controller = session.controller
+        controller.style = arguments.contains("--mono") ? .mono : .rainbow
+        let content = WindowContent(session: session, permission: permission, phrases: assembly.phrases)
 
         let typed = value(of: "--typed", in: arguments)
         let spoken = value(of: "--spoken", in: arguments).flatMap(Int.init)
@@ -111,7 +112,7 @@ enum Snapshot {
         // starts empty and the sample text comes after one settle.
         if arguments.contains("--talk") {
             controller.mode = .talk
-            settle(session)
+            await session.settle()
             for line in ["Nice try. Two chocolates, not six.", "Ask your mom. She is the boss.",
                 "Homework first, then Minecraft.", "Who won the match last night?"]
             {
@@ -126,7 +127,7 @@ enum Snapshot {
         } else if arguments.contains("--write") {
             session.frontChanged(.write(.paper))
             let line = typed ?? "Send the release notes before the we"
-            settle(session)
+            await session.settle()
             controller.focusChanged(
                 to: EditorCaret(text: line, caret: (line as NSString).length, length: 0).focusedField)
         } else {
@@ -137,10 +138,10 @@ enum Snapshot {
                     to: FocusedField(
                         appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false,
                         text: sample, selection: NSRange(location: (sample as NSString).length, length: 0)))
-                settle(session)
+                await session.settle()
             }
             if arguments.contains("--clipboard") {
-                addSampleCopies(to: session)
+                addSampleCopies(to: session, pasteboard: pasteboard)
                 session.toggleHistory()
             }
             if arguments.contains("--shortcuts") || arguments.contains("--command") {
@@ -155,12 +156,13 @@ enum Snapshot {
                 }
             }
             if arguments.contains("--mine") {
+                guard let userPanel = session.userPanel else { fail("snapshot: \(session.userPanelError ?? "")") }
                 try addSampleButtons(to: userPanel)
                 // My Panel ranks its buttons when an app comes to the front.
                 session.frontChanged(.app(FrontApp(pid: 0, name: "Messages", bundleID: "com.apple.MobileSMS")))
             }
         }
-        settle(session)
+        await session.settle()
 
         if arguments.contains("--talk") {
             return content.keyboard()
@@ -305,7 +307,7 @@ enum Snapshot {
 
     /// The sample copies of the clipboard history, oldest first. The history
     /// dates each copy 40 minutes ago.
-    private static func addSampleCopies(to session: KeyboardSession) {
+    private static func addSampleCopies(to session: KeyboardSession, pasteboard: MemoryPasteboard) {
         for text in [
             "Standup moved to 10:30", "Can you review my pull request today?",
             "https://raviatluri.in/articles/building-september", "Happy birthday! Save me a slice of cake.",
@@ -314,16 +316,8 @@ enum Snapshot {
         ] {
             session.clipboard.add(text)
         }
-        (session.pasteboard as? MemoryPasteboard)?.copy("brew install imagemagick webp")
+        pasteboard.copy("brew install imagemagick webp")
         session.pasteboardChanged()
-    }
-
-    /// Lets the predictions and the voice answer before the render.
-    private static func settle(_ session: KeyboardSession) {
-        let done = Date().addingTimeInterval(1)
-        while Date() < done {
-            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
-        }
     }
 
     private static func fail(_ message: String) -> Never {
@@ -394,6 +388,19 @@ private final class SampleReader: FrontAppReading {
 
     func menuShortcuts(pid: pid_t) -> [AppShortcut] { menu }
     func screenContext(pid: pid_t) async -> ScreenContext? { nil }
+}
+
+/// Does the work of a delay at once, so the snapshot shows the state after
+/// the delay, such as an input bar that hid.
+private struct NoDelayScheduler: DelayScheduler {
+    private final class Done: ScheduledWork {
+        func cancel() {}
+    }
+
+    func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any ScheduledWork {
+        MainActor.assumeIsolated { work() }
+        return Done()
+    }
 }
 
 /// A new Write document with no text.

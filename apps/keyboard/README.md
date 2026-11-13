@@ -13,7 +13,7 @@ Sources/
     Design/         tokens, metrics, typography, rainbow and mono styles
     Keyboard/       key definitions, the QWERTY layout, KeyboardController, PressTracker
     Input/          modifiers, keystrokes, layout-aware key code map
-    Integration/    the session that joins the parts, panel placement, the app in front
+    Integration/    the session that joins the parts, the assembly that builds it, panel placement, the app in front
     Panels/         panel model, JSON loading, the grid of the Write panels, the shortcut suggestions
     Predictions/    sentence predictions and word completions
     ScreenContext/  the text near the focused field, and the rule of each app

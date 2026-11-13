@@ -19,8 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let treeModel = AXTreeModel()
     private let keyboardSettings = KeyboardSettings()
     private let keyboardPosition = KeyboardPosition()
-    private var controller: KeyboardController!
     private var session: KeyboardSession!
+    private var controller: KeyboardController { session.controller }
     private var speech: SpeechServices!
     /// The sentences that the user sent, in `keyboard.sqlite`.
     private var history: SentenceHistory!
@@ -48,38 +48,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let phrases: PanelDefinition
-        let contextRules: ContextRules
         let database = KeyboardDatabase.open(at: KeyboardDatabase.defaultURL)
         LegacyImport.run(database: database, folder: KeyboardDatabase.folder)
-        do {
-            controller = KeyboardController(
-                sink: sink, panels: try PanelStore.bundled(),
-                talk: TalkSession(said: SaidList(database: database)))
-            phrases = try Phrases.bundled()
-            contextRules = try ContextRules.bundled()
-        } catch {
-            fail(loadingPanels: error)
-            return
-        }
-
         speech = SpeechServices()
         speech.start()
         history = SentenceHistory(database: database)
         let predictions = PredictionEngine(history: history)
         write = WriteController(host: self)
-        session = KeyboardSession(
-            controller: controller, predictions: predictions, speaker: speech.speaker,
-            userPanel: Result { try UserPanelStore(database: database) },
-            userPanelUsage: UsageStore(database: database),
-            reader: AXFrontAppReader(rules: contextRules), write: write,
-            clipboard: ClipboardHistory(database: database),
-            pasteboard: SystemPasteboard())
+        let assembly: KeyboardAssembly
+        do {
+            assembly = try KeyboardAssembly(
+                sink: sink, database: database, pasteboard: SystemPasteboard(),
+                reader: AXFrontAppReader(rules: try ContextRules.bundled()), speaker: speech.speaker,
+                write: write, predictions: predictions)
+        } catch {
+            fail(loadingPanels: error)
+            return
+        }
+        session = assembly.session
         watchClipboard()
 
         settingsWindow = SettingsWindowController(pages: makeSettingsPages())
         content = WindowContent(
-            controller: controller, session: session, permission: permission, phrases: phrases,
+            session: session, permission: permission, phrases: assembly.phrases,
             presser: KeyPresser(timing: { KeyTiming.current() }),
             write: { [weak self] in self?.showWrite() },
             arrange: { [weak self] in self?.arrangePanels() },
@@ -150,7 +141,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        controller?.releaseSystemModifiers()
+        session?.controller.releaseSystemModifiers()
         write?.save()
     }
 

@@ -56,7 +56,13 @@ The views read these values of the session:
 
 ## Start
 
-`init` does these steps in this order:
+`KeyboardAssembly` builds the controller and the session, and loads the
+Phrases panel. The app and `--snapshot` both use it. The app gives it the
+event sink, the database, the clipboard of macOS, the reader of the app in
+front, the voice, Write, and the predictions. `--snapshot` gives it sample
+parts and a scheduler with no delays.
+
+`init` of the session does these steps in this order:
 
 1. It gives the voice to Talk mode (`controller.talk.speech`).
 2. It sends each chord of the keys to `chordPressed(_:)`.
