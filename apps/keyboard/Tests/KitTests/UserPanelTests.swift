@@ -324,10 +324,9 @@ private func field(_ text: String?, secure: Bool = false) -> FocusedField {
 
 @MainActor
 private func privateController() throws -> (KeyboardController, RecordingSink, MemoryPrivateTexts) {
-    let (controller, sink) = try makeController()
     let texts = MemoryPrivateTexts()
     texts.texts["home"] = "1 Main Street"
-    controller.privateTexts = texts
+    let (controller, sink) = try makeController(privateTexts: texts)
     return (controller, sink, texts)
 }
 

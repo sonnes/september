@@ -331,7 +331,8 @@ private func keyEvent(of action: PanelAction) throws -> NSEvent {
     let sink = RecordingSink()
     let controller = KeyboardController(
         sink: sink, panels: try PanelStore.bundled(), accents: try AccentTable.bundled("en"),
-        keyCodeMap: SystemKeyboardLayout.currentMap(), talk: TalkSession(said: SaidList(database: memoryDatabase())))
+        keyCodeMap: SystemKeyboardLayout.currentMap(), privateTexts: MemoryPrivateTexts(),
+        talk: TalkSession(said: SaidList(database: memoryDatabase())))
     controller.perform(action)
     guard let key = sink.downs.last,
         let event = CGEvent(keyboardEventSource: nil, virtualKey: key.key, keyDown: true)

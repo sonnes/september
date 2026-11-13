@@ -34,7 +34,8 @@ public final class KeyboardController: ObservableObject {
     /// password field. The predictions, Speak, the text on screen, the
     /// clipboard history, and the tree viewer get no text of the field then.
     public var hidesFieldText: Bool { input == .secure }
-    public var privateTexts: any PrivateTextStore = KeychainPrivateTextStore()
+    /// The store of the private text buttons. My Panel saves to the same store.
+    public let privateTexts: any PrivateTextStore
     /// In Talk mode, the keys type into `talk` and the app in front gets no
     /// events.
     @Published public var mode: KeyboardMode = .type {
@@ -65,8 +66,10 @@ public final class KeyboardController: ObservableObject {
         panels: PanelStore,
         accents: AccentTable,
         keyCodeMap: KeyCodeMap = SystemKeyboardLayout.currentMap(),
+        privateTexts: any PrivateTextStore,
         talk: TalkSession
     ) {
+        self.privateTexts = privateTexts
         self.talk = talk
         self.sink = sink
         self.panels = panels

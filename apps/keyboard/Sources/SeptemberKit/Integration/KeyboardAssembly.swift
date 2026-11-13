@@ -19,7 +19,8 @@ public struct KeyboardAssembly {
     /// - Parameters:
     ///   - defaults: the settings of the keyboard, My Panel, and the
     ///     clipboard history.
-    ///   - privateTexts: the store of the private text buttons of My Panel.
+    ///   - privateTexts: the store of the private text buttons. My Panel
+    ///     saves to it, and the keyboard types from it.
     ///   - clipboardClock: the date of a new copy in the clipboard history.
     ///   - scheduler: the delays of the session and of the input bar.
     public init(
@@ -37,7 +38,7 @@ public struct KeyboardAssembly {
     ) throws {
         let controller = KeyboardController(
             sink: sink, panels: try PanelStore.bundled(), accents: try AccentTable.bundled("en"),
-            talk: TalkSession(said: SaidList(database: database)))
+            privateTexts: privateTexts, talk: TalkSession(said: SaidList(database: database)))
         phrases = try Phrases.bundled()
         session = KeyboardSession(
             controller: controller, predictions: predictions, speaker: speaker,

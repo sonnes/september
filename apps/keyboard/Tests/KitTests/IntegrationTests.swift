@@ -346,6 +346,7 @@ private struct SessionParts {
     let clipboard: ClipboardHistory
     let history: SentenceHistory
     let database: KeyboardDatabase
+    let privateTexts: MemoryPrivateTexts
 }
 
 @MainActor
@@ -353,9 +354,10 @@ private func makeSession(
     userPanel: Result<UserPanelStore, any Error>? = nil,
     voiceHolds: Bool = false,
     predictor: any SentencePredicting = FakePredictor(),
-    pasteboard: MemoryPasteboard = MemoryPasteboard()
+    pasteboard: MemoryPasteboard = MemoryPasteboard(),
+    privateTexts: MemoryPrivateTexts = MemoryPrivateTexts()
 ) throws -> SessionParts {
-    let (controller, sink) = try makeController()
+    let (controller, sink) = try makeController(privateTexts: privateTexts)
     let defaults = freshDefaults()
     let voice = FakeEngine()
     voice.holds = voiceHolds
@@ -370,7 +372,7 @@ private func makeSession(
     let store =
         userPanel
         ?? Result {
-            try UserPanelStore(database: database, defaults: defaults, privateTexts: MemoryPrivateTexts())
+            try UserPanelStore(database: database, defaults: defaults, privateTexts: privateTexts)
         }
     let clock = FakeClock()
     let clipboard = ClipboardHistory(database: database, defaults: defaults)
@@ -386,7 +388,7 @@ private func makeSession(
         session: session, controller: controller, sink: sink, voice: voice,
         userPanel: try? store.get(), clock: clock, reader: reader, write: write, completer: completer,
         pasteboard: pasteboard, clipboard: clipboard, history: history,
-        database: database)
+        database: database, privateTexts: privateTexts)
 }
 
 @MainActor
@@ -771,9 +773,7 @@ private func sessionTests() async {
         parts.session.predictions.screenEnabled = false
         parts.session.appActivated(whatsApp)
         await passScreenDelay(parts)
-        let texts = MemoryPrivateTexts()
-        texts.texts["home"] = "1 Main Street"
-        parts.controller.privateTexts = texts
+        parts.privateTexts.texts["home"] = "1 Main Street"
         parts.controller.perform(.privateText("home"))
         parts.session.predictions.screenEnabled = true
         await passScreenDelay(parts)
@@ -787,9 +787,7 @@ private func sessionTests() async {
         parts.controller.focusChanged(to: focus("AXTextField", editable: true, secure: true))
         expect(parts.controller.hidesFieldText, "a password field")
         parts.controller.focusChanged(to: field("Hello", caret: 5))
-        let texts = MemoryPrivateTexts()
-        texts.texts["home"] = "1 Main Street"
-        parts.controller.privateTexts = texts
+        parts.privateTexts.texts["home"] = "1 Main Street"
         parts.controller.perform(.privateText("home"))
         expect(parts.controller.hidesFieldText, "private text")
     }
@@ -845,9 +843,7 @@ private func sessionTests() async {
         parts.controller.focusChanged(to: field("Hello", caret: 5))
         await parts.session.settle()
         expectEqual(parts.session.speakMode, .speak)
-        let texts = MemoryPrivateTexts()
-        texts.texts["home"] = "1 Main Street"
-        parts.controller.privateTexts = texts
+        parts.privateTexts.texts["home"] = "1 Main Street"
         parts.controller.perform(.privateText("home"))
         await parts.session.settle()
         expectEqual(parts.session.predictions.notice, .privateText)
@@ -1040,6 +1036,23 @@ private func sessionTests() async {
         expectEqual(voice.spoken, ["the roses"])
     }
 
+    test("a private text that My Panel of the assembly saves types from the keyboard") {
+        let defaults = freshDefaults()
+        let sink = RecordingSink()
+        let assembly = try KeyboardAssembly(
+            sink: sink, database: try KeyboardDatabase(path: ":memory:"), pasteboard: MemoryPasteboard(),
+            reader: FakeFrontAppReader(),
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: FakeEngine(), elevenLabs: FakeEngine()),
+            write: FakeWrite(), predictions: PredictionEngine(predictor: FakePredictor(), defaults: defaults),
+            defaults: defaults, privateTexts: MemoryPrivateTexts())
+        let userPanel = try expectValue(assembly.session.userPanel)
+        let id = try userPanel.add(NewButton(name: "Home", action: .text("1 Main Street")))
+        expectEqual(userPanel.buttons.first?.action, .privateText(id))
+
+        assembly.session.controller.perform(.privateText(id))
+        expectEqual(sink.typed, ["1 Main Street"])
+    }
+
     await asyncTest("the assembly keeps the style and the Return key of Talk mode in step with the settings") {
         let defaults = freshDefaults()
         let database = try KeyboardDatabase(path: ":memory:")
@@ -1112,8 +1125,7 @@ private func sessionTests() async {
         texts.texts["d"] = "1 Main Street"
         let defaults = freshDefaults()
         let store = try UserPanelStore(database: database, defaults: defaults, privateTexts: texts)
-        let parts = try makeSession(userPanel: .success(store))
-        parts.controller.privateTexts = texts
+        let parts = try makeSession(userPanel: .success(store), privateTexts: texts)
 
         let pastePlain = Shortcut(modifiers: [.shift, .command], key: .character("v"))
         let interrupt = Shortcut(modifiers: .control, key: .character("c"))
@@ -1148,9 +1160,7 @@ private func sessionTests() async {
 
     await asyncTest("a focus move ends the private state of the bar") {
         let parts = try makeSession()
-        let texts = MemoryPrivateTexts()
-        texts.texts["home"] = "1 Main Street"
-        parts.controller.privateTexts = texts
+        parts.privateTexts.texts["home"] = "1 Main Street"
         parts.controller.perform(.privateText("home"))
         expect(parts.controller.isFieldPrivate)
         parts.session.focusMoved()
@@ -1256,9 +1266,7 @@ private func clipboardSessionTests() async {
         expectEqual(parts.clipboard.items.map(\.text), ["Lunch at noon"], "a password field")
 
         parts.controller.focusChanged(to: field("Hello", caret: 5))
-        let texts = MemoryPrivateTexts()
-        texts.texts["home"] = "1 Main Street"
-        parts.controller.privateTexts = texts
+        parts.privateTexts.texts["home"] = "1 Main Street"
         parts.controller.perform(.privateText("home"))
         pasteboard.copy("1 Main Street")
         parts.session.pollClipboard()

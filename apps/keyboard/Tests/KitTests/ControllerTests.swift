@@ -19,11 +19,13 @@ private let stubMap = KeyCodeMap { code, modifiers in
 /// A controller with the bundled panels and the stub layout, so no test
 /// depends on the machine's own keyboard layout.
 @MainActor
-func makeController() throws -> (KeyboardController, RecordingSink) {
+func makeController(
+    privateTexts: any PrivateTextStore = MemoryPrivateTexts()
+) throws -> (KeyboardController, RecordingSink) {
     let sink = RecordingSink()
     let controller = KeyboardController(
         sink: sink, panels: try PanelStore.bundled(), accents: try AccentTable.bundled("en"), keyCodeMap: stubMap,
-        talk: TalkSession(said: SaidList(database: memoryDatabase())))
+        privateTexts: privateTexts, talk: TalkSession(said: SaidList(database: memoryDatabase())))
     return (controller, sink)
 }
 
@@ -71,7 +73,7 @@ func controllerTests() {
         )
         let controller = KeyboardController(
             sink: sink, panels: try PanelStore.bundled(), accents: try AccentTable.bundled("en"), keyCodeMap: cyrillic,
-            talk: TalkSession(said: SaidList(database: memoryDatabase())))
+            privateTexts: MemoryPrivateTexts(), talk: TalkSession(said: SaidList(database: memoryDatabase())))
         controller.perform(.shortcut(Shortcut(modifiers: .command, key: .character("z"))))
         expectEqual(sink.downs.map(\.key), [55, 6])
 
