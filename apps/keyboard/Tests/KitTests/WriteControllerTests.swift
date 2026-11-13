@@ -307,6 +307,53 @@ func writeControllerTests() {
         expectEqual(write.model.current?.url.lastPathComponent, "Untitled.md")
         expectEqual(write.model.documents.map(\.title).sorted(), ["New Plans", "Untitled"])
     }
+
+    test("the tools rail has New, Documents, Share, and Close, each with a spoken label") {
+        expectEqual(WriteTool.allCases, [.newDocument, .documents, .share, .close])
+        for tool in WriteTool.allCases { expect(!tool.label.isEmpty, "\(tool) has a label") }
+    }
+
+    test("New on the tools rail saves the open document and starts an empty one") {
+        let (write, _, url) = try deskWrite(["New.md": "# New"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        type(write.paper.editor, " Plans")
+        write.paper.tools.press(.newDocument)
+        expectEqual(write.model.current?.url.lastPathComponent, "Untitled.md")
+        expectEqual(write.model.documents.map(\.title).sorted(), ["New Plans", "Untitled"])
+    }
+
+    test("Documents on the tools rail opens the desk") {
+        let (write, host, url) = try deskWrite(["New.md": "# New"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        write.paper.tools.press(.documents)
+        expectEqual(write.panel, .desk)
+        expectEqual(host.panels, [.desk])
+    }
+
+    test("Share on the tools rail saves the document, then shares its file") {
+        let url = try folder(["New.md": "# New"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        var shared: [URL] = []
+        let write = WriteController(
+            host: RecordingWriteHost(), library: DocumentLibrary(folder: url), share: { shared.append($0) })
+        write.start()
+        type(write.paper.editor, " Plans")
+
+        write.paper.tools.press(.share)
+        let file = url.appendingPathComponent("New Plans.md")
+        expectEqual(shared, [file])
+        expectEqual(try String(contentsOf: file, encoding: .utf8), "# New Plans")
+    }
+
+    test("Close on the tools rail closes the paper and saves the document") {
+        let (write, host, url) = try deskWrite(["New.md": "# New"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        type(write.paper.editor, " Plans")
+        write.paper.tools.press(.close)
+        expectEqual(host.closed, [write.paper.window])
+        let file = url.appendingPathComponent("New Plans.md")
+        expectEqual(try String(contentsOf: file, encoding: .utf8), "# New Plans")
+    }
 }
 
 @MainActor

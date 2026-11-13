@@ -290,6 +290,24 @@ title. If a save fails, the error shows at the top of the paper. While the
 desk is open, the error shows in the notice of the desk, in place of Undo.
 If the desk cannot read the file of a card, the notice shows that error.
 
+The tools rail is a column of round buttons at the left of the paper: New,
+Documents, Share, and Close. Its bottom is on the bottom of the paper, so it
+stays in place while the paper grows. The rail is a panel that never becomes
+the key window, so the caret stays in the editor. Share saves the document
+and opens the share picker of macOS with its `.md` file. Close closes the
+paper and saves the document. The rail is hidden while the desk is open. The
+page keeps the width of the rail free on its left.
+
+A paste keeps the formatting of the copied text. `WritePaste` reads the
+pasteboard in this order: HTML, RTF, and then plain text. HTML and RTF become
+Markdown, with bold, italic, strikethrough, code, links, headings, and lists.
+Plain text is read as Markdown, so a paste of `# Title` gives a heading. If
+all of the rich text is monospace, the paste uses the plain text, because a
+code editor copies Markdown source as coloured code. Text of one paragraph
+takes the block of the paragraph at the caret. One undo removes the whole
+paste. Paste as Plain Text (Option-Shift-Command-V) inserts the text with no
+conversion.
+
 Command-O, or the Documents key of the Write panel, turns the paper into the
 desk. The paper shrinks into its card, and the other documents rise out of
 the bar as paper cards, newest first. The first card is always New Document.

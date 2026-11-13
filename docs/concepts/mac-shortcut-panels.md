@@ -14,6 +14,8 @@ Cut, Copy, and Paste are buttons at the left of the input bar, so no keypad
 has them. While Write is in front, My Panel has a Write tab with the keys of
 the paper or of the desk. Each panel is a grid of buttons in a JSON file that
 the app loads at launch.
+The tools rail at the left of the Write paper is not a panel. Its buttons
+(New, Documents, Share, and Close) are the cases of `WriteTool`.
 
 The shortcuts of the app in front are not a panel. They come from its menu
 bar and show in the place of the input bar. See the Shortcut Suggestions
