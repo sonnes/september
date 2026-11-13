@@ -36,9 +36,11 @@ PanelDefinition   title, columns, buttons, arrows
 My Panel uses the same `PanelAction` and the same JSON for its buttons. Only
 My Panel holds `.privateText`. Its JSON has no text and no ID, so it decodes
 only with the ID of its button. `PanelAction` gives the keys label, the hint,
-the spoken name, and `isText` for both kinds of buttons. `PanelLayout` places
-the buttons of a Write panel and of Mine. A text button takes a whole row, and
-a key button fills the gap that an earlier key button left.
+the spoken name, `isText`, and `holdBehavior` for both kinds of buttons. A
+held button repeats only for a scroll or a key that repeats with the modifiers
+of its own shortcut. `PanelLayout` places the buttons of a Write panel and of
+Mine. A text button takes a whole row, and a key button fills the gap that an
+earlier key button left.
 
 `arrows` is an optional `PanelBlock` below the grid, with columns of its own.
 The Text keypad uses it for an inverted T of arrow keys, in three columns. A

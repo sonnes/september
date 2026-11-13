@@ -56,6 +56,20 @@ extension PanelAction {
         }
     }
 
+    /// What a panel button does while the user holds it. As for the press,
+    /// only the modifiers of its own shortcut count. A scroll repeats.
+    /// Everything else that is not a shortcut acts once.
+    public var holdBehavior: HoldBehavior {
+        switch self {
+        case .scroll:
+            .repeats
+        case .shortcut(let shortcut):
+            if case .virtual(let key) = shortcut.key { .forKey(key, modifiers: shortcut.modifiers) } else { .once }
+        case .sequence, .text, .privateText:
+            .once
+        }
+    }
+
     /// The text without spaces, if it has no letters or digits.
     private static func marks(_ text: String) -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)

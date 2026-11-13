@@ -11,7 +11,7 @@ public enum MineCell: Sendable, Hashable {
 public enum MinePages {
     /// The buttons of each page, in the order given.
     public static func pages(_ buttons: [UserButton]) -> [[UserButton]] {
-        let total = buttons.reduce(0) { $0 + PanelLayout.span(of: $1.action) }
+        let total = PanelLayout.slots(buttons.map(\.action))
         if total <= PanelLayout.slotCount { return [buttons] }
 
         var pages: [[UserButton]] = []
@@ -36,8 +36,8 @@ public enum MinePages {
     public static func rows(for buttons: [UserButton], page: Int, of count: Int) -> [KeypadRow<MineCell?>] {
         let cells = buttons.map(MineCell.button) + (count > 1 ? [.page(page, of: count)] : [])
         return PanelLayout.grid(cells) { cell in
-            if case .button(let button) = cell { return button.action.isText }
-            return false
+            if case .button(let button) = cell { return button.action }
+            return nil
         }
     }
 

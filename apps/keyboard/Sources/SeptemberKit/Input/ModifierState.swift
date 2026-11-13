@@ -13,6 +13,9 @@ public struct ModifierState: Sendable, Equatable {
 
     public var active: Modifiers { own.union(mac) }
     public var own: Modifiers { latched.union(locked) }
+    /// The modifiers that the keyboard holds at the OS: its own, without
+    /// caps lock, because macOS owns its toggle.
+    public var ownFlags: Modifiers { own.subtracting(.capsLock) }
     /// The modifiers that a posted key holds. Caps lock is not one, because
     /// macOS owns its toggle.
     public var flags: Modifiers { active.subtracting(.capsLock) }

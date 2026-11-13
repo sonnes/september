@@ -83,9 +83,9 @@ private func panelFileTests() {
     test("a text button of marks only is one key wide and shows its marks") {
         let heading = PanelButton(id: "h", label: "Heading", symbol: nil, action: .text("# "))
         let clear = PanelButton(id: "c", label: "Clear", symbol: nil, action: .text("/clear"))
-        expect(PanelLayout.slots([heading]) == 1)
+        expect(PanelLayout.slots([heading.action]) == 1)
         expect(heading.action.hint == "#")
-        expect(PanelLayout.slots([clear]) == 2)
+        expect(PanelLayout.slots([clear.action]) == 2)
         expect(clear.action.hint == nil)
     }
 
@@ -136,7 +136,7 @@ private func panelFileTests() {
         let store = try PanelStore.bundled()
         for panel in [store.write, store.writeDocuments] {
             expect(
-                PanelLayout.slots(panel.buttons) <= PanelLayout.slotCount,
+                PanelLayout.slots(panel.buttons.map(\.action)) <= PanelLayout.slotCount,
                 "\(panel.title) overflows")
         }
     }
@@ -148,7 +148,7 @@ private func panelFileTests() {
 private func layoutTests() {
     test("a text button takes a whole row, and later keys fill the gap before it") {
         let buttons = [keyButton("a"), textButton("hello"), keyButton("b"), keyButton("c")]
-        let rows = PanelLayout.grid(buttons) { $0.action.isText }.map { row in
+        let rows = PanelLayout.grid(buttons) { $0.action }.map { row in
             switch row {
             case .wide(let button): button?.id ?? "-"
             case .cells(let cells): cells.map { $0?.id ?? "-" }.joined(separator: " ")
@@ -158,7 +158,7 @@ private func layoutTests() {
     }
 
     test("a text button costs two slots") {
-        expectEqual(PanelLayout.slots([keyButton("a"), textButton("t")]), 3)
+        expectEqual(PanelLayout.slots([keyButton("a").action, textButton("t").action]), 3)
     }
 
     test("only the buttons that fit in 12 slots stay") {

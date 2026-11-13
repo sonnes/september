@@ -23,9 +23,9 @@ public enum PanelLayout {
         action.isText ? columns : 1
     }
 
-    /// The slots that the buttons fill.
-    public static func slots(_ buttons: [PanelButton]) -> Int {
-        buttons.reduce(0) { $0 + span(of: $1.action) }
+    /// The slots that the buttons of `actions` fill.
+    public static func slots(_ actions: [PanelAction]) -> Int {
+        actions.reduce(0) { $0 + span(of: $1) }
     }
 
     /// The buttons that fit in the grid, in order. A button that does not fit
@@ -59,9 +59,12 @@ public enum PanelLayout {
     }
 
     /// The full grid of the items: the rows of `rows(_:isWide:)`, then empty
-    /// rows up to `rowCount`. A `nil` cell is an empty slot, so the grid
-    /// keeps its height when it holds few items.
-    public static func grid<Item>(_ items: [Item], isWide: (Item) -> Bool) -> [KeypadRow<Item?>] {
+    /// rows up to `rowCount`. `action` gives the action of the button of an
+    /// item, and `span(of:)` gives its width. An item with no action takes
+    /// one slot. A `nil` cell is an empty slot, so the grid keeps its height
+    /// when it holds few items.
+    public static func grid<Item>(_ items: [Item], action: (Item) -> PanelAction?) -> [KeypadRow<Item?>] {
+        func isWide(_ item: Item) -> Bool { action(item).map(span(of:)) == columns }
         let filled: [KeypadRow<Item?>] = rows(items, isWide: isWide).map { row in
             if row.count == 1, isWide(row[0]) { return .wide(row[0]) }
             return .cells(row.map(Optional.some) + Array(repeating: nil, count: columns - row.count))

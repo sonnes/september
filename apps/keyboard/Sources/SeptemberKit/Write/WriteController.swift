@@ -119,8 +119,6 @@ public final class WriteController: WriteReading {
         paper.show(from: bar, floor: floor, screen: screen, margin: margin)
     }
 
-    public var isDeskOpen: Bool { desk.isOpen }
-
     public var panel: WritePanel { desk.isOpen ? .desk : .paper }
 
     /// Opens the desk. The open document saves first, and the paper shrinks

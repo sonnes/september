@@ -421,7 +421,7 @@ func controllerTests() {
         let down = PanelAction.shortcut(Shortcut(modifiers: [], key: .virtual(.down)))
         controller.press(key("shift-left"))
         controller.macModifiersChanged(.command)
-        expectEqual(KeyboardController.holdBehavior(for: down), .repeats, "only the modifiers of the button count")
+        expectEqual(down.holdBehavior, .repeats, "only the modifiers of the button count")
         sink.reset()
         controller.perform(down)
         expectEqual(sink.downs.map(\.key), [VirtualKey.down.rawValue])

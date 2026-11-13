@@ -77,7 +77,7 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
                     fflush(stdout)
                     self.frames += 1
                     LabSnapshot.capture(self.paper.window, to: URL(fileURLWithPath: "/tmp/writelab-\(self.frames).png"))
-                    if self.write.isDeskOpen {
+                    if self.write.panel == .desk {
                         LabSnapshot.capture(
                             self.write.desk.window, to: URL(fileURLWithPath: "/tmp/writelab-desk-\(self.frames).png"))
                     }

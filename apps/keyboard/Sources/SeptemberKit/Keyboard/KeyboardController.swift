@@ -117,20 +117,6 @@ public final class KeyboardController: ObservableObject {
         }
     }
 
-    /// What a panel button does while the user holds it. As for the press,
-    /// only the modifiers of its own shortcut count. A scroll repeats.
-    /// Everything else that is not a shortcut acts once.
-    public static func holdBehavior(for action: PanelAction) -> HoldBehavior {
-        switch action {
-        case .scroll:
-            .repeats
-        case .shortcut(let shortcut):
-            if case .virtual(let key) = shortcut.key { .forKey(key, modifiers: shortcut.modifiers) } else { .once }
-        case .sequence, .text, .privateText:
-            .once
-        }
-    }
-
     public func showAccents(_ choices: [String]) {
         accentChoices = choices
     }
@@ -257,7 +243,7 @@ public final class KeyboardController: ObservableObject {
     /// A modifier that macOS holds gets no down and no up until macOS lets
     /// go of it.
     private func syncSystemModifiers() {
-        let wanted = mode == .type ? modifiers.own.subtracting(.capsLock) : []
+        let wanted = mode == .type ? modifiers.ownFlags : []
         let target = wanted.subtracting(modifiers.mac).union(systemModifiers.intersection(modifiers.mac))
         guard target != systemModifiers else { return }
         sink.post(Keystroke.modifierChanges(from: systemModifiers, to: target))

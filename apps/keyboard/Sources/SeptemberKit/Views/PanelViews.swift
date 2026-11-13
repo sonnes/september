@@ -102,7 +102,7 @@ public struct WritePanelGrid: View {
     }
 
     public var body: some View {
-        let rows = PanelLayout.grid(PanelLayout.fitting(panel.buttons)) { $0.action.isText }
+        let rows = PanelLayout.grid(PanelLayout.fitting(panel.buttons)) { $0.action }
         KeypadGrid(rows: rows, columns: PanelLayout.columns) { button, width in
             if let button {
                 ShortcutButtonView(button: button, width: width) { press(button.action) }

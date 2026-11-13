@@ -131,7 +131,7 @@ func writeControllerTests() {
         expectEqual(write.panel, .paper)
 
         write.showDesk()
-        expect(write.isDeskOpen, "the desk is open")
+        expectEqual(write.panel, .desk, "the desk is open")
         expectEqual(write.desk.desk.selected, .document(write.model.documents[0]))
         expectEqual(write.panel, .desk)
         expectEqual(host.panels, [.desk])
@@ -145,7 +145,7 @@ func writeControllerTests() {
 
         write.desk.move(by: 1)
         write.desk.onCommand?(.open)
-        expect(!write.isDeskOpen, "the desk closes")
+        expectEqual(write.panel, .paper, "the desk closes")
         expectEqual(write.model.current?.title, "Old")
         expectEqual(write.paper.editor.markdown, "# Old")
         expectEqual(host.panels, [.desk, .paper])
@@ -157,7 +157,7 @@ func writeControllerTests() {
         write.showDesk()
         write.desk.onCommand?(.newDocument)
         expectEqual(write.model.current?.url.lastPathComponent, "Untitled.md")
-        expect(!write.isDeskOpen, "the desk closes")
+        expectEqual(write.panel, .paper, "the desk closes")
     }
 
     test("the Find query goes to the input bar, and it picks the card") {
@@ -207,7 +207,7 @@ func writeControllerTests() {
         write.showDesk()
         write.desk.move(by: 1)
         write.desk.onCommand?(.back)
-        expect(!write.isDeskOpen, "the desk closes")
+        expectEqual(write.panel, .paper, "the desk closes")
         expectEqual(write.model.current?.title, "New")
     }
 
@@ -244,7 +244,7 @@ func writeControllerTests() {
         defer { try? FileManager.default.removeItem(at: url) }
         write.showDesk()
         write.desk.onCommand?(.close)
-        expect(!write.isDeskOpen, "the desk closes")
+        expectEqual(write.panel, .paper, "the desk closes")
         expectEqual(write.panel, .paper)
         expectEqual(host.closed, [write.desk.window])
     }
