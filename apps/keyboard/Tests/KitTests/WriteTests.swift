@@ -153,15 +153,6 @@ func writeTests() {
         expectEqual(label(-3 * 86_400), "3 Nov")
     }
 
-    // MARK: The caret
-
-    test("the caret paragraph of the editor becomes the focused field of the input bar") {
-        let caret = EditorCaret(text: "Who checks it at ni", caret: 19, length: 0)
-        let field = caret.focusedField
-        expect(field.isEditable && !field.isSecure, "an editable text field")
-        expectEqual(field.display, .mirrored(text: "Who checks it at ni", caret: 19, selectionLength: 0))
-    }
-
     // MARK: Speak
 
     test("Speak reads a heading without its marks, as a sentence") {

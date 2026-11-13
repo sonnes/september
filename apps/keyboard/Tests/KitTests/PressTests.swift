@@ -76,7 +76,7 @@ private func heldKeyTests() {
 
     test("an arrow with fn repeats, as Page Down does on a hardware keyboard") {
         let button = PanelAction.shortcut(Shortcut(modifiers: .function, key: .virtual(.down)))
-        expectEqual(button.holdBehavior, .repeats)
+        expectEqual(KeyboardController.holdBehavior(for: button), .repeats)
         expectEqual(HoldBehavior.forKey(.down, modifiers: [.function, .shift]), .repeats)
     }
 
@@ -84,20 +84,20 @@ private func heldKeyTests() {
         for key in [VirtualKey.left, .delete] {
             let button = UserButton(
                 id: "b", name: "Move", action: .shortcut(Shortcut(modifiers: .shift, key: .virtual(key))))
-            expectEqual(button.action.holdBehavior, .repeats, "\(key)")
+            expectEqual(KeyboardController.holdBehavior(for: button.action), .repeats, "\(key)")
         }
     }
 
     test("a panel arrow repeats, alone or with Shift or Option") {
         for modifiers in [Modifiers(), .shift, .option, [.shift, .option]] {
             let action = PanelAction.shortcut(Shortcut(modifiers: modifiers, key: .virtual(.down)))
-            expectEqual(action.holdBehavior, .repeats, "\(modifiers)")
+            expectEqual(KeyboardController.holdBehavior(for: action), .repeats, "\(modifiers)")
         }
-        expectEqual(PanelAction.shortcut(Shortcut(modifiers: [], key: .virtual(.delete))).holdBehavior, .repeats)
+        expectEqual(KeyboardController.holdBehavior(for: .shortcut(Shortcut(modifiers: [], key: .virtual(.delete)))), .repeats)
     }
 
     test("a scroll button repeats") {
-        expectEqual(PanelAction.scroll(.down).holdBehavior, .repeats)
+        expectEqual(KeyboardController.holdBehavior(for: .scroll(.down)), .repeats)
     }
 
     test("the pointer rests after it stays still for the rest delay, or at once on a click") {
@@ -126,7 +126,7 @@ private func heldKeyTests() {
             .text("hi"),
         ]
         for action in actions {
-            expectEqual(action.holdBehavior, .once, "\(action)")
+            expectEqual(KeyboardController.holdBehavior(for: action), .once, "\(action)")
         }
     }
 

@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 /// Builds the controller and the session of the keyboard from the parts that
@@ -8,11 +9,16 @@ public struct KeyboardAssembly {
     public let session: KeyboardSession
     /// The Phrases panel of Talk mode.
     public let phrases: PanelDefinition
+    /// The settings of the Look page and the Speech page. A change applies to
+    /// the keyboard at once.
+    public let settings: KeyboardSettings
+    private let subscriptions: [AnyCancellable]
 
     /// Throws when a bundled panel or the accent table does not load.
     ///
     /// - Parameters:
-    ///   - defaults: the settings of My Panel and the clipboard history.
+    ///   - defaults: the settings of the keyboard, My Panel, and the
+    ///     clipboard history.
     ///   - privateTexts: the store of the private text buttons of My Panel.
     ///   - clipboardClock: the date of a new copy in the clipboard history.
     ///   - scheduler: the delays of the session and of the input bar.
@@ -41,5 +47,10 @@ public struct KeyboardAssembly {
             reader: reader, write: write, inputBar: InputBarVisibility(scheduler: scheduler),
             clipboard: ClipboardHistory(database: database, defaults: defaults, now: clipboardClock),
             pasteboard: pasteboard, scheduler: scheduler)
+        settings = KeyboardSettings(defaults: defaults)
+        subscriptions = [
+            settings.$style.sink { [weak controller] in controller?.style = $0 },
+            settings.$returnSpeaksInTalk.sink { [weak controller] in controller?.talk.returnSpeaks = $0 },
+        ]
     }
 }

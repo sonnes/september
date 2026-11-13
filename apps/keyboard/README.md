@@ -330,7 +330,8 @@ and each press reads them again:
   the characters that are not letters repeat after the delay of System
   Settings, at its rate. If key repeat is off, no key repeats. One rule
   covers the keys, the panel buttons, and the buttons of My Panel: an arrow,
-  Delete, or Space repeats when Command and Control are off. Thus a held
+  Delete, or Space repeats when Command and Control are off. For a panel
+  button, only the modifiers of its own shortcut count. Thus a held
   Down button keeps the caret moving, and a held Shift-Down button extends
   the selection. With Command or Control, the key acts once. The modifiers,
   Return, Escape, Tab, and a character with a chord do not repeat. A
@@ -349,7 +350,9 @@ and each press reads them again:
   tapped modifier goes down at the OS at once, so a click or a key from the
   hardware keyboard gets it too: Shift-click and Command-click work. A key
   from another source, or a click outside the keyboard, uses up a latched
-  modifier. `OtherInputMonitor` listens for them. Its global monitors get the
+  modifier. A panel button sends only its own shortcut. A latched, locked, or
+  held modifier does not add to it, and the press uses up a latched modifier.
+  `KeyboardController.perform(_:)` holds the rule. `OtherInputMonitor` listens for them. Its global monitors get the
   events of other apps. Its local monitors get the keys of Write and Settings,
   but not a click on the keyboard. The monitors need the Accessibility
   permission and not Input Monitoring. In Talk mode the

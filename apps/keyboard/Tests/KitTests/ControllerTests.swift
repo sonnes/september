@@ -442,6 +442,19 @@ func controllerTests() {
         expectEqual(controller.input, .local(text: "hia"))
     }
 
+    test("a panel button sends only its own shortcut, and a latched or held modifier does not add to it") {
+        let (controller, sink) = try makeController()
+        let down = PanelAction.shortcut(Shortcut(modifiers: [], key: .virtual(.down)))
+        controller.press(key("shift-left"))
+        controller.macModifiersChanged(.command)
+        expectEqual(KeyboardController.holdBehavior(for: down), .repeats, "only the modifiers of the button count")
+        sink.reset()
+        controller.perform(down)
+        expectEqual(sink.downs.map(\.key), [VirtualKey.down.rawValue])
+        expectEqual(sink.downs.first?.flags, [])
+        expectEqual(controller.modifiers.latched, [], "the press uses up the latch")
+    }
+
     test("characters the layout cannot produce fall back to unicode injection") {
         let (controller, sink) = try makeController()
         controller.press(

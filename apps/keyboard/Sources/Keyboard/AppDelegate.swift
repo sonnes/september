@@ -17,9 +17,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let sink = CGEventSink()
     private let focusWatcher = FocusWatcher()
     private let treeModel = AXTreeModel()
-    private let keyboardSettings = KeyboardSettings()
     private let keyboardPosition = KeyboardPosition()
-    private var session: KeyboardSession!
+    private var assembly: KeyboardAssembly!
+    private var session: KeyboardSession { assembly.session }
+    private var keyboardSettings: KeyboardSettings { assembly.settings }
     private var controller: KeyboardController { session.controller }
     private var speech: SpeechServices!
     private var history: SentenceHistory!
@@ -31,7 +32,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// SIGTERM and SIGINT, for example from `make stop`, skip
     /// `applicationWillTerminate`. These handlers release the modifiers first.
     private var signalSources: [DispatchSourceSignal] = []
-    private var tracker = FrontAppTracker(ownPID: ProcessInfo.processInfo.processIdentifier)
     private var clipboardTimer: Timer?
 
     /// The tree viewer is on by default — it is the window that shows why an
@@ -54,17 +54,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         history = SentenceHistory(database: database)
         let predictions = PredictionEngine(history: history)
         write = WriteController(host: self)
-        let assembly: KeyboardAssembly
         do {
             assembly = try KeyboardAssembly(
                 sink: sink, database: database, pasteboard: SystemPasteboard(),
                 reader: AXFrontAppReader(rules: try ContextRules.bundled()), speaker: speech.speaker,
                 write: write, predictions: predictions)
         } catch {
-            fail(loadingPanels: error)
+            fail(loading: error)
             return
         }
-        session = assembly.session
         watchClipboard()
 
         settingsWindow = SettingsWindowController(pages: makeSettingsPages())
@@ -74,8 +72,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             write: { [weak self] in self?.showWrite() },
             arrange: { [weak self] in self?.arrangePanels() },
             settings: { [weak self] in self?.showSettings() })
-
-        followSettings()
 
         // The banner and the menu ask for permission, so starting Keyboard
         // never puts a system dialog in front of what the user was doing.
@@ -136,11 +132,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         AppActivation.appBecameActive()
-        session?.predictions.refreshAvailability()
+        assembly?.session.predictions.refreshAvailability()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        session?.controller.releaseSystemModifiers()
+        assembly?.session.controller.releaseSystemModifiers()
         write?.save()
     }
 
@@ -173,16 +169,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    /// The Look page and the Speech page change the keyboard at once.
-    private func followSettings() {
-        keyboardSettings.$style
-            .sink { [weak self] style in self?.controller.style = style }
-            .store(in: &subscriptions)
-        keyboardSettings.$returnSpeaksInTalk
-            .sink { [weak self] speaks in self?.controller.talk.returnSpeaks = speaks }
-            .store(in: &subscriptions)
-    }
-
     private func showSettings(_ page: SettingsPage = .voice) {
         session.predictions.refreshAvailability()
         settingsWindow.show(page)
@@ -204,18 +190,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.scheduleTreeRefresh()
         }
         focusWatcher.onAppChanged = { [weak self] app in
-            guard let self else { return }
-            self.apply(self.tracker.appActivated(app.map(FrontApp.init)))
+            self?.session.appActivated(app.map(FrontApp.init))
         }
         sink.afterPost = { [weak self] in
             self?.focusWatcher.refreshSoon()
         }
         focusWatcher.start()
-    }
-
-    private func apply(_ change: FrontTarget?) {
-        guard let change else { return }
-        session.frontChanged(change)
     }
 
     // MARK: - Write
@@ -523,9 +503,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         permission.openSettings()
     }
 
-    private func fail(loadingPanels error: any Error) {
+    /// A bundled file of the keyboard did not load: a panel, the accents,
+    /// the Phrases panel, or a context rule.
+    private func fail(loading error: any Error) {
         let alert = NSAlert()
-        alert.messageText = "September Keyboard could not load its shortcut panels."
+        alert.messageText = "September Keyboard could not load its bundled files."
         alert.informativeText = String(describing: error)
         NSApp.activate()
         alert.runModal()
@@ -546,8 +528,7 @@ extension AppDelegate: WriteHost {
 
     func writeKeyChanged(_ isKey: Bool) {
         let front = NSWorkspace.shared.frontmostApplication.map(FrontApp.init)
-        let change = tracker.writeKeyChanged(isKey, panel: write.panel, front: front)
-        apply(change)
+        let change = session.writeKeyChanged(isKey, panel: write.panel, front: front)
         // The app in front may have come forward while the Write paper was
         // key. Follow it again, so its field shows in the bar.
         if case .app = change { focusWatcher.refollow() }

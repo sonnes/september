@@ -1,6 +1,7 @@
 import CoreGraphics
 import SeptemberKit
 
+@MainActor
 func modifierStateTests() {
     test("a tapped modifier applies to exactly one keystroke") {
         var state = ModifierState()
@@ -22,14 +23,15 @@ func modifierStateTests() {
     }
 
     test("a modifier that macOS holds is on and shows as latched until macOS releases it") {
-        var state = ModifierState()
-        state.mac = .shift
+        let (controller, _) = try makeController()
+        controller.macModifiersChanged(.shift)
+        var state = controller.modifiers
         expectEqual(state.active, .shift)
         expectEqual(state.look(of: .shift), .latched)
         state.consume()
         expectEqual(state.active, .shift)
-        state.mac = []
-        expectEqual(state.active, [])
+        controller.macModifiersChanged([])
+        expectEqual(controller.modifiers.active, [])
     }
 
     test("the flags of a key leave out caps lock, and a chord also leaves out shift") {
@@ -39,9 +41,11 @@ func modifierStateTests() {
         expectEqual(state.flags, .shift)
         expectEqual(state.chord, [])
         expect(state.holdsChord, "shift turns the F-row into F-keys")
-        state.mac = .command
-        expectEqual(state.flags, [.shift, .command])
-        expectEqual(state.chord, .command)
+        let (controller, _) = try makeController()
+        controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "shift-left" }!)
+        controller.macModifiersChanged(.command)
+        expectEqual(controller.modifiers.flags, [.shift, .command])
+        expectEqual(controller.modifiers.chord, .command)
     }
 
     test("caps lock alone holds no chord") {

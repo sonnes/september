@@ -7,7 +7,7 @@ public struct ModifierState: Sendable, Equatable {
     /// The modifiers that macOS holds: the modifier keys that the user holds
     /// on the hardware keyboard. They change only when macOS reports new
     /// flags.
-    public var mac: Modifiers = []
+    public internal(set) var mac: Modifiers = []
 
     public init() {}
 

@@ -114,6 +114,20 @@ public final class KeyboardController: ObservableObject {
         }
     }
 
+    /// What a panel button does while the user holds it. As for the press,
+    /// only the modifiers of its own shortcut count. A scroll repeats.
+    /// Everything else that is not a shortcut acts once.
+    public static func holdBehavior(for action: PanelAction) -> HoldBehavior {
+        switch action {
+        case .scroll:
+            .repeats
+        case .shortcut(let shortcut):
+            if case .virtual(let key) = shortcut.key { .forKey(key, modifiers: shortcut.modifiers) } else { .once }
+        case .sequence, .text, .privateText:
+            .once
+        }
+    }
+
     public func showAccents(_ choices: [String]) {
         accentChoices = choices
     }
@@ -179,6 +193,12 @@ public final class KeyboardController: ObservableObject {
         scrollPoint = point
     }
 
+    // MARK: - Panel buttons
+
+    /// A press on a button of a panel, of My Panel, or of the shortcut
+    /// suggestions. The button sends only its own shortcut. A latched,
+    /// locked, or held modifier does not add to it. The press uses up the
+    /// latched modifiers.
     public func perform(_ action: PanelAction) {
         accentChoices = []
         switch action {
@@ -214,7 +234,6 @@ public final class KeyboardController: ObservableObject {
     /// macOS reports the modifier keys that the hardware holds. The keys
     /// show these modifiers, and the next key carries them.
     public func macModifiersChanged(_ mac: Modifiers) {
-        let mac = mac.subtracting(.capsLock)
         guard mac != modifiers.mac else { return }
         modifiers.mac = mac
     }

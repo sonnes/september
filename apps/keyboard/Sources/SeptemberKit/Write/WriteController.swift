@@ -6,7 +6,7 @@ import Combine
 @MainActor
 public protocol WriteHost: AnyObject {
     /// Brings the paper or the desk to the front with the focus. The keyboard
-    /// uses `WindowActivation`, which handles a press through `AXPress`.
+    /// does this in a way that also works after a press through `AXPress`.
     func bringToFront(_ window: NSWindow)
     /// The paper or the desk closed, so that its window does not wait for
     /// the focus.

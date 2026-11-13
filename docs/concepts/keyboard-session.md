@@ -60,7 +60,9 @@ The views read these values of the session:
 Phrases panel. The app and `--snapshot` both use it. The app gives it the
 event sink, the database, the clipboard of macOS, the reader of the app in
 front, the voice, Write, and the predictions. `--snapshot` gives it sample
-parts and a scheduler with no delays.
+parts and a scheduler with no delays. The assembly also makes
+`KeyboardSettings` from the defaults. A change of the style or of the Return
+key of Talk mode applies to the controller at once.
 
 `init` of the session does these steps in this order:
 
@@ -85,7 +87,7 @@ An update does these steps in this order:
    the input is the Talk bar, and the lines of the last hour of the Talk
    history are the conversation. Private text gives the predictions no input.
    The engine shows sentence predictions only after the user types in the
-   field. `focusMoved()` and `frontChanged(_:)` start a new field.
+   field. `focusMoved()` and an app switch start a new field.
 2. If the speech ended after the last update, it tells Talk mode. Talk mode
    then empties the bar.
 3. It sets `speakMode`. In Type mode, Speak is on when the field has text to
@@ -110,15 +112,17 @@ Settings ranks Mine at once, because the user is in the Settings window.
 `FocusWatcher` follows the app in front. For a new app, the calls come in this
 order:
 
-1. `FrontAppTracker` decides between Write and another app. It gives a
-   `FrontTarget`: `.app(FrontApp)` or `.write(WritePanel)`.
-2. `frontChanged(_:)`. The controller clears the text of the last app. The
+1. `appActivated(_:)`. The `FrontAppTracker` of the session decides between
+   Write and another app. It gives a `FrontTarget`: `.app(FrontApp)` or
+   `.write(WritePanel)`. Nothing changes for the keyboard process itself or
+   for the app that is already in front.
+2. For a new target, the controller clears the text of the last app. The
    clipboard history closes. Then `writePanel` changes, and Mine takes its
    new order.
 3. `focusMoved()`. The private state of the last field ends.
 4. `focusChanged(to:)` with the field of the new app.
 
-If the field of the new app comes before `frontChanged`, the controller clears
+If the field of the new app comes before `appActivated(_:)`, the controller clears
 it, and the bar stays empty. For this reason, `FocusWatcher.onAppChanged` is
 the only observer of the app switch.
 
@@ -135,7 +139,7 @@ the only observer of the app switch.
 The session decides when to read the text near the field, and if it can read
 it. It reads the text after these events:
 
-- `frontChanged(_:)` brings another app to the front.
+- Another app comes to the front.
 - `focusMoved()`.
 - `focusChanged(to:)` gives an empty field after a field with text. The user
   sent the text, and the text above the field changed.
@@ -144,7 +148,8 @@ it. It reads the text after these events:
 The read waits `screenReadDelay` (0.15 seconds) on the scheduler of the
 session, because other apps move the focus late after a switch. A newer
 event cancels the read that waits or runs, so an app switch reads one time.
-When the wait ends, the session reads only if these conditions are true:
+When the wait ends, the session reads only if these conditions are true. The
+same gate decides if an update gives the text to the predictions:
 
 - The switch is on.
 - The keyboard is in Type mode.
@@ -152,19 +157,22 @@ When the wait ends, the session reads only if these conditions are true:
 - The bar shows the text of the field (`controller.hidesFieldText` is
   false): no private text and no password field.
 
-A read that ends after another app came to the front is dropped. A new app
-clears the text. Turning off the switch cancels the read.
+A read that ends after another app came to the front is dropped. Each new
+read clears the text of the last read. Thus a cancelled read and a read that
+the gate refused leave no text. Turning off the switch cancels the read.
 
 ### The Write paper
 
 The Write paper is in the keyboard process, and the keyboard cannot read its
 own window through the accessibility API. When the paper becomes the key
-window, the app calls `frontChanged(.write(.paper))`, and the session reads
-the caret from its `WriteReading`. Then the editor reports the paragraph at
+window, the app calls `writeKeyChanged(true, panel: .paper, front: nil)`, and
+the session reads the caret from its `WriteReading`. When the paper stops
+being the key window, the app gives the app in front, and the session
+returns it as the new target. Then the editor reports the paragraph at
 the caret after each edit and each caret move. The app is the `WriteHost` of
 `WriteController`, and it gives the paragraph to `writeCaretMoved(_:)`. The
-session sends the paragraph to `controller.focusChanged(to:)` and records if
-the document has text. While another app is in front, the session ignores the
+session makes a focused field named Write from the paragraph, sends it to
+`controller.focusChanged(to:)`, and records if the document has text. While another app is in front, the session ignores the
 caret of Write.
 
 The desk of Write is the other window of Write. When the paper turns into the

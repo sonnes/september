@@ -78,11 +78,6 @@ final class OtherInputMonitor {
         }
     }
 
-    func stop() {
-        monitors.forEach(NSEvent.removeMonitor)
-        monitors = []
-    }
-
     private nonisolated static func isOtherInput(_ event: NSEvent) -> Bool {
         !isOwn(event) && !(event.type == .keyDown && event.isARepeat)
     }

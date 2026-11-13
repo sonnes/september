@@ -85,5 +85,5 @@ public protocol FrontAppReading {
     func menuShortcuts(pid: pid_t) -> [AppShortcut]
     /// The text near the focused field of the app, with the rule of the app.
     /// Nil when the app shows no text to read.
-    func screenContext(pid: pid_t) async -> ScreenContext?
+    func screenContext(app: FrontApp) async -> ScreenContext?
 }

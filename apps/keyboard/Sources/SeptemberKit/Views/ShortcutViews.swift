@@ -34,7 +34,7 @@ public struct ShortcutButtonView: View {
             .onHover { isHovered = $0 }
             .pressable(
                 label: button.accessibilityLabel,
-                trigger: .down(KeyHold(behavior: { [action = button.action] in action.holdBehavior }))
+                trigger: .down(KeyHold(behavior: { [action = button.action] in KeyboardController.holdBehavior(for: action) }))
             ) { isPressed = $0 } action: {
                 press()
             }

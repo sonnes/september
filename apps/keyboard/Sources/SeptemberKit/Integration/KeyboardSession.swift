@@ -64,6 +64,7 @@ public final class KeyboardSession: ObservableObject {
     /// focus late after a switch.
     public static let screenReadDelay: TimeInterval = 0.15
     @Published private var front: FrontTarget?
+    private var tracker: FrontAppTracker
     private var isWriteInFront: Bool { front?.isWrite == true }
     /// The text near the field of the app in front, from the last read.
     private var screen: ScreenContext?
@@ -109,9 +110,11 @@ public final class KeyboardSession: ObservableObject {
         inputBar: InputBarVisibility = InputBarVisibility(),
         clipboard: ClipboardHistory,
         pasteboard: any ClipboardAccess = MemoryPasteboard(),
-        scheduler: any DelayScheduler = MainQueueScheduler()
+        scheduler: any DelayScheduler = MainQueueScheduler(),
+        ownPID: Int32 = ProcessInfo.processInfo.processIdentifier
     ) {
         self.scheduler = scheduler
+        tracker = FrontAppTracker(ownPID: ownPID)
         self.reader = reader
         self.write = write
         self.inputBar = inputBar
@@ -325,14 +328,29 @@ public final class KeyboardSession: ObservableObject {
 
     // MARK: - The app in front
 
+    /// macOS brought an app to the front. The keyboard itself is not an app
+    /// to type into: the Write window reports itself.
+    public func appActivated(_ app: FrontApp?) {
+        tracker.appActivated(app).map(frontChanged)
+    }
+
+    /// The Write window became key, or stopped being key. When it stops,
+    /// `app` is the app in front. Returns the new target, or nil when
+    /// nothing changed.
+    @discardableResult
+    public func writeKeyChanged(_ isKey: Bool, panel: WritePanel, front app: FrontApp?) -> FrontTarget? {
+        let target = tracker.writeKeyChanged(isKey, panel: panel, front: app)
+        target.map(frontChanged)
+        return target
+    }
+
     /// A different app or Write came to the front. The last app's text goes
     /// first, then My Panel takes its new order. For Write, the bar then
     /// shows the paragraph at the caret.
-    public func frontChanged(_ target: FrontTarget) {
+    private func frontChanged(_ target: FrontTarget) {
         controller.appChanged(name: target.name)
         isHistoryOpen = false
         front = target
-        screen = nil
         menu = nil
         if case .write(let panel) = target {
             writePanel = controller.panels.writePanel(for: panel)
@@ -381,7 +399,10 @@ public final class KeyboardSession: ObservableObject {
     public func writeCaretMoved(_ caret: EditorCaret) {
         guard isWriteInFront else { return }
         writeHasText = !caret.documentIsEmpty
-        controller.focusChanged(to: caret.focusedField)
+        controller.focusChanged(
+            to: FocusedField(
+                appName: FrontTarget.writeName, role: "AXTextArea", isEditable: true, isSecure: false,
+                text: caret.text, selection: NSRange(location: caret.caret, length: caret.length)))
         scheduleUpdate()
     }
 
@@ -410,13 +431,15 @@ public final class KeyboardSession: ObservableObject {
         }
     }
 
+    /// The one gate of the text on screen: the switch is on, the mode is
+    /// Type, another app is in front, and the bar shows the text of the field.
     private var mayReadScreen: Bool {
-        predictions.screenEnabled && controller.mode == .type && !controller.hidesFieldText
+        predictions.screenEnabled && controller.mode == .type && !isWriteInFront && !controller.hidesFieldText
     }
 
     /// Reads the text on screen of the app in front after
-    /// `screenReadDelay`. A newer read cancels this one. The rules apply when
-    /// the read starts.
+    /// `screenReadDelay`. A newer read cancels this one. The gate applies when
+    /// the read starts. A cancelled or refused read leaves no text on screen.
     private func readScreenSoon() {
         cancelScreenRead()
         guard case .app(let app) = front else { return }
@@ -425,7 +448,7 @@ public final class KeyboardSession: ObservableObject {
             self.pendingScreenRead = nil
             guard self.mayReadScreen, self.front == .app(app) else { return }
             self.screenRead = Task { [weak self, reader] in
-                let screen = await reader.screenContext(pid: app.pid)
+                let screen = await reader.screenContext(app: app)
                 guard let self, !Task.isCancelled, self.front == .app(app) else { return }
                 self.screenRead = nil
                 self.screen = screen
@@ -439,6 +462,7 @@ public final class KeyboardSession: ObservableObject {
         pendingScreenRead = nil
         screenRead?.cancel()
         screenRead = nil
+        screen = nil
     }
 
     private func rankUserPanel() {
@@ -463,8 +487,7 @@ public final class KeyboardSession: ObservableObject {
             .combineLatest(controller.$input, controller.$mode, $front)
             .sink { [weak self] field, input, mode, front in
                 let wantsBar = InputBarVisibility.wantsBar(
-                    mode: mode, focusedField: field, hidesFieldText: input == .secure, input: input,
-                    isWriteInFront: front?.isWrite == true)
+                    mode: mode, focusedField: field, input: input, isWriteInFront: front?.isWrite == true)
                 self?.wantsBar = wantsBar
                 self?.inputBar.update(wantsBar)
             }
@@ -518,11 +541,10 @@ public final class KeyboardSession: ObservableObject {
         // password field for the notice.
         let isPrivate = mode == .type && controller.isFieldPrivate
         let input: InputMirror = mode == .talk ? .local(text: talk.text) : controller.input
-        let usesScreen = mode == .type && !isWriteInFront && predictions.screenEnabled
         predictions.update(
             input: input, mode: mode == .talk ? .talk : .type,
             said: mode == .talk ? talk.said.recentTexts : [], isPrivate: isPrivate,
-            screen: usesScreen ? screen : nil)
+            screen: mayReadScreen ? screen : nil)
 
         let isSpeaking = speaker.isSpeaking
         if wasSpeaking, !isSpeaking {

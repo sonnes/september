@@ -28,13 +28,13 @@ func keyFaceTests() {
     }
 
     test("a modifier that macOS holds changes the labels as a tapped one does") {
-        var held = ModifierState()
-        held.mac = .function
-        expectEqual(key("f8").face(under: held).glyph, .text("F8"))
-        expectEqual(key("fn").face(under: held).look, .latched)
-        held.mac = .shift
-        expectEqual(key("key-a").face(under: held).glyph, .text("A"))
-        expectEqual(key("shift-left").face(under: held).look, .latched)
+        let (controller, _) = try makeController()
+        controller.macModifiersChanged(.function)
+        expectEqual(key("f8").face(under: controller.modifiers).glyph, .text("F8"))
+        expectEqual(key("fn").face(under: controller.modifiers).look, .latched)
+        controller.macModifiersChanged(.shift)
+        expectEqual(key("key-a").face(under: controller.modifiers).glyph, .text("A"))
+        expectEqual(key("shift-left").face(under: controller.modifiers).look, .latched)
     }
 
     test("the Spotlight shortcut comes from the settings of macOS") {

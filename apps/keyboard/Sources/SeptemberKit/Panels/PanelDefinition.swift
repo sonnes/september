@@ -14,16 +14,6 @@ public enum PanelAction: Sendable, Hashable {
     case scroll(ScrollDirection)
 }
 
-extension PanelAction {
-    /// What the button does while the user holds it. A scroll repeats. A
-    /// shortcut follows the rule of a held key. Everything else acts once.
-    public var holdBehavior: HoldBehavior {
-        if case .scroll = self { return .repeats }
-        guard case .shortcut(let shortcut) = self, case .virtual(let key) = shortcut.key else { return .once }
-        return .forKey(key, modifiers: shortcut.modifiers)
-    }
-}
-
 // MARK: - Presentation
 
 extension PanelAction {

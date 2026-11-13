@@ -103,7 +103,7 @@ enum Snapshot {
             clipboardClock: { Date().addingTimeInterval(-40 * 60) }, scheduler: NoDelayScheduler())
         let session = assembly.session
         let controller = session.controller
-        controller.style = arguments.contains("--mono") ? .mono : .rainbow
+        assembly.settings.style = arguments.contains("--mono") ? .mono : .rainbow
         let content = WindowContent(session: session, permission: permission, phrases: assembly.phrases)
 
         let typed = value(of: "--typed", in: arguments)
@@ -125,16 +125,15 @@ enum Snapshot {
                 session.speakPressed()
             }
         } else if arguments.contains("--write") {
-            session.frontChanged(.write(.paper))
+            session.writeKeyChanged(true, panel: .paper, front: nil)
             let line = typed ?? "Send the release notes before the we"
             await session.settle()
-            controller.focusChanged(
-                to: EditorCaret(text: line, caret: (line as NSString).length, length: 0).focusedField)
+            session.writeCaretMoved(EditorCaret(text: line, caret: (line as NSString).length, length: 0))
         } else {
-            session.frontChanged(.app(FrontApp(pid: 0, name: "Messages", bundleID: "com.apple.MobileSMS")))
+            session.appActivated(FrontApp(pid: 0, name: "Messages", bundleID: "com.apple.MobileSMS"))
             let text = typed ?? "Are we still on for t"
             for sample in ["", text] {
-                controller.focusChanged(
+                session.focusChanged(
                     to: FocusedField(
                         appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false,
                         text: sample, selection: NSRange(location: (sample as NSString).length, length: 0)))
@@ -149,7 +148,7 @@ enum Snapshot {
                 if arguments.contains("--command") {
                     controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "command-left" }!)
                 } else {
-                    controller.focusChanged(
+                    session.focusChanged(
                         to: FocusedField(
                             appName: "Messages", role: "AXButton", isEditable: false, isSecure: false,
                             text: nil, selection: nil))
@@ -158,8 +157,6 @@ enum Snapshot {
             if arguments.contains("--mine") {
                 guard let userPanel = session.userPanel else { fail("snapshot: \(session.userPanelError ?? "")") }
                 try addSampleButtons(to: userPanel)
-                // My Panel ranks its buttons when an app comes to the front.
-                session.frontChanged(.app(FrontApp(pid: 0, name: "Messages", bundleID: "com.apple.MobileSMS")))
             }
         }
         await session.settle()
@@ -383,7 +380,7 @@ private final class SampleReader: FrontAppReading {
     var menu: [AppShortcut] = []
 
     func menuShortcuts(pid: pid_t) -> [AppShortcut] { menu }
-    func screenContext(pid: pid_t) async -> ScreenContext? { nil }
+    func screenContext(app: FrontApp) async -> ScreenContext? { nil }
 }
 
 /// Does the work of a delay at once, so the snapshot shows the state after

@@ -44,7 +44,7 @@ private struct PhraseButton: View {
             .overlay(shape.strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1))
             .pressable(
                 label: button.accessibilityLabel,
-                trigger: .down(KeyHold(behavior: { [action = button.action] in action.holdBehavior }))
+                trigger: .down(KeyHold(behavior: { [action = button.action] in KeyboardController.holdBehavior(for: action) }))
             ) { isPressed = $0 } action: {
                 press()
             }

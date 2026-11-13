@@ -13,8 +13,8 @@ struct AXFrontAppReader: FrontAppReading {
     }
 
     /// The read runs off the main thread.
-    func screenContext(pid: pid_t) async -> ScreenContext? {
-        guard let app = NSRunningApplication(processIdentifier: pid) else { return nil }
+    func screenContext(app front: FrontApp) async -> ScreenContext? {
+        guard let app = NSRunningApplication(processIdentifier: front.pid) else { return nil }
         let request = ScreenContextReader.Request(app: app, rules: rules)
         return await Task.detached { ScreenContextReader.read(request) }.value
     }
