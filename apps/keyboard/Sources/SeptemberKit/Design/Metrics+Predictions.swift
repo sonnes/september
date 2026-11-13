@@ -16,8 +16,6 @@ extension Metrics {
         /// The mark in place of the words that the field already holds.
         public static let leadInPadding: CGFloat = 2
         public static let leadInOpacity: Double = 0.7
-        /// Old predictions while new ones are on the way.
-        public static let staleOpacity: Double = 0.55
         /// Three rows. The stack keeps this height, so the input bar does not
         /// move when the predictions change.
         public static let stackHeight: CGFloat = tileHeight * 3 + rowSpacing * 2

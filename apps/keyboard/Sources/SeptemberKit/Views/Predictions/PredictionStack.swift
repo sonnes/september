@@ -40,7 +40,6 @@ public struct PredictionStack: View {
                         PredictionRow(stripe: stripe, mode: mode, onType: onType)
                     }
                 }
-                .opacity(engine.isStale ? Metrics.Predictions.staleOpacity : 1)
             }
         }
         .frame(

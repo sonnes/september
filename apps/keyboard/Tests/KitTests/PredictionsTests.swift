@@ -367,7 +367,6 @@ private func engineTests() async {
         expect(engine.stripes.isEmpty)
         await engine.settle()
         expectEqual(engine.stripes.map(\.prediction), Array(tea(PredictionContext(text: "", caret: 0, mode: .type, said: [])).prefix(3)))
-        expect(!engine.isStale)
         expectEqual(engine.stripes.first?.text(toTypeThrough: 2), "p of tea, ")
     }
 
@@ -490,18 +489,16 @@ private func engineTests() async {
         expectEqual(engine.stripes.map(\.prediction), ["new answer"])
     }
 
-    await asyncTest("old predictions stay, marked stale, until the new ones arrive") {
+    await asyncTest("old predictions stay until the new ones arrive") {
         let engine = makeEngine(FakePredictor(answer: tea))
         engine.userTypes(cu)
         await engine.settle()
         let tee = InputMirror.mirrored(text: "I would like a cup of t", caret: 23, selectionLength: 0)
         engine.update(input: tee, mode: .type, said: [])
-        expect(engine.isStale)
         expectEqual(engine.stripes.count, 3)
         expect(engine.stripes[0].matches, "the tea row still continues the field")
         expect(!engine.stripes[2].matches, "the custard row no longer continues the field")
         await engine.settle()
-        expect(!engine.isStale)
     }
 
     await asyncTest("a password field shows no predictions and sends no request") {
@@ -600,7 +597,6 @@ private func engineTests() async {
         engine.update(input: .local(text: "fail"), mode: .type, said: [])
         await engine.settle()
         expect(engine.stripes.isEmpty)
-        expect(!engine.isStale)
     }
 
     await asyncTest("a failed request asks again with the best completion of the partial word") {

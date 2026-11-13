@@ -24,9 +24,6 @@ import Foundation
 public final class PredictionEngine: ObservableObject {
     /// The rows of the stack, best first.
     @Published public private(set) var stripes: [PredictionStripe] = []
-    /// True while the stripes belong to an older text and new ones are on
-    /// the way.
-    @Published public private(set) var isStale = false
     /// The completions of the word at the caret, best first.
     @Published public private(set) var words: [WordCompletion] = []
     /// The message that the stack shows in place of predictions.
@@ -229,7 +226,6 @@ public final class PredictionEngine: ObservableObject {
         cancel()
         predictions = []
         requested = nil
-        isStale = false
     }
 
     private func refreshWords() {
@@ -304,7 +300,6 @@ public final class PredictionEngine: ObservableObject {
     private func ask(_ context: PredictionContext) {
         cancel()
         requested = context
-        isStale = !predictions.isEmpty
         let generation = generation
         let predictor = predictor
         let delay = delay
@@ -327,7 +322,6 @@ public final class PredictionEngine: ObservableObject {
             }
             guard let self, self.generation == generation else { return }
             self.predictions = Array((sentences ?? []).prefix(SuggestionPrompt.count))
-            self.isStale = false
             self.restripe()
         }
     }

@@ -77,7 +77,9 @@ struct MineButtonView: View {
                 press()
             }
             .onHover { isHovered = $0 }
-            .help(button.name)
+            // A text button shows its name, so only a button that shows its
+            // keys needs the name in a tooltip.
+            .help(button.action.hint == nil ? "" : button.name)
     }
 
     @ViewBuilder
