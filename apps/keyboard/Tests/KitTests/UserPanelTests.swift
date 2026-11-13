@@ -72,16 +72,19 @@ func userPanelTests() {
 
 @MainActor
 private func userButtonTests() {
-    test("each kind of user button round-trips through JSON") {
-        let buttons = [
+    test("each kind of user button decodes from the JSON of older versions") {
+        let json = """
+            [{"id": "a", "name": "a", "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "v"}},
+             {"id": "c", "name": "c", "action": {"type": "text", "text": "See you soon"}},
+             {"id": "d", "name": "d", "action": {"type": "privateText"}},
+             {"id": "e", "name": "e", "action": {"type": "shortcut", "key": "f12"}}]
+            """
+        expectEqual(try JSONDecoder().decode([UserButton].self, from: Data(json.utf8)), [
             button("a", .shortcut(pastePlain)),
-            button("b", .sequence([interrupt, interrupt])),
             button("c", .text("See you soon")),
             button("d", .privateText("d")),
             button("e", .shortcut(Shortcut(modifiers: [], key: .virtual(.f12)))),
-        ]
-        let data = try JSONEncoder().encode(buttons)
-        expectEqual(try JSONDecoder().decode([UserButton].self, from: data), buttons)
+        ])
     }
 
     test("a sequence decodes from the JSON of the panels") {
@@ -268,19 +271,19 @@ private func wides(_ count: Int, from start: Int = 0) -> [UserButton] {
     (start..<start + count).map { button("t\($0)", .privateText("t\($0)")) }
 }
 
-private func ids(_ cell: MineCell) -> String {
+private func ids(_ cell: MineCell?) -> String {
     switch cell {
     case .button(let button): button.id
     case .page(let index, let count): "page \(index + 1)/\(count)"
-    case .empty: "-"
+    case nil: "-"
     }
 }
 
-private func describe(_ rows: [MineRow]) -> [String] {
+private func describe(_ rows: [KeypadRow<MineCell?>]) -> [String] {
     rows.map { row in
         switch row {
         case .wide(let cell): ids(cell)
-        case .pair(let left, let right): "\(ids(left)) \(ids(right))"
+        case .cells(let cells): cells.map(ids).joined(separator: " ")
         }
     }
 }

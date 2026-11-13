@@ -1,8 +1,23 @@
-/// The grid of a Write panel and of Mine: `columns` columns, and the rows
-/// of a keypad. A key button takes one slot, and a text button takes a whole row.
+/// A row of a grid: one cell across the grid, or cells one column wide each.
+public enum KeypadRow<Cell> {
+    case wide(Cell)
+    case cells([Cell])
+
+    /// The cells in rows of `columns` cells.
+    public static func rows(_ cells: [Cell], columns: Int) -> [KeypadRow] {
+        let columns = max(columns, 1)
+        return stride(from: 0, to: cells.count, by: columns).map {
+            .cells(Array(cells[$0..<min($0 + columns, cells.count)]))
+        }
+    }
+}
+
+/// The grid of a Write panel and of Mine: `columns` columns and `rowCount`
+/// rows. A key button takes one slot, and a text button takes a whole row.
 public enum PanelLayout {
     public static let columns = 2
-    public static let slotCount = columns * Metrics.Keypad.rows
+    public static let rowCount = 6
+    public static let slotCount = columns * rowCount
 
     public static func span(of action: PanelAction) -> Int {
         action.isText ? columns : 1
@@ -24,15 +39,9 @@ public enum PanelLayout {
         }
     }
 
-    /// The rows of the grid. A text button takes a row of its own. A key
-    /// button after it fills the gap that an earlier key button left.
-    public static func rows(_ buttons: [PanelButton]) -> [[PanelButton]] {
-        rows(buttons) { $0.action.isText }
-    }
-
-    /// The rows of any items of the grid. A wide item takes a row of its own.
-    /// A single item fills the gap that an earlier single item left.
-    public static func rows<Item>(_ items: [Item], isWide: (Item) -> Bool) -> [[Item]] {
+    /// The rows of the items. A wide item takes a row of its own. A single
+    /// item fills the gap that an earlier single item left.
+    private static func rows<Item>(_ items: [Item], isWide: (Item) -> Bool) -> [[Item]] {
         var rows: [[Item]] = []
         var open: Int?
         for item in items {
@@ -47,5 +56,17 @@ public enum PanelLayout {
             }
         }
         return rows
+    }
+
+    /// The full grid of the items: the rows of `rows(_:isWide:)`, then empty
+    /// rows up to `rowCount`. A `nil` cell is an empty slot, so the grid
+    /// keeps its height when it holds few items.
+    public static func grid<Item>(_ items: [Item], isWide: (Item) -> Bool) -> [KeypadRow<Item?>] {
+        let filled: [KeypadRow<Item?>] = rows(items, isWide: isWide).map { row in
+            if row.count == 1, isWide(row[0]) { return .wide(row[0]) }
+            return .cells(row.map(Optional.some) + Array(repeating: nil, count: columns - row.count))
+        }
+        let empty = KeypadRow<Item?>.cells(Array(repeating: nil, count: columns))
+        return filled + Array(repeating: empty, count: max(rowCount - filled.count, 0))
     }
 }

@@ -35,19 +35,16 @@ public enum SettingsPage: String, Sendable, Hashable, CaseIterable, Identifiable
         }
     }
 
-    /// The fill of the sidebar icon. The mock uses the same fill in light
-    /// and dark.
+    /// The fill of the sidebar icon.
     public var iconFill: ThemeColor {
-        let fill: RGBA =
-            switch self {
-            case .voice, .accessibility: Tokens.accent.dark
-            case .speech: RGBA(hex: 0x8B5CF6)
-            case .predictions: RGBA(hex: 0xFF9F0A)
-            case .clipboard: Tokens.rowShift.dark
-            case .myPanel: RGBA(hex: 0x5E5CE6)
-            case .look: RGBA(hex: 0xFF375F)
-            }
-        return ThemeColor(light: fill, dark: fill)
+        switch self {
+        case .voice, .accessibility: Tokens.Settings.blueIcon
+        case .speech: Tokens.Settings.purpleIcon
+        case .predictions: Tokens.Settings.orangeIcon
+        case .clipboard: Tokens.Settings.tealIcon
+        case .myPanel: Tokens.Settings.indigoIcon
+        case .look: Tokens.Settings.pinkIcon
+        }
     }
 }
 

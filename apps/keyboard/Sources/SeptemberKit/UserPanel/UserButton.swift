@@ -32,13 +32,14 @@ public struct NewButton: Sendable, Hashable {
 
 // MARK: - JSON
 
-extension UserButton: Codable {
+extension UserButton: Decodable {
     enum CodingKeys: String, CodingKey {
         case id, name, action
     }
 
-    /// A button in JSON: `{"id": …, "name": …, "action": {…}}`. The action
-    /// of a private button takes the ID of the button.
+    /// A button in the My Panel file of older versions: `{"id": …, "name": …,
+    /// "action": {…}}`. The action of a private button takes the ID of the
+    /// button.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let id = try container.decode(String.self, forKey: .id)

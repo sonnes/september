@@ -46,6 +46,52 @@ public struct Shortcut: Sendable, Hashable {
     }
 }
 
+/// A shortcut in JSON: `{"modifiers": ["command"], "key": "s"}`. The
+/// modifiers can be left out.
+extension Shortcut: Codable {
+    enum CodingKeys: String, CodingKey {
+        case modifiers, key
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let names = try container.decodeIfPresent([String].self, forKey: .modifiers) ?? []
+        self.init(
+            modifiers: try Modifiers(names: names),
+            key: try Key(name: try container.decode(String.self, forKey: .key)))
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(names.dropLast(), forKey: .modifiers)
+        try container.encode(names.last, forKey: .key)
+    }
+
+    /// The names of the modifiers, then the name of the key, as JSON and
+    /// `ShortcutSpec` write them.
+    var names: [String] {
+        let key =
+            switch key {
+            case .character(let character): character
+            case .virtual(let virtual): String(describing: virtual)
+            }
+        return modifiers.heldKeys.map(\.name) + [key]
+    }
+}
+
+extension Shortcut.Key {
+    /// A single character is typed as-is; anything longer names a virtual key.
+    public init(name: String) throws {
+        if name.count == 1 {
+            self = .character(name)
+        } else if let virtual = VirtualKey(name: name) {
+            self = .virtual(virtual)
+        } else {
+            throw PanelDecodingError.unknownKey(name)
+        }
+    }
+}
+
 public struct KeyDefinition: Sendable, Hashable, Identifiable {
     public let id: String
     public let kind: KeyKind

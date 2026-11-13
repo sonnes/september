@@ -33,12 +33,12 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Design` | tokens, metrics, typography, rainbow/mono styles |
 | `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController` |
 | `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map, the key settings of macOS (`KeyTiming`) and the timing of a held key (`KeyPresser`) |
-| `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `KeyboardAssembly` (builds the controller and the session for the app and the snapshots), `SpeakText`, `FrontAppTracker`, `PanelPlacement`, `KeyboardPosition`, `InputBarVisibility` |
-| `Sources/SeptemberKit/Panels` | panel model, JSON loading, the grid of the Write panels, the shortcut suggestions |
+| `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `KeyboardAssembly` (builds the controller and the session for the app and the snapshots), `SpeakText`, `FrontAppTracker`, `PanelPlacement`, `KeyboardPosition`, `InputBarVisibility`, and `LegacyImport` (the JSON files of older versions) |
+| `Sources/SeptemberKit/Panels` | panel model, JSON loading, the grid of Mine and the Write panels (`PanelLayout`), the shortcut suggestions |
 | `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence) and word completions |
 | `Sources/SeptemberKit/ScreenContext` | `ScreenContext`, the rule of each app (`ContextRule`), and `ScreenContextExtractor` |
 | `Sources/SeptemberKit/Speech` | `Speaker`, the macOS voices, ElevenLabs, the Keychain store |
-| `Sources/SeptemberKit/Storage` | `KeyboardDatabase` (`keyboard.sqlite` and its migrations), `SentenceHistory` (the sentences that the user sent), `TextLog` (the dated texts of the Said list and the clipboard history), and `LegacyImport` (the JSON files of older versions) |
+| `Sources/SeptemberKit/Storage` | `KeyboardDatabase` (`keyboard.sqlite` and its migrations), `SentenceHistory` (the sentences that the user sent), and `TextLog` (the dated texts of the Said list and the clipboard history) |
 | `Sources/SeptemberKit/Talk` | Talk mode, the Said list, the Phrases panel |
 | `Sources/SeptemberKit/UserPanel` | My Panel, private text, the Accessibility Keyboard import |
 | `Sources/SeptemberKit/Settings` | the Settings pages and `KeyboardSettings` |

@@ -10,9 +10,6 @@ extension Metrics {
         public static let buttonsWidth: CGFloat =
             TopRow.modeCircle * CGFloat(buttonCount) + TopRow.modeSpacing * CGFloat(buttonCount - 1)
 
-        /// The copied texts in each row. A page of `ClipboardHistory` fills
-        /// the rows.
-        public static let columns = 2
         public static let spacing: CGFloat = Predictions.rowSpacing
         public static let clipHeight: CGFloat = Predictions.tileHeight
         public static let clipHorizontalPadding: CGFloat = 12

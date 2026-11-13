@@ -20,7 +20,7 @@ public enum Metrics {
     /// design system.
     public static let lockBarSize = CGSize(width: 12, height: 2)
     public static let dualSecondaryLabelSize: CGFloat = 11
-    /// The dashes of the border of an empty slot in Mine and in the word row.
+    /// The dashes of the border of an empty slot in the word row.
     public static let emptySlotDash: [CGFloat] = [4, 3]
 
     public static func size(for kind: KeyKind) -> CGSize {

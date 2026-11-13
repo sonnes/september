@@ -16,7 +16,8 @@ import Foundation
 /// - In Type mode, the prompt can hold the app, the window, and the text near
 ///   the field (`ScreenContext`).
 public struct SuggestionPrompt: Equatable, Sendable {
-    /// The count of predictions in one answer.
+    /// The count of predictions in one answer. The prediction stack and a
+    /// page of the clipboard history have this many rows.
     public static let count = 3
     /// The most characters of the field that go to the model.
     public static let maxTypedCharacters = 500

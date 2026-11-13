@@ -3,8 +3,8 @@ import SwiftUI
 /// The clipboard history, in the place of the prediction stack and with its
 /// size, so the bar and the keys do not move.
 ///
-/// A page holds `ClipboardHistory.pageSize` copied texts, in rows of
-/// `Metrics.Clipboard.columns`. The newest text is at the bottom left, next
+/// A page holds `ClipboardHistory.rows` rows of `ClipboardHistory.columns`
+/// copied texts. The newest text is at the bottom left, next
 /// to the bar, as the best prediction is. A column at the right holds Newer, the page number, and Older.
 public struct ClipboardHistoryView: View {
     @ObservedObject private var session: KeyboardSession
@@ -35,15 +35,13 @@ public struct ClipboardHistoryView: View {
         .accessibilityLabel("Clipboard history")
     }
 
-    private static let rows = ClipboardHistory.pageSize / Metrics.Clipboard.columns
-
     private var grid: some View {
         let items = history.page(session.historyPage)
         let date = now()
-        let columns = Metrics.Clipboard.columns
+        let columns = ClipboardHistory.columns
         return VStack(spacing: Metrics.Clipboard.spacing) {
             // The newest row is last, next to the input bar.
-            ForEach((0..<Self.rows).reversed(), id: \.self) { row in
+            ForEach((0..<ClipboardHistory.rows).reversed(), id: \.self) { row in
                 HStack(spacing: Metrics.Clipboard.spacing) {
                     ForEach(0..<columns, id: \.self) { column in
                         let index = row * columns + column
@@ -69,7 +67,7 @@ public struct ClipboardHistoryView: View {
         switch row {
         case _ where count == 1:
             Color.clear
-        case Self.rows - 1:
+        case ClipboardHistory.rows - 1:
             PagerButton(title: "Newer", symbol: "chevron.up", label: "Newer copied texts", isEnabled: page > 0) {
                 session.newerPage()
             }

@@ -15,20 +15,6 @@ struct SectionLabel: View {
     }
 }
 
-/// A row of a keypad grid: one cell across the grid, or cells one column
-/// wide each.
-enum KeypadRow<Cell> {
-    case wide(Cell)
-    case cells([Cell])
-
-    static func rows(_ cells: [Cell], columns: Int) -> [KeypadRow] {
-        let columns = max(columns, 1)
-        return stride(from: 0, to: cells.count, by: columns).map {
-            .cells(Array(cells[$0..<min($0 + columns, cells.count)]))
-        }
-    }
-}
-
 /// The grid of a keypad, Phrases, Mine, and the Write panels. The cells of a
 /// row share the width with the gap of a keypad between them. `cell` draws
 /// one cell at the width that it gets.
@@ -116,6 +102,7 @@ public struct WritePanelGrid: View {
     }
 
     public var body: some View {
+        let rows = PanelLayout.grid(PanelLayout.fitting(panel.buttons)) { $0.action.isText }
         KeypadGrid(rows: rows, columns: PanelLayout.columns) { button, width in
             if let button {
                 ShortcutButtonView(button: button, width: width) { press(button.action) }
@@ -125,16 +112,5 @@ public struct WritePanelGrid: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(panel.title) shortcuts")
-    }
-
-    /// The rows of buttons, with an empty slot (`nil`) in each free cell.
-    private var rows: [KeypadRow<PanelButton?>] {
-        let filled: [KeypadRow<PanelButton?>] = PanelLayout.rows(PanelLayout.fitting(panel.buttons)).map { row in
-            if row.count == 1, row[0].action.isText { return .wide(row[0]) }
-            let cells = row.map(Optional.some)
-            return .cells(cells + Array(repeating: nil, count: PanelLayout.columns - cells.count))
-        }
-        let empty = KeypadRow<PanelButton?>.cells(Array(repeating: nil, count: PanelLayout.columns))
-        return filled + Array(repeating: empty, count: max(Metrics.Keypad.rows - filled.count, 0))
     }
 }

@@ -147,10 +147,14 @@ private func panelFileTests() {
 @MainActor
 private func layoutTests() {
     test("a text button takes a whole row, and later keys fill the gap before it") {
-        let rows = PanelLayout.rows([
-            keyButton("a"), textButton("hello"), keyButton("b"), keyButton("c"),
-        ])
-        expectEqual(rows.map { $0.map(\.id) }, [["a", "b"], ["hello"], ["c"]])
+        let buttons = [keyButton("a"), textButton("hello"), keyButton("b"), keyButton("c")]
+        let rows = PanelLayout.grid(buttons) { $0.action.isText }.map { row in
+            switch row {
+            case .wide(let button): button?.id ?? "-"
+            case .cells(let cells): cells.map { $0?.id ?? "-" }.joined(separator: " ")
+            }
+        }
+        expectEqual(rows, ["a b", "hello", "c -", "- -", "- -", "- -"])
     }
 
     test("a text button costs two slots") {

@@ -42,26 +42,25 @@ extension Metrics {
 extension Metrics {
     /// The keyboard window: the clipboard buttons, the bar, and the keys.
     public enum Screen {
-        /// The distance from the left edge of the window to the keys and the
-        /// bar. The clipboard buttons fit in this space. The app keeps the
-        /// keys in place when the mode changes.
-        public static func keysInset(_ mode: KeyboardMode) -> CGFloat {
-            max(cardKeysInset(mode), clipboardReach)
-        }
-
-        /// The clear space at the left of the keys card in Type mode, or of
-        /// the Talk card in Talk mode, under the clipboard buttons.
-        public static func cardInset(_ mode: KeyboardMode) -> CGFloat {
-            keysInset(mode) - cardKeysInset(mode)
-        }
-
         public static let clipboardReach = Clipboard.buttonsWidth + TopRow.spacing
+        /// The space from the left edge of the keys card to the keys, in
+        /// Type mode.
+        public static let typeCardKeysInset = Detached.keysSidePadding
+        /// The space from the left edge of the Talk card to the keys: the
+        /// Phrases panel and the gap after it.
+        public static let talkCardKeysInset = surfacePadding + Keypad.width + sectionSpacing
 
-        private static func cardKeysInset(_ mode: KeyboardMode) -> CGFloat {
-            switch mode {
-            case .type: Detached.keysSidePadding
-            case .talk: surfacePadding + Keypad.width + sectionSpacing
-            }
+        /// The distance from the left edge of the window to the keys and the
+        /// bar, for a card with the keys `cardKeysInset` from its left edge.
+        /// The clipboard buttons fit in this space.
+        public static func keysInset(cardKeysInset: CGFloat) -> CGFloat {
+            max(cardKeysInset, clipboardReach)
+        }
+
+        /// The clear space at the left of the card, under the clipboard
+        /// buttons.
+        public static func cardInset(cardKeysInset: CGFloat) -> CGFloat {
+            keysInset(cardKeysInset: cardKeysInset) - cardKeysInset
         }
     }
 }
@@ -69,5 +68,6 @@ extension Metrics {
 extension Metrics.Keypad {
     /// The height of the grid. Mine and a message in place of a
     /// panel take the same height, so the window does not change size.
-    public static let gridHeight: CGFloat = buttonHeight * CGFloat(rows) + gap * CGFloat(rows - 1)
+    public static let gridHeight: CGFloat =
+        buttonHeight * CGFloat(PanelLayout.rowCount) + gap * CGFloat(PanelLayout.rowCount - 1)
 }

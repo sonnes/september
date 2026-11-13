@@ -16,9 +16,10 @@ extension Metrics {
         /// The mark in place of the words that the field already holds.
         public static let leadInPadding: CGFloat = 2
         public static let leadInOpacity: Double = 0.7
-        /// Three rows. The stack keeps this height, so the input bar does not
-        /// move when the predictions change.
-        public static let stackHeight: CGFloat = tileHeight * 3 + rowSpacing * 2
+        /// One row for each prediction. The stack keeps this height, so the
+        /// input bar does not move when the predictions change.
+        public static let stackHeight: CGFloat =
+            tileHeight * CGFloat(SuggestionPrompt.count) + rowSpacing * CGFloat(SuggestionPrompt.count - 1)
 
         public static let noticeHeight: CGFloat = 58
         public static let noticeHorizontalPadding: CGFloat = 18

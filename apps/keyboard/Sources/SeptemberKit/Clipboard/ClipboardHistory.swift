@@ -29,8 +29,13 @@ public final class ClipboardHistory: ObservableObject {
     public static let itemLimit = 200
     /// The longest time that the history keeps a text.
     public static let maxAge: TimeInterval = 7 * 24 * 3600
+    /// The copied texts in each row of the history view.
+    public static let columns = 2
+    /// The rows of a page. The history view takes the place of the
+    /// prediction stack, so it has a row for each prediction.
+    public static let rows = SuggestionPrompt.count
     /// The texts on one page of the history view.
-    public static let pageSize = 6
+    public static let pageSize = rows * columns
 
     private static let enabledKey = "clipboardHistoryEnabled"
 

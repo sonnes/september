@@ -168,15 +168,34 @@ public struct KeyboardPosition {
     /// clipboard buttons.
     public static func keysOrigin(ofWindow origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
         let type = typeOrigin(of: origin, in: mode)
-        return CGPoint(x: type.x + Metrics.Screen.cardInset(.type), y: type.y)
+        return CGPoint(x: type.x + cardInset(.type), y: type.y)
     }
 
     /// The corner of the Type mode window whose keys card is at `keys`.
     public static func typeWindowOrigin(forKeys keys: CGPoint) -> CGPoint {
-        CGPoint(x: keys.x - Metrics.Screen.cardInset(.type), y: keys.y)
+        CGPoint(x: keys.x - cardInset(.type), y: keys.y)
+    }
+
+    /// The distance from the left edge of the window to the keys and the bar
+    /// in `mode`. The app keeps the keys in place when the mode changes.
+    public static func keysInset(_ mode: KeyboardMode) -> CGFloat {
+        Metrics.Screen.keysInset(cardKeysInset: cardKeysInset(mode))
+    }
+
+    /// The clear space at the left of the keys card in Type mode, or of the
+    /// Talk card in Talk mode, under the clipboard buttons.
+    public static func cardInset(_ mode: KeyboardMode) -> CGFloat {
+        Metrics.Screen.cardInset(cardKeysInset: cardKeysInset(mode))
+    }
+
+    private static func cardKeysInset(_ mode: KeyboardMode) -> CGFloat {
+        switch mode {
+        case .type: Metrics.Screen.typeCardKeysInset
+        case .talk: Metrics.Screen.talkCardKeysInset
+        }
     }
 
     private static func shift(_ mode: KeyboardMode) -> CGFloat {
-        Metrics.Screen.keysInset(mode) - Metrics.Screen.keysInset(.type)
+        keysInset(mode) - keysInset(.type)
     }
 }

@@ -40,7 +40,7 @@ public struct KeyboardScreen: View {
     }
 
     public var body: some View {
-        let inset = Metrics.Screen.keysInset(controller.mode)
+        let inset = KeyboardPosition.keysInset(controller.mode)
         VStack(alignment: .leading, spacing: 0) {
             if !permission.isTrusted {
                 PermissionBanner()
@@ -82,7 +82,7 @@ public struct KeyboardScreen: View {
                 case .talk: talkKeys
                 }
             }
-            .padding(.leading, Metrics.Screen.cardInset(controller.mode))
+            .padding(.leading, KeyboardPosition.cardInset(controller.mode))
         }
     }
 

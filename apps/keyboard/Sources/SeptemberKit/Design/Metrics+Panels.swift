@@ -11,8 +11,6 @@ extension Metrics {
         /// A keypad with three columns.
         public static let arrowsWidth: CGFloat = buttonWidth * 3 + gap * 2
         public static let cornerRadius: CGFloat = 8
-        /// The rows of the grid of a Write panel.
-        public static let rows = 6
         /// The icon of a button that places a window: a small screen with
         /// the part of the window filled.
         public static let regionIcon = CGSize(width: 26, height: 18)

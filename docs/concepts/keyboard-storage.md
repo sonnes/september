@@ -58,8 +58,9 @@ clipboard history in `clipboard-history.json`, the presses of My Panel in
 `my-panel-usage.json`, and the buttons of My Panel in `my-panel.json`.
 
 At launch, `AppDelegate` calls `LegacyImport.run(database:folder:)` before it
-makes the stores. `LegacyImport` lists each old file once, with its decoder
-and the insert of its rows. For each file in the folder, it does these steps:
+makes the stores. `LegacyImport` is in the `Integration` folder, because it
+reads the old files of several features. It lists each old file once, with
+its decoder and the insert of its rows. For each file in the folder, it does these steps:
 
 1. It decodes the file.
 2. It inserts the rows in one transaction. A row that is already in the table

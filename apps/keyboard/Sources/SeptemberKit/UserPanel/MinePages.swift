@@ -1,15 +1,8 @@
-/// One slot of the Mine grid.
+/// One filled slot of the Mine grid. An empty slot is `nil`.
 public enum MineCell: Sendable, Hashable {
     case button(UserButton)
     /// The page button: the page on screen and the number of pages.
     case page(Int, of: Int)
-    case empty
-}
-
-/// One row of the Mine grid: a text button across both columns, or two cells.
-public enum MineRow: Sendable, Hashable {
-    case wide(MineCell)
-    case pair(MineCell, MineCell)
 }
 
 /// How Mine puts the buttons on pages. A page is the grid of `PanelLayout`.
@@ -40,18 +33,11 @@ public enum MinePages {
 
     /// The rows of one page, placed by `PanelLayout`. The page button comes
     /// last when there is more than one page. Empty slots fill the grid.
-    public static func rows(for buttons: [UserButton], page: Int, of count: Int) -> [MineRow] {
-        func isWide(_ cell: MineCell) -> Bool {
+    public static func rows(for buttons: [UserButton], page: Int, of count: Int) -> [KeypadRow<MineCell?>] {
+        let cells = buttons.map(MineCell.button) + (count > 1 ? [.page(page, of: count)] : [])
+        return PanelLayout.grid(cells) { cell in
             if case .button(let button) = cell { return button.action.isText }
             return false
-        }
-        let cells = buttons.map(MineCell.button) + (count > 1 ? [.page(page, of: count)] : [])
-        var rows = PanelLayout.rows(cells, isWide: isWide)
-        rows += Array(repeating: [], count: max(Metrics.Keypad.rows - rows.count, 0))
-
-        return rows.map { cells in
-            if cells.count == 1, isWide(cells[0]) { return .wide(cells[0]) }
-            return .pair(cells.first ?? .empty, cells.count > 1 ? cells[1] : .empty)
         }
     }
 
