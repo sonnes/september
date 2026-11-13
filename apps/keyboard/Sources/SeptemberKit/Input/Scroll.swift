@@ -30,7 +30,6 @@ public enum ScrollDirection: String, Sendable, Hashable, CaseIterable {
 /// clicks.
 @MainActor
 public final class PointerRestTracker {
-    /// The time that the pointer stays still before it rests.
     public static let restDelay: TimeInterval = 0.4
 
     private let scheduler: any DelayScheduler

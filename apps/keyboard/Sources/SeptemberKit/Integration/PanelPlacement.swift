@@ -11,10 +11,8 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
 
     public var id: Self { self }
 
-    /// The name of the saved frame in `UserDefaults`.
     public var frameName: String { "September Keyboard Panel \(rawValue)" }
 
-    /// The bundle ID of Rectangle.
     public static let rectangleBundleID = "com.knollsoft.Rectangle"
 
     /// The panels that show. The Rectangle panel shows only when Rectangle
@@ -116,7 +114,6 @@ public enum PanelPlacement {
         return CGPoint(x: left + leftPanels, y: screen.minY + margin)
     }
 
-    /// True when a saved frame is on one of the screens.
     public static func isVisible(_ frame: CGRect, on screens: [CGRect]) -> Bool {
         screens.contains { $0.intersects(frame) }
     }
@@ -129,7 +126,6 @@ public enum PanelPlacement {
 /// they are on the screen.
 @MainActor
 public struct KeyboardPosition {
-    /// The name of the saved place in `UserDefaults`.
     public static let key = "September Keyboard Window Origin"
     private let defaults: UserDefaults
 

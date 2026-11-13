@@ -4,7 +4,7 @@ import Foundation
 ///
 /// The text comes from `packages/core/rules/prompts/suggestions.ts`, with
 /// these changes for the Mac:
-/// - It asks for three predictions, the rows of the stack.
+/// - It asks for `count` predictions, the rows of the stack.
 /// - It has no search prompt. A press types at the caret and cannot replace
 ///   the typed words, so each prediction must continue them.
 /// - It asks for the words after the typed words only. The on-device model

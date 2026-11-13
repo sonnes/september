@@ -118,7 +118,6 @@ private func accountRoutes(_ request: URLRequest, _ body: Data) -> StubURLProtoc
     }
 }
 
-/// A speech engine that the test drives by hand.
 @MainActor
 final class FakeEngine: SpeechEngine {
     var ready = true
@@ -156,7 +155,6 @@ final class FakeEngine: SpeechEngine {
 
 private struct Broken: Error {}
 
-/// Lets the tasks that are waiting for the main actor run.
 @MainActor
 private func settle() async {
     for _ in 0..<20 { await Task.yield() }

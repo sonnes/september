@@ -16,7 +16,6 @@ public final class UserPanelStore: ObservableObject {
         didSet { defaults.set(makeNewTextPrivate, forKey: Self.makeNewTextPrivateKey) }
     }
 
-    /// The `UserDefaults` key of `makeNewTextPrivate`.
     public static let makeNewTextPrivateKey = "myPanel.makeNewTextPrivate"
 
     private let database: KeyboardDatabase

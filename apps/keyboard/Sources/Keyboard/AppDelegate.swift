@@ -22,12 +22,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var session: KeyboardSession!
     private var controller: KeyboardController { session.controller }
     private var speech: SpeechServices!
-    /// The sentences that the user sent, in `keyboard.sqlite`.
     private var history: SentenceHistory!
     private var content: WindowContent!
     private var settingsWindow: SettingsWindowController!
     private var write: WriteController!
-    /// Held strongly: the tap's callback does not retain it.
+    /// Held strongly: the event monitors hold it weakly.
     private var otherInput: OtherInputMonitor?
     /// SIGTERM and SIGINT, for example from `make stop`, skip
     /// `applicationWillTerminate`. These handlers release the modifiers first.
@@ -166,8 +165,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// Adds each copy to the clipboard history. macOS has no notification for
-    /// a change of the clipboard, so the keyboard reads its change count every
-    /// 0.5 seconds.
+    /// a change of the clipboard, so the keyboard reads its change count on a
+    /// timer.
     private func watchClipboard() {
         clipboardTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.session.pollClipboard() }

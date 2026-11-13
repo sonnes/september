@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A single key. One view covers all four kinds from the component library —
+/// A single key. One view covers every kind from the component library —
 /// they differ only in fill, label treatment and size.
 public struct KeyView: View {
     private let key: KeyDefinition

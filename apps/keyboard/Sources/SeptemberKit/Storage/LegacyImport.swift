@@ -39,8 +39,6 @@ public enum LegacyImport {
         }
     }
 
-    /// One old file: its name, and a decoder that gives the insert of its
-    /// rows.
     private struct File {
         let name: String
         let decode: (Data) throws -> (KeyboardDatabase) throws -> Void

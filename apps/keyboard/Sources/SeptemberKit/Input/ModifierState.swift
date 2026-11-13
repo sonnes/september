@@ -12,7 +12,6 @@ public struct ModifierState: Sendable, Equatable {
     public init() {}
 
     public var active: Modifiers { own.union(mac) }
-    /// The modifiers that the keyboard itself latches or locks.
     public var own: Modifiers { latched.union(locked) }
     /// The modifiers that a posted key holds. Caps lock is not one, because
     /// macOS owns its toggle.
@@ -27,7 +26,6 @@ public struct ModifierState: Sendable, Equatable {
     public var isCapsLockOn: Bool { locked.contains(.capsLock) }
 
     public mutating func tap(_ modifier: Modifiers) {
-        // Caps lock is a plain toggle — it never expires after one keystroke.
         if modifier == .capsLock {
             if locked.contains(.capsLock) {
                 locked.remove(.capsLock)

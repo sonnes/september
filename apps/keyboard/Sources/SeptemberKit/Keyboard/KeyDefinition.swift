@@ -1,10 +1,8 @@
 import CoreGraphics
 
-/// What pressing a key does.
 public enum KeyAction: Sendable, Hashable {
     /// Type a character, subject to the current shift / caps lock state.
     case character(String)
-    /// Post a named key (return, arrows, F5 …).
     case virtual(VirtualKey)
     /// Latch, lock or clear a modifier.
     case modifier(Modifiers)
@@ -13,7 +11,6 @@ public enum KeyAction: Sendable, Hashable {
     case function(Int)
 }
 
-/// A modifier combination plus the key it applies to.
 public struct Shortcut: Sendable, Hashable {
     public enum Key: Sendable, Hashable {
         case character(String)
@@ -49,7 +46,6 @@ public struct Shortcut: Sendable, Hashable {
     }
 }
 
-/// One key on the keyboard.
 public struct KeyDefinition: Sendable, Hashable, Identifiable {
     public let id: String
     public let kind: KeyKind

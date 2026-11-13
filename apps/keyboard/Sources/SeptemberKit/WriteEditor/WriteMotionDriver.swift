@@ -1,8 +1,8 @@
 import AppKit
 import QuartzCore
 
-/// Runs one animation at a time, and calls `step` with the progress about
-/// 120 times a second. A new run starts from where the last one stopped, so
+/// Runs one animation at a time, and calls `step` with the progress at each
+/// tick of its timer. A new run starts from where the last one stopped, so
 /// a paper that grows a line at a time never jumps.
 ///
 /// The paper moves its window frame and its scroll with this driver. It uses

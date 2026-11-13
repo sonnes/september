@@ -82,7 +82,6 @@ func modifierStateTests() {
 }
 
 func keyCodeMapTests() {
-    // A stub of a US layout: keycode 0 is "a", 18 is "1", shift changes both.
     let map = KeyCodeMap { code, modifiers in
         switch (code, modifiers.contains(.shift)) {
         case (0, false): "a"

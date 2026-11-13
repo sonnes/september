@@ -75,7 +75,6 @@ struct TextLog {
         }
     }
 
-    /// Removes every text.
     func clear() {
         try? database.execute("DELETE FROM \(table)")
     }

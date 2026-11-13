@@ -4,7 +4,6 @@ import SwiftUI
 /// A panel that floats above every app and never takes focus, so the app the
 /// user is typing into keeps its caret and stays frontmost.
 final class FloatingPanel: NSPanel {
-    /// Where on the screen the panel sits.
     enum Placement {
         /// At the bottom right of the visible frame, inside the margin.
         case bottomRight

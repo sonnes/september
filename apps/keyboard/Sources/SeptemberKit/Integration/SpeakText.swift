@@ -3,7 +3,6 @@ import Foundation
 /// What Speak reads in Type mode: the selection of the field, or the whole
 /// field when nothing is selected.
 public struct SpeakText: Equatable, Sendable {
-    /// The text that the voice reads.
     public let text: String
     /// The text of the bar when Speak was pressed.
     public let source: String

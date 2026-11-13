@@ -22,7 +22,6 @@ final class RecordingSink: KeystrokeSink, @unchecked Sendable {
         media = []
     }
 
-    /// Key-down events only — the shape a caller cares about.
     var downs: [(key: UInt16, flags: Modifiers)] {
         posted.filter(\.isDown).map { ($0.virtualKey, $0.flags) }
     }

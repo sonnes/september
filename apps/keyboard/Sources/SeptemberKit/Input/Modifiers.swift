@@ -1,6 +1,5 @@
 import CoreGraphics
 
-/// Modifier keys, as a set so combinations are one value.
 public struct Modifiers: OptionSet, Sendable, Hashable {
     public let rawValue: UInt8
     public init(rawValue: UInt8) { self.rawValue = rawValue }

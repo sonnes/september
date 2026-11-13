@@ -207,8 +207,8 @@ enum Snapshot {
 
     /// The keyboard window with the Write paper open above it, as
     /// `WritePaperController` places and draws it. The screen is a large one,
-    /// with 1,000 points above the keyboard. The keyboard floats above the
-    /// paper, so it is drawn last.
+    /// with room for the paper above the keyboard. The keyboard floats above
+    /// the paper, so it is drawn last.
     private static func paperScene(_ content: WindowContent, markdown: String) -> AnyView {
         let keyboard = content.keyboard()
         let keyboardSize = WindowContent.measure(keyboard)
@@ -302,8 +302,7 @@ enum Snapshot {
         for sample in samples { try store.add(sample) }
     }
 
-    /// The sample copies of the clipboard history, oldest first. The history
-    /// dates each copy 40 minutes ago.
+    /// The sample copies of the clipboard history, oldest first.
     private static func addSampleCopies(to session: KeyboardSession, pasteboard: MemoryPasteboard) {
         for text in [
             "Standup moved to 10:30", "Can you review my pull request today?",

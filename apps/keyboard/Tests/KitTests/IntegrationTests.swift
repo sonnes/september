@@ -398,8 +398,6 @@ private func makeSession(
         database: database)
 }
 
-/// Reads the menu and the screen of the app in front from memory, and
-/// counts the reads.
 @MainActor
 private final class FakeFrontAppReader: FrontAppReading {
     var menu: [AppShortcut] = []
@@ -418,14 +416,12 @@ private final class FakeFrontAppReader: FrontAppReading {
     }
 }
 
-/// The caret and the text for Speak of the Write window, from memory.
 @MainActor
 private final class FakeWrite: WriteReading {
     var caret = EditorCaret(text: "", caret: 0, length: 0)
     var speech = EditorSpeech(selection: "", markdown: "")
 }
 
-/// Lets the time of a screen read pass, then waits for the read.
 @MainActor
 private func passScreenDelay(_ parts: SessionParts) async {
     parts.clock.advance(to: parts.clock.now + KeyboardSession.screenReadDelay)
@@ -460,7 +456,6 @@ private final class CupCompleter: WordCompleting {
     }
 }
 
-/// The focus comes to an empty field, and then the user types `text` in it.
 @MainActor
 private func userTypes(_ text: String, in parts: SessionParts) async throws {
     parts.controller.focusChanged(to: field("", caret: 0))
@@ -1283,7 +1278,6 @@ private func clipboardSessionTests() async {
 
     let command = Modifiers.command
     let commandKey: UInt16 = 55
-    /// The keys of the chords that the sink got, without the Command key.
     func chordKeys(_ sink: RecordingSink) -> [UInt16] {
         sink.downs.map(\.key).filter { $0 != commandKey }
     }

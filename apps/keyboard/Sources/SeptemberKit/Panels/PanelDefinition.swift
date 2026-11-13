@@ -92,7 +92,6 @@ extension PanelAction: CustomStringConvertible, CustomDebugStringConvertible {
     public var debugDescription: String { description }
 }
 
-/// One button in a shortcut panel.
 public struct PanelButton: Sendable, Hashable, Identifiable {
     public let id: String
     public let label: String

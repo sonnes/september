@@ -8,7 +8,6 @@ import Foundation
 @MainActor
 public final class TalkSession: ObservableObject {
     @Published public private(set) var text = ""
-    /// The Talk history.
     public let said: SaidList
     /// The voice that speaks the bar and the Said list.
     public var speech: (any SpeechOutput)?

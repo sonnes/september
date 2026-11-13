@@ -181,7 +181,6 @@ private func heldKeyTests() {
     }
 }
 
-/// A clock that moves only when a test moves it.
 @MainActor
 final class FakeClock: DelayScheduler {
     private final class Item: ScheduledWork {
@@ -210,7 +209,6 @@ final class FakeClock: DelayScheduler {
         return item
     }
 
-    /// Runs each piece of work that is due by `time`, in order.
     func advance(to time: TimeInterval) {
         while let next = items
             .filter({ !$0.isCancelled && $0.at <= time })
@@ -224,7 +222,6 @@ final class FakeClock: DelayScheduler {
     }
 }
 
-/// Counts what a press does.
 @MainActor
 final class PressLog {
     var acts = 0

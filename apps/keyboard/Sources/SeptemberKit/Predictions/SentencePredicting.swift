@@ -2,7 +2,6 @@ import Foundation
 
 /// Gives sentence predictions for a context, best first.
 public protocol SentencePredicting: Sendable {
-    /// The state of the model.
     var availability: PredictionAvailability { get }
     func predictions(for context: PredictionContext) async throws -> [String]
 }

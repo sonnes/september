@@ -7,10 +7,8 @@ extension Metrics {
         public static let width: CGFloat = 150
         public static let gap: CGFloat = 6
         public static let buttonHeight: CGFloat = 44
-        /// One column: half the width, less half the gap.
         public static let buttonWidth: CGFloat = (width - gap) / 2
-        /// A keypad with three columns: three buttons of the standard width in
-        /// a row.
+        /// A keypad with three columns.
         public static let arrowsWidth: CGFloat = buttonWidth * 3 + gap * 2
         public static let cornerRadius: CGFloat = 8
         /// The rows of the grid of a Write panel.
@@ -25,9 +23,7 @@ extension Metrics {
         public static let regionCornerRadius: CGFloat = 1.5
         /// Long keys, such as a sequence, shrink to fit the button.
         public static let keysMinimumScale: CGFloat = 0.7
-        /// The dash of the border of an empty slot.
         public static let emptySlotDash: CGFloat = 3
-        /// The padding of the text in a text button.
         public static let textPadding: CGFloat = 8
 
         /// The name that shows above a button under the pointer.

@@ -18,7 +18,7 @@ extension TextLogEntry {
 /// The texts that the user copied, newest first.
 ///
 /// The history keeps its texts in the `clip` table of the keyboard database,
-/// for 7 days and up to `itemLimit` texts. With no database file, the
+/// for `maxAge` and up to `itemLimit` texts. With no database file, the
 /// history stays in memory.
 ///
 /// The history is on by default. When the user turns it off, the history
@@ -47,7 +47,6 @@ public final class ClipboardHistory: ObservableObject {
     private let defaults: UserDefaults
     private let now: () -> Date
 
-    /// Opens the history on `database`.
     public init(
         database: KeyboardDatabase, defaults: UserDefaults = .standard, now: @escaping () -> Date = Date.init
     ) {
@@ -73,7 +72,6 @@ public final class ClipboardHistory: ObservableObject {
         items = log.entries(at: now())
     }
 
-    /// Removes every text.
     public func clear() {
         items = []
         log.clear()

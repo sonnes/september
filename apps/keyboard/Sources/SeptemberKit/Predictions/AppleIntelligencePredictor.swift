@@ -59,8 +59,8 @@ enum FoundationModelsPredictor {
             .filter { !$0.isEmpty }
     }
 
-    /// Exactly `SuggestionPrompt.count` strings. A free-form prompt for three
-    /// lines often gives one line. Each string starts with the answer prefix.
+    /// Exactly `SuggestionPrompt.count` strings. A free-form prompt for that count
+    /// of lines often gives one line. Each string starts with the answer prefix.
     /// The guide supports a literal and `.*` only, with no character classes.
     /// The prefix holds only letters and apostrophes, so it needs no escape.
     private static func schema(for prompt: SuggestionPrompt) throws -> GenerationSchema {

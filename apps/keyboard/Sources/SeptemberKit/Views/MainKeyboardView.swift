@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The QWERTY block: six rows filling the keyboard width, under an optional
-/// header such as the word completions.
+/// The QWERTY block: the rows of `KeyboardLayout` across the keyboard width,
+/// under an optional header such as the word completions.
 public struct MainKeyboardView<Header: View>: View {
     @EnvironmentObject private var controller: KeyboardController
 

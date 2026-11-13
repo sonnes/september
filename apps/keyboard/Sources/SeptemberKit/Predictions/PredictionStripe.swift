@@ -7,11 +7,9 @@ import Foundation
 /// the caret shows as its full tile, and a press types only the rest of it.
 /// This follows the stripe rules of `packages/core/rules/stripes.ts`.
 public struct PredictionStripe: Equatable, Sendable {
-    /// The most tiles in one row.
     public static let maxTiles = 6
 
     public let prediction: String
-    /// The words that the row shows.
     public let tiles: [String]
     /// The count of words that the field already holds. In Type mode the
     /// row shows a lead-in mark in their place.

@@ -31,7 +31,6 @@ public final class InputBarVisibility: ObservableObject {
             || (focusedField == nil && !input.isEmpty)
     }
 
-    /// Shows the bar at once, or hides it after the delay.
     public func update(_ wantsBar: Bool) {
         if wantsBar {
             pendingHide?.cancel()

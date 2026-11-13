@@ -61,7 +61,6 @@ public enum Metrics {
         public static let cornerRadius: CGFloat = 24
         public static let spacing: CGFloat = 12
         public static let horizontalPadding: CGFloat = 18
-        /// The gap between typed text and the caret.
         public static let caretGap: CGFloat = 2
         public static let caret = CGSize(width: 1.5, height: 20)
         public static let caretBlink: TimeInterval = 0.6

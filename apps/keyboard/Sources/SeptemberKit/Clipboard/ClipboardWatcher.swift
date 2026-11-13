@@ -13,7 +13,6 @@ public protocol ClipboardAccess: AnyObject {
     func write(_ text: String)
 }
 
-/// A clipboard in memory.
 @MainActor
 public final class MemoryPasteboard: ClipboardAccess {
     public static let textType = "public.utf8-plain-text"

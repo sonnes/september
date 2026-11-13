@@ -34,7 +34,6 @@ public protocol DelayScheduler {
     func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any ScheduledWork
 }
 
-/// Schedules work on the main queue.
 public struct MainQueueScheduler: DelayScheduler {
     public init() {}
 

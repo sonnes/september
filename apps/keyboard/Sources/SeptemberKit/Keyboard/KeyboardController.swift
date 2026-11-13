@@ -34,7 +34,6 @@ public final class KeyboardController: ObservableObject {
     /// password field. The predictions, Speak, the text on screen, the
     /// clipboard history, and the tree viewer get no text of the field then.
     public var hidesFieldText: Bool { input == .secure }
-    /// Where private text buttons keep their text.
     public var privateTexts: any PrivateTextStore = KeychainPrivateTextStore()
     /// In Talk mode, the keys type into `talk` and the app in front gets no
     /// events.
@@ -115,7 +114,6 @@ public final class KeyboardController: ObservableObject {
         }
     }
 
-    /// Shows the accents of a held letter.
     public func showAccents(_ choices: [String]) {
         accentChoices = choices
     }
@@ -156,7 +154,6 @@ public final class KeyboardController: ObservableObject {
         case scroll(ScrollDirection)
     }
 
-    /// An F-key with no chord presses its media key.
     private func control(for action: KeyAction, modifiers: ModifierState) -> MacControl? {
         guard case .function(let number) = action, !modifiers.holdsChord else { return nil }
         return MediaKey.onFunctionKey(number).map(MacControl.media)
@@ -309,8 +306,6 @@ public final class KeyboardController: ObservableObject {
         let chord = modifiers.chord
 
         if chord.isEmpty {
-            // Plain typing: shift picks the secondary glyph on dual keys and
-            // uppercases letters.
             let text: String
             if modifiers.active.contains(.shift), let secondary {
                 text = secondary
@@ -337,7 +332,6 @@ public final class KeyboardController: ObservableObject {
                     held: heldAtOS)
             )
         } else {
-            // Nothing on this layout produces the character — type it directly.
             sink.type(text)
         }
     }

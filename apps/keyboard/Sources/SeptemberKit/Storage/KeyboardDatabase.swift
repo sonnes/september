@@ -118,7 +118,6 @@ public final class KeyboardDatabase {
         URL.applicationSupportDirectory.appendingPathComponent("September Keyboard", isDirectory: true)
     }
 
-    /// `keyboard.sqlite` in `folder`.
     public static var defaultURL: URL {
         folder.appendingPathComponent("keyboard.sqlite")
     }
@@ -183,17 +182,14 @@ public final class KeyboardDatabase {
         return database
     }
 
-    /// The schema version of the file.
     public var version: Int {
         Int((try? query("PRAGMA user_version"))?.first?.first?.int ?? 0)
     }
 
-    /// Runs one statement that gives no rows.
     public func execute(_ sql: String, _ values: [DatabaseValue] = []) throws {
         _ = try query(sql, values)
     }
 
-    /// Runs one statement and gives its rows.
     public func query(_ sql: String, _ values: [DatabaseValue] = []) throws -> [[DatabaseValue]] {
         var statement: OpaquePointer?
         try check(sqlite3_prepare_v2(handle, sql, -1, &statement, nil))

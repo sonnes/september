@@ -6,7 +6,7 @@ import Foundation
 public struct FocusedField: Equatable, Sendable {
     /// `nil` when the owning process reports no name.
     public var appName: String?
-    /// `AXTextField`, `AXTextArea`, `AXComboBox`… — kept for diagnostics.
+    /// `AXTextField`, `AXTextArea`, `AXComboBox`, or another role.
     public var role: String
     /// `AXSecureTextField`, `AXDesktop`… `nil` when the element has none.
     public var subrole: String?
@@ -39,7 +39,6 @@ public struct FocusedField: Equatable, Sendable {
     /// The subrole of a password field.
     public static let secureSubrole = "AXSecureTextField"
 
-    /// True when an element with `subrole` is a password field.
     public static func isSecure(subrole: String?) -> Bool {
         subrole == secureSubrole
     }

@@ -1,8 +1,7 @@
 import Foundation
 
-/// Minimal test harness. Xcode is not installed on the dev machine, so neither
-/// swift-testing nor XCTest is available to SwiftPM; this keeps the red/green
-/// loop in the terminal. Swap for swift-testing once Xcode is present.
+/// A minimal test harness. The tests run as a plain executable
+/// (`swift run KitTests`), with no XCTest and no swift-testing.
 enum Run {
     nonisolated(unsafe) static var passed = 0
     nonisolated(unsafe) static var failures: [String] = []

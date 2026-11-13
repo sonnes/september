@@ -27,8 +27,6 @@ public struct KeyCodeMap: Sendable {
 
     private static func table(_ probe: (UInt16, Modifiers) -> String?) -> [String: Resolved] {
         var table: [String: Resolved] = [:]
-        // Plain keys win over shifted and option-shifted spellings of the same
-        // character, so probe in increasing order of effort.
         for modifiers: Modifiers in [[], .shift, .option, [.option, .shift]] {
             for code: UInt16 in 0..<128 {
                 guard let produced = probe(code, modifiers), !produced.isEmpty else { continue }

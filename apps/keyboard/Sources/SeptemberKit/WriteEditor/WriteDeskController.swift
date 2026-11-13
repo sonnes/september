@@ -27,8 +27,9 @@ public enum WriteDeskCommand: Equatable, Sendable {
 /// A blur of the screen sits behind the cards, the actions, and the Find
 /// field, so that they stand clear of the windows below.
 ///
-/// The cards rise out of the input bar when the desk opens, 30 ms apart, and
-/// go back down into it when the desk closes. With Reduce Motion on, the
+/// The cards rise out of the input bar when the desk opens,
+/// `Metrics.WriteMotion.cardStagger` apart, and go back down into it when the
+/// desk closes. With Reduce Motion on, the
 /// cards appear and go with no motion.
 ///
 /// The Find field takes the typing. The left and the right arrows move
@@ -39,7 +40,6 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     typealias Motion = Metrics.WriteMotion
 
     public let window: WriteDeskWindow
-    /// The documents, the query, and the selected card.
     public private(set) var desk = WriteDesk(documents: [], current: nil)
     /// The title of the document of the last Move to Trash, while Undo shows.
     public private(set) var undoTitle: String?
@@ -49,7 +49,6 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     public private(set) var isOpen = false
 
     public var onCommand: ((WriteDeskCommand) -> Void)?
-    /// Called with the Find query after each change.
     public var onQueryChange: ((String) -> Void)?
     /// Called when the time for Undo ends.
     public var onUndoEnd: (() -> Void)?
@@ -188,7 +187,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         updateNotice()
     }
 
-    /// Shows Undo for the document of a Move to Trash, for 8 seconds.
+    /// Shows Undo for the document of a Move to Trash for `Motion.undoTime`.
     public func showUndo(title: String) {
         undoTitle = title
         updateNotice()
@@ -208,7 +207,6 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         updateNotice()
     }
 
-    /// The notice shows the error, or else Undo.
     private func updateNotice() {
         let wasShown = !notice.isHidden
         fillNotice()

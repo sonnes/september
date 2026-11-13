@@ -31,7 +31,6 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
     /// The box of the empty last paragraph, which has no character to hold it.
     private var trailingBox: WriteBlockBox?
     lazy var overlay = WriteOverlay(textView: self)
-    /// True when the last change came from a key, not from the pointer.
     var lastInputWasKey = false
     /// The number of edits in progress. One key press can make several
     /// changes, such as the text and then a Markdown mark. The editor reports
@@ -379,7 +378,6 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         }
     }
 
-    /// Checks or unchecks the to-do item at `location`.
     public func toggleTask(at location: Int) {
         let paragraph = WriteText.paragraph(at: location, in: string as NSString)
         guard case .task(let checked, let depth) = kind(ofParagraph: paragraph) else { return }
@@ -497,7 +495,6 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         typingAttributes = WriteStyle.typingAttributes(box, marks: marks, link: link)
     }
 
-    /// The box of the paragraph at the caret.
     private func currentBox() -> WriteBlockBox {
         let ns = string as NSString
         let paragraph = WriteText.paragraph(at: min(selectedRange().location, ns.length), in: ns)

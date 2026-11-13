@@ -5,7 +5,6 @@ import Foundation
 /// `--snapshot` build the keyboard here, so both join the parts the same way.
 @MainActor
 public struct KeyboardAssembly {
-    /// The session. Its controller is `session.controller`.
     public let session: KeyboardSession
     /// The Phrases panel of Talk mode.
     public let phrases: PanelDefinition

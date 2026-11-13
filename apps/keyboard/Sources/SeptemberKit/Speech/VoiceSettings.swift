@@ -1,7 +1,6 @@
 import Combine
 import Foundation
 
-/// The service that speaks.
 public enum SpeechProvider: String, Codable, CaseIterable, Sendable {
     /// The macOS voices, which include Personal Voice. Nothing leaves the Mac.
     case system
@@ -44,7 +43,6 @@ public struct VoiceSettings: Codable, Equatable, Sendable {
         case storedVolume = "volume"
     }
 
-    /// The sound of the chosen Expression on the chosen model.
     public var sound: VoiceSound { expression.sound(model: modelID) }
 }
 

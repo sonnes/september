@@ -2,7 +2,6 @@ import AppKit
 import Foundation
 import SeptemberKit
 
-/// Records what Talk mode asks the voice to say.
 @MainActor
 private final class SpeechSpy: SpeechOutput {
     var spoken: [String] = []
@@ -19,7 +18,6 @@ private func layoutKey(_ id: String) -> KeyDefinition {
     fatalError("no key \(id)")
 }
 
-/// A controller in Talk mode with a speech spy attached.
 @MainActor
 private func makeTalkController() throws -> (KeyboardController, RecordingSink, SpeechSpy) {
     let (controller, sink) = try makeController()

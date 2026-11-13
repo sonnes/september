@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Mine: the buttons of the user in two columns, most used first. Each page
-/// shows 11 slots of buttons and a page button. A text button takes two
-/// columns, and a private text button shows a lock and its name only.
+/// Mine: the buttons of the user in the grid of `PanelLayout`, most used
+/// first, on the pages of `MinePages`. A text button takes a whole row, and
+/// a private text button shows a lock and its name only.
 ///
 /// The caller gives the buttons in the order to show, from
 /// `UserPanelStore.ranked(by:)`, and ranks them again only when an app comes
@@ -154,7 +154,6 @@ struct MinePageButton: View {
 }
 
 extension View {
-    /// The surface of a Mine button: the radius of the keypad buttons.
     fileprivate func mineChrome(fill: ThemeColor, stroke: ThemeColor) -> some View {
         background(
             RoundedRectangle(cornerRadius: Metrics.Keypad.cornerRadius, style: .continuous)

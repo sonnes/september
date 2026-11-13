@@ -22,9 +22,7 @@ extension Metrics {
         public static let headingSpaceBefore: CGFloat = 1.3
         /// The text size of code, in `em`.
         public static let codeScale: CGFloat = 0.9
-        /// The space inside a code block, at the top and the bottom.
         public static let codePaddingVertical: CGFloat = 24
-        /// The space inside a code block, at the left and the right.
         public static let codePaddingHorizontal: CGFloat = 13.6
         public static let codeCornerRadius: CGFloat = 6
         /// The indent of each list level.
@@ -47,7 +45,6 @@ extension Metrics {
         public static let sideMargin: CGFloat = 48
         /// The space above and below the text on the paper.
         public static let paperMargin: CGFloat = 48
-        /// The corners of the paper, the same as the cards of the keyboard.
         public static let paperCornerRadius: CGFloat = Detached.cornerRadius
         /// The space between a save error and the corner of the paper.
         public static let noticePadding: CGFloat = 10
@@ -66,9 +63,7 @@ extension Metrics {
         public static let cardSize = CGSize(width: 200, height: 283)
         public static let cardGap: CGFloat = 24
         public static let cardCornerRadius: CGFloat = 12
-        /// The space inside a card.
         public static let cardPadding: CGFloat = 16
-        /// The selected card rises by this height.
         public static let selectedLift: CGFloat = 14
         public static let selectionRing: CGFloat = 3
         /// The dashes of the border of the New Document card.
@@ -86,7 +81,6 @@ extension Metrics {
         public static let noticeSize = CGSize(width: 420, height: 40)
         /// The space between the blur behind the desk and the parts on it.
         public static let backdropPadding: CGFloat = 24
-        /// The corners of the blur, the same as the cards of the keyboard.
         public static let backdropCornerRadius: CGFloat = Detached.cornerRadius
         /// A card rises from this scale and from this depth below its place.
         public static let riseScale: CGFloat = 0.6
@@ -101,7 +95,7 @@ extension Metrics {
         public static let caretGlide: TimeInterval = 0.105
         /// The caret stays solid for this time after a change, then blinks.
         public static let caretIdle: TimeInterval = 0.5
-        /// One blink: solid to 40%, out at 80%, solid at 100%.
+        /// The time of one blink.
         public static let caretBlink: TimeInterval = 1
         public static let caretBlinkKeyTimes: [Double] = [0, 0.4, 0.8, 1]
         public static let caretBlinkValues: [Double] = [1, 1, 0, 1]

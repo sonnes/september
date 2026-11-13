@@ -22,10 +22,8 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
     private var page: CGRect = .zero
     private let frameMotion = WriteMotionDriver()
     private let scrollMotion = WriteMotionDriver()
-    /// The frame that the paper moves to.
     private var targetFrame: CGRect?
 
-    /// Called when the paper closes.
     public var onClose: (() -> Void)?
     private weak var host: (any WriteHost)?
 
@@ -156,7 +154,6 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         move(to: frame, duration: Motion.paperOpen, fadeIn: true)
     }
 
-    /// Moves the paper to `frame`, from where it is now.
     private func move(to frame: CGRect, duration: TimeInterval, fadeIn: Bool = false) {
         targetFrame = frame
         let from = window.frame
@@ -176,12 +173,10 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
 
     // MARK: - Size
 
-    /// The paper as tall as its text, on the page.
     private var paperFrame: CGRect {
         WritePaper.paper(height: editor.contentHeight, on: page)
     }
 
-    /// Sets the width of the paper and centres the text column on it.
     private func setWidth(_ width: CGFloat) {
         Self.configure(editor, width: width)
     }

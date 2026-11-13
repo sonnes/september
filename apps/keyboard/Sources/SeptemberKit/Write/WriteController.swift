@@ -125,11 +125,8 @@ public final class WriteController: WriteReading {
         paper.show(from: bar, floor: floor, screen: screen, margin: margin)
     }
 
-    /// True while the desk of documents is open.
     public var isDeskOpen: Bool { desk.isOpen }
 
-    /// The panel of Write: the Documents keys while the desk is open,
-    /// and the Write keys on the paper.
     public var panel: WritePanel { desk.isOpen ? .desk : .paper }
 
     /// Opens the desk. The open document saves first, and the paper shrinks
@@ -149,14 +146,12 @@ public final class WriteController: WriteReading {
         model.save()
     }
 
-    /// The paragraph at the caret, or the Find query on the desk.
     public var caret: EditorCaret {
         guard desk.isOpen else { return paper.editor.caret }
         let query = desk.desk.query
         return EditorCaret(text: query, caret: (query as NSString).length, length: 0)
     }
 
-    /// The selection and the document for Speak, or the Find query on the desk.
     public var speech: EditorSpeech {
         desk.isOpen ? EditorSpeech(selection: desk.desk.query, markdown: "") : paper.editor.speech
     }
@@ -231,7 +226,6 @@ public final class WriteController: WriteReading {
         host?.writeCaretMoved(caret)
     }
 
-    /// Closes Write from the desk.
     private func closeDesk() {
         save()
         model.forgetTrash()

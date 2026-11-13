@@ -112,7 +112,6 @@ func writeControllerTests() {
 
     // MARK: The desk
 
-    /// Write with the folder, a Trash folder, and a host that records its calls.
     func deskWrite(
         _ files: [String: String], revealed: ((URL) -> Void)? = nil
     ) throws -> (WriteController, RecordingWriteHost, URL) {
@@ -284,7 +283,6 @@ func writeControllerTests() {
     }
 }
 
-/// Records what Write asks of the app.
 @MainActor
 private final class RecordingWriteHost: WriteHost {
     private(set) var broughtToFront: [NSWindow] = []

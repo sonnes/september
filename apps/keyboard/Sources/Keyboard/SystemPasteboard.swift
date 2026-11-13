@@ -1,7 +1,6 @@
 import AppKit
 import SeptemberKit
 
-/// The general clipboard of macOS.
 @MainActor
 final class SystemPasteboard: ClipboardAccess {
     private let pasteboard = NSPasteboard.general

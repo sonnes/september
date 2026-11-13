@@ -7,7 +7,7 @@ public typealias SaidLine = TextLogEntry
 /// The lines that the user said in Talk mode, newest first.
 ///
 /// The list keeps its lines in the `talk_line` table of the keyboard
-/// database, for 30 days and up to `lineLimit` lines. The Talk history is
+/// database, for `maxAge` and up to `lineLimit` lines. The Talk history is
 /// separate from every other store of the keyboard. With no database file,
 /// the list stays in memory.
 @MainActor
@@ -26,7 +26,6 @@ public final class SaidList: ObservableObject {
     private let log: TextLog
     private let now: () -> Date
 
-    /// Opens the list on `database`.
     public init(database: KeyboardDatabase, now: @escaping () -> Date = Date.init) {
         log = TextLog(
             database: database, table: "talk_line", dateColumn: "said_at", limit: Self.lineLimit, maxAge: Self.maxAge)
@@ -47,7 +46,6 @@ public final class SaidList: ObservableObject {
         currentID = id
     }
 
-    /// Removes every line.
     public func clear() {
         lines = []
         currentID = nil

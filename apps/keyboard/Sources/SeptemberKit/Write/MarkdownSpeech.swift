@@ -68,7 +68,6 @@ public enum MarkdownSpeech {
         return inline(text)
     }
 
-    /// The words of a line without the inline marks.
     private static func inline(_ line: String) -> String {
         // An escaped mark and the text of code must not count as marks, so
         // each of their marks hides as a private character until the end.

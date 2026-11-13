@@ -236,7 +236,6 @@ func writePaperTests() {
     }
 
     test("on a full page, the text moves up so the typing line stays at the bottom") {
-        // The visible part is 600 points of a 2000-point text, with a margin of 48.
         let origin = WritePaper.scrollOrigin(
             caretMaxY: 1500, current: 0, visibleHeight: 600, contentHeight: 2000, margin: 48)
         expect(close(origin, 948), "origin \(origin)")

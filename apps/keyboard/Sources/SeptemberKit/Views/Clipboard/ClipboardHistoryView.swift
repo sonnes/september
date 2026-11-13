@@ -3,9 +3,9 @@ import SwiftUI
 /// The clipboard history, in the place of the prediction stack and with its
 /// size, so the bar and the keys do not move.
 ///
-/// A page holds six copied texts in three rows of two. The newest text is at
-/// the bottom left, next to the bar, as the best prediction is. A column at
-/// the right holds Newer, the page number, and Older.
+/// A page holds `ClipboardHistory.pageSize` copied texts, in rows of
+/// `Metrics.Clipboard.columns`. The newest text is at the bottom left, next
+/// to the bar, as the best prediction is. A column at the right holds Newer, the page number, and Older.
 public struct ClipboardHistoryView: View {
     @ObservedObject private var session: KeyboardSession
     @ObservedObject private var history: ClipboardHistory
@@ -35,7 +35,6 @@ public struct ClipboardHistoryView: View {
         .accessibilityLabel("Clipboard history")
     }
 
-    /// The rows of a page of the history.
     private static let rows = ClipboardHistory.pageSize / Metrics.Clipboard.columns
 
     private var grid: some View {
@@ -68,7 +67,6 @@ public struct ClipboardHistoryView: View {
         let page = session.historyPage
         let count = history.pageCount
         switch row {
-        // One page needs no pager.
         case _ where count == 1:
             Color.clear
         case Self.rows - 1:

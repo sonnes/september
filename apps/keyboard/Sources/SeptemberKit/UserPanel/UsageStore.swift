@@ -23,7 +23,6 @@ public final class UsageStore: ObservableObject, ButtonUsage {
     private let now: () -> Date
     private var counts: [String: Count] = [:]
 
-    /// Opens the counts on `database`.
     public init(database: KeyboardDatabase, now: @escaping () -> Date = Date.init) {
         self.database = database
         self.now = now
@@ -31,7 +30,6 @@ public final class UsageStore: ObservableObject, ButtonUsage {
         removeFaded()
     }
 
-    /// Counts one press of a button.
     public func record(_ buttonID: String) {
         let count = Count(weight: weight(of: buttonID) + 1, updated: now())
         counts[buttonID] = count
@@ -55,7 +53,6 @@ public final class UsageStore: ObservableObject, ButtonUsage {
         return count.weight * pow(0.5, age / UsageStore.halfLife)
     }
 
-    /// Removes the counts whose weight is now below `minimumWeight`.
     private func removeFaded() {
         let faded = counts.keys.filter { weight(of: $0) < Self.minimumWeight }
         guard !faded.isEmpty else { return }

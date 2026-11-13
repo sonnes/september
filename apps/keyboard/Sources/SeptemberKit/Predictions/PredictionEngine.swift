@@ -190,8 +190,6 @@ public final class PredictionEngine: ObservableObject {
         refresh()
     }
 
-    /// Sets the baseline of a new field, or marks the field as typed when its
-    /// text changed.
     private func noteTyping(_ input: InputMirror, mode: PredictionMode) {
         guard let baseline, baseline.mode == mode, baseline.input.kind == input.kind else {
             baseline = (input, mode)
@@ -201,8 +199,6 @@ public final class PredictionEngine: ObservableObject {
         if input.text != baseline.input.text { hasTyped = true }
     }
 
-    /// True when the user typed in the field and the text before the caret
-    /// holds a letter.
     private func wantsSentences(_ context: PredictionContext) -> Bool {
         hasTyped && context.typed.contains(where: \.isLetter)
     }
@@ -229,7 +225,6 @@ public final class PredictionEngine: ObservableObject {
         ask(context)
     }
 
-    /// Cancels the request and forgets the model rows.
     private func stopAsking() {
         cancel()
         predictions = []

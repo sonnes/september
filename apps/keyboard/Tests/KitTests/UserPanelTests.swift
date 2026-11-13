@@ -15,7 +15,6 @@ final class MemoryPrivateTexts: PrivateTextStore, @unchecked Sendable {
     func removeText(for id: String) throws { texts[id] = nil }
 }
 
-/// Use counts for the tests, in place of a `UsageStore`.
 @MainActor
 final class FixedUsage: ButtonUsage {
     var counts: [String: Int] = [:]
@@ -28,7 +27,6 @@ func temporaryDirectory() -> URL {
         .appendingPathComponent("september-mypanel-tests-\(UUID().uuidString)")
 }
 
-/// A store on a database in memory, with its own defaults.
 @MainActor
 private struct PanelParts {
     var database = memoryDatabase()
@@ -39,8 +37,6 @@ private struct PanelParts {
         try UserPanelStore(database: database, defaults: defaults, privateTexts: texts)
     }
 
-    /// The names and actions of the `user_button` table, in the order of
-    /// `position`, as one text.
     func tableText() throws -> String {
         try database.query("SELECT name, action FROM user_button ORDER BY position")
             .map { $0.compactMap(\.text).joined(separator: " ") }

@@ -55,10 +55,8 @@ extension Metrics {
             keysInset(mode) - cardKeysInset(mode)
         }
 
-        /// The clipboard buttons and the gap between them and the bar.
         public static let clipboardReach = Clipboard.buttonsWidth + TopRow.spacing
 
-        /// The distance from the left edge of the card to the keys.
         private static func cardKeysInset(_ mode: KeyboardMode) -> CGFloat {
             switch mode {
             case .type: Detached.keysSidePadding
@@ -69,7 +67,7 @@ extension Metrics {
 }
 
 extension Metrics.Keypad {
-    /// The height of the grid of six rows. Mine and a message in place of a
+    /// The height of the grid. Mine and a message in place of a
     /// panel take the same height, so the window does not change size.
     public static let gridHeight: CGFloat = buttonHeight * CGFloat(rows) + gap * CGFloat(rows - 1)
 }

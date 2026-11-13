@@ -7,7 +7,6 @@ enum WriteStyle {
 
     static var bodySize: CGFloat { M.textSize }
 
-    /// The text size of a block.
     static func size(_ kind: WriteBlockKind) -> CGFloat {
         switch kind {
         case .heading(let level): bodySize * M.headingScale[min(max(level, 1), 6) - 1]
@@ -44,7 +43,6 @@ enum WriteStyle {
         }
     }
 
-    /// The left indent of the text of a block.
     static func indent(_ kind: WriteBlockKind) -> CGFloat {
         switch kind {
         case .bullet(let depth), .ordered(_, let depth):

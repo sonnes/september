@@ -6,7 +6,6 @@ public struct EditorCaret: Equatable, Sendable {
     public let text: String
     public let caret: Int
     public let length: Int
-    /// True when the whole document has no text.
     public let documentIsEmpty: Bool
 
     public init(text: String, caret: Int, length: Int, documentIsEmpty: Bool = false) {

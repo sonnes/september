@@ -14,7 +14,6 @@ public struct KeyFace: Sendable, Equatable {
     public let accessibilityLabel: String
 }
 
-/// The state that a modifier key shows.
 public enum ModifierLook: Sendable, Equatable {
     case off
     /// On for the next key only.

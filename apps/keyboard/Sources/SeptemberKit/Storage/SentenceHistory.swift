@@ -25,7 +25,6 @@ public final class SentenceHistory: ObservableObject {
     private static let candidateLimit = 200
     private static let enabledKey = "history.sentences"
 
-    /// The count of sentences in the history.
     @Published public private(set) var count = 0
     @Published public var isEnabled: Bool {
         didSet {
@@ -106,7 +105,6 @@ public final class SentenceHistory: ObservableObject {
             .map(\.text)
     }
 
-    /// Removes every sentence.
     public func clear() {
         try? database.execute("DELETE FROM sentence")
         refreshCount()
@@ -114,7 +112,6 @@ public final class SentenceHistory: ObservableObject {
 
     // MARK: - Text
 
-    /// The sentences of a text, in order.
     static func sentences(in text: String) -> [String] {
         let tokenizer = NLTokenizer(unit: .sentence)
         tokenizer.string = text

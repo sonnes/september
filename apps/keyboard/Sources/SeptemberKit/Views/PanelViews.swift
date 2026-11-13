@@ -21,7 +21,6 @@ enum KeypadRow<Cell> {
     case wide(Cell)
     case cells([Cell])
 
-    /// The cells in rows of `columns` cells, in order.
     static func rows(_ cells: [Cell], columns: Int) -> [KeypadRow] {
         let columns = max(columns, 1)
         return stride(from: 0, to: cells.count, by: columns).map {

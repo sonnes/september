@@ -27,7 +27,6 @@ private func menu(_ id: Int, _ title: String, _ items: [AXNode]) -> AXNode {
         children: [AXNode(id: id + 100, role: "AXMenu", children: items)])
 }
 
-/// Apple, Safari, File, and Edit, as a menu bar reads.
 private let menuBar = AXNode(
     id: 0, role: "AXMenuBar",
     children: [

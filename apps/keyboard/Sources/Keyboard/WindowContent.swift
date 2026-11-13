@@ -43,7 +43,6 @@ struct WindowContent {
         return AnyView(view.environmentObject(controller).environment(\.keyPresser, presser))
     }
 
-    /// The size that a view asks for.
     static func measure(_ view: AnyView) -> CGSize {
         let probe = NSHostingView(rootView: view)
         probe.layoutSubtreeIfNeeded()

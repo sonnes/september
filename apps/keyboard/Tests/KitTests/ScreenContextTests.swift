@@ -1,7 +1,6 @@
 import Foundation
 import SeptemberKit
 
-/// An element of a made-up tree, for the extractor.
 final class FakeContextNode: ContextNode {
     let role: String?
     let subrole: String?

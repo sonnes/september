@@ -60,8 +60,6 @@ final class CGEventSink: KeystrokeSink {
         }
     }
 
-    /// Presses the Start Dictation item of the menu bar of the app in front.
-    /// Returns false when the app has no such item.
     private static func startDictation() -> Bool {
         guard let app = NSWorkspace.shared.frontmostApplication,
             let item = AXFocus.menuBar(pid: app.processIdentifier, { element, _, found -> AXUIElement? in

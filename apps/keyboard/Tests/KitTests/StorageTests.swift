@@ -8,7 +8,6 @@ func storageTests() {
     sentenceHistoryTests()
 }
 
-/// A database that is not saved, for a test that needs no file.
 func memoryDatabase() -> KeyboardDatabase {
     try! KeyboardDatabase(path: ":memory:")
 }

@@ -41,13 +41,11 @@ public enum VirtualKey: UInt16, Sendable, Hashable, CaseIterable {
         self = match
     }
 
-    /// F-keys by number, from 1 to 12.
     public static func function(_ number: Int) -> VirtualKey? {
         guard (1...functionKeys.count).contains(number) else { return nil }
         return functionKeys[number - 1]
     }
 
-    /// How VoiceOver says this key.
     public var spokenName: String {
         switch self {
         case .return: return "Return"

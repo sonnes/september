@@ -83,13 +83,10 @@ final class OtherInputMonitor {
         monitors = []
     }
 
-    /// False for an event that Keyboard posted itself, and for a key repeat.
     private nonisolated static func isOtherInput(_ event: NSEvent) -> Bool {
         !isOwn(event) && !(event.type == .keyDown && event.isARepeat)
     }
 
-    /// The modifier keys that the hardware holds, or nil for an event that
-    /// Keyboard posted itself.
     private nonisolated static func hardwareModifiers(of event: NSEvent) -> Modifiers? {
         guard !isOwn(event) else { return nil }
         return Modifiers(deviceFlags: event.cgEvent?.flags ?? [])

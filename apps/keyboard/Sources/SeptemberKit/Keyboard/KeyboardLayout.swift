@@ -1,6 +1,5 @@
 import CoreGraphics
 
-/// One row of the main keyboard.
 public struct KeyRow: Sendable, Identifiable {
     public let id: KeyboardRow
     public let keys: [KeyDefinition]

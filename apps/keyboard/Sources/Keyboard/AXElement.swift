@@ -84,7 +84,6 @@ enum AXFocus {
         return path
     }
 
-    /// True when `element` is a password field.
     static func isSecure(_ element: AXUIElement) -> Bool {
         FocusedField.isSecure(subrole: element.string(kAXSubroleAttribute))
     }

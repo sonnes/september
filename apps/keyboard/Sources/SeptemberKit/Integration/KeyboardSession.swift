@@ -16,7 +16,6 @@ public final class KeyboardSession: ObservableObject {
     public enum PanelTab: Sendable, Hashable {
         /// The keys of the Write paper or the Write desk.
         case write
-        /// My Panel.
         case mine
     }
 
@@ -24,7 +23,6 @@ public final class KeyboardSession: ObservableObject {
     public let predictions: PredictionEngine
     public let speaker: Speaker
     public let userPanel: UserPanelStore?
-    /// The counts of My Panel.
     public let userPanelUsage: UsageStore
     /// Why My Panel could not load its buttons. The table stays as it is.
     public let userPanelError: String?
@@ -43,9 +41,7 @@ public final class KeyboardSession: ObservableObject {
     @Published public private(set) var mineButtons: [UserButton] = []
     /// Shows the input bar and the suggestions only when there is text input.
     public let inputBar: InputBarVisibility
-    /// The texts that the user copied.
     public let clipboard: ClipboardHistory
-    /// The clipboard of macOS.
     public let pasteboard: any ClipboardAccess
     /// True while the clipboard history shows in the place of the predictions.
     @Published public private(set) var isHistoryOpen = false
@@ -54,7 +50,6 @@ public final class KeyboardSession: ObservableObject {
     /// True when Cut and Copy have something to act on: a selection, an app
     /// that shows no field, or text in the Talk bar.
     @Published public private(set) var canCutOrCopy = true
-    /// True when the clipboard holds text.
     @Published public private(set) var canPaste = false
     /// The shortcuts of the app in front that show in the place of the input
     /// bar: in Type mode with no text field in focus, and while Command or
@@ -66,32 +61,26 @@ public final class KeyboardSession: ObservableObject {
     /// The time before a read of the text on screen. Other apps move the
     /// focus late after a switch.
     public static let screenReadDelay: TimeInterval = 0.15
-    /// The app or the Write panel that the keyboard types into.
     @Published private var front: FrontTarget?
     private var isWriteInFront: Bool { front?.isWrite == true }
     /// The text near the field of the app in front, from the last read.
     private var screen: ScreenContext?
-    /// False while the document of the Write window has no text.
     private var writeHasText = false
     /// The caret and the text for Speak of the Write window. The keyboard
     /// cannot read its own window through the accessibility API.
     private let write: any WriteReading
 
-    /// Reads the menu and the text on screen of the app in front.
     private let reader: any FrontAppReading
     /// The menu shortcuts of the app in front, from the last read. The
     /// session reads the menu only when a suggestion needs it, and keeps the
     /// read until another app comes to the front.
     private var menu: [AppShortcut]?
-    /// The wait before a read of the text on screen, and the read.
     private var pendingScreenRead: (any ScheduledWork)?
     private var screenRead: Task<Void, Never>?
-    /// True while the focused field has no text.
     private var fieldWasEmpty = true
     /// True when the input bar has something to show, from the last change
     /// of the field, the input, the mode, or the app in front.
     private var wantsBar = false
-    /// Adds each copy to the clipboard history.
     private var clipboardWatcher: ClipboardWatcher?
     /// The modifiers that macOS holds, after the hold delay.
     private var heldModifiers: Modifiers = []
@@ -413,9 +402,6 @@ public final class KeyboardSession: ObservableObject {
         }
     }
 
-    /// True when the session can read the text on screen: the switch is on,
-    /// the keyboard is in Type mode, another app is in front, and the bar
-    /// shows the text of the field.
     private var mayReadScreen: Bool {
         predictions.screenEnabled && controller.mode == .type && !controller.hidesFieldText
     }
@@ -527,7 +513,6 @@ public final class KeyboardSession: ObservableObject {
         let usesScreen = mode == .type && !isWriteInFront && predictions.screenEnabled
         predictions.update(
             input: input, mode: mode == .talk ? .talk : .type,
-            // The Talk history is for Talk mode only.
             said: mode == .talk ? talk.said.recentTexts : [], isPrivate: isPrivate,
             screen: usesScreen ? screen : nil)
 

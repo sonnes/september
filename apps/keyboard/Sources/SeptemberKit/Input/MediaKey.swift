@@ -72,7 +72,6 @@ public enum MediaKey: Sendable, Hashable {
         }
     }
 
-    /// The SF Symbol drawn on the key.
     public var symbolName: String {
         switch self {
         case .brightnessDown: "sun.min"
@@ -90,7 +89,6 @@ public enum MediaKey: Sendable, Hashable {
         }
     }
 
-    /// How VoiceOver says the key.
     public var spokenName: String {
         switch self {
         case .brightnessDown: "Brightness Down"

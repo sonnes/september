@@ -22,16 +22,13 @@ public final class WriteModel: ObservableObject {
 
     /// Shows the Markdown of a document in the editor. An empty text is a new document.
     public var show: (String) -> Void = { _ in }
-    /// The Markdown in the editor now.
     public var editorText: () -> String = { "" }
 
     public let library: DocumentLibrary
 
-    /// The time between the last edit and the save.
     public static let saveDelay: TimeInterval = 0.12
 
     private let scheduler: any DelayScheduler
-    /// True when the editor has edits that are not saved.
     private var isEdited = false
     private var pendingSave: (any ScheduledWork)?
 

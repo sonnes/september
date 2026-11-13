@@ -330,7 +330,6 @@ private func noticeTests() {
     }
 }
 
-/// A predictor that answers from a closure and records each request.
 private actor FakePredictor: SentencePredicting {
     nonisolated let availability: PredictionAvailability
     private let answer: @Sendable (PredictionContext) throws -> [String]
@@ -399,8 +398,6 @@ private let tea: @Sendable (PredictionContext) -> [String] = { _ in
 }
 
 extension PredictionEngine {
-    /// The focus comes to an empty field, and then the field holds `input`,
-    /// as if the user typed it.
     func userTypes(
         _ input: InputMirror, mode: PredictionMode = .type, said: [String] = [],
         screen: ScreenContext? = nil
@@ -794,7 +791,6 @@ private func typingTests() async {
 @MainActor
 private func historyTests() async {
     let cu = InputMirror.mirrored(text: "I would like a cu", caret: 17, selectionLength: 0)
-    // Three uses, two uses, and one use.
     let sent = [
         "I would like a cup of tea, please.", "I would like a cup of tea, please.",
         "I would like a cup of tea, please.", "I would like a cushion.", "I would like a cushion.",
