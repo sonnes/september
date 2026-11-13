@@ -66,6 +66,12 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `test("…") { expect(…) }` and register the suite in
   `Tests/KitTests/main.swift`. Xcode is installed now, so swift-testing is
   available. The move to swift-testing is not done yet.
+- **The harness fails a test that checks nothing or hangs.** A test that runs
+  no `expect` fails. If one test runs longer than 10 s, the watchdog prints
+  its name and stops the run with status 1. For a defaults domain, call
+  `freshDefaults()`. Do not use `UserDefaults.standard` or a fixed suite
+  name. A fake that more than one suite uses goes in
+  `Tests/KitTests/Fakes.swift`.
 - **No literals in views.** Colours come from `Tokens`, sizes from `Metrics`,
   fonts from `Typography`. New values go in the design layer first.
 - **Every colour is a `ThemeColor`.** Keyboard follows the system appearance,
@@ -102,6 +108,11 @@ only what needs a running app — the panel, the event sink, the menu bar.
   and counts the presses of My Panel to rank its buttons. Put new wiring there,
   with a check in `Tests/KitTests/IntegrationTests.swift`. `AppDelegate` keeps
   only what needs a running app. See `docs/concepts/keyboard-session.md`.
+- **Write talks to the app through two ports.** `WriteController` calls its
+  `WriteHost` (the `AppDelegate`) to bring a window to the front, when a
+  window closes, and when the key window, the panel, or the caret changes.
+  The session reads the caret and the text for Speak through `WriteReading`.
+  Write uses no type of `Integration`.
 - **Private text stays private.** Never log or print the text of a field, a
   private text button, or an API key. Keep the text of a field only in the
   sentence history. `KeyboardController.hidesFieldText` is the one privacy
