@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.4.0
+
+### Modifier Keys
+
+- A tapped modifier goes down at macOS at once. A click or a key on the hardware keyboard gets it too.
+- A key from another source, or a click outside the keyboard, uses up a latched modifier.
+- The keys show the case and the state of each modifier.
+- A modifier that the hardware keyboard or Sticky Keys holds lights its key, and each key of the keyboard carries it.
+- The shortcut suggestions no longer need Input Monitoring. The Input Monitoring section of Settings is gone.
+
+### Function Keys
+
+- The F-row sends the media keys of an Apple keyboard. With the fn key of the keyboard latched, an F-row key sends its F-key.
+- F3 opens Mission Control.
+- F4 opens Spotlight. F5 starts Dictation in the app in front. F6 runs the shortcut Toggle Do Not Disturb.
+
+### Panels
+
+- A held arrow, Delete, or Space on a panel repeats. Shift, Option, and fn repeat too. A chord with Command or Control acts once.
+- Scroll Up and Scroll Down on the System keypad replace Page Up and Page Down. They scroll the place where the pointer rested. A held button keeps the scroll going.
+- A panel button sends only its own shortcut. A latched modifier does not add to it, and the press uses up the latch.
+- My Panel and Phrases use the look of the keypad buttons.
+- A button name shows on hover only when the button shows keys.
+
+### Shortcut Suggestions
+
+- The shortcuts that you press most in an app show first. The order stays the same while the app is in front.
+
+### Predictions
+
+- The predictions show at full strength while new ones load.
+
+### Write
+
+- The errors of Write also show on the desk. An error clears when a document opens.
+- A switch between the paper and the desk keeps the state of Write.
+
+### Private Text
+
+- If the keyboard cannot read a private text, it beeps.
+
 ## 0.3.1
 
 ### Shortcut Suggestions
