@@ -194,6 +194,17 @@ func writeEditorTests() {
         expectEqual(carets.last, EditorCaret(text: "hi", caret: 2, length: 0))
     }
 
+    test("a load is not an edit, and a typed character after it is") {
+        let view = editor()
+        var edits = 0
+        view.onTextChange = { edits += 1 }
+        view.load("# Plans")
+        view.loadNewDocument()
+        expectEqual(edits, 0)
+        type(view, "!")
+        expectEqual(edits, 1)
+    }
+
     test("Speak reads the selection, or the whole document without marks") {
         let view = editor("# Title\n\n- **one**")
         expectEqual(view.speech, EditorSpeech(selection: "", markdown: "# Title\n\n- **one**"))

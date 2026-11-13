@@ -21,8 +21,7 @@ private func names(_ documents: [WriteDocument]) -> [String] {
 }
 
 /// Stands in for the editor: it keeps the text that the model shows, and
-/// counts the reads of its text, one for each save. As the editor does, it
-/// reports a load as a change of the text.
+/// counts the reads of its text, one for each save.
 @MainActor
 private final class EditorStub {
     var shown: [String] = []
@@ -34,10 +33,9 @@ private final class EditorStub {
 private func makeModel(_ folder: URL, clock: FakeClock = FakeClock()) -> (WriteModel, EditorStub) {
     let editor = EditorStub()
     let model = WriteModel(library: DocumentLibrary(folder: folder), scheduler: clock)
-    model.show = { [weak model] text in
+    model.show = { text in
         editor.shown.append(text)
         editor.text = text
-        model?.edited()
     }
     model.editorText = {
         editor.reads += 1
@@ -310,20 +308,6 @@ func writeTests() {
         expectEqual(try String(contentsOf: notes, encoding: .utf8), "# Notes")
         clock.advance(to: WriteModel.saveDelay)
         expectEqual(try String(contentsOf: notes, encoding: .utf8), "# Notes\n\nBuy milk.")
-    }
-
-    test("a load saves nothing") {
-        let folder = makeFolder()
-        defer { try? FileManager.default.removeItem(at: folder) }
-        _ = try write("# Garden", to: folder, name: "draft.md", modified: now)
-        let clock = FakeClock()
-        let (model, editor) = makeModel(folder, clock: clock)
-
-        model.start()
-        clock.advance(to: WriteModel.saveDelay * 2)
-        model.save()
-        expectEqual(editor.reads, 0)
-        expectEqual(names(model.documents), ["draft.md"])
     }
 
     test("a switch to another document saves the edit of the old document once") {

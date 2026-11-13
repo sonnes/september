@@ -82,9 +82,10 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
     // MARK: - Document
 
     /// Shows a Markdown document. Undo starts again, and the caret goes to
-    /// the end of the document.
+    /// the end of the document. A load is not an edit: it reports the caret,
+    /// but not a change of the text.
     public func load(_ markdown: String) {
-        asOneEdit {
+        asLoad {
             let blocks = markdown.isEmpty ? [] : WriteMarkdown.parse(markdown).blocks
             trailingBox = nil
             let text = WriteText.attributed(blocks)
@@ -100,7 +101,7 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
 
     /// Shows an empty document that starts with a heading.
     public func loadNewDocument() {
-        asOneEdit {
+        asLoad {
             load("")
             setKind(.heading(1), paragraphAt: 0)
             ownUndo.removeAllActions()
@@ -464,6 +465,14 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         edit()
         editDepth -= 1
         reportIfDone()
+    }
+
+    /// Runs `load` as one edit that reports no change of the text.
+    private func asLoad(_ load: () -> Void) {
+        asOneEdit {
+            load()
+            textChanged = false
+        }
     }
 
     private func reportIfDone() {

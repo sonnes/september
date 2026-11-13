@@ -156,10 +156,6 @@ public final class WriteModel: ObservableObject {
             let text = try library.read(document)
             current = document
             show(text)
-            // The editor reports the load as a change of its text.
-            isEdited = false
-            pendingSave?.cancel()
-            pendingSave = nil
         } catch {
             report(error)
         }
