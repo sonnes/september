@@ -20,15 +20,19 @@ public enum WritePaper {
     ///   - screen: the visible frame of the screen.
     ///   - margin: the space between the page and the edges of the screen.
     ///     The same space is kept above `floor`.
-    public static func page(bar: CGRect, floor: CGFloat, screen: CGRect, margin: CGFloat) -> CGRect {
+    ///   - leading: the width that the page keeps free on its left, inside
+    ///     the margin, for the tools rail.
+    public static func page(
+        bar: CGRect, floor: CGFloat, screen: CGRect, margin: CGFloat, leading: CGFloat = 0
+    ) -> CGRect {
         let bottom = floor + margin
         var height = screen.maxY - margin - bottom
         var width = height / pageRatio
-        if width > screen.width - 2 * margin {
-            width = screen.width - 2 * margin
+        if width > screen.width - 2 * margin - leading {
+            width = screen.width - 2 * margin - leading
             height = width * pageRatio
         }
-        let x = min(max(bar.midX - width / 2, screen.minX + margin), screen.maxX - margin - width)
+        let x = min(max(bar.midX - width / 2, screen.minX + margin + leading), screen.maxX - margin - width)
         return CGRect(x: x, y: max(bottom, screen.minY), width: width, height: height)
     }
 
@@ -36,6 +40,13 @@ public enum WritePaper {
     /// up from the bottom of the page and stops at the top of the page.
     public static func paper(height: CGFloat, on page: CGRect) -> CGRect {
         CGRect(x: page.minX, y: page.minY, width: page.width, height: min(height, page.height))
+    }
+
+    /// The frame of the tools rail: `gap` to the left of the paper, with
+    /// its bottom on the bottom of the paper. The paper grows up, so the
+    /// rail stays in place while the user types.
+    public static func rail(paper: CGRect, size: CGSize, gap: CGFloat) -> CGRect {
+        CGRect(x: paper.minX - gap - size.width, y: paper.minY, width: size.width, height: size.height)
     }
 
     /// The scroll origin that keeps the caret in view on a full page, in the

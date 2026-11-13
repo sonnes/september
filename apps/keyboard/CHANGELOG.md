@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Write
+
+- A rail of round buttons stands at the left of the Write paper: New, Documents, Share, and Close.
+- Share saves the document and opens the share picker of macOS with its Markdown file.
+- A paste keeps the formatting of the copied text. Bold, italic, strikethrough, code, links, headings, and lists from a browser, Mail, Notes, or Word become Markdown.
+- A paste of Markdown text gives its blocks, so `# Title` becomes a heading.
+- Text that a code editor copies pastes as its plain source.
+- One undo removes a whole paste. Paste as Plain Text inserts the text with no conversion.
+
 ## 0.4.0
 
 ### Modifier Keys

@@ -16,6 +16,8 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
 
     public let window: WritePaperWindow
     public let editor: WriteTextView
+    /// The tools rail at the left of the paper.
+    public let tools = WriteToolsController()
     private let scrollView = NSScrollView()
     private let notice = NSTextField(labelWithString: "")
     /// The frame of the full page. The paper grows up to it.
@@ -94,7 +96,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
     public func show(from bar: CGRect?, floor: CGFloat, screen: CGRect, margin: CGFloat) {
         page = WritePaper.page(
             bar: bar ?? CGRect(x: screen.midX, y: floor, width: 0, height: 0), floor: floor, screen: screen,
-            margin: margin)
+            margin: margin, leading: tools.leading)
         present(from: bar)
     }
 
@@ -112,6 +114,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         guard window.isVisible else { return }
         scrollMotion.stop()
         targetFrame = nil
+        tools.hide()
         guard let card, !reduceMotion else {
             frameMotion.stop()
             window.orderOut(nil)
@@ -147,6 +150,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         guard animates else {
             frameMotion.stop()
             targetFrame = frame
+            showTools()
             return
         }
         // The keyboard floats above the paper, so the paper comes out from
@@ -163,12 +167,22 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
             window.setFrame(from.interpolated(to: frame, progress), display: true)
             if fadeIn { window.alphaValue = alpha + (1 - alpha) * CGFloat(progress) }
             // The shadow of a clear window follows its shape only after a redraw.
-            if progress >= 1 { window.invalidateShadow() }
+            if progress >= 1 {
+                window.invalidateShadow()
+                showTools()
+            }
         }
     }
 
     public func close() {
         window.close()
+    }
+
+    /// Shows the tools rail at the bottom left of the page. The bottom of
+    /// the paper does not move after it opens, so the rail stays in place.
+    private func showTools() {
+        guard window.isVisible else { return }
+        tools.show(beside: window, frame: paperFrame)
     }
 
     // MARK: - Size
@@ -286,6 +300,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         frameMotion.stop()
         scrollMotion.stop()
         targetFrame = nil
+        tools.hide()
         host?.windowClosed(window)
         onClose?()
     }

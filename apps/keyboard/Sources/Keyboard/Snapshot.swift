@@ -205,7 +205,8 @@ enum Snapshot {
     /// The keyboard window with the Write paper open above it, as
     /// `WritePaperController` places and draws it. The screen is a large one,
     /// with room for the paper above the keyboard. The keyboard floats above
-    /// the paper, so it is drawn last.
+    /// the paper, so it is drawn last. The tools rail stands at the left
+    /// of the paper.
     private static func paperScene(_ content: WindowContent, markdown: String) -> AnyView {
         let keyboard = content.keyboard()
         let keyboardSize = WindowContent.measure(keyboard)
@@ -214,15 +215,20 @@ enum Snapshot {
         let screen = CGRect(x: window.minX, y: window.minY, width: window.width, height: window.height + 1_000)
         // The input bar is as wide as the keys and sits over them.
         let bar = CGRect(x: keys.minX, y: window.maxY, width: keys.width, height: 0)
-        let page = WritePaper.page(bar: bar, floor: window.maxY, screen: screen, margin: 24)
+        let tools = WriteToolsView(onTool: { _ in })
+        let toolsSize = WindowContent.measure(AnyView(tools))
+        let page = WritePaper.page(
+            bar: bar, floor: window.maxY, screen: screen, margin: 24,
+            leading: toolsSize.width + Metrics.WriteEditor.railGap)
         let sheet = NSImage(size: NSSize(width: page.width, height: 0))
         if let rep = WritePaperController.renderSheet(markdown, width: page.width) {
             sheet.size = rep.size
             sheet.addRepresentation(rep)
         }
         let paper = WritePaper.paper(height: sheet.size.height, on: page)
+        let rail = WritePaper.rail(paper: paper, size: toolsSize, gap: Metrics.WriteEditor.railGap)
 
-        let all = window.union(paper)
+        let all = window.union(paper).union(rail)
         // Room for the shadow of the paper.
         let padding = Metrics.Desk.spacing * 2
         func place(_ frame: CGRect) -> CGSize {
@@ -237,6 +243,7 @@ enum Snapshot {
                         color: Color(Tokens.writeCardShadow), radius: Metrics.Desk.spacing,
                         y: Metrics.Desk.actionGap)
                     .offset(place(paper))
+                tools.offset(place(rail))
                 keyboard.offset(place(window))
             }
             .frame(width: all.width + padding * 2, height: all.height + padding * 2, alignment: .topLeading))
