@@ -601,7 +601,9 @@ The Keychain holds the secrets:
 - If the September desktop app has a key in `com.september.desktop`, Settings
   can copy it. macOS asks one time before the keyboard reads it.
 - The text of each private text button is in the service
-  `com.september.keyboard.private`.
+  `com.september.keyboard.private`. If the Keychain has no text for a
+  button, or cannot read it, a press on the button types nothing and beeps.
+  The latched modifiers stay for the next key.
 
 Write keeps each document as a Markdown file in
 `~/Documents/September`. The sentence history, the Talk history, the clipboard

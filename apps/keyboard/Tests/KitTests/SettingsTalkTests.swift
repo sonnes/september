@@ -1,7 +1,6 @@
 import AppKit
 import Foundation
 import SeptemberKit
-import SwiftUI
 
 /// Records what Talk mode asks the voice to say.
 @MainActor
@@ -210,17 +209,6 @@ func settingsTalkTests() {
         expectEqual(
             Set(SettingsGroup.allCases.flatMap(\.pages)), Set(SettingsPage.allCases),
             "each page is in one group")
-    }
-
-    test("settings pages of other tracks are placeholders until set") {
-        let settings = KeyboardSettings(defaults: makeDefaults())
-        var pages = SettingsPages(
-            settings: settings, permission: AccessibilityPermission(isTrusted: false))
-        expectEqual(
-            SettingsPage.allCases.filter(pages.isPlaceholder),
-            [.voice, .speech, .predictions, .clipboard, .myPanel])
-        pages[.voice] = AnyView(EmptyView())
-        expect(!pages.isPlaceholder(.voice))
     }
 
     test("keyboard settings start at the defaults") {

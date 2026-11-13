@@ -253,8 +253,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func showWindows() {
         let (root, size) = makeKeyboardRoot()
-        let keyboard = FloatingPanel(root: root, contentSize: size)
-        keyboard.placement = .free
+        let keyboard = FloatingPanel(root: root, contentSize: size, placement: .free)
         keyboardPanel = keyboard
 
         let rectangleInstalled =
@@ -283,8 +282,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let keys = CGRect(origin: KeyboardPosition.keysOrigin(ofWindow: origin, in: .type), size: keysSize)
         let defaults = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
         for panel in shown {
-            let window = FloatingPanel(root: content.panel(panel), contentSize: sizes[panel]!)
-            window.placement = .free
+            let window = FloatingPanel(root: content.panel(panel), contentSize: sizes[panel]!, placement: .free)
             // The panels sit above the keyboard window, whose clear corners
             // reach over them.
             window.level = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue + 1)
@@ -382,8 +380,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let treePanel {
             treePanel.update(root: root, contentSize: size)
         } else {
-            let treePanel = FloatingPanel(root: root, contentSize: size)
-            treePanel.placement = .bottomRight
+            let treePanel = FloatingPanel(root: root, contentSize: size, placement: .bottomRight)
             treePanel.orderFront(nil)
             self.treePanel = treePanel
         }

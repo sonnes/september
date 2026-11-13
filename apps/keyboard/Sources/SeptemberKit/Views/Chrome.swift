@@ -4,9 +4,7 @@ extension View {
     /// The rounded surface of a key or shortcut button.
     func keyChrome(
         fill: ThemeColor,
-        stroke: ThemeColor = Tokens.strokeStandard,
-        shadow: Bool = true,
-        glow: Bool = false
+        stroke: ThemeColor = Tokens.strokeStandard
     ) -> some View {
         background(
             RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
@@ -16,8 +14,8 @@ extension View {
             RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
                 .strokeBorder(Color(stroke), lineWidth: 1)
         )
-        .shadow(color: shadow ? Color(Tokens.keyShadow) : .clear, radius: 1, y: 1)
-        .shadow(color: glow ? Color(Tokens.keyGlow) : .clear, radius: 8)
+        .shadow(color: Color(Tokens.keyShadow), radius: 1, y: 1)
+        .shadow(color: Color(Tokens.keyGlow), radius: 8)
     }
 
     /// The surface that holds a group of keys or the tree viewer.
@@ -96,7 +94,7 @@ private struct Pressable: ViewModifier {
     let isSelected: Bool
     let trigger: PressTrigger
     let onPressing: (Bool) -> Void
-    let action: @MainActor () -> Void
+    let action: () -> Void
 
     @Environment(\.keyPresser) private var presser
     /// True while the gesture runs. A cancelled gesture resets it too, with
@@ -132,7 +130,7 @@ private struct Pressable: ViewModifier {
                             onPressing(tap.isPressed)
                         }
                         .onEnded { drag in
-                            tap.up(inside: contains(drag.location), press: action)
+                            tap.up(inside: contains(drag.location)) { action() }
                             onPressing(false)
                         }
                 )

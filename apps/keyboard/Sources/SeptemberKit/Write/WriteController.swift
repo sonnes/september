@@ -149,9 +149,6 @@ public final class WriteController: WriteReading {
         model.save()
     }
 
-    /// True while the paper or the desk is the key window.
-    public var isKey: Bool { paper.window.isKeyWindow || desk.window.isKeyWindow }
-
     /// The paragraph at the caret, or the Find query on the desk.
     public var caret: EditorCaret {
         guard desk.isOpen else { return paper.editor.caret }

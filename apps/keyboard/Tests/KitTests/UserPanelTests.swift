@@ -4,8 +4,13 @@ import SeptemberKit
 /// Private text for the tests. The tests never touch the Keychain.
 final class MemoryPrivateTexts: PrivateTextStore, @unchecked Sendable {
     var texts: [String: String] = [:]
+    /// The error that each read throws, as a locked Keychain does.
+    var readError: (any Error)?
 
-    func text(for id: String) throws -> String? { texts[id] }
+    func text(for id: String) throws -> String? {
+        if let readError { throw readError }
+        return texts[id]
+    }
     func setText(_ text: String, for id: String) throws { texts[id] = text }
     func removeText(for id: String) throws { texts[id] = nil }
 }
@@ -341,6 +346,8 @@ private func privateController() throws -> (KeyboardController, RecordingSink, M
     return (controller, sink, texts)
 }
 
+private let shift = KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "shift-left" }!
+
 @MainActor
 private func privateTextControllerTests() {
     test("a private text button types the text, echoes nothing, and hides the field") {
@@ -394,11 +401,25 @@ private func privateTextControllerTests() {
         expectEqual(controller.input, .local(text: "abc"))
     }
 
-    test("private text with no keychain item types nothing and hides nothing") {
+    test("private text with no keychain item beeps, types nothing, and keeps the modifier") {
         let (controller, sink, _) = try privateController()
+        controller.press(shift)
         controller.perform(.privateText("gone"))
         expect(sink.typed.isEmpty)
         expect(!controller.isFieldPrivate)
+        expectEqual(sink.beeps, 1)
+        expectEqual(controller.modifiers.active, .shift)
+    }
+
+    test("a private text that the Keychain fails to read beeps and keeps the modifier") {
+        let (controller, sink, texts) = try privateController()
+        texts.readError = CocoaError(.fileReadNoPermission)
+        controller.press(shift)
+        controller.perform(.privateText("home"))
+        expect(sink.typed.isEmpty)
+        expect(!controller.isFieldPrivate)
+        expectEqual(sink.beeps, 1)
+        expectEqual(controller.modifiers.active, .shift)
     }
 
     test("the controller presses a sequence, or private text") {

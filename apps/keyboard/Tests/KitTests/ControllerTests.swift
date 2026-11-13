@@ -49,7 +49,7 @@ private let stubMap = KeyCodeMap { code, modifiers in
 func makeController() throws -> (KeyboardController, RecordingSink) {
     let sink = RecordingSink()
     let controller = KeyboardController(
-        sink: sink, panels: try PanelStore.bundled(), keyCodeMap: stubMap,
+        sink: sink, panels: try PanelStore.bundled(), accents: try AccentTable.bundled("en"), keyCodeMap: stubMap,
         talk: TalkSession(said: SaidList(database: memoryDatabase())))
     return (controller, sink)
 }
@@ -97,7 +97,7 @@ func controllerTests() {
             shortcutProbe: { code, _ in code == 6 ? "z" : nil }
         )
         let controller = KeyboardController(
-            sink: sink, panels: try PanelStore.bundled(), keyCodeMap: cyrillic,
+            sink: sink, panels: try PanelStore.bundled(), accents: try AccentTable.bundled("en"), keyCodeMap: cyrillic,
             talk: TalkSession(said: SaidList(database: memoryDatabase())))
         controller.perform(.shortcut(Shortcut(modifiers: .command, key: .character("z"))))
         expectEqual(sink.downs.map(\.key), [55, 6])

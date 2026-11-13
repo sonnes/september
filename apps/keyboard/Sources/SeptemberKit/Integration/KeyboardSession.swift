@@ -392,11 +392,11 @@ public final class KeyboardSession: ObservableObject {
     public func settle() async {
         // An update can start another one, such as the end of a speech that
         // empties the Talk bar.
-        for _ in 0..<4 {
+        repeat {
             await screenRead?.value
             await pending?.value
             await Task.yield()
-        }
+        } while isScheduled
         await predictions.settle()
     }
 

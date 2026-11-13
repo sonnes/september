@@ -8,6 +8,8 @@ func pressTests() {
     heldKeyTests()
 }
 
+private let english = try! AccentTable.bundled("en")
+
 private func layoutKey(_ id: String) -> KeyDefinition {
     KeyboardLayout.rows.lazy.flatMap(\.keys).first { $0.id == id }!
 }
@@ -15,7 +17,7 @@ private func layoutKey(_ id: String) -> KeyDefinition {
 @MainActor
 private func heldKeyTests() {
     test("the accent table holds the accents of macOS for each letter") {
-        let table = AccentTable.english
+        let table = try AccentTable.bundled("en")
         expect(table.choices(for: "e").contains("é"))
         expect(table.choices(for: "E").contains("É"))
         expect(table.choices(for: "n").contains("ñ"))
@@ -26,9 +28,9 @@ private func heldKeyTests() {
     test("a letter holds as a letter with its accents in the case it types") {
         let (controller, _) = try makeController()
         let e = layoutKey("key-e")
-        expectEqual(controller.holdBehavior(for: e), .letter(choices: AccentTable.english.choices(for: "e")))
+        expectEqual(controller.holdBehavior(for: e), .letter(choices: english.choices(for: "e")))
         controller.press(layoutKey("shift-left"))
-        expectEqual(controller.holdBehavior(for: e), .letter(choices: AccentTable.english.choices(for: "E")))
+        expectEqual(controller.holdBehavior(for: e), .letter(choices: english.choices(for: "E")))
     }
 
     test("caps lock gives the accents of the capital letter") {
@@ -36,7 +38,7 @@ private func heldKeyTests() {
         controller.press(layoutKey("capslock"))
         expectEqual(
             controller.holdBehavior(for: layoutKey("key-a")),
-            .letter(choices: AccentTable.english.choices(for: "A")))
+            .letter(choices: english.choices(for: "A")))
     }
 
     test("a chord does not repeat") {

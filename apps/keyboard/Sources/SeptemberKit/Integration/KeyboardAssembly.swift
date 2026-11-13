@@ -10,7 +10,7 @@ public struct KeyboardAssembly {
     /// The Phrases panel of Talk mode.
     public let phrases: PanelDefinition
 
-    /// Throws when a bundled panel does not load.
+    /// Throws when a bundled panel or the accent table does not load.
     ///
     /// - Parameters:
     ///   - defaults: the settings of My Panel and the clipboard history.
@@ -31,7 +31,7 @@ public struct KeyboardAssembly {
         scheduler: any DelayScheduler = MainQueueScheduler()
     ) throws {
         let controller = KeyboardController(
-            sink: sink, panels: try PanelStore.bundled(),
+            sink: sink, panels: try PanelStore.bundled(), accents: try AccentTable.bundled("en"),
             talk: TalkSession(said: SaidList(database: database)))
         phrases = try Phrases.bundled()
         session = KeyboardSession(

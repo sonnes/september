@@ -27,10 +27,7 @@ public struct VoiceModel: Equatable, Sendable, Identifiable {
     /// Flash starts to speak first.
     public static let defaultID = "eleven_flash_v2_5"
 
-    private static let replaced = [
-        "eleven_turbo_v2_5": "eleven_flash_v2_5",
-        "eleven_turbo_v2": "eleven_flash_v2",
-    ]
+    private static let replaced = ["eleven_turbo_v2_5": "eleven_flash_v2_5"]
 
     /// A saved model ID, with a deprecated Turbo model read as its replacement.
     public static func id(from saved: String) -> String { replaced[saved] ?? saved }

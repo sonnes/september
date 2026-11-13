@@ -7,7 +7,7 @@ import Foundation
 public struct AccentTable: Sendable {
     private let choices: [String: [String]]
 
-    public init(_ choices: [String: [String]]) {
+    private init(_ choices: [String: [String]]) {
         self.choices = choices
     }
 
@@ -23,8 +23,4 @@ public struct AccentTable: Sendable {
         else { throw CocoaError(.fileNoSuchFile) }
         return AccentTable(try JSONDecoder().decode([String: [String]].self, from: Data(contentsOf: url)))
     }
-
-    /// The accents of the English keyboard. A check makes sure that the file
-    /// loads.
-    public static let english = (try? bundled("en")) ?? AccentTable([:])
 }

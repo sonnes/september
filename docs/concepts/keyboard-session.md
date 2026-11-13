@@ -283,6 +283,7 @@ A press on a copied text closes the history.
 
 `settle()` waits until the parts take the last change: the read of the Write
 window, the read of the text on screen, the pending update, and the request
-of the predictions. The wait before a read of the text on screen runs on the
-scheduler, so a check moves its `FakeClock` past `screenReadDelay`. A check calls
-`settle()` before it reads a result.
+of the predictions. An update can start another update, so `settle()` waits
+again until no update is pending. The wait before a read of the text on screen
+runs on the scheduler, so a check moves its `FakeClock` past `screenReadDelay`.
+A check calls `settle()` before it reads a result.

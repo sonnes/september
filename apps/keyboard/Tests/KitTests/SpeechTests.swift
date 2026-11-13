@@ -193,7 +193,6 @@ func speechTests() async {
 
     test("a deprecated model reads as its replacement") {
         expectEqual(VoiceModel.id(from: "eleven_turbo_v2_5"), "eleven_flash_v2_5")
-        expectEqual(VoiceModel.id(from: "eleven_turbo_v2"), "eleven_flash_v2")
         expectEqual(VoiceModel.id(from: "eleven_v3"), "eleven_v3")
     }
 
@@ -251,6 +250,8 @@ func speechTests() async {
         let defaults = freshDefaults()
         let store = VoiceSettingsStore(defaults: defaults)
         store.value.modelID = "eleven_turbo_v2_5"
+        expectEqual(VoiceSettingsStore(defaults: defaults).value.modelID, "eleven_flash_v2_5")
+        store.value.modelID = "eleven_turbo_v2"
         expectEqual(VoiceSettingsStore(defaults: defaults).value.modelID, "eleven_flash_v2_5")
         store.value.modelID = "eleven_unknown"
         expectEqual(VoiceSettingsStore(defaults: defaults).value.modelID, "eleven_flash_v2_5")

@@ -47,7 +47,6 @@ public final class KeyboardController: ObservableObject {
     /// The accents of a held letter, shown over the word row until the user
     /// presses a key. Empty when no accents show.
     @Published public private(set) var accentChoices: [String] = []
-    public var accents = AccentTable.english
     public let talk: TalkSession
     /// Called when the user submits the text in Type mode: a press on Return
     /// with no modifier.
@@ -56,6 +55,7 @@ public final class KeyboardController: ObservableObject {
     public let panels: PanelStore
 
     private let sink: any KeystrokeSink
+    private let accents: AccentTable
     /// The last key pressed, with the modifiers it had, so a repeat types
     /// the same thing after the latched modifiers are used up.
     private var lastPress: (id: String, modifiers: ModifierState)?
@@ -64,12 +64,14 @@ public final class KeyboardController: ObservableObject {
     public init(
         sink: any KeystrokeSink,
         panels: PanelStore,
+        accents: AccentTable,
         keyCodeMap: KeyCodeMap = SystemKeyboardLayout.currentMap(),
         talk: TalkSession
     ) {
         self.talk = talk
         self.sink = sink
         self.panels = panels
+        self.accents = accents
         self.keyCodeMap = keyCodeMap
     }
 
@@ -172,7 +174,7 @@ public final class KeyboardController: ObservableObject {
 
     /// The place where the pointer last rested outside the keyboard. A
     /// scroll button scrolls it.
-    public private(set) var scrollPoint: CGPoint?
+    private var scrollPoint: CGPoint?
 
     /// The pointer rested outside the keyboard, at `point` in screen
     /// coordinates from the top left.
@@ -197,7 +199,7 @@ public final class KeyboardController: ObservableObject {
             sink.type(text)
             append(text)
         case .privateText(let id):
-            guard let text = try? privateTexts.text(for: id) else { break }
+            guard let text = try? privateTexts.text(for: id) else { return sink.beep() }
             sink.type(text)
             hideField()
         }
