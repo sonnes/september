@@ -67,22 +67,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         speech.start()
         history = SentenceHistory(database: database)
         let predictions = PredictionEngine(history: history)
+        write = WriteController(host: self)
         session = KeyboardSession(
             controller: controller, predictions: predictions, speaker: speech.speaker,
             userPanel: Result { try UserPanelStore(database: database) },
             userPanelUsage: UsageStore(database: database),
-            reader: AXFrontAppReader(rules: contextRules),
+            reader: AXFrontAppReader(rules: contextRules), write: write,
             clipboard: ClipboardHistory(database: database),
             pasteboard: SystemPasteboard())
         watchClipboard()
 
-        write = WriteController()
-        write.onKeyChanged = { [weak self] isKey in self?.writeKeyChanged(isKey) }
-        write.bringToFront = { AppActivation.bringToFront($0) }
-        write.windowClosed = { AppActivation.windowClosed($0) }
-        write.onPanelChange = { [weak self] panel in self?.writePanelChanged(panel) }
-        write.onCaretChange = { [weak self] caret in self?.writeCaretChanged(caret) }
-        session.writeSpeech = { [weak self] in self?.write.speech }
         settingsWindow = SettingsWindowController(pages: makeSettingsPages())
         content = WindowContent(
             controller: controller, session: session, permission: permission, phrases: phrases,
@@ -229,26 +223,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         focusWatcher.start()
     }
 
-    private func writeKeyChanged(_ isKey: Bool) {
-        let front = NSWorkspace.shared.frontmostApplication.map(FrontApp.init)
-        let change = tracker.writeKeyChanged(isKey, panel: write.panel, front: front)
-        apply(change)
-        // The app in front may have come forward while the Write paper was
-        // key. Follow it again, so its field shows in the bar.
-        if case .app = change { focusWatcher.refollow() }
-    }
-
     private func apply(_ change: FrontTarget?) {
         guard let change else { return }
         session.frontChanged(change)
-        if change.isWrite { session.writeCaretMoved(write.caret) }
-    }
-
-    /// The paper turned into the desk, or the desk into the paper: the Write
-    /// tab changes between the Write keys and the Documents keys.
-    private func writePanelChanged(_ panel: WritePanel) {
-        session.writePanelChanged(panel)
-        session.writeCaretMoved(write.caret)
     }
 
     // MARK: - Write
@@ -262,12 +239,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         write.show(
             from: bar, floor: keyboard?.frame.maxY ?? screen.minY, screen: screen,
             margin: FloatingPanel.margin)
-    }
-
-    /// The keyboard cannot read its own window over accessibility, so the
-    /// editor reports the paragraph at the caret.
-    private func writeCaretChanged(_ caret: EditorCaret) {
-        session.writeCaretMoved(caret)
     }
 
     // MARK: - The modifiers of the hardware keyboard
@@ -575,6 +546,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
+}
+
+extension AppDelegate: WriteHost {
+    func bringToFront(_ window: NSWindow) {
+        AppActivation.bringToFront(window)
+    }
+
+    func windowClosed(_ window: NSWindow) {
+        AppActivation.windowClosed(window)
+    }
+
+    func writeKeyChanged(_ isKey: Bool) {
+        let front = NSWorkspace.shared.frontmostApplication.map(FrontApp.init)
+        let change = tracker.writeKeyChanged(isKey, panel: write.panel, front: front)
+        apply(change)
+        // The app in front may have come forward while the Write paper was
+        // key. Follow it again, so its field shows in the bar.
+        if case .app = change { focusWatcher.refollow() }
+    }
+
+    func writePanelChanged(_ panel: WritePanel) {
+        session.writePanelChanged(panel)
+    }
+
+    func writeCaretMoved(_ caret: EditorCaret) {
+        session.writeCaretMoved(caret)
+    }
 }
 
 /// The Speech page with the Return key setting of Talk mode and the Talk

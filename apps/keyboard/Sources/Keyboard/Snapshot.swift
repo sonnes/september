@@ -98,7 +98,7 @@ enum Snapshot {
                 settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
             userPanel: .success(userPanel),
             userPanelUsage: UsageStore(database: database),
-            reader: reader,
+            reader: reader, write: SampleWrite(),
             clipboard: ClipboardHistory(database: database, defaults: defaults, now: { Date().addingTimeInterval(-40 * 60) }),
             pasteboard: MemoryPasteboard())
         let content = WindowContent(
@@ -126,7 +126,6 @@ enum Snapshot {
         } else if arguments.contains("--write") {
             session.frontChanged(.write(.paper))
             let line = typed ?? "Send the release notes before the we"
-            controller.focusChanged(to: EditorCaret(text: "", caret: 0, length: 0).focusedField)
             settle(session)
             controller.focusChanged(
                 to: EditorCaret(text: line, caret: (line as NSString).length, length: 0).focusedField)
@@ -395,6 +394,13 @@ private final class SampleReader: FrontAppReading {
 
     func menuShortcuts(pid: pid_t) -> [AppShortcut] { menu }
     func screenContext(pid: pid_t) async -> ScreenContext? { nil }
+}
+
+/// A new Write document with no text.
+@MainActor
+private final class SampleWrite: WriteReading {
+    let caret = EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: true)
+    let speech = EditorSpeech(selection: "", markdown: "")
 }
 
 private struct NoPrivateTexts: PrivateTextStore {

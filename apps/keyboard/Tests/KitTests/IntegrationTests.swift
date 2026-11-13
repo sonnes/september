@@ -350,6 +350,7 @@ private struct SessionParts {
     let userPanel: UserPanelStore?
     let clock: FakeClock
     let reader: FakeFrontAppReader
+    let write: FakeWrite
     let completer: CupCompleter
     let pasteboard: MemoryPasteboard
     let clipboard: ClipboardHistory
@@ -384,14 +385,15 @@ private func makeSession(
     let clock = FakeClock()
     let clipboard = ClipboardHistory(database: database, defaults: defaults)
     let reader = FakeFrontAppReader()
+    let write = FakeWrite()
     let session = KeyboardSession(
         controller: controller, predictions: engine, speaker: speaker, userPanel: store,
-        userPanelUsage: UsageStore(database: database), reader: reader,
+        userPanelUsage: UsageStore(database: database), reader: reader, write: write,
         inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25),
         clipboard: clipboard, pasteboard: pasteboard, scheduler: clock)
     return SessionParts(
         session: session, controller: controller, sink: sink, voice: voice,
-        userPanel: try? store.get(), clock: clock, reader: reader, completer: completer,
+        userPanel: try? store.get(), clock: clock, reader: reader, write: write, completer: completer,
         pasteboard: pasteboard, clipboard: clipboard, history: history,
         database: database)
 }
@@ -414,6 +416,13 @@ private final class FakeFrontAppReader: FrontAppReading {
         screenReads.append(pid)
         return screens[pid]
     }
+}
+
+/// The caret and the text for Speak of the Write window, from memory.
+@MainActor
+private final class FakeWrite: WriteReading {
+    var caret = EditorCaret(text: "", caret: 0, length: 0)
+    var speech = EditorSpeech(selection: "", markdown: "")
 }
 
 /// Lets the time of a screen read pass, then waits for the read.
@@ -875,9 +884,9 @@ private func sessionTests() async {
 
     await asyncTest("Speak in the Write window reads the document without its marks") {
         let parts = try makeSession(voiceHolds: true)
-        parts.session.writeSpeech = { EditorSpeech(selection: "", markdown: "# Plan\n\nSee **the roses**.") }
+        parts.write.speech = EditorSpeech(selection: "", markdown: "# Plan\n\nSee **the roses**.")
+        parts.write.caret = EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: false)
         parts.session.frontChanged(.write(.paper))
-        parts.session.writeCaretMoved(EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: false))
         await parts.session.settle()
         expectEqual(parts.session.speakMode, .speak, "an empty paragraph at the caret leaves Speak on")
         expectEqual(parts.controller.input, .mirrored(text: "", caret: 0, selectionLength: 0))
@@ -901,7 +910,7 @@ private func sessionTests() async {
 
     await asyncTest("Speak in the Write window reads the selection") {
         let parts = try makeSession()
-        parts.session.writeSpeech = { EditorSpeech(selection: "the roses", markdown: "See **the roses**.") }
+        parts.write.speech = EditorSpeech(selection: "the roses", markdown: "See **the roses**.")
         parts.session.frontChanged(.write(.paper))
         parts.session.writeCaretMoved(EditorCaret(text: "See the roses.", caret: 4, length: 9, documentIsEmpty: false))
         parts.session.speakPressed()
@@ -911,7 +920,7 @@ private func sessionTests() async {
 
     await asyncTest("Speak in another app reads its field, not the Write document") {
         let parts = try makeSession()
-        parts.session.writeSpeech = { EditorSpeech(selection: "", markdown: "The document") }
+        parts.write.speech = EditorSpeech(selection: "", markdown: "The document")
         parts.session.frontChanged(.write(.paper))
         parts.session.frontChanged(.app(messages))
         parts.controller.focusChanged(to: field("Hello", caret: 5))
@@ -958,12 +967,12 @@ private func sessionTests() async {
         expectEqual(parts.session.writePanel, nil)
     }
 
-    await asyncTest("the desk of Write gets the Documents panel, and Speak reads what Write gives") {
+    await asyncTest("the desk of Write gets the Documents panel, the caret, and Speak reads what Write gives") {
         let parts = try makeSession()
-        parts.session.writeSpeech = { EditorSpeech(selection: "Garden Plans", markdown: "") }
+        parts.write.speech = EditorSpeech(selection: "Garden Plans", markdown: "")
+        parts.write.caret = EditorCaret(text: "gar", caret: 3, length: 0)
         parts.session.frontChanged(.write(.desk))
         expectEqual(parts.session.writePanel, parts.controller.panels.writeDocuments)
-        parts.session.writeCaretMoved(EditorCaret(text: "gar", caret: 3, length: 0))
         await parts.session.settle()
         expectEqual(parts.controller.input, .mirrored(text: "gar", caret: 3, selectionLength: 0))
         parts.session.speakPressed()
@@ -976,8 +985,8 @@ private func sessionTests() async {
         parts.session.frontChanged(.write(.paper))
         parts.session.writeCaretMoved(EditorCaret(text: "Dear", caret: 4, length: 0))
         parts.session.toggleHistory()
+        parts.write.caret = EditorCaret(text: "gar", caret: 3, length: 0)
         parts.session.writePanelChanged(.desk)
-        parts.session.writeCaretMoved(EditorCaret(text: "gar", caret: 3, length: 0))
         expect(parts.session.isHistoryOpen, "the history stays open")
         expectEqual(parts.session.writePanel, parts.controller.panels.writeDocuments)
         expectEqual(parts.controller.input, .mirrored(text: "gar", caret: 3, selectionLength: 0))

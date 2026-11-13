@@ -26,21 +26,12 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
     /// The frame that the paper moves to.
     private var targetFrame: CGRect?
 
-    /// Called with `true` when the paper becomes the key window, and with
-    /// `false` when it stops being the key window.
-    public var onKeyChanged: ((Bool) -> Void)?
     /// Called when the paper closes.
     public var onClose: (() -> Void)?
-    /// Brings the paper to the front with the focus. The keyboard passes
-    /// `AppActivation.bringToFront`, which handles a press through `AXPress`.
-    public var bringToFront: (NSWindow) -> Void = { window in
-        NSApp.activate()
-        window.makeKeyAndOrderFront(nil)
-    }
-    /// Called when the paper closes, so that it does not wait for the focus.
-    public var windowClosed: (NSWindow) -> Void = { _ in }
+    private weak var host: (any WriteHost)?
 
-    override public init() {
+    public init(host: any WriteHost) {
+        self.host = host
         window = WritePaperWindow(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: true)
         editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
         super.init()
@@ -153,7 +144,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
             window.setFrame(frame, display: false)
             window.invalidateShadow()
         }
-        bringToFront(window)
+        host?.bringToFront(window)
         window.makeFirstResponder(editor)
         scrollToCaret(animated: false)
         guard animates else {
@@ -257,19 +248,19 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
 
     public func windowDidBecomeKey(_ notification: Notification) {
         editor.overlay.update()
-        onKeyChanged?(true)
+        host?.writeKeyChanged(true)
     }
 
     public func windowDidResignKey(_ notification: Notification) {
         editor.overlay.update()
-        onKeyChanged?(false)
+        host?.writeKeyChanged(false)
     }
 
     public func windowWillClose(_ notification: Notification) {
         frameMotion.stop()
         scrollMotion.stop()
         targetFrame = nil
-        windowClosed(window)
+        host?.windowClosed(window)
         onClose?()
     }
 }

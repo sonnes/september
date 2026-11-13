@@ -50,16 +50,9 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     public var onQueryChange: ((String) -> Void)?
     /// Called when the time for Undo ends.
     public var onUndoEnd: (() -> Void)?
-    /// Called with `true` when the desk becomes the key window, and with
-    /// `false` when it stops being the key window.
-    public var onKeyChanged: ((Bool) -> Void)?
     /// The lines of a document for its card.
     public var preview: (WriteDocument) -> [String] = { _ in [] }
-    /// Brings the desk to the front with the focus.
-    public var bringToFront: (NSWindow) -> Void = { window in
-        NSApp.activate()
-        window.makeKeyAndOrderFront(nil)
-    }
+    private weak var host: (any WriteHost)?
 
     private let root = DeskRootView()
     private let backdrop = NSVisualEffectView()
@@ -75,7 +68,8 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     private var undoTimer: Timer?
     private var hideTimer: Timer?
 
-    override public init() {
+    public init(host: any WriteHost) {
+        self.host = host
         window = WriteDeskWindow(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: true)
         super.init()
         window.isReleasedWhenClosed = false
@@ -115,7 +109,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         relayout(animated: false)
         fadeBackdrop(in: true)
         riseCards()
-        bringToFront(window)
+        host?.bringToFront(window)
         window.makeFirstResponder(find)
         onQueryChange?(desk.query)
     }
@@ -418,11 +412,11 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     // MARK: - NSWindowDelegate
 
     public func windowDidBecomeKey(_ notification: Notification) {
-        onKeyChanged?(true)
+        host?.writeKeyChanged(true)
     }
 
     public func windowDidResignKey(_ notification: Notification) {
-        onKeyChanged?(false)
+        host?.writeKeyChanged(false)
     }
 }
 

@@ -56,10 +56,9 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("September/Write Lab", isDirectory: true)
         seed(folder)
-        write = WriteController(library: DocumentLibrary(folder: folder))
+        write = WriteController(host: self, library: DocumentLibrary(folder: folder))
         NSApp.mainMenu = Self.menu()
 
-        write.onCaretChange = { [weak self] caret in self?.state.caret = caret }
         subscription = write.model.$current.sink { [weak self] document in
             self?.state.status = document?.title ?? ""
         }
@@ -100,7 +99,7 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func newDocument() {
-        paper.window.onNewDocument?()
+        write.newDocument()
     }
 
     // MARK: Bar and paper
@@ -154,6 +153,22 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Quit Write Lab", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.submenu = menu
         return main
+    }
+}
+
+/// The lab is a regular app, so a window of Write activates it.
+extension LabDelegate: WriteHost {
+    func bringToFront(_ window: NSWindow) {
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func windowClosed(_ window: NSWindow) {}
+    func writeKeyChanged(_ isKey: Bool) {}
+    func writePanelChanged(_ panel: WritePanel) {}
+
+    func writeCaretMoved(_ caret: EditorCaret) {
+        state.caret = caret
     }
 }
 

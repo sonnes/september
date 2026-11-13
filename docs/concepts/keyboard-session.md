@@ -31,11 +31,10 @@ screen of the app in front, for a process ID. The app passes
 context rules. See [Shortcut Suggestions](#shortcut-suggestions) and
 [The Text on Screen](#the-text-on-screen).
 
-The app sets one hook:
-
-- `writeSpeech` reads the selection and the document of the Write paper, or
-  the Find query of the desk. The keyboard cannot read its own window through
-  the accessibility API.
+`init` also takes a `WriteReading`. It gives the paragraph at the caret and
+the text for Speak of the Write paper, or the Find query of the desk. The app
+passes its `WriteController`. The keyboard cannot read its own window through
+the accessibility API.
 
 The views read these values of the session:
 
@@ -154,15 +153,18 @@ clears the text. Turning off the switch cancels the read.
 
 The Write paper is in the keyboard process, and the keyboard cannot read its
 own window through the accessibility API. When the paper becomes the key
-window, the app calls `frontChanged(.write(.paper))`. Then the editor
-reports the paragraph at the caret after each edit and each caret move. The
-app gives it to `writeCaretMoved(_:)`. The session sends the paragraph to
-`controller.focusChanged(to:)` and records if the document has text. While
-another app is in front, the session ignores the caret of Write.
+window, the app calls `frontChanged(.write(.paper))`, and the session reads
+the caret from its `WriteReading`. Then the editor reports the paragraph at
+the caret after each edit and each caret move. The app is the `WriteHost` of
+`WriteController`, and it gives the paragraph to `writeCaretMoved(_:)`. The
+session sends the paragraph to `controller.focusChanged(to:)` and records if
+the document has text. While another app is in front, the session ignores the
+caret of Write.
 
 The desk of Write is the other window of Write. When the paper turns into the
 desk, the app calls `writePanelChanged(.desk)`, so the Write tab shows the
-Documents keys. The desk reports its Find query in place of the paragraph.
+Documents keys, and the session reads the caret again. The desk reports its
+Find query in place of the paragraph.
 When the desk turns back into the paper, the app calls
 `writePanelChanged(.paper)`. A switch between the paper and the desk changes
 only the keys and the caret. The history, the echo, and the order of Mine
@@ -247,9 +249,9 @@ shows. Talk mode and the Write window have no shortcuts.
 
 - During speech, it stops the voice. In Talk mode, the text stays in the bar.
 - In Talk mode, it speaks the bar, and the text goes to the Said list.
-- In Type mode with the Write paper in front, it reads `writeSpeech`. It
-  speaks the selection, or the whole document without its Markdown marks
-  (`MarkdownSpeech`).
+- In Type mode with the Write paper in front, it reads the speech of its
+  `WriteReading`. It speaks the selection, or the whole document without its
+  Markdown marks (`MarkdownSpeech`).
 - In Type mode in another app, it speaks the selection of the field, or the
   whole field (`SpeakText`). A password field and private text have nothing to
   read.

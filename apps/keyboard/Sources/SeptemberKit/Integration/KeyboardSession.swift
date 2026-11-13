@@ -73,10 +73,9 @@ public final class KeyboardSession: ObservableObject {
     private var screen: ScreenContext?
     /// False while the document of the Write window has no text.
     private var writeHasText = false
-    /// Reads what Speak reads in the Write window: the selection and the
-    /// document. The keyboard cannot read its own web view through the
-    /// accessibility API, so the app asks the editor page.
-    public var writeSpeech: () async -> EditorSpeech? = { nil }
+    /// The caret and the text for Speak of the Write window. The keyboard
+    /// cannot read its own window through the accessibility API.
+    private let write: any WriteReading
 
     /// Reads the menu and the text on screen of the app in front.
     private let reader: any FrontAppReading
@@ -104,8 +103,6 @@ public final class KeyboardSession: ObservableObject {
     private var wasSpeaking = false
     private var subscriptions: Set<AnyCancellable> = []
     private var pending: Task<Void, Never>?
-    /// The read of the Write window before Speak speaks it.
-    private var readingWrite: Task<Void, Never>?
     private var isScheduled = false
     private var needsRank = false
 
@@ -116,6 +113,7 @@ public final class KeyboardSession: ObservableObject {
         userPanel: Result<UserPanelStore, any Error>,
         userPanelUsage: UsageStore,
         reader: any FrontAppReading,
+        write: any WriteReading,
         inputBar: InputBarVisibility = InputBarVisibility(),
         clipboard: ClipboardHistory,
         pasteboard: any ClipboardAccess = MemoryPasteboard(),
@@ -123,6 +121,7 @@ public final class KeyboardSession: ObservableObject {
     ) {
         self.scheduler = scheduler
         self.reader = reader
+        self.write = write
         self.inputBar = inputBar
         self.clipboard = clipboard
         self.pasteboard = pasteboard
@@ -312,7 +311,11 @@ public final class KeyboardSession: ObservableObject {
             case .talk:
                 controller.talk.speak()
             case .type where isWriteInFront:
-                speakWrite()
+                guard let text = write.speech.text else { return }
+                // The bar shows only the paragraph at the caret, so no word
+                // of the bar lights up.
+                speaking = nil
+                speaker.speak(text)
             case .type:
                 guard let text = SpeakText(input: controller.input, isPrivate: controller.hidesFieldText)
                 else { return }
@@ -326,7 +329,8 @@ public final class KeyboardSession: ObservableObject {
     // MARK: - The app in front
 
     /// A different app or Write came to the front. The last app's text goes
-    /// first, then My Panel takes its new order.
+    /// first, then My Panel takes its new order. For Write, the bar then
+    /// shows the paragraph at the caret.
     public func frontChanged(_ target: FrontTarget) {
         controller.appChanged(name: target.name)
         isHistoryOpen = false
@@ -340,17 +344,18 @@ public final class KeyboardSession: ObservableObject {
         }
         predictions.focusMoved()
         rankUserPanel()
+        if target.isWrite { writeCaretMoved(write.caret) }
         scheduleUpdate()
         readScreenSoon()
     }
 
     /// The paper of Write turned into the desk, or the desk into the paper.
-    /// Only the keys of Write change. The caret comes next, with
-    /// `writeCaretMoved(_:)`.
+    /// Only the keys of Write and the caret change.
     public func writePanelChanged(_ panel: WritePanel) {
         guard isWriteInFront else { return }
         front = .write(panel)
         writePanel = controller.panels.writePanel(for: panel)
+        writeCaretMoved(write.caret)
     }
 
 
@@ -388,7 +393,6 @@ public final class KeyboardSession: ObservableObject {
         // An update can start another one, such as the end of a speech that
         // empties the Talk bar.
         for _ in 0..<4 {
-            await readingWrite?.value
             await screenRead?.value
             await pending?.value
             await Task.yield()
@@ -406,22 +410,6 @@ public final class KeyboardSession: ObservableObject {
             "My Panel could not read one of its saved buttons. The keyboard keeps the saved buttons as they are."
         default:
             "My Panel could not read its buttons from the keyboard database. The keyboard keeps the saved buttons as they are."
-        }
-    }
-
-    /// Reads the Write window, then speaks. The bar shows only the paragraph
-    /// at the caret, so no word of the bar lights up.
-    private func speakWrite() {
-        guard readingWrite == nil else { return }
-        readingWrite = Task { [weak self] in
-            guard let self else { return }
-            let text = await self.writeSpeech()?.text
-            self.readingWrite = nil
-            guard let text, self.isWriteInFront, self.controller.mode == .type, !self.speaker.isSpeaking
-            else { return }
-            self.speaking = nil
-            self.speaker.speak(text)
-            self.update()
         }
     }
 

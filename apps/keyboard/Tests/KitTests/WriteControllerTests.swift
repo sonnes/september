@@ -26,7 +26,8 @@ func writeControllerTests() {
     test("Write shows the newest document on the paper, and saves the edits") {
         let url = try folder(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
-        let write = WriteController(library: DocumentLibrary(folder: url))
+        let host = RecordingWriteHost()
+        let write = WriteController(host: host, library: DocumentLibrary(folder: url))
 
         write.start()
         expectEqual(write.paper.editor.markdown, "# New")
@@ -41,7 +42,9 @@ func writeControllerTests() {
         let url = try folder(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
         var opened: [URL] = []
-        let write = WriteController(library: DocumentLibrary(folder: url), openURL: { opened.append($0) })
+        let host = RecordingWriteHost()
+        let write = WriteController(
+            host: host, library: DocumentLibrary(folder: url), openURL: { opened.append($0) })
         write.start()
 
         write.paper.editor.onOpenLink?(.wiki(target: "Old"))
@@ -57,7 +60,8 @@ func writeControllerTests() {
     test("Command-N starts a new document with an empty heading") {
         let url = try folder(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }
-        let write = WriteController(library: DocumentLibrary(folder: url))
+        let host = RecordingWriteHost()
+        let write = WriteController(host: host, library: DocumentLibrary(folder: url))
         write.start()
 
         write.paper.window.onNewDocument?()
@@ -69,50 +73,48 @@ func writeControllerTests() {
     test("Write reports the caret paragraph and the text for Speak") {
         let url = try folder([:])
         defer { try? FileManager.default.removeItem(at: url) }
-        let write = WriteController(library: DocumentLibrary(folder: url))
-        var carets: [EditorCaret] = []
-        write.onCaretChange = { carets.append($0) }
+        let host = RecordingWriteHost()
+        let write = WriteController(host: host, library: DocumentLibrary(folder: url))
         write.start()
 
         type(write.paper.editor, "Hi")
-        expectEqual(carets.last, EditorCaret(text: "Hi", caret: 2, length: 0))
+        expectEqual(host.carets.last, EditorCaret(text: "Hi", caret: 2, length: 0))
         expectEqual(write.caret, EditorCaret(text: "Hi", caret: 2, length: 0))
         expectEqual(write.speech.text, "Hi.")
     }
 
     // MARK: The desk
 
-    /// Write with the folder, a Trash folder, and no activation of the app.
-    func deskWrite(_ files: [String: String], revealed: ((URL) -> Void)? = nil) throws -> (WriteController, URL) {
+    /// Write with the folder, a Trash folder, and a host that records its calls.
+    func deskWrite(
+        _ files: [String: String], revealed: ((URL) -> Void)? = nil
+    ) throws -> (WriteController, RecordingWriteHost, URL) {
         let url = try folder(files)
         let trash = url.appendingPathComponent(".Trash", isDirectory: true)
         try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+        let host = RecordingWriteHost()
         let write = WriteController(
-            library: DocumentLibrary(folder: url, trash: .folder(trash)), reveal: revealed ?? { _ in })
-        write.bringToFront = { _ in }
+            host: host, library: DocumentLibrary(folder: url, trash: .folder(trash)), reveal: revealed ?? { _ in })
         write.start()
-        return (write, url)
+        return (write, host, url)
     }
 
     test("Command-O opens the desk on the open document, and the Write panel turns to Documents") {
-        let (write, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
+        let (write, host, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
-        var panels: [WritePanel] = []
-        write.onPanelChange = { panels.append($0) }
         expectEqual(write.panel, .paper)
 
         write.paper.window.onShowDocuments?()
         expect(write.isDeskOpen, "the desk is open")
         expectEqual(write.desk.desk.selected, .document(write.model.documents[0]))
         expectEqual(write.panel, .desk)
-        expectEqual(panels, [.desk])
+        expectEqual(host.panels, [.desk])
+        expectEqual(host.broughtToFront, [write.desk.window])
     }
 
     test("Return on a card opens its document on the paper") {
-        let (write, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
+        let (write, host, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
-        var panels: [WritePanel] = []
-        write.onPanelChange = { panels.append($0) }
         write.showDesk()
 
         write.desk.move(by: 1)
@@ -120,11 +122,11 @@ func writeControllerTests() {
         expect(!write.isDeskOpen, "the desk closes")
         expectEqual(write.model.current?.title, "Old")
         expectEqual(write.paper.editor.markdown, "# Old")
-        expectEqual(panels, [.desk, .paper])
+        expectEqual(host.panels, [.desk, .paper])
     }
 
     test("the New Document card and Command-N on the desk start a new document") {
-        let (write, url) = try deskWrite(["New.md": "# New"])
+        let (write, _, url) = try deskWrite(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }
         write.showDesk()
         write.desk.onCommand?(.newDocument)
@@ -133,21 +135,19 @@ func writeControllerTests() {
     }
 
     test("the Find query goes to the input bar, and it picks the card") {
-        let (write, url) = try deskWrite(["New.md": "# New", "Garden Plans.md": "# Garden Plans"])
+        let (write, host, url) = try deskWrite(["New.md": "# New", "Garden Plans.md": "# Garden Plans"])
         defer { try? FileManager.default.removeItem(at: url) }
-        var carets: [EditorCaret] = []
-        write.onCaretChange = { carets.append($0) }
         write.showDesk()
-        expectEqual(carets.last, EditorCaret(text: "", caret: 0, length: 0))
+        expectEqual(host.carets.last, EditorCaret(text: "", caret: 0, length: 0))
 
         write.desk.setQuery("gar")
-        expectEqual(carets.last, EditorCaret(text: "gar", caret: 3, length: 0))
+        expectEqual(host.carets.last, EditorCaret(text: "gar", caret: 3, length: 0))
         expectEqual(write.caret, EditorCaret(text: "gar", caret: 3, length: 0))
         expectEqual(write.desk.desk.selected.url?.lastPathComponent, "Garden Plans.md")
     }
 
     test("Move to Trash takes the card away and offers Undo, and Undo brings it back") {
-        let (write, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
+        let (write, _, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
         write.showDesk()
         write.desk.move(by: 1)
@@ -164,7 +164,7 @@ func writeControllerTests() {
     }
 
     test("after the open document goes to the Trash, Esc opens the selected card") {
-        let (write, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
+        let (write, _, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
         write.showDesk()
 
@@ -176,7 +176,7 @@ func writeControllerTests() {
     }
 
     test("Esc goes back to the open document") {
-        let (write, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
+        let (write, _, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
         write.showDesk()
         write.desk.move(by: 1)
@@ -186,7 +186,7 @@ func writeControllerTests() {
     }
 
     test("Rename opens the document with its heading selected") {
-        let (write, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
+        let (write, _, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
         write.showDesk()
         write.desk.move(by: 1)
@@ -196,7 +196,7 @@ func writeControllerTests() {
     }
 
     test("Duplicate puts the copy first on the desk and selects it") {
-        let (write, url) = try deskWrite(["New.md": "# New"])
+        let (write, _, url) = try deskWrite(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }
         write.showDesk()
         write.desk.onCommand?(.duplicate)
@@ -206,7 +206,7 @@ func writeControllerTests() {
 
     test("Show in Finder shows the file of the selected card") {
         var revealed: [URL] = []
-        let (write, url) = try deskWrite(["New.md": "# New"], revealed: { revealed.append($0) })
+        let (write, _, url) = try deskWrite(["New.md": "# New"], revealed: { revealed.append($0) })
         defer { try? FileManager.default.removeItem(at: url) }
         write.showDesk()
         write.desk.onCommand?(.reveal)
@@ -214,11 +214,37 @@ func writeControllerTests() {
     }
 
     test("Command-W on the desk saves and closes Write") {
-        let (write, url) = try deskWrite(["New.md": "# New"])
+        let (write, host, url) = try deskWrite(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }
         write.showDesk()
         write.desk.onCommand?(.close)
         expect(!write.isDeskOpen, "the desk closes")
         expectEqual(write.panel, .paper)
+        expectEqual(host.closed, [write.desk.window])
     }
+
+    test("New Document saves the open document and starts an empty one") {
+        let (write, _, url) = try deskWrite(["New.md": "# New"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        type(write.paper.editor, " Plans")
+        write.newDocument()
+        expectEqual(write.model.current?.url.lastPathComponent, "Untitled.md")
+        expectEqual(write.model.documents.map(\.title).sorted(), ["New Plans", "Untitled"])
+    }
+}
+
+/// Records what Write asks of the app.
+@MainActor
+private final class RecordingWriteHost: WriteHost {
+    private(set) var broughtToFront: [NSWindow] = []
+    private(set) var closed: [NSWindow] = []
+    private(set) var keyChanges: [Bool] = []
+    private(set) var panels: [WritePanel] = []
+    private(set) var carets: [EditorCaret] = []
+
+    func bringToFront(_ window: NSWindow) { broughtToFront.append(window) }
+    func windowClosed(_ window: NSWindow) { closed.append(window) }
+    func writeKeyChanged(_ isKey: Bool) { keyChanges.append(isKey) }
+    func writePanelChanged(_ panel: WritePanel) { panels.append(panel) }
+    func writeCaretMoved(_ caret: EditorCaret) { carets.append(caret) }
 }
