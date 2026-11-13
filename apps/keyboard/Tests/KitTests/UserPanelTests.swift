@@ -1,20 +1,6 @@
 import Foundation
 import SeptemberKit
 
-/// Private text for the tests. The tests never touch the Keychain.
-final class MemoryPrivateTexts: PrivateTextStore, @unchecked Sendable {
-    var texts: [String: String] = [:]
-    /// The error that each read throws, as a locked Keychain does.
-    var readError: (any Error)?
-
-    func text(for id: String) throws -> String? {
-        if let readError { throw readError }
-        return texts[id]
-    }
-    func setText(_ text: String, for id: String) throws { texts[id] = text }
-    func removeText(for id: String) throws { texts[id] = nil }
-}
-
 @MainActor
 final class FixedUsage: ButtonUsage {
     var counts: [String: Int] = [:]

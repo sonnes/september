@@ -182,47 +182,6 @@ private func heldKeyTests() {
 }
 
 @MainActor
-final class FakeClock: DelayScheduler {
-    private final class Item: ScheduledWork {
-        let at: TimeInterval
-        let order: Int
-        let work: @MainActor () -> Void
-        var isCancelled = false
-
-        init(at: TimeInterval, order: Int, work: @escaping @MainActor () -> Void) {
-            self.at = at
-            self.order = order
-            self.work = work
-        }
-
-        func cancel() { isCancelled = true }
-    }
-
-    private(set) var now: TimeInterval = 0
-    private var items: [Item] = []
-    private var order = 0
-
-    func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> any ScheduledWork {
-        order += 1
-        let item = Item(at: now + delay, order: order, work: work)
-        items.append(item)
-        return item
-    }
-
-    func advance(to time: TimeInterval) {
-        while let next = items
-            .filter({ !$0.isCancelled && $0.at <= time })
-            .min(by: { ($0.at, $0.order) < ($1.at, $1.order) })
-        {
-            items.removeAll { $0 === next }
-            now = next.at
-            next.work()
-        }
-        now = time
-    }
-}
-
-@MainActor
 final class PressLog {
     var acts = 0
     var agains = 0

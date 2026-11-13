@@ -1,34 +1,6 @@
 import Foundation
 import SeptemberKit
 
-/// Records what would have been posted, so key handling is testable without
-/// injecting real events into whatever app happens to be frontmost.
-final class RecordingSink: KeystrokeSink, @unchecked Sendable {
-    var posted: [Keystroke] = []
-    var typed: [String] = []
-    var beeps = 0
-    var media: [MediaKey] = []
-    var scrolls: [(direction: ScrollDirection, point: CGPoint)] = []
-
-    func post(_ events: [Keystroke]) { posted.append(contentsOf: events) }
-    func scroll(_ direction: ScrollDirection, at point: CGPoint) { scrolls.append((direction, point)) }
-    func post(media key: MediaKey) { media.append(key) }
-    func type(_ text: String) { typed.append(text) }
-    func beep() { beeps += 1 }
-
-    func reset() {
-        posted = []
-        typed = []
-        beeps = 0
-        media = []
-        scrolls = []
-    }
-
-    var downs: [(key: UInt16, flags: Modifiers)] {
-        posted.filter(\.isDown).map { ($0.virtualKey, $0.flags) }
-    }
-}
-
 /// A stub US layout covering the characters the tests type.
 private let stubMap = KeyCodeMap { code, modifiers in
     let table: [UInt16: (plain: String, shifted: String)] = [
