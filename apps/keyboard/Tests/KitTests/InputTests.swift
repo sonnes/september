@@ -33,6 +33,24 @@ func modifierStateTests() {
         expectEqual(state.active, [])
     }
 
+    test("the flags of a key leave out caps lock, and a chord also leaves out shift") {
+        var state = ModifierState()
+        state.tap(.capsLock)
+        state.tap(.shift)
+        expectEqual(state.flags, .shift)
+        expectEqual(state.chord, [])
+        expect(state.holdsChord, "shift turns the F-row into F-keys")
+        state.mac = .command
+        expectEqual(state.flags, [.shift, .command])
+        expectEqual(state.chord, .command)
+    }
+
+    test("caps lock alone holds no chord") {
+        var state = ModifierState()
+        state.tap(.capsLock)
+        expect(!state.holdsChord)
+    }
+
     test("modifiers combine") {
         var state = ModifierState()
         state.tap(.shift)

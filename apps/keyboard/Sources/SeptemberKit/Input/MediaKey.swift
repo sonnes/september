@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 
 /// The media and system control on an F-key, as printed on an Apple keyboard.
-public enum MediaKey: Sendable, Hashable, CaseIterable {
+public enum MediaKey: Sendable, Hashable {
     case brightnessDown
     case brightnessUp
     case missionControl
@@ -30,10 +30,23 @@ public enum MediaKey: Sendable, Hashable, CaseIterable {
         case shortcut(String)
     }
 
-    /// The media key on F1 to F12, in the order of an Apple keyboard.
+    /// The media key on F1 to F12, as printed on an Apple keyboard.
     public static func onFunctionKey(_ number: Int) -> MediaKey? {
-        guard (1...allCases.count).contains(number) else { return nil }
-        return allCases[number - 1]
+        switch number {
+        case 1: .brightnessDown
+        case 2: .brightnessUp
+        case 3: .missionControl
+        case 4: .spotlight
+        case 5: .dictation
+        case 6: .doNotDisturb
+        case 7: .previous
+        case 8: .playPause
+        case 9: .next
+        case 10: .mute
+        case 11: .volumeDown
+        case 12: .volumeUp
+        default: nil
+        }
     }
 
     /// The Shortcut that F6 runs. macOS has no other way for an app to turn

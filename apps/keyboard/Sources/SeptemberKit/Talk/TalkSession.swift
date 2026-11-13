@@ -35,8 +35,7 @@ public final class TalkSession: ObservableObject {
             modifiers.tap(modifier)
             return
         case .character(let character):
-            let chord = modifiers.active.subtracting([.shift, .capsLock])
-            if chord.isEmpty {
+            if modifiers.chord.isEmpty {
                 if modifiers.active.contains(.shift), let secondary = key.secondaryLabel {
                     text += secondary
                 } else {
@@ -50,7 +49,7 @@ public final class TalkSession: ObservableObject {
             case .return where returnSpeaks: speak()
             default: break
             }
-        case .media:
+        case .function:
             break
         }
         modifiers.consume()

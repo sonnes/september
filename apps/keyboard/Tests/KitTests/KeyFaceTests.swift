@@ -118,10 +118,19 @@ func keyFaceTests() {
         expectEqual(key("command-right").face(under: state(.command, .command)).look, .locked)
     }
 
-    test("every F-key has a media key") {
-        for number in 1...12 {
+    test("each F-key shows the media key of an Apple keyboard") {
+        let media: [MediaKey] = [
+            .brightnessDown, .brightnessUp, .missionControl, .spotlight, .dictation, .doNotDisturb,
+            .previous, .playPause, .next, .mute, .volumeDown, .volumeUp,
+        ]
+        for (index, expected) in media.enumerated() {
+            let number = index + 1
+            expectEqual(MediaKey.onFunctionKey(number), expected, "F\(number)")
             let face = key("f\(number)").face(under: ModifierState())
-            guard case .symbol = face.glyph else { return expect(false, "f\(number) has no icon") }
+            expectEqual(face.glyph, .symbol(expected.symbolName), "F\(number)")
+            expectEqual(face.accessibilityLabel, expected.spokenName, "F\(number)")
         }
+        expectEqual(MediaKey.onFunctionKey(0), nil)
+        expectEqual(MediaKey.onFunctionKey(13), nil)
     }
 }

@@ -107,6 +107,9 @@ final class CGEventSink: KeystrokeSink {
                 wheel1: delta.vertical, wheel2: delta.horizontal, wheel3: 0)
         else { return beep() }
         event.location = point
+        // Without flags, the scroll takes the modifiers that are down at the
+        // OS, and a latched Shift turns it sideways.
+        event.flags = []
         event.setIntegerValueField(.mouseEventWindowUnderMousePointer, value: Int64(target.id))
         event.setIntegerValueField(
             .mouseEventWindowUnderMousePointerThatCanHandleThisEvent, value: Int64(target.id))

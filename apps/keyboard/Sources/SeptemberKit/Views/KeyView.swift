@@ -15,14 +15,14 @@ public struct KeyView: View {
     public init(
         key: KeyDefinition,
         tint: ThemeColor = Tokens.keyText,
-        face: KeyFace? = nil,
+        face: KeyFace,
         width: CGFloat? = nil,
         hold: KeyHold = .once,
         press: @escaping () -> Void
     ) {
         self.key = key
         self.tint = tint
-        self.face = face ?? key.face(under: ModifierState())
+        self.face = face
         self.width = width
         self.hold = hold
         self.press = press

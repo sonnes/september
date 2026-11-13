@@ -197,8 +197,10 @@ rests when it stays still for 0.4 seconds, or where the user clicks.
 `PointerRestTracker` finds that place from the global monitors of
 `OtherInputMonitor`. A held scroll button repeats at the key repeat rate of
 macOS. Each step is 40 pixels. `CGEventSink` posts the scroll to the app of
-the window at that place, because the pointer is on the keyboard. A scroll
-works in Talk mode too. If the pointer has rested nowhere yet, the keyboard
+the window at that place, because the pointer is on the keyboard. The
+scroll has no modifier flags, so a latched Shift does not turn it sideways.
+The Shift stays latched for the next key. A scroll works in Talk mode too.
+If the pointer has rested nowhere yet, the keyboard
 beeps. In panel JSON, a scroll button is
 `{"type": "scroll", "direction": "down"}`. The directions are `up`, `down`,
 `left`, and `right`.

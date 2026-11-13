@@ -14,6 +14,15 @@ public struct ModifierState: Sendable, Equatable {
     public var active: Modifiers { own.union(mac) }
     /// The modifiers that the keyboard itself latches or locks.
     public var own: Modifiers { latched.union(locked) }
+    /// The modifiers that a posted key holds. Caps lock is not one, because
+    /// macOS owns its toggle.
+    public var flags: Modifiers { active.subtracting(.capsLock) }
+    /// The modifiers that make a key a shortcut, such as ⌘C. Shift alone
+    /// only types the shifted character.
+    public var chord: Modifiers { flags.subtracting(.shift) }
+    /// True when a modifier other than caps lock is on. Then the F-row sends
+    /// F-keys, not media keys.
+    public var holdsChord: Bool { !flags.isEmpty }
 
     public var isCapsLockOn: Bool { locked.contains(.capsLock) }
 

@@ -33,19 +33,19 @@ public struct ComponentGallery: View {
         return [
             (
                 "Key / Standard", "Primary alphanumeric key. \(size(.standard)).",
-                AnyView(KeyView(key: standard) {})
+                AnyView(KeyView(key: standard, face: standard.face(under: ModifierState())) {})
             ),
             (
                 "Key / Special", "Modifier and utility keys. \(size(.special)), flexible width.",
-                AnyView(KeyView(key: special) {})
+                AnyView(KeyView(key: special, face: special.face(under: ModifierState())) {})
             ),
             (
                 "Key / Function", "Function row keys. \(size(.function)).",
-                AnyView(KeyView(key: function) {})
+                AnyView(KeyView(key: function, face: function.face(under: ModifierState())) {})
             ),
             (
                 "Key / Dual", "Two-label key with primary and secondary glyphs. \(size(.dual)).",
-                AnyView(KeyView(key: dual) {})
+                AnyView(KeyView(key: dual, face: dual.face(under: ModifierState())) {})
             ),
             (
                 "Shortcut / Keys", "Keys only; the name shows on hover. \(Metrics.describe(buttonSize)).",

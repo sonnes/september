@@ -29,21 +29,17 @@ extension ModifierState {
         if latched.contains(modifier) || mac.contains(modifier) { return .latched }
         return .off
     }
-
-    /// True when a modifier other than caps lock is on. Then the F-row sends
-    /// F-keys, not media keys.
-    public var holdsChord: Bool { !active.subtracting(.capsLock).isEmpty }
 }
 
 extension KeyDefinition {
     public func face(under state: ModifierState) -> KeyFace {
         let shifted = state.active.contains(.shift)
         switch action {
-        case .media(let media, let function):
-            if state.holdsChord {
-                return face(.text(label), label: function.spokenName, shifted: shifted)
+        case .function(let number):
+            if !state.holdsChord, let media = MediaKey.onFunctionKey(number) {
+                return face(.symbol(media.symbolName), label: media.spokenName, shifted: shifted)
             }
-            return face(.symbol(media.symbolName), label: media.spokenName, shifted: shifted)
+            return face(.text(label), label: accessibilityLabel, shifted: shifted)
         case .modifier(let modifier):
             let look = state.look(of: modifier)
             let label = look == .locked ? "\(accessibilityLabel), locked" : accessibilityLabel

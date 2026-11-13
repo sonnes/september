@@ -99,10 +99,11 @@ public final class KeyboardController: ObservableObject {
             return .once
         case .virtual(let virtual):
             return virtual.repeatsWhenHeld ? .repeats : .once
-        case .media(let media, _):
-            return !modifiers.holdsChord && media.repeatsWhenHeld ? .repeats : .once
+        case .function:
+            guard case .media(let media) = control(for: key.action, modifiers: modifiers) else { return .once }
+            return media.repeatsWhenHeld ? .repeats : .once
         case .character(let character):
-            guard modifiers.active.subtracting([.shift, .capsLock]).isEmpty else { return .once }
+            guard modifiers.chord.isEmpty else { return .once }
             guard character.count == 1, character.first?.isLetter == true else { return .repeats }
             return .letter(choices: accents.choices(for: modifiers.apply(to: character)))
         }
@@ -124,11 +125,7 @@ public final class KeyboardController: ObservableObject {
     }
 
     private func apply(_ key: KeyDefinition, modifiers: inout ModifierState) {
-        // A media key controls the Mac, not the text, so it works in Talk mode too.
-        if case .media(let media, _) = key.action, !modifiers.holdsChord {
-            sink.post(media: media)
-            return
-        }
+        if let control = control(for: key.action, modifiers: modifiers) { return run(control) }
         if mode == .talk { return talk.press(key, modifiers: &modifiers) }
         switch key.action {
         case .modifier(let modifier):
@@ -136,13 +133,36 @@ public final class KeyboardController: ObservableObject {
         case .character(let character):
             type(character, secondary: key.secondaryLabel, modifiers: &modifiers)
         case .virtual(let virtual):
-            let flags = modifiers.active.subtracting(.capsLock)
-            if virtual == .return, flags.isEmpty { onSubmit?() }
-            post(virtual, modifiers: flags)
+            if virtual == .return, modifiers.flags.isEmpty { onSubmit?() }
+            post(virtual, modifiers: modifiers.flags)
             modifiers.consume()
-        case .media(_, let function):
-            post(function, modifiers: modifiers.active.subtracting(.capsLock))
+        case .function(let number):
+            guard let virtual = VirtualKey.function(number) else { return sink.beep() }
+            post(virtual, modifiers: modifiers.flags)
             modifiers.consume()
+        }
+    }
+
+    /// A press that controls the Mac, not the text. It acts in Type and
+    /// Talk mode, and it keeps a latched modifier for the next key.
+    private enum MacControl {
+        case media(MediaKey)
+        case scroll(ScrollDirection)
+    }
+
+    /// An F-key with no chord presses its media key.
+    private func control(for action: KeyAction, modifiers: ModifierState) -> MacControl? {
+        guard case .function(let number) = action, !modifiers.holdsChord else { return nil }
+        return MediaKey.onFunctionKey(number).map(MacControl.media)
+    }
+
+    private func run(_ control: MacControl) {
+        switch control {
+        case .media(let media):
+            sink.post(media: media)
+        case .scroll(let direction):
+            guard let scrollPoint else { return sink.beep() }
+            sink.scroll(direction, at: scrollPoint)
         }
     }
 
@@ -158,14 +178,11 @@ public final class KeyboardController: ObservableObject {
 
     public func perform(_ action: PanelAction) {
         accentChoices = []
-        // A scroll moves what the user reads, so it works in Talk mode too,
-        // and it keeps a latched modifier for the next key.
-        if case .scroll(let direction) = action {
-            guard let scrollPoint else { return sink.beep() }
-            return sink.scroll(direction, at: scrollPoint)
-        }
-        if mode == .talk { return talk.perform(action, modifiers: &modifiers) }
         switch action {
+        case .scroll(let direction):
+            return run(.scroll(direction))
+        case _ where mode == .talk:
+            return talk.perform(action, modifiers: &modifiers)
         case .shortcut(let shortcut):
             guard post(shortcut) else { return }
         case .sequence(let steps):
@@ -179,8 +196,6 @@ public final class KeyboardController: ObservableObject {
             guard let text = try? privateTexts.text(for: id) else { break }
             sink.type(text)
             hideField()
-        case .scroll:
-            return
         }
         modifiers.consume()
     }
@@ -285,7 +300,7 @@ public final class KeyboardController: ObservableObject {
     // MARK: - Turning presses into keystrokes
 
     private func type(_ base: String, secondary: String?, modifiers: inout ModifierState) {
-        let chord = modifiers.active.subtracting([.shift, .capsLock])
+        let chord = modifiers.chord
 
         if chord.isEmpty {
             // Plain typing: shift picks the secondary glyph on dual keys and

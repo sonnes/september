@@ -8,9 +8,9 @@ public enum KeyAction: Sendable, Hashable {
     case virtual(VirtualKey)
     /// Latch, lock or clear a modifier.
     case modifier(Modifiers)
-    /// Post a media key. While a modifier other than caps lock is on, post
-    /// `function` with the modifiers.
-    case media(MediaKey, function: VirtualKey)
+    /// An F-key by its number. It posts its media key. While a modifier
+    /// other than caps lock is on, it posts the F-key with the modifiers.
+    case function(Int)
 }
 
 /// A modifier combination plus the key it applies to.
@@ -92,7 +92,8 @@ public struct KeyDefinition: Sendable, Hashable, Identifiable {
 
     private static func spokenName(of action: KeyAction, label: String) -> String {
         switch action {
-        case .virtual(let virtual), .media(_, let virtual): virtual.spokenName
+        case .virtual(let virtual): virtual.spokenName
+        case .function(let number): VirtualKey.function(number)?.spokenName ?? label
         case .modifier(let modifier) where !modifier.spokenName.isEmpty: modifier.spokenName
         case .modifier, .character: label.capitalized
         }
