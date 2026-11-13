@@ -65,7 +65,7 @@ public final class KeyboardController: ObservableObject {
         sink: any KeystrokeSink,
         panels: PanelStore,
         keyCodeMap: KeyCodeMap = SystemKeyboardLayout.currentMap(),
-        talk: TalkSession = TalkSession()
+        talk: TalkSession
     ) {
         self.talk = talk
         self.sink = sink

@@ -13,49 +13,20 @@ public final class UsageStore: ObservableObject, ButtonUsage {
     /// At launch, a count with a weight below this value is removed.
     public static let minimumWeight = 0.01
 
-    /// The JSON file of the older versions of the keyboard:
-    /// `~/Library/Application Support/September Keyboard/my-panel-usage.json`.
-    public static var jsonURL: URL {
-        URL.applicationSupportDirectory
-            .appendingPathComponent("September Keyboard", isDirectory: true)
-            .appendingPathComponent("my-panel-usage.json")
-    }
-
     /// The weight of one button at the time of its last press.
-    private struct Count: Codable {
+    private struct Count {
         var weight: Double
         var updated: Date
     }
-
-    /// The old JSON file keeps the counts under the key `my-panel`.
-    private struct File: Decodable {
-        var apps: [String: [String: Count]]
-    }
-
-    private static let key = "my-panel"
 
     private let database: KeyboardDatabase
     private let now: () -> Date
     private var counts: [String: Count] = [:]
 
-    /// Opens the counts on `database`. If `jsonURL` names a JSON file of an
-    /// older version, its counts move into the database, and the file is
-    /// removed.
-    public init(
-        database: KeyboardDatabase = try! KeyboardDatabase(path: ":memory:"), importing jsonURL: URL? = nil,
-        now: @escaping () -> Date = Date.init
-    ) {
+    /// Opens the counts on `database`.
+    public init(database: KeyboardDatabase, now: @escaping () -> Date = Date.init) {
         self.database = database
         self.now = now
-        if let jsonURL {
-            database.importJSON(File.self, from: jsonURL) { file in
-                for (buttonID, count) in file.apps[Self.key] ?? [:] {
-                    try database.execute(
-                        "INSERT OR IGNORE INTO button_use (button_id, weight, updated_at) VALUES (?, ?, ?)",
-                        [.text(buttonID), .double(count.weight), .double(count.updated.timeIntervalSince1970)])
-                }
-            }
-        }
         counts = load()
         removeFaded()
     }

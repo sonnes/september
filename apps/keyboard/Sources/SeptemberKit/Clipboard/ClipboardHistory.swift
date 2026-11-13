@@ -32,14 +32,6 @@ public final class ClipboardHistory: ObservableObject {
     /// The texts on one page of the history view.
     public static let pageSize = 6
 
-    /// The JSON file of the older versions of the keyboard:
-    /// `~/Library/Application Support/September Keyboard/clipboard-history.json`.
-    public static var jsonURL: URL {
-        URL.applicationSupportDirectory
-            .appendingPathComponent("September Keyboard", isDirectory: true)
-            .appendingPathComponent("clipboard-history.json")
-    }
-
     private static let enabledKey = "clipboardHistoryEnabled"
 
     @Published public private(set) var items: [ClipboardItem] = []
@@ -55,27 +47,15 @@ public final class ClipboardHistory: ObservableObject {
     private let defaults: UserDefaults
     private let now: () -> Date
 
-    /// Opens the history on `database`. If `jsonURL` names a JSON file of an
-    /// older version, its texts move into the database, and the file is
-    /// removed.
+    /// Opens the history on `database`.
     public init(
-        database: KeyboardDatabase = try! KeyboardDatabase(path: ":memory:"), importing jsonURL: URL? = nil,
-        defaults: UserDefaults = .standard, now: @escaping () -> Date = Date.init
+        database: KeyboardDatabase, defaults: UserDefaults = .standard, now: @escaping () -> Date = Date.init
     ) {
         log = TextLog(
             database: database, table: "clip", dateColumn: "copied_at", limit: Self.itemLimit, maxAge: Self.maxAge)
         self.defaults = defaults
         self.now = now
         isEnabled = defaults.object(forKey: Self.enabledKey) as? Bool ?? true
-        if let jsonURL {
-            database.importJSON([ClipboardItem].self, from: jsonURL) { items in
-                for item in items {
-                    try database.execute(
-                        "INSERT OR IGNORE INTO clip (id, text, copied_at) VALUES (?, ?, ?)",
-                        [.text(item.id.uuidString), .text(item.text), .double(item.date.timeIntervalSince1970)])
-                }
-            }
-        }
         if isEnabled {
             items = log.entries(at: now())
         } else {

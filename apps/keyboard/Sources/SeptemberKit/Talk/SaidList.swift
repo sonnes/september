@@ -19,14 +19,6 @@ public final class SaidList: ObservableObject {
     /// The lines that the sentence predictions get are this new or newer.
     public static let contextWindow: TimeInterval = 3600
 
-    /// The JSON file of the older versions of the keyboard:
-    /// `~/Library/Application Support/September Keyboard/talk-history.json`.
-    public static var jsonURL: URL {
-        URL.applicationSupportDirectory
-            .appendingPathComponent("September Keyboard", isDirectory: true)
-            .appendingPathComponent("talk-history.json")
-    }
-
     @Published public private(set) var lines: [SaidLine] = []
     /// The line that the keyboard spoke last.
     @Published public private(set) var currentID: SaidLine.ID?
@@ -34,25 +26,11 @@ public final class SaidList: ObservableObject {
     private let log: TextLog
     private let now: () -> Date
 
-    /// Opens the list on `database`. If `jsonURL` names a JSON file of an
-    /// older version, its lines move into the database, and the file is
-    /// removed.
-    public init(
-        database: KeyboardDatabase = try! KeyboardDatabase(path: ":memory:"), importing jsonURL: URL? = nil,
-        now: @escaping () -> Date = Date.init
-    ) {
+    /// Opens the list on `database`.
+    public init(database: KeyboardDatabase, now: @escaping () -> Date = Date.init) {
         log = TextLog(
             database: database, table: "talk_line", dateColumn: "said_at", limit: Self.lineLimit, maxAge: Self.maxAge)
         self.now = now
-        if let jsonURL {
-            database.importJSON([SaidLine].self, from: jsonURL) { lines in
-                for line in lines {
-                    try database.execute(
-                        "INSERT OR IGNORE INTO talk_line (id, text, said_at) VALUES (?, ?, ?)",
-                        [.text(line.id.uuidString), .text(line.text), .double(line.date.timeIntervalSince1970)])
-                }
-            }
-        }
         lines = log.entries(at: now())
     }
 

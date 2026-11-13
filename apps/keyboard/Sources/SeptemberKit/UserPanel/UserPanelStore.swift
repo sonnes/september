@@ -1,6 +1,5 @@
 import Combine
 import Foundation
-import SQLite3
 
 /// The buttons of My Panel, in the `user_button` table of `keyboard.sqlite`.
 ///
@@ -20,46 +19,20 @@ public final class UserPanelStore: ObservableObject {
     /// The `UserDefaults` key of `makeNewTextPrivate`.
     public static let makeNewTextPrivateKey = "myPanel.makeNewTextPrivate"
 
-    /// The JSON file of the older versions of the keyboard:
-    /// `~/Library/Application Support/September Keyboard/my-panel.json`.
-    public static var jsonURL: URL {
-        URL.applicationSupportDirectory
-            .appendingPathComponent("September Keyboard", isDirectory: true)
-            .appendingPathComponent("my-panel.json")
-    }
-
     private let database: KeyboardDatabase
     private let defaults: UserDefaults
     private let privateTexts: any PrivateTextStore
 
-    /// Opens the panel on `database`. If `jsonURL` names a JSON file of an
-    /// older version, its buttons move into the database, and the file is
-    /// removed.
-    ///
-    /// A file that does not decode throws and stays as it is, so that the
-    /// buttons of the user are not lost. A row that does not decode also
-    /// throws.
+    /// Opens the panel on `database`. A row that does not decode throws, and
+    /// the table stays as it is.
     public init(
-        database: KeyboardDatabase = try! KeyboardDatabase(path: ":memory:"), importing jsonURL: URL? = nil,
+        database: KeyboardDatabase,
         defaults: UserDefaults = .standard,
         privateTexts: any PrivateTextStore = KeychainPrivateTextStore()
     ) throws {
         self.database = database
         self.defaults = defaults
         self.privateTexts = privateTexts
-        if let jsonURL, let data = try? Data(contentsOf: jsonURL) {
-            // `KeyboardDatabase.importJSON` moves a broken file aside. This
-            // file holds the buttons of the user, so it stays, and the error
-            // goes to My Panel.
-            let saved = try JSONDecoder().decode(SavedPanel.self, from: data)
-            try database.transaction {
-                for (position, button) in saved.buttons.enumerated() {
-                    try Self.insert(button, at: position, into: database, orIgnore: true)
-                }
-            }
-            defaults.set(saved.makeNewTextPrivate, forKey: Self.makeNewTextPrivateKey)
-            try? FileManager.default.removeItem(at: jsonURL)
-        }
         buttons = try Self.load(from: database)
         makeNewTextPrivate = defaults.object(forKey: Self.makeNewTextPrivateKey) as? Bool ?? true
     }
@@ -168,7 +141,12 @@ public final class UserPanelStore: ObservableObject {
         try database.transaction {
             let last = try database.query("SELECT max(position) FROM user_button").first?.first?.int ?? -1
             for (offset, button) in added.enumerated() {
-                try Self.insert(button, at: Int(last) + 1 + offset, into: database, orIgnore: false)
+                try database.execute(
+                    "INSERT INTO user_button (id, position, name, action) VALUES (?, ?, ?, ?)",
+                    [
+                        .text(button.id), .int(last + 1 + Int64(offset)), .text(button.name),
+                        .text(try Self.json(button.action)),
+                    ])
             }
         }
     }
@@ -178,35 +156,20 @@ public final class UserPanelStore: ObservableObject {
             "UPDATE user_button SET action = ? WHERE id = ?", [.text(try Self.json(action)), .text(id)])
     }
 
-    /// `orIgnore` skips a button whose ID or position is already in the
-    /// table, so that a second import of the same file adds nothing.
-    private static func insert(
-        _ button: UserButton, at position: Int, into database: KeyboardDatabase, orIgnore: Bool
-    ) throws {
-        try database.execute(
-            "INSERT \(orIgnore ? "OR IGNORE " : "")INTO user_button (id, position, name, action) VALUES (?, ?, ?, ?)",
-            [.text(button.id), .int(Int64(position)), .text(button.name), .text(try json(button.action))])
-    }
-
     private static func load(from database: KeyboardDatabase) throws -> [UserButton] {
         try database.query("SELECT id, name, action FROM user_button ORDER BY position").map { row in
             guard let id = row[0].text, let name = row[1].text, let action = row[2].text else {
-                throw DatabaseError(code: SQLITE_MISMATCH, message: "a user_button row has no text")
+                throw DatabaseError.mismatch("a user_button row has no text")
             }
             return UserButton(
                 id: id, name: name, action: try JSONDecoder().decode(UserAction.self, from: Data(action.utf8)))
         }
     }
 
-    private static func json(_ action: UserAction) throws -> String {
+    /// The JSON text of `action` in the `action` column.
+    static func json(_ action: UserAction) throws -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         return String(decoding: try encoder.encode(action), as: UTF8.self)
     }
-}
-
-/// The JSON file of the older versions of the keyboard.
-private struct SavedPanel: Decodable {
-    var makeNewTextPrivate: Bool
-    var buttons: [UserButton]
 }

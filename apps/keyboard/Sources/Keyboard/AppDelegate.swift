@@ -51,11 +51,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let phrases: PanelDefinition
         let contextRules: ContextRules
         let database = KeyboardDatabase.open(at: KeyboardDatabase.defaultURL)
-        KeyboardDatabase.removeStaleFiles(in: KeyboardDatabase.defaultURL.deletingLastPathComponent())
+        LegacyImport.run(database: database, folder: KeyboardDatabase.folder)
         do {
             controller = KeyboardController(
                 sink: sink, panels: try PanelStore.bundled(),
-                talk: TalkSession(said: SaidList(database: database, importing: SaidList.jsonURL)))
+                talk: TalkSession(said: SaidList(database: database)))
             phrases = try Phrases.bundled()
             contextRules = try ContextRules.bundled()
         } catch {
@@ -69,10 +69,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let predictions = PredictionEngine(history: history)
         session = KeyboardSession(
             controller: controller, predictions: predictions, speaker: speech.speaker,
-            userPanel: Result { try UserPanelStore(database: database, importing: UserPanelStore.jsonURL) },
-            userPanelUsage: UsageStore(database: database, importing: UsageStore.jsonURL),
+            userPanel: Result { try UserPanelStore(database: database) },
+            userPanelUsage: UsageStore(database: database),
             reader: AXFrontAppReader(rules: contextRules),
-            clipboard: ClipboardHistory(database: database, importing: ClipboardHistory.jsonURL),
+            clipboard: ClipboardHistory(database: database),
             pasteboard: SystemPasteboard())
         watchClipboard()
 

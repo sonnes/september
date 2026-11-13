@@ -145,7 +145,7 @@ private func speakTextTests() {
 @MainActor
 private func wiringTests() {
     test("a prediction in Talk mode joins the bar with no extra space") {
-        let talk = TalkSession()
+        let talk = TalkSession(said: SaidList(database: memoryDatabase()))
         var modifiers = ModifierState()
         for character in ["c", "u"] {
             talk.press(
@@ -385,14 +385,14 @@ private func makeSession(
     let store =
         userPanel
         ?? Result {
-            try UserPanelStore(defaults: defaults, privateTexts: MemoryPrivateTexts())
+            try UserPanelStore(database: database, defaults: defaults, privateTexts: MemoryPrivateTexts())
         }
     let clock = FakeClock()
-    let clipboard = ClipboardHistory(defaults: defaults)
+    let clipboard = ClipboardHistory(database: database, defaults: defaults)
     let reader = FakeFrontAppReader()
     let session = KeyboardSession(
         controller: controller, predictions: engine, speaker: speaker, userPanel: store,
-        userPanelUsage: UsageStore(), reader: reader,
+        userPanelUsage: UsageStore(database: database), reader: reader,
         inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25),
         clipboard: clipboard, pasteboard: pasteboard, scheduler: clock)
     return SessionParts(
@@ -1018,20 +1018,21 @@ private func sessionTests() async {
         expectEqual(parts.session.mineButtons.map(\.name), ["Undo", "Save"])
     }
 
-    await asyncTest("a broken My Panel file shows an error and stays as it is") {
-        let file = temporaryDirectory().appendingPathComponent("my-panel.json")
-        try FileManager.default.createDirectory(
-            at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Data("{ not json".utf8).write(to: file)
+    await asyncTest("a broken row of My Panel shows an error that quotes no text of the user") {
+        let database = memoryDatabase()
+        try database.execute(
+            "INSERT INTO user_button (id, position, name, action) VALUES ('a', 0, 'Home', ?)",
+            [.text(#"{"type": "Secret plan"}"#)])
         let parts = try makeSession(
             userPanel: Result {
                 try UserPanelStore(
-                    importing: file, defaults: UserDefaults(suiteName: "kit-broken-\(UUID().uuidString)")!,
+                    database: database, defaults: UserDefaults(suiteName: "kit-broken-\(UUID().uuidString)")!,
                     privateTexts: MemoryPrivateTexts())
             })
-        expect(parts.session.userPanelError != nil)
+        let error = parts.session.userPanelError ?? ""
+        expect(!error.isEmpty)
+        expect(!error.contains("Secret"), "the error quotes a stored row")
         expect(parts.session.mineButtons.isEmpty)
-        expectEqual(try String(contentsOf: file, encoding: .utf8), "{ not json")
     }
 
     await asyncTest("a focus move ends the private state of the bar") {

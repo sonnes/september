@@ -47,7 +47,7 @@ The views read these values of the session:
 - `panelTab`: the Write tab or the Mine tab of My Panel. Without Write in
   front, My Panel shows only Mine.
 - `mineButtons`: the buttons of Mine, most used first.
-- `userPanelError`: the reason that My Panel could not read its file.
+- `userPanelError`: the reason that My Panel could not read its buttons.
 - `isHistoryOpen`: true while the clipboard history shows in the place of the
   predictions.
 - `historyPage`: the page of the history. Page 0 holds the newest texts.

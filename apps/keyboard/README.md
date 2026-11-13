@@ -269,8 +269,7 @@ At the first launch after an update, the keyboard moves the lines of
 `talk-history.json`, the texts of `clipboard-history.json`, the presses of
 `my-panel-usage.json`, and the buttons of `my-panel.json` into the database.
 Then it removes the files. If a file does not decode, the keyboard moves it to
-`<name>.broken.json`. A broken `my-panel.json` stays where it is, and My Panel
-shows an error, so the buttons of the user are not lost.
+`<name>.broken.json`, and the database gets no rows from it.
 At launch, the keyboard also removes `usage.json` and `learned.json`. No part
 of the keyboard reads these files.
 

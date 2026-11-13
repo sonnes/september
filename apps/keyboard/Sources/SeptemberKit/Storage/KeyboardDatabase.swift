@@ -49,6 +49,11 @@ public struct DatabaseError: Error, CustomStringConvertible {
     public let message: String
 
     public var description: String { "SQLite error \(code): \(message)" }
+
+    /// A row whose value has the wrong type. `message` names the table.
+    public static func mismatch(_ message: String) -> DatabaseError {
+        DatabaseError(code: SQLITE_MISMATCH, message: message)
+    }
 }
 
 /// The SQLite database of the keyboard, `keyboard.sqlite`.
@@ -107,22 +112,15 @@ public final class KeyboardDatabase {
         """,
     ]
 
-    /// `~/Library/Application Support/September Keyboard/keyboard.sqlite`.
-    public static var defaultURL: URL {
-        URL.applicationSupportDirectory
-            .appendingPathComponent("September Keyboard", isDirectory: true)
-            .appendingPathComponent("keyboard.sqlite")
+    /// The folder of the keyboard files:
+    /// `~/Library/Application Support/September Keyboard/`.
+    public static var folder: URL {
+        URL.applicationSupportDirectory.appendingPathComponent("September Keyboard", isDirectory: true)
     }
 
-    /// The files in the folder of the database that no store reads.
-    public static let staleFileNames = ["usage.json", "learned.json"]
-
-    /// Removes each file of `staleFileNames` from `folder`. A file that is
-    /// not in the folder is not an error.
-    public static func removeStaleFiles(in folder: URL) {
-        for name in staleFileNames {
-            try? FileManager.default.removeItem(at: folder.appendingPathComponent(name))
-        }
+    /// `keyboard.sqlite` in `folder`.
+    public static var defaultURL: URL {
+        folder.appendingPathComponent("keyboard.sqlite")
     }
 
     private let handle: OpaquePointer
@@ -221,33 +219,6 @@ public final class KeyboardDatabase {
         } catch {
             try? execute("ROLLBACK")
             throw error
-        }
-    }
-
-    /// Moves the rows of an old JSON store into the database, one time.
-    ///
-    /// `insert` writes the decoded file in one transaction. After the commit,
-    /// the file is removed. A file that does not decode moves to
-    /// `<name>.broken.json`, and no row is written. With no file, nothing
-    /// happens. `insert` must ignore a row that is already in its table, so
-    /// that a second import of the same file changes nothing.
-    public func importJSON<File: Decodable>(
-        _ type: File.Type, from url: URL, insert: (File) throws -> Void
-    ) {
-        let files = FileManager.default
-        guard let data = try? Data(contentsOf: url) else { return }
-        guard let rows = try? JSONDecoder().decode(type, from: data) else {
-            let aside = url.deletingPathExtension().appendingPathExtension("broken.json")
-            try? files.removeItem(at: aside)
-            try? files.moveItem(at: url, to: aside)
-            return
-        }
-        do {
-            try transaction { try insert(rows) }
-            try? files.removeItem(at: url)
-        } catch {
-            // The file stays, and the next launch tries again. The error
-            // never holds a value of a row.
         }
     }
 

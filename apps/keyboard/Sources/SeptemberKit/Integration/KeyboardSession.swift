@@ -26,7 +26,7 @@ public final class KeyboardSession: ObservableObject {
     public let userPanel: UserPanelStore?
     /// The counts of My Panel.
     public let userPanelUsage: UsageStore
-    /// Why My Panel could not load its file. The file stays as it is.
+    /// Why My Panel could not load its buttons. The table stays as it is.
     public let userPanelError: String?
 
     @Published public private(set) var speakMode: SpeakButton.Mode = .off
@@ -117,7 +117,7 @@ public final class KeyboardSession: ObservableObject {
         userPanelUsage: UsageStore,
         reader: any FrontAppReading,
         inputBar: InputBarVisibility = InputBarVisibility(),
-        clipboard: ClipboardHistory = ClipboardHistory(),
+        clipboard: ClipboardHistory,
         pasteboard: any ClipboardAccess = MemoryPasteboard(),
         scheduler: any DelayScheduler = MainQueueScheduler()
     ) {
@@ -134,12 +134,9 @@ public final class KeyboardSession: ObservableObject {
         case .success(let store):
             self.userPanel = store
             userPanelError = nil
-        case .failure:
+        case .failure(let error):
             self.userPanel = nil
-            // The text of a decoding error can quote the file, and the file can
-            // hold the text of the user.
-            userPanelError =
-                "My Panel could not read my-panel.json. The keyboard keeps the file as it is. Fix the file or move it away, then open the keyboard again."
+            userPanelError = Self.userPanelMessage(for: error)
         }
 
         controller.talk.speech = speaker
@@ -400,6 +397,17 @@ public final class KeyboardSession: ObservableObject {
     }
 
     // MARK: - Private
+
+    /// One fixed message for each kind of error. The text of a decoding error
+    /// can quote a stored row, and a row can hold the text of the user.
+    private static func userPanelMessage(for error: any Error) -> String {
+        switch error {
+        case is DecodingError:
+            "My Panel could not read one of its saved buttons. The keyboard keeps the saved buttons as they are."
+        default:
+            "My Panel could not read its buttons from the keyboard database. The keyboard keeps the saved buttons as they are."
+        }
+    }
 
     /// Reads the Write window, then speaks. The bar shows only the paragraph
     /// at the caret, so no word of the bar lights up.

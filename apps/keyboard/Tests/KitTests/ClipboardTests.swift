@@ -20,7 +20,7 @@ private func memoryDefaults() -> UserDefaults {
 @MainActor
 private func historyTests() {
     test("the clipboard history keeps the newest copy first") {
-        let history = ClipboardHistory(defaults: memoryDefaults(), now: { now })
+        let history = ClipboardHistory(database: memoryDatabase(), defaults: memoryDefaults(), now: { now })
         history.add("Ward 7, bed 12")
         history.add("14 Elm Road")
         expectEqual(history.items.map(\.text), ["14 Elm Road", "Ward 7, bed 12"])
@@ -28,7 +28,7 @@ private func historyTests() {
 
     test("a copy that is already in the history moves to the newest place") {
         var clock = now
-        let history = ClipboardHistory(defaults: memoryDefaults(), now: { clock })
+        let history = ClipboardHistory(database: memoryDatabase(), defaults: memoryDefaults(), now: { clock })
         history.add("Ward 7, bed 12")
         history.add("14 Elm Road")
         clock = now.addingTimeInterval(60)
@@ -38,7 +38,7 @@ private func historyTests() {
     }
 
     test("the clipboard history skips empty and blank copies") {
-        let history = ClipboardHistory(defaults: memoryDefaults(), now: { now })
+        let history = ClipboardHistory(database: memoryDatabase(), defaults: memoryDefaults(), now: { now })
         history.add("")
         history.add("  \n\t ")
         expect(history.items.isEmpty)
@@ -83,38 +83,6 @@ private func historyTests() {
         expectEqual(rows.first?.first, .int(0))
     }
 
-    test("the clipboard history moves the texts of its old JSON file into the database") {
-        let folder = temporaryDirectory()
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let json = folder.appendingPathComponent("clipboard-history.json")
-        let old = [
-            ClipboardItem(text: "14 Elm Road", date: now.addingTimeInterval(-60)),
-            ClipboardItem(text: "Ward 7, bed 12", date: now.addingTimeInterval(-120)),
-            ClipboardItem(text: "Last week", date: now.addingTimeInterval(-8 * 24 * 3600)),
-        ]
-        try JSONEncoder().encode(old).write(to: json)
-        let history = ClipboardHistory(
-            database: open(folder), importing: json, defaults: memoryDefaults(), now: { now })
-        expectEqual(history.items, Array(old.prefix(2)))
-        expect(!FileManager.default.fileExists(atPath: json.path))
-        expectEqual(
-            ClipboardHistory(database: open(folder), importing: json, defaults: memoryDefaults(), now: { now }).items,
-            Array(old.prefix(2)))
-    }
-
-    test("a broken old clipboard history file is moved aside, not overwritten") {
-        let folder = temporaryDirectory()
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let json = folder.appendingPathComponent("clipboard-history.json")
-        try Data("not json".utf8).write(to: json)
-        let history = ClipboardHistory(
-            database: open(folder), importing: json, defaults: memoryDefaults(), now: { now })
-        expect(history.items.isEmpty)
-        let aside = folder.appendingPathComponent("clipboard-history.broken.json")
-        expectEqual(try String(contentsOf: aside, encoding: .utf8), "not json")
-        expect(!FileManager.default.fileExists(atPath: json.path))
-    }
-
     test("clearing the clipboard history empties the list and the table") {
         let folder = temporaryDirectory()
         let history = ClipboardHistory(database: open(folder), defaults: memoryDefaults(), now: { now })
@@ -125,7 +93,7 @@ private func historyTests() {
     }
 
     test("the clipboard history is on by default") {
-        expect(ClipboardHistory(defaults: memoryDefaults()).isEnabled)
+        expect(ClipboardHistory(database: memoryDatabase(), defaults: memoryDefaults()).isEnabled)
     }
 
     test("turning the clipboard history off clears it, keeps no copies, and stays off") {
@@ -142,7 +110,7 @@ private func historyTests() {
     }
 
     test("the clipboard history shows six texts on each page, newest first") {
-        let history = ClipboardHistory(defaults: memoryDefaults(), now: { now })
+        let history = ClipboardHistory(database: memoryDatabase(), defaults: memoryDefaults(), now: { now })
         expectEqual(history.pageCount, 1, "an empty history has one page")
         for index in 0..<13 { history.add("Text \(index)") }
         expectEqual(history.pageCount, 3)
@@ -164,7 +132,7 @@ private func historyTests() {
     }
 
     test("a description of a copied text never holds the text") {
-        let history = ClipboardHistory(defaults: memoryDefaults(), now: { now })
+        let history = ClipboardHistory(database: memoryDatabase(), defaults: memoryDefaults(), now: { now })
         history.add("my secret address")
         let item = try expectValue(history.items.first)
         expect(!String(describing: item).contains("secret"))
@@ -176,7 +144,7 @@ private func historyTests() {
 private func watcherTests() {
     func parts(skip: Bool = false) -> (ClipboardWatcher, MemoryPasteboard, ClipboardHistory) {
         let pasteboard = MemoryPasteboard()
-        let history = ClipboardHistory(defaults: memoryDefaults(), now: { now })
+        let history = ClipboardHistory(database: memoryDatabase(), defaults: memoryDefaults(), now: { now })
         let watcher = ClipboardWatcher(pasteboard: pasteboard, history: history, shouldSkip: { skip })
         return (watcher, pasteboard, history)
     }
@@ -194,7 +162,7 @@ private func watcherTests() {
     test("the watcher does not add the text that was on the clipboard at launch") {
         let pasteboard = MemoryPasteboard()
         pasteboard.copy("Before launch")
-        let history = ClipboardHistory(defaults: memoryDefaults(), now: { now })
+        let history = ClipboardHistory(database: memoryDatabase(), defaults: memoryDefaults(), now: { now })
         let watcher = ClipboardWatcher(pasteboard: pasteboard, history: history)
         watcher.poll()
         expect(history.items.isEmpty)
@@ -227,7 +195,7 @@ private func watcherTests() {
 
     test("the watcher tells the app about each change of the clipboard") {
         let pasteboard = MemoryPasteboard()
-        let history = ClipboardHistory(defaults: memoryDefaults(), now: { now })
+        let history = ClipboardHistory(database: memoryDatabase(), defaults: memoryDefaults(), now: { now })
         var changes = 0
         let watcher = ClipboardWatcher(pasteboard: pasteboard, history: history, onChange: { changes += 1 })
         watcher.poll()

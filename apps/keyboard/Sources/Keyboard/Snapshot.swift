@@ -81,22 +81,25 @@ enum Snapshot {
 
     private static func keyboard(arguments: [String], permission: AccessibilityPermission) throws -> AnyView {
         let defaults = UserDefaults(suiteName: "september-snapshot-\(UUID().uuidString)")!
-        let controller = KeyboardController(sink: SilentSink(), panels: try PanelStore.bundled())
+        let database = try KeyboardDatabase(path: ":memory:")
+        let controller = KeyboardController(
+            sink: SilentSink(), panels: try PanelStore.bundled(),
+            talk: TalkSession(said: SaidList(database: database)))
         controller.style = arguments.contains("--mono") ? .mono : .rainbow
         let voice = SampleVoice()
-        let userPanel = try UserPanelStore(defaults: defaults, privateTexts: NoPrivateTexts())
+        let userPanel = try UserPanelStore(database: database, defaults: defaults, privateTexts: NoPrivateTexts())
         let reader = SampleReader()
         let session = KeyboardSession(
             controller: controller,
             predictions: PredictionEngine(
                 predictor: SamplePredictor(), delay: .zero, defaults: defaults,
-                history: SentenceHistory(database: try KeyboardDatabase(path: ":memory:"), defaults: defaults)),
+                history: SentenceHistory(database: database, defaults: defaults)),
             speaker: Speaker(
                 settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
             userPanel: .success(userPanel),
-            userPanelUsage: UsageStore(),
+            userPanelUsage: UsageStore(database: database),
             reader: reader,
-            clipboard: ClipboardHistory(defaults: defaults, now: { Date().addingTimeInterval(-40 * 60) }),
+            clipboard: ClipboardHistory(database: database, defaults: defaults, now: { Date().addingTimeInterval(-40 * 60) }),
             pasteboard: MemoryPasteboard())
         let content = WindowContent(
             controller: controller, session: session, permission: permission,

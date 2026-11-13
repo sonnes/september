@@ -21,7 +21,7 @@ public final class TalkSession: ObservableObject {
     /// ends.
     private var speaking: String?
 
-    public init(said: SaidList = SaidList()) {
+    public init(said: SaidList) {
         self.said = said
     }
 
