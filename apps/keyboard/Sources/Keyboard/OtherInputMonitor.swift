@@ -6,14 +6,15 @@ import SeptemberKit
 /// events. Each one uses up the latched modifiers, as Sticky Keys of macOS
 /// does.
 ///
-/// It also reports the modifier flags of macOS: a modifier that the user
-/// holds on the hardware keyboard, or one that Sticky Keys of macOS latches
-/// or locks.
+/// It also reports the modifier keys that the hardware holds. This is the
+/// only source of the modifiers that macOS holds.
 ///
-/// The monitors are global, so they get only the events of other apps. A
-/// click on a key of Keyboard never reaches them. They need the Accessibility
-/// permission that Keyboard already has, and not Input Monitoring. The
-/// monitor reads no character of a key.
+/// The global monitors get only the events of other apps. The local monitors
+/// get the keys of the windows of Keyboard that take focus: Write and
+/// Settings. No monitor listens to a click in Keyboard, so a click on a key
+/// never uses up a latch. The monitors need the Accessibility permission
+/// that Keyboard already has, and not Input Monitoring. The monitor reads no
+/// character of a key.
 @MainActor
 final class OtherInputMonitor {
     private let onInput: () -> Void
@@ -38,7 +39,7 @@ final class OtherInputMonitor {
         guard monitors.isEmpty else { return }
         let mask: NSEvent.EventTypeMask = [.keyDown, .leftMouseUp, .rightMouseUp, .otherMouseUp]
         if let monitor = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] event in
-            guard !Self.isOwn(event), !(event.type == .keyDown && event.isARepeat) else { return }
+            guard Self.isOtherInput(event) else { return }
             let location = event.type == .leftMouseUp ? event.cgEvent?.location : nil
             MainActor.assumeIsolated {
                 self?.onInput()
@@ -54,12 +55,24 @@ final class OtherInputMonitor {
             monitors.append(monitor)
         }
         if let monitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged, handler: { [weak self] event in
-            guard !Self.isOwn(event) else { return }
-            let flags = event.cgEvent?.flags ?? []
-            let modifiers = Modifiers.held.reduce(into: Modifiers()) { result, held in
-                if flags.contains(held.eventFlag) { result.insert(held.modifier) }
-            }
+            guard let modifiers = Self.hardwareModifiers(of: event) else { return }
             MainActor.assumeIsolated { self?.onModifiers(modifiers) }
+        }) {
+            monitors.append(monitor)
+        }
+        if let monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { [weak self] event in
+            if Self.isOtherInput(event) {
+                MainActor.assumeIsolated { self?.onInput() }
+            }
+            return event
+        }) {
+            monitors.append(monitor)
+        }
+        if let monitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged, handler: { [weak self] event in
+            if let modifiers = Self.hardwareModifiers(of: event) {
+                MainActor.assumeIsolated { self?.onModifiers(modifiers) }
+            }
+            return event
         }) {
             monitors.append(monitor)
         }
@@ -70,7 +83,18 @@ final class OtherInputMonitor {
         monitors = []
     }
 
-    /// True for an event that Keyboard posted itself.
+    /// False for an event that Keyboard posted itself, and for a key repeat.
+    private nonisolated static func isOtherInput(_ event: NSEvent) -> Bool {
+        !isOwn(event) && !(event.type == .keyDown && event.isARepeat)
+    }
+
+    /// The modifier keys that the hardware holds, or nil for an event that
+    /// Keyboard posted itself.
+    private nonisolated static func hardwareModifiers(of event: NSEvent) -> Modifiers? {
+        guard !isOwn(event) else { return nil }
+        return Modifiers(deviceFlags: event.cgEvent?.flags ?? [])
+    }
+
     private nonisolated static func isOwn(_ event: NSEvent) -> Bool {
         event.cgEvent?.getIntegerValueField(.eventSourceUnixProcessID) == Int64(getpid())
     }

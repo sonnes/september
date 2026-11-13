@@ -70,8 +70,8 @@ public final class KeyboardSession: ObservableObject {
             scheduleUpdate()
         }
     }
-    /// A modifier of the hardware keyboard shows the shortcuts after this
-    /// hold, so a quick chord does not make the bar blink.
+    /// A modifier that macOS holds shows the shortcuts after this hold, so a
+    /// quick chord does not make the bar blink.
     public static let modifierHoldDelay: TimeInterval = 0.4
     @Published private var isWriteInFront = false
     /// The bundle ID of the app in front.
@@ -87,8 +87,7 @@ public final class KeyboardSession: ObservableObject {
 
     /// The menu shortcuts of the app in front, from the last read.
     private var menu: [AppShortcut]?
-    /// The modifiers of the hardware keyboard that the user holds, after the
-    /// hold delay.
+    /// The modifiers that macOS holds, after the hold delay.
     private var heldModifiers: Modifiers = []
     private var pendingHold: (any ScheduledWork)?
     private let scheduler: any DelayScheduler
@@ -172,16 +171,13 @@ public final class KeyboardSession: ObservableObject {
         controller.perform(.shortcut(shortcut.shortcut))
     }
 
-    /// The modifiers that the user holds on the hardware keyboard changed.
-    /// Command or Control shows the shortcuts after `modifierHoldDelay`. A
-    /// change while the shortcuts show, and a release, act at once.
-    public func hardwareModifiersChanged(_ modifiers: Modifiers) {
+    /// The modifiers that macOS holds changed. Command or Control shows the
+    /// shortcuts after `modifierHoldDelay`. A change while the shortcuts show,
+    /// and a release, act at once.
+    private func macModifiersChanged(_ modifiers: Modifiers) {
         pendingHold?.cancel()
         pendingHold = nil
-        // The OS adds the modifiers that the keyboard holds to the flags of a
-        // hardware key, so they are not hardware modifiers.
-        let held = modifiers.subtracting(controller.systemModifiers)
-            .intersection(AppShortcut.filterModifiers)
+        let held = modifiers.intersection(AppShortcut.filterModifiers)
         guard !held.isDisjoint(with: [.command, .control]) else {
             heldModifiers = []
             scheduleUpdate()
@@ -415,6 +411,12 @@ public final class KeyboardSession: ObservableObject {
             .dropFirst()
             .removeDuplicates()
             .sink { [weak self] _ in self?.isHistoryOpen = false }
+            .store(in: &subscriptions)
+        controller.$modifiers
+            .map(\.mac)
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] in self?.macModifiersChanged($0) }
             .store(in: &subscriptions)
         // A button added in Settings shows at once. The user is in the Settings
         // window, not aiming at the panel.

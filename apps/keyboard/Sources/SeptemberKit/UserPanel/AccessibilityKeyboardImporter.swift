@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// What the keyboard layout of the user types for a Mac key code with the
@@ -231,7 +232,8 @@ public struct AccessibilityKeyboardImporter: Sendable {
         }
         guard let code, !Self.modifierKeyCodes.contains(code) else { return nil }
 
-        var modifiers = Self.modifiers(fromFlags: param["Modifiers"] as? Int ?? 0)
+        var modifiers = Modifiers(
+            eventFlags: CGEventFlags(rawValue: UInt64(truncatingIfNeeded: param["Modifiers"] as? Int ?? 0)))
         let key: Shortcut.Key
         if let virtual = VirtualKey(rawValue: code) {
             key = .virtual(virtual)
@@ -244,12 +246,6 @@ public struct AccessibilityKeyboardImporter: Sendable {
             return nil
         }
         return PressedKey(code: code, shortcut: Shortcut(modifiers: modifiers, key: key))
-    }
-
-    private static func modifiers(fromFlags flags: Int) -> Modifiers {
-        Modifiers.held.reduce(into: []) { result, held in
-            if flags & Int(held.eventFlag.rawValue) != 0 { result.insert(held.modifier) }
-        }
     }
 
     /// Command, shift, caps lock, option, control, and fn, left and right.

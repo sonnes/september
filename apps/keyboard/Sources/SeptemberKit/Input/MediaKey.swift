@@ -137,11 +137,7 @@ public struct SpotlightHotKey: Equatable, Sendable {
             return
         }
         let flags = CGEventFlags(rawValue: UInt64(parameters[2]))
-        self.init(
-            virtualKey: virtualKey,
-            modifiers: Modifiers.held.reduce(into: []) { result, held in
-                if flags.contains(held.eventFlag) { result.insert(held.modifier) }
-            })
+        self.init(virtualKey: virtualKey, modifiers: Modifiers(eventFlags: flags))
     }
 
     /// The shortcut in the settings of this Mac.

@@ -18,7 +18,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let focusWatcher = FocusWatcher()
     private let treeModel = AXTreeModel()
     private let keyboardSettings = KeyboardSettings()
-    private let inputMonitoring = InputMonitoringStatus()
     private let keyboardPosition = KeyboardPosition()
     private var controller: KeyboardController!
     private var session: KeyboardSession!
@@ -29,7 +28,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var settingsWindow: SettingsWindowController!
     private var write: WriteController!
     /// Held strongly: the tap's callback does not retain it.
-    private var modifierTap: ModifierTap?
     private var otherInput: OtherInputMonitor?
     /// SIGTERM and SIGINT, for example from `make stop`, skip
     /// `applicationWillTerminate`. These handlers release the modifiers first.
@@ -122,7 +120,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .store(in: &subscriptions)
 
         watchFocus()
-        startModifierTap()
         let otherInput = OtherInputMonitor(
             onInput: { [weak self] in self?.controller.otherInputPressed() },
             onModifiers: { [weak self] in self?.controller.macModifiersChanged($0) },
@@ -175,7 +172,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         pages[.speech] = AnyView(SpeechPage(speech: speech, settings: keyboardSettings, said: controller.talk.said))
         pages[.predictions] = AnyView(
             PredictionsSettingsPage(
-                engine: session.predictions, history: history, inputMonitoring: inputMonitoring))
+                engine: session.predictions, history: history))
         pages[.clipboard] = AnyView(ClipboardSettingsPage(history: session.clipboard))
         if let store = session.userPanel {
             pages[.myPanel] = AnyView(MyPanelSettingsPage(store: store, usage: session.userPanelUsage))
@@ -216,7 +213,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func showSettings(_ page: SettingsPage = .voice) {
         session.predictions.refreshAvailability()
-        startModifierTap()
         settingsWindow.show(page)
     }
 
@@ -302,7 +298,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let pid = app?.processIdentifier
             session.readMenu = { pid.map(MenuBarReader.shortcuts(pid:)) ?? [] }
             session.appChanged(name: app?.localizedName, bundleID: app?.bundleIdentifier)
-            startModifierTap()
             readScreenSoon()
         }
     }
@@ -349,23 +344,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             source.resume()
             signalSources.append(source)
-        }
-    }
-
-    /// Starts the tap only when macOS already allows it, so launch never
-    /// prompts. The Predictions page of Settings asks.
-    private func startModifierTap() {
-        guard modifierTap == nil else { return }
-        guard ModifierTap.isAllowed else {
-            inputMonitoring.isAllowed = false
-            return
-        }
-        let tap = ModifierTap { [weak self] modifiers in self?.session.hardwareModifiersChanged(modifiers) }
-        if tap.start() {
-            modifierTap = tap
-            inputMonitoring.isAllowed = true
-        } else {
-            inputMonitoring.isAllowed = false
         }
     }
 

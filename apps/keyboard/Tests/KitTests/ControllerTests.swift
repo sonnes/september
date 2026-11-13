@@ -303,7 +303,9 @@ func controllerTests() {
         sink.reset()
         controller.releaseSystemModifiers()
         expectEqual(sink.posted, [Keystroke(virtualKey: 59, flags: [], isDown: false)])
-        expectEqual(controller.systemModifiers, [])
+        sink.reset()
+        controller.releaseSystemModifiers()
+        expect(sink.posted.isEmpty, "the keyboard holds nothing after a release")
     }
 
     test("a modifier that macOS holds goes into the next key without a posted down") {
@@ -320,11 +322,28 @@ func controllerTests() {
         expectEqual(controller.modifiers.active, [])
     }
 
-    test("a modifier that the keyboard holds at the OS is not one that macOS holds") {
-        let (controller, _) = try makeController()
+    test("a latched Command that the hardware then holds stays down for each key until the hardware lets go") {
+        let (controller, sink) = try makeController()
         controller.press(key("command-left"))
-        controller.macModifiersChanged([.command, .option])
-        expectEqual(controller.modifiers.mac, .option)
+        controller.macModifiersChanged(.command)
+        sink.reset()
+        controller.press(key("key-c"))
+        controller.press(key("key-v"))
+        expectEqual(sink.downs.map(\.key), [8, 9])
+        expectEqual(sink.downs.map(\.flags), [.command, .command])
+        expect(!sink.posted.contains { $0.virtualKey == 55 }, "the keyboard posts no Command up while the hardware holds it")
+        sink.reset()
+        controller.macModifiersChanged([])
+        expectEqual(sink.posted, [Keystroke(virtualKey: 55, flags: [], isDown: false)], "the keyboard lets go of its own Command")
+    }
+
+    test("a modifier that macOS holds gets no down when the keyboard latches it") {
+        let (controller, sink) = try makeController()
+        controller.macModifiersChanged(.command)
+        controller.press(key("command-left"))
+        expect(sink.posted.isEmpty)
+        controller.macModifiersChanged([])
+        expectEqual(sink.posted, [Keystroke(virtualKey: 55, flags: .command, isDown: true)], "the latch is still on")
     }
 
     test("a modifier that macOS holds is never posted, also after Talk mode") {

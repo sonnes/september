@@ -4,10 +4,10 @@
 public struct ModifierState: Sendable, Equatable {
     public private(set) var latched: Modifiers = []
     public private(set) var locked: Modifiers = []
-    /// The modifiers that macOS holds: a key that the user holds on the
-    /// hardware keyboard, or a modifier that Sticky Keys of macOS latches or
-    /// locks. They change only when macOS reports new flags.
-    public private(set) var mac: Modifiers = []
+    /// The modifiers that macOS holds: the modifier keys that the user holds
+    /// on the hardware keyboard. They change only when macOS reports new
+    /// flags.
+    public var mac: Modifiers = []
 
     public init() {}
 
@@ -15,10 +15,6 @@ public struct ModifierState: Sendable, Equatable {
     /// The modifiers that the keyboard itself latches or locks.
     public var own: Modifiers { latched.union(locked) }
 
-    /// Sets the modifiers that macOS holds.
-    public mutating func setMac(_ modifiers: Modifiers) {
-        mac = modifiers
-    }
     public var isCapsLockOn: Bool { locked.contains(.capsLock) }
 
     public mutating func tap(_ modifier: Modifiers) {

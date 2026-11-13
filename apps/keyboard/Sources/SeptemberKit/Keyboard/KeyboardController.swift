@@ -12,7 +12,7 @@ public final class KeyboardController: ObservableObject {
     /// The modifiers that the keyboard holds down at the OS. A tapped modifier
     /// goes down at once, so a click or a key from another source gets it
     /// too, as with Sticky Keys of macOS.
-    public private(set) var systemModifiers: Modifiers = []
+    private var systemModifiers: Modifiers = []
     /// What we have typed since the last Return. Only shown when the app in
     /// front exposes no text of its own.
     private var echo = "" {
@@ -193,14 +193,12 @@ public final class KeyboardController: ObservableObject {
         modifiers.consume()
     }
 
-    /// macOS reports new modifier flags: a key held on the hardware keyboard,
-    /// or a modifier that Sticky Keys of macOS latches or locks. The keys
-    /// show these modifiers, and the next key carries them. The flags include
-    /// the modifiers that the keyboard holds at the OS, so those do not count.
-    public func macModifiersChanged(_ flags: Modifiers) {
-        let mac = flags.subtracting(systemModifiers).subtracting(.capsLock)
+    /// macOS reports the modifier keys that the hardware holds. The keys
+    /// show these modifiers, and the next key carries them.
+    public func macModifiersChanged(_ mac: Modifiers) {
+        let mac = mac.subtracting(.capsLock)
         guard mac != modifiers.mac else { return }
-        modifiers.setMac(mac)
+        modifiers.mac = mac
     }
 
     /// Releases each modifier that the keyboard holds at the OS. Call this
@@ -216,8 +214,11 @@ public final class KeyboardController: ObservableObject {
 
     /// Posts the downs and ups that make the OS hold the active modifiers.
     /// In Talk mode the app in front gets no events, so the OS holds none.
+    /// A modifier that macOS holds gets no down and no up until macOS lets
+    /// go of it.
     private func syncSystemModifiers() {
-        let target = mode == .type ? modifiers.own.subtracting(.capsLock) : []
+        let wanted = mode == .type ? modifiers.own.subtracting(.capsLock) : []
+        let target = wanted.subtracting(modifiers.mac).union(systemModifiers.intersection(modifiers.mac))
         guard target != systemModifiers else { return }
         sink.post(Keystroke.modifierChanges(from: systemModifiers, to: target))
         systemModifiers = target

@@ -157,7 +157,6 @@ The text on the clipboard at launch does not go into the history.
 | `speakPressed()` | Speak | See [Speak](#speak). |
 | `pressMine(_:)` | A button of Mine | Counts the press for the order of Mine, then does the action. |
 | `pressShortcut(_:)` | A shortcut suggestion | Presses the chord of the suggestion in the app. A latched modifier ends. |
-| `hardwareModifiersChanged(_:)` | `ModifierTap` | See [Shortcut Suggestions](#shortcut-suggestions). The modifiers that the keyboard holds at the OS are not hardware modifiers, so the session removes them first. |
 | `toggleHistory()` | History | Shows the clipboard history in the place of the predictions, on its newest page, or shows the predictions again. An app change and a mode change close the history. |
 | `olderPage()`, `newerPage()` | Older and Newer | Turns the pages of the history. |
 | `pasteClip(_:)` | A copied text | See [The Clipboard](#the-clipboard). |
@@ -199,9 +198,10 @@ shows. Talk mode and the Write window have no shortcuts.
   it in each app change. The session calls it only when it needs shortcuts,
   and keeps the result until the next app change.
 - The modifiers that are on are the modifiers of the keys, latched or locked,
-  and the modifiers that the user holds on the hardware keyboard. With
-  Command or Control on, only the chords that hold all these modifiers stay.
-- `hardwareModifiersChanged(_:)` waits `modifierHoldDelay` (0.4 seconds)
+  and the modifiers that macOS holds. With Command or Control on, only the
+  chords that hold all these modifiers stay.
+- The session reads the modifiers that macOS holds from
+  `controller.modifiers.mac`. It waits `modifierHoldDelay` (0.4 seconds)
   before a held Command or Control counts, so a quick chord does not change
   the stack. A release, or a change while the shortcuts show, counts at once.
 

@@ -1,3 +1,4 @@
+import CoreGraphics
 import SeptemberKit
 
 func modifierStateTests() {
@@ -22,13 +23,13 @@ func modifierStateTests() {
 
     test("a modifier that macOS holds is on and shows as latched until macOS releases it") {
         var state = ModifierState()
-        state.setMac(.shift)
+        state.mac = .shift
         expectEqual(state.active, .shift)
         expectEqual(state.look(of: .shift), .latched)
         expectEqual(state.own, [])
         state.consume()
         expectEqual(state.active, .shift)
-        state.setMac([])
+        state.mac = []
         expectEqual(state.active, [])
     }
 
@@ -146,5 +147,28 @@ func modifierNameTests() {
 
     test("an unknown modifier name is rejected") {
         expect((try? Modifiers(names: ["hyper"])) == nil)
+    }
+
+    test("event flags convert to the modifiers that they hold, without caps lock") {
+        let flags: CGEventFlags = [.maskCommand, .maskShift, .maskSecondaryFn, .maskAlphaShift]
+        expectEqual(Modifiers(eventFlags: flags), [.command, .shift, .function])
+        expectEqual(Modifiers(eventFlags: [.maskControl, .maskAlternate]).eventFlags, [.maskControl, .maskAlternate])
+    }
+
+    test("the device flags give each left and right modifier key that the hardware holds") {
+        let keys: [(UInt64, Modifiers)] = [
+            (0x1, .control), (0x2000, .control), (0x2, .shift), (0x4, .shift),
+            (0x8, .command), (0x10, .command), (0x20, .option), (0x40, .option),
+        ]
+        for (bit, modifier) in keys {
+            expectEqual(Modifiers(deviceFlags: CGEventFlags(rawValue: bit)), modifier, "bit \(bit)")
+        }
+        expectEqual(Modifiers(deviceFlags: CGEventFlags(rawValue: 0x8 | 0x4)), [.command, .shift])
+    }
+
+    test("the device flags leave out a modifier that only the posted flags hold") {
+        // The keyboard posts Command with no device bit. The hardware holds Shift.
+        let flags = CGEventFlags(rawValue: CGEventFlags.maskCommand.rawValue | CGEventFlags.maskShift.rawValue | 0x2)
+        expectEqual(Modifiers(deviceFlags: flags), .shift)
     }
 }

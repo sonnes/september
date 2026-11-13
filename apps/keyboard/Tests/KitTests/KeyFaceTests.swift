@@ -31,10 +31,10 @@ func keyFaceTests() {
 
     test("a modifier that macOS holds changes the labels as a tapped one does") {
         var held = ModifierState()
-        held.setMac(.function)
+        held.mac = .function
         expectEqual(key("f8").face(under: held).glyph, .text("F8"))
         expectEqual(key("fn").face(under: held).look, .latched)
-        held.setMac(.shift)
+        held.mac = .shift
         expectEqual(key("key-a").face(under: held).glyph, .text("A"))
         expectEqual(key("shift-left").face(under: held).glyph, .symbol("shift.fill"))
     }

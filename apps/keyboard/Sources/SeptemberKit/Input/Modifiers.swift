@@ -57,6 +57,30 @@ public struct Modifiers: OptionSet, Sendable, Hashable {
         heldKeys.reduce(into: []) { $0.insert($1.eventFlag) }
     }
 
+    /// The held modifiers in the flags of an event. Caps lock is not one.
+    public init(eventFlags flags: CGEventFlags) {
+        self = Modifiers.held.reduce(into: []) { result, held in
+            if flags.contains(held.eventFlag) { result.insert(held.modifier) }
+        }
+    }
+
+    /// The modifier keys that the hardware holds, from the device-dependent
+    /// bits of the flags of an event (`NX_DEVICE*KEYMASK` in IOKit). The
+    /// keyboard posts only the device-independent flags, so a modifier that
+    /// it holds at the OS has no bit here. fn has no device bit.
+    public init(deviceFlags flags: CGEventFlags) {
+        self = Modifiers.deviceKeys.reduce(into: []) { result, key in
+            if flags.rawValue & key.mask != 0 { result.insert(key.modifier) }
+        }
+    }
+
+    private static let deviceKeys: [(mask: UInt64, modifier: Modifiers)] = [
+        (0x1, .control), (0x2000, .control),
+        (0x2, .shift), (0x4, .shift),
+        (0x8, .command), (0x10, .command),
+        (0x20, .option), (0x40, .option),
+    ]
+
     /// Modifiers by their panel JSON names.
     public init(names: [String]) throws {
         var modifiers: Modifiers = []

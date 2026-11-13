@@ -343,19 +343,23 @@ and each press reads them again:
   tapped modifier goes down at the OS at once, so a click or a key from the
   hardware keyboard gets it too: Shift-click and Command-click work. A key
   from another source, or a click outside the keyboard, uses up a latched
-  modifier. `OtherInputMonitor` listens for them with global monitors, which
-  need the Accessibility permission and not Input Monitoring. In Talk mode the
+  modifier. `OtherInputMonitor` listens for them. Its global monitors get the
+  events of other apps. Its local monitors get the keys of Write and Settings,
+  but not a click on the keyboard. The monitors need the Accessibility
+  permission and not Input Monitoring. In Talk mode the
   OS holds no modifier. Before the app quits, also on SIGTERM and SIGINT, it
   releases the modifiers that it holds. A latched modifier key lights up. A locked modifier key has a stronger fill
   and a bar under its label. Shift shows a filled arrow when it is latched and
   the caps lock arrow when it is locked.
 
-The keyboard also reads the modifier flags of macOS. `OtherInputMonitor`
-gets them with a global monitor. A modifier that macOS holds comes from a
-key that the user holds on the hardware keyboard, or from Sticky Keys of
-macOS. This modifier lights its key, and each key of the keyboard carries it.
-The keyboard posts no down or up for it, and only macOS releases it. The
-shortcut suggestions still wait for the hold delay of a hardware modifier.
+The keyboard also reads the modifiers that macOS holds. `OtherInputMonitor`
+gets them from the same monitors, in the device bits of the event flags.
+These bits show only the left and right modifier keys of the hardware. The
+keyboard posts no device bits, so a modifier that the keyboard holds at the
+OS is not in them. fn has no device bit. A modifier that macOS holds lights
+its key, and each key of the keyboard carries it. The keyboard posts no down
+or up for it until macOS releases it. The shortcut suggestions wait for the
+hold delay of a modifier that macOS holds.
 
 The keys show the state of the modifiers. While shift or caps lock is on, the
 letters show capitals and the dual keys light up their shifted symbol.
@@ -581,16 +585,6 @@ a suggestion needs it, and keeps the read until another app comes to the front.
 The suggestions leave out the Apple menu, which holds Log Out and Lock Screen,
 and the menu items that are off. The app menu, with Hide and Quit, comes last.
 Talk mode and the Write window show no shortcut suggestions.
-
-## Input Monitoring
-
-The shortcut suggestions of a held hardware modifier need Input Monitoring.
-The keyboard does not ask for it at launch.
-
-1. Open Settings, then the Predictions page.
-2. Click Open Input Monitoring Settings.
-3. Turn on Keyboard in the list.
-4. Quit the keyboard and open it again.
 
 ## Stored data
 

@@ -48,7 +48,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`rectangle`/`phrases`/`write`/`write-documents.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
-| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ModifierTap`, `OtherInputMonitor`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings window, snapshots |
+| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `OtherInputMonitor`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings window, snapshots |
 | `Sources/WriteLab` | Write Lab: the Write paper on its own, with a stand-in for the keyboard bar (`make lab`) |
 | `Tests/KitTests` | tests + the harness |
 
@@ -161,7 +161,7 @@ only what needs a running app — the panel, the event sink, the menu bar.
   `com.september.keyboard.private`: they are storage names, and a new name
   loses the saved key and the private text.
 - Never prompt for permission at launch. The banner and the menu item ask for
-  Accessibility. The Predictions page of Settings asks for Input Monitoring.
+  Accessibility.
 - Key code mapping goes through `UCKeyTranslate`, never a hardcoded US table,
   and rebuilds when the input source changes. A shortcut letter that the
   current layout lacks comes from the ASCII-capable layout, as macOS does.
