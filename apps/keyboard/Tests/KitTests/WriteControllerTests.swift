@@ -270,7 +270,8 @@ func writeControllerTests() {
         defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: locked.path) }
 
         write.showDesk()
-        expect(write.desk.failure != nil, "the desk shows the error")
+        expect(write.model.failure != nil, "the model keeps the error")
+        expectEqual(write.desk.failure, write.model.failure)
     }
 
     test("each shortcut of the Write panel reaches the paper") {

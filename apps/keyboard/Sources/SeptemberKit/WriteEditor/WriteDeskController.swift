@@ -47,14 +47,14 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     /// place of Undo.
     public private(set) var failure: String?
     public private(set) var isOpen = false
+    private var layingOut = false
 
     public var onCommand: ((WriteDeskCommand) -> Void)?
     public var onQueryChange: ((String) -> Void)?
     /// Called when the time for Undo ends.
     public var onUndoEnd: (() -> Void)?
-    /// The lines of a document for its card. If the read fails, the notice
-    /// shows the error.
-    public var preview: (WriteDocument) throws -> [String] = { _ in [] }
+    /// The lines of a document for its card.
+    public var preview: (WriteDocument) -> [String] = { _ in [] }
     private weak var host: (any WriteHost)?
 
     private let root = DeskRootView()
@@ -210,6 +210,9 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     private func updateNotice() {
         let wasShown = !notice.isHidden
         fillNotice()
+        // A card that cannot read its file shows an error while the layout
+        // runs. That layout places the notice after the cards.
+        guard !layingOut else { return }
         if isOpen, wasShown || !notice.isHidden { relayout(animated: true) }
     }
 
@@ -226,6 +229,8 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     // MARK: - Layout
 
     private func relayout(animated: Bool) {
+        layingOut = true
+        defer { layingOut = false }
         let items = desk.items
         let layout = WriteDeskLayout(area: area, centre: centre, count: items.count, selection: desk.selection)
         let origin = area.origin
@@ -287,16 +292,8 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         case .newDocument:
             card = WriteCardView(newDocument: ())
         case .document(let document):
-            var lines: [String] = []
-            do {
-                lines = try preview(document)
-            } catch {
-                // The layout of the notice comes after the cards.
-                failure = (error as NSError).localizedDescription
-                fillNotice()
-            }
             card = WriteCardView(
-                title: document.title, lines: lines, date: WriteDocument.dateLabel(document.modified))
+                title: document.title, lines: preview(document), date: WriteDocument.dateLabel(document.modified))
         }
         card.frame = frame
         root.addSubview(card, positioned: .below, relativeTo: findBox)

@@ -134,6 +134,17 @@ public final class WriteModel: ObservableObject {
         select(document.url)
     }
 
+    /// The first `lines` lines of `document`, for its card on the desk. If
+    /// the read fails, the model keeps the error and the card has no lines.
+    public func preview(_ document: WriteDocument, lines: Int) -> [String] {
+        do {
+            return DocumentLibrary.preview(of: try library.read(document), lines: lines)
+        } catch {
+            report(error)
+            return []
+        }
+    }
+
     /// Saves the edits of the editor to the open document now. The file takes
     /// the name of its first heading. With no edits, the save does nothing.
     public func save() {
