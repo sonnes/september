@@ -12,7 +12,6 @@ final class WriteOverlay {
     private let view = OverlayView()
     private let caret = CALayer()
     private var lastCaret: CGRect?
-    private var blink: DispatchWorkItem?
 
     init(textView: WriteTextView) {
         self.textView = textView
@@ -79,19 +78,14 @@ final class WriteOverlay {
     private func restartBlink() {
         caret.removeAnimation(forKey: "blink")
         caret.opacity = 1
-        blink?.cancel()
-        let work = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            let animation = CAKeyframeAnimation(keyPath: "opacity")
-            animation.values = Motion.caretBlinkValues
-            animation.keyTimes = Motion.caretBlinkKeyTimes.map { NSNumber(value: $0) }
-            animation.timingFunctions = Array(repeating: CAMediaTimingFunction(name: .default), count: 3)
-            animation.duration = Motion.caretBlink
-            animation.repeatCount = .infinity
-            caret.add(animation, forKey: "blink")
-        }
-        blink = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + Motion.caretIdle, execute: work)
+        let animation = CAKeyframeAnimation(keyPath: "opacity")
+        animation.values = Motion.caretBlinkValues
+        animation.keyTimes = Motion.caretBlinkKeyTimes.map { NSNumber(value: $0) }
+        animation.timingFunctions = Array(repeating: CAMediaTimingFunction(name: .default), count: 3)
+        animation.beginTime = caret.convertTime(CACurrentMediaTime(), from: nil) + Motion.caretIdle
+        animation.duration = Motion.caretBlink
+        animation.repeatCount = .infinity
+        caret.add(animation, forKey: "blink")
     }
 
     // MARK: - To-do items
@@ -127,9 +121,11 @@ final class WriteOverlay {
     func animateTask(at location: Int, checked: Bool) {
         guard textView.window != nil, !reduceMotion, let box = taskBox(at: location) else { return }
         let layer = TaskLayer(frame: box, checked: checked, in: view)
+        CATransaction.begin()
+        CATransaction.setCompletionBlock { layer.removeFromSuperlayer() }
         view.layer?.addSublayer(layer)
         layer.play(checked: checked)
-        DispatchQueue.main.asyncAfter(deadline: .now() + Motion.taskPop + 0.05) { layer.removeFromSuperlayer() }
+        CATransaction.commit()
     }
 }
 

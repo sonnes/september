@@ -20,7 +20,6 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
     private let notice = NSTextField(labelWithString: "")
     /// The frame of the full page. The paper grows up to it.
     private var page: CGRect = .zero
-    private var pendingFit = false
     private let frameMotion = WriteMotionDriver()
     private let scrollMotion = WriteMotionDriver()
     /// The frame that the paper moves to.
@@ -72,7 +71,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         editor.autoresizingMask = []
         editor.minSize = .zero
         editor.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
-        editor.onLayoutChange = { [weak self] in self?.scheduleFit() }
+        editor.onLayoutChange = { [weak self] in self?.fit() }
     }
 
     public var isOpen: Bool { window.isVisible }
@@ -189,21 +188,10 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         editor.setFrameSize(NSSize(width: width, height: editor.frame.height))
     }
 
-    /// Fits the paper to the text once per turn of the run loop, after the
-    /// edits of one key press are done.
-    private func scheduleFit() {
-        guard window.isVisible, !pendingFit else { return }
-        pendingFit = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            pendingFit = false
-            fit()
-        }
-    }
-
-    /// Grows or shrinks the paper to its text, then keeps the caret line in
-    /// view.
+    /// Grows or shrinks the open paper to its text, then keeps the caret line
+    /// in view.
     private func fit() {
+        guard window.isVisible else { return }
         let frame = paperFrame
         if targetFrame != frame {
             if reduceMotion {

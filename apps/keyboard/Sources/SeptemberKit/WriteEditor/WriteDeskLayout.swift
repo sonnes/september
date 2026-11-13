@@ -10,11 +10,6 @@ import CoreGraphics
 /// selected card. Frames use the coordinates of AppKit, with the origin at
 /// the bottom left.
 public struct WriteDeskLayout: Equatable, Sendable {
-    public static var cardSize: CGSize { Metrics.Desk.cardSize }
-    public static var cardGap: CGFloat { Metrics.Desk.cardGap }
-    public static var bottomPadding: CGFloat { Metrics.Desk.bottomPadding }
-    public static var selectedLift: CGFloat { Metrics.Desk.selectedLift }
-
     /// The indexes of the cards in view.
     public let visible: Range<Int>
     /// The frame of each card in view, in the order of `visible`.
@@ -34,8 +29,8 @@ public struct WriteDeskLayout: Equatable, Sendable {
     ///   - count: the number of cards.
     ///   - selection: the index of the selected card.
     public init(area: CGRect, centre bar: CGFloat, count: Int, selection: Int) {
-        let size = Self.cardSize
-        let gap = Self.cardGap
+        let size = Metrics.Desk.cardSize
+        let gap = Metrics.Desk.cardGap
         let fits = max(1, Int((area.width + gap) / (size.width + gap)))
         let shown = min(count, fits)
         let first = min(max(selection - shown / 2, 0), max(count - shown, 0))
@@ -44,7 +39,7 @@ public struct WriteDeskLayout: Equatable, Sendable {
         self.area = area
         let width = CGFloat(shown) * size.width + CGFloat(max(shown - 1, 0)) * gap
         let left = min(max(bar - width / 2, area.minX), area.maxX - width)
-        let bottom = area.minY + Self.bottomPadding
+        let bottom = area.minY + Metrics.Desk.bottomPadding
         cards = (0..<shown).map { index in
             CGRect(
                 x: left + CGFloat(index) * (size.width + gap), y: bottom, width: size.width,
@@ -68,7 +63,7 @@ public struct WriteDeskLayout: Equatable, Sendable {
     public func backdrop(withNotice: Bool, actionWidth: CGFloat = 0) -> CGRect {
         var rect = find
         for card in cards {
-            rect = rect.union(card).union(card.offsetBy(dx: 0, dy: Self.selectedLift))
+            rect = rect.union(card).union(card.offsetBy(dx: 0, dy: Metrics.Desk.selectedLift))
         }
         if actionWidth > 0 {
             rect = rect.union(Self.centred(

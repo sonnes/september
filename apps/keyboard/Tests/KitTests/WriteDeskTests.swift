@@ -227,12 +227,12 @@ func writeDeskTests() {
         let area = CGRect(x: 0, y: 400, width: 1600, height: 600)
         let layout = WriteDeskLayout(area: area, centre: 800, count: 3, selection: 0)
         expectEqual(layout.visible, 0..<3)
-        let size = WriteDeskLayout.cardSize
-        let gap = WriteDeskLayout.cardGap
+        let size = Metrics.Desk.cardSize
+        let gap = Metrics.Desk.cardGap
         let width = 3 * size.width + 2 * gap
         expectEqual(layout.cards[0].minX, 800 - width / 2)
         expectEqual(layout.cards[2].maxX, 800 + width / 2)
-        expectEqual(layout.cards[0].minY, area.minY + WriteDeskLayout.bottomPadding)
+        expectEqual(layout.cards[0].minY, area.minY + Metrics.Desk.bottomPadding)
         expect(layout.find.minY > layout.actions.maxY, "the Find field is above the actions")
         expect(layout.actions.minY > layout.cards[0].maxY, "the actions are above the cards")
     }
@@ -242,7 +242,7 @@ func writeDeskTests() {
         let layout = WriteDeskLayout(area: area, centre: 800, count: 3, selection: 1)
         let backdrop = layout.backdrop(withNotice: false)
         for card in layout.cards {
-            expect(backdrop.contains(card.offsetBy(dx: 0, dy: WriteDeskLayout.selectedLift)), "a raised card is inside")
+            expect(backdrop.contains(card.offsetBy(dx: 0, dy: Metrics.Desk.selectedLift)), "a raised card is inside")
         }
         expect(backdrop.contains(layout.find), "the Find field is inside")
         expect(backdrop.maxY < layout.notice.maxY, "the notice is outside while it is hidden")

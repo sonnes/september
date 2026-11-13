@@ -66,7 +66,9 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     private var area: CGRect = .zero
     private var centre: CGFloat = 0
     private var undoTimer: Timer?
-    private var hideTimer: Timer?
+    /// The number of the last hide, so that only the motion of the last hide
+    /// orders the window out.
+    private var hideCount = 0
 
     public init(host: any WriteHost) {
         self.host = host
@@ -96,8 +98,6 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
     ///   - area: the space above the keyboard, on the screen.
     ///   - centre: the middle of the input bar.
     public func show(documents: [WriteDocument], current: URL?, area: CGRect, centre: CGFloat) {
-        hideTimer?.invalidate()
-        hideTimer = nil
         desk = WriteDesk(documents: documents, current: current)
         self.area = area
         self.centre = centre
@@ -122,22 +122,27 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         hideUndo()
         let key: CardKey? = newDocument ? .newDocument : opening.map(CardKey.document)
         if let key { cards[key]?.isHidden = true }
-        fadeBackdrop(in: false)
         guard !reduceMotion else {
+            fadeBackdrop(in: false)
             window.orderOut(nil)
             return
         }
+        // The window goes when the last card is down.
+        hideCount += 1
+        let hide = hideCount
+        CATransaction.begin()
+        CATransaction.setCompletionBlock { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, !self.isOpen, self.hideCount == hide else { return }
+                self.window.orderOut(nil)
+            }
+        }
+        fadeBackdrop(in: false)
         let order = cards.values.sorted { $0.frame.minX < $1.frame.minX }
         for (index, card) in order.enumerated() where !card.isHidden {
             card.animateAway(delay: Double(index) * Motion.cardStagger)
         }
-        let duration = Motion.deskCards + Double(order.count) * Motion.cardStagger
-        hideTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self, !self.isOpen else { return }
-                self.window.orderOut(nil)
-            }
-        }
+        CATransaction.commit()
     }
 
     /// The frame of the card of a document on the screen, or of New

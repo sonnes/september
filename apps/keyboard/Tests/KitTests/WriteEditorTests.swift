@@ -26,6 +26,29 @@ func writeEditorTests() {
         expectEqual(editor(text).markdown, text)
     }
 
+    test("one typed character reports the caret and the layout once") {
+        let view = editor("Hi")
+        var carets: [EditorCaret] = []
+        var layouts = 0
+        view.onCaretChange = { carets.append($0) }
+        view.onLayoutChange = { layouts += 1 }
+
+        type(view, "!")
+        expectEqual(carets, [EditorCaret(text: "Hi!", caret: 3, length: 0)])
+        expectEqual(layouts, 1)
+    }
+
+    test("a Markdown mark that makes a block reports the caret once for its key") {
+        let view = editor()
+        var carets: [EditorCaret] = []
+        view.onCaretChange = { carets.append($0) }
+
+        type(view, "#")
+        carets = []
+        type(view, " ")
+        expectEqual(carets, [EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: true)])
+    }
+
     test("the text of the editor has no Markdown marks") {
         let view = editor("# Title\n\n- **bold** item\n- [ ] task")
         expectEqual(view.string, "Title\nbold item\ntask")

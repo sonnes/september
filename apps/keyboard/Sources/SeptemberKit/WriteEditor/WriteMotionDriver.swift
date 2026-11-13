@@ -17,8 +17,6 @@ final class WriteMotionDriver: NSObject {
     private var curve = CubicCurve.easeOut
     private var step: ((Double) -> Void)?
 
-    var isRunning: Bool { step != nil }
-
     func run(duration: TimeInterval, curve: CubicCurve, step: @escaping (Double) -> Void) {
         guard duration > 0 else {
             step(1)
