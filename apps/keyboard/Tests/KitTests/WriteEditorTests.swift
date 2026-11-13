@@ -205,6 +205,20 @@ func writeEditorTests() {
         expectEqual(edits, 1)
     }
 
+    test("a change that AppKit approves and does not make does not stop the edit reports") {
+        let view = editor("Hi")
+        end(view)
+        var edits = 0
+        var carets: [EditorCaret] = []
+        view.onTextChange = { edits += 1 }
+        view.onCaretChange = { carets.append($0) }
+        expect(view.shouldChangeText(in: NSRange(location: 2, length: 0), replacementString: "x"))
+        view.setSelectedRange(NSRange(location: 1, length: 0))
+        expectEqual(carets, [EditorCaret(text: "Hi", caret: 1, length: 0)])
+        type(view, "!")
+        expectEqual(edits, 1)
+    }
+
     test("Speak reads the selection, or the whole document without marks") {
         let view = editor("# Title\n\n- **one**")
         expectEqual(view.speech, EditorSpeech(selection: "", markdown: "# Title\n\n- **one**"))

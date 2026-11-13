@@ -36,8 +36,6 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
     /// changes, such as the text and then a Markdown mark. The editor reports
     /// them when the outermost edit ends.
     private var editDepth = 0
-    /// True between `shouldChangeText` and `didChangeText`.
-    private var inTextChange = false
     private var textChanged = false
     private var needsReport = false
 
@@ -430,25 +428,9 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         reportIfDone()
     }
 
-    override public func shouldChangeText(in affectedCharRange: NSRange, replacementString: String?) -> Bool {
-        guard super.shouldChangeText(in: affectedCharRange, replacementString: replacementString) else {
-            return false
-        }
-        if !inTextChange {
-            inTextChange = true
-            editDepth += 1
-        }
-        return true
-    }
-
     override public func didChangeText() {
         super.didChangeText()
         didChange()
-        if inTextChange {
-            inTextChange = false
-            editDepth -= 1
-            reportIfDone()
-        }
     }
 
     private func didChange() {
