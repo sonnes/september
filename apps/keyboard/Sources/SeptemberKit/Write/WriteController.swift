@@ -51,6 +51,7 @@ public final class WriteController: WriteReading {
 
     private let openURL: (URL) -> Void
     private let reveal: (URL) -> Void
+    private let share: ((URL) -> Void)?
     private var started = false
     private var failure: AnyCancellable?
     /// Where the paper opened last: the desk uses the same space.
@@ -60,12 +61,15 @@ public final class WriteController: WriteReading {
     ///   - host: the app around Write. Write keeps a weak reference to it.
     ///   - openURL: opens a web or mail link.
     ///   - reveal: shows a file in Finder.
+    ///   - share: shares the file of the open document. If it is nil, the
+    ///     share picker of macOS opens at the tools rail.
     ///   - scheduler: the clock of the delayed save.
     public init(
         host: any WriteHost,
         library: DocumentLibrary = DocumentLibrary(),
         openURL: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) },
         reveal: @escaping (URL) -> Void = { NSWorkspace.shared.activateFileViewerSelecting([$0]) },
+        share: ((URL) -> Void)? = nil,
         scheduler: any DelayScheduler = MainQueueScheduler()
     ) {
         self.host = host
@@ -74,6 +78,7 @@ public final class WriteController: WriteReading {
         desk = WriteDeskController(host: host)
         self.openURL = openURL
         self.reveal = reveal
+        self.share = share
 
         let editor = paper.editor
         editor.onTextChange = { [weak model] in model?.edited() }
@@ -82,6 +87,7 @@ public final class WriteController: WriteReading {
         paper.window.onNewDocument = { [weak self] in self?.newDocument() }
         paper.window.onShowDocuments = { [weak self] in self?.showDesk() }
         paper.onClose = { [weak self] in self?.save() }
+        paper.tools.onTool = { [weak self] tool in self?.perform(tool) }
         failure = model.$failure.sink { [weak paper, weak desk] text in
             paper?.showNotice(text)
             desk?.showNotice(text)
@@ -163,6 +169,24 @@ public final class WriteController: WriteReading {
             x: screen.minX + margin, y: bottom, width: max(0, screen.width - 2 * margin),
             height: max(0, screen.maxY - margin - bottom))
         return (area, placement?.bar?.midX ?? screen.midX)
+    }
+
+    // MARK: - The tools rail
+
+    /// Does the action of a button of the tools rail.
+    public func perform(_ tool: WriteTool) {
+        switch tool {
+        case .newDocument:
+            newDocument()
+        case .documents:
+            showDesk()
+        case .share:
+            save()
+            guard let url = model.current?.url else { return }
+            if let share { share(url) } else { paper.tools.share(url) }
+        case .close:
+            paper.close()
+        }
     }
 
     // MARK: - The desk

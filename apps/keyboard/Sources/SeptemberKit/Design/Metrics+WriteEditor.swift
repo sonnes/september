@@ -48,6 +48,10 @@ extension Metrics {
         public static let paperCornerRadius: CGFloat = Detached.cornerRadius
         /// The space between a save error and the corner of the paper.
         public static let noticePadding: CGFloat = 10
+        /// The space between the tools rail and the paper.
+        public static let railGap: CGFloat = 14
+        /// The space between the buttons of the tools rail.
+        public static let railSpacing: CGFloat = TopRow.modeSpacing
         /// The caret is this many times as tall as the glyphs of its line,
         /// and never taller than the line.
         public static let caretHeightScale: CGFloat = 1.5

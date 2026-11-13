@@ -296,14 +296,38 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
     }
 
     override public func paste(_ sender: Any?) {
-        pasteAsPlainText(sender)
+        paste(from: .general)
     }
 
     override public func pasteAsPlainText(_ sender: Any?) {
-        guard var text = NSPasteboard.general.string(forType: .string) else { return }
-        text = text.replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: "\r", with: "\n")
-            .replacingOccurrences(of: "\u{2029}", with: "\n")
+        pasteAsPlainText(from: .general)
+    }
+
+    /// Pastes the contents of `pasteboard` as Markdown blocks and marks. See
+    /// `WritePaste`. Text of one paragraph takes the block of the paragraph
+    /// at the caret. The paste is one undo step.
+    public func paste(from pasteboard: NSPasteboard) {
+        guard let markdown = WritePaste.markdown(from: pasteboard), let textStorage else { return }
+        let blocks = WriteMarkdown.parse(markdown).blocks
+        guard !blocks.isEmpty else { return }
+        let text = WriteText.attributed(blocks)
+        if blocks.count == 1, blocks[0].kind == .paragraph {
+            text.addAttribute(.writeBlock, value: currentBox(), range: NSRange(location: 0, length: text.length))
+        }
+        let selection = selectedRange()
+        asOneEdit {
+            breakUndoCoalescing()
+            guard shouldChangeText(in: selection, replacementString: text.string) else { return }
+            textStorage.replaceCharacters(in: selection, with: text)
+            setSelectedRange(NSRange(location: selection.location + text.length, length: 0))
+            didChangeText()
+            breakUndoCoalescing()
+        }
+    }
+
+    /// Pastes the plain text of `pasteboard` with no conversion.
+    public func pasteAsPlainText(from pasteboard: NSPasteboard) {
+        guard let text = WritePaste.plainText(from: pasteboard) else { return }
         insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
     }
 
