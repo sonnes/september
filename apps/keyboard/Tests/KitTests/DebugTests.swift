@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SeptemberKit
 
@@ -144,5 +145,44 @@ private func debugModelTests() {
         model.reloadRecords()
         expectEqual(model.rows.count, 1)
         expectEqual(model.tables.first { $0.name == "clip" }?.count, 1)
+    }
+
+    test("the debug panel reads the tree only while the Tree tab shows") {
+        let model = DebugPanelModel(records: nil)
+        var reads = 0
+        model.onRefreshTree = { reads += 1 }
+        model.refreshTree()
+        model.refresh()
+        expectEqual(reads, 0, "the Context tab reads no tree")
+        model.select(.records)
+        model.refresh()
+        expectEqual(reads, 0, "the Records tab reads no tree")
+        model.select(.tree)
+        expectEqual(reads, 1, "the Tree tab reads the tree when it opens")
+        model.refreshTree()
+        model.refresh()
+        expectEqual(reads, 3)
+    }
+
+    test("the debug panel reads the records only while the Records tab shows") {
+        let model = DebugPanelModel(records: RecordBrowser(database: memoryDatabase()))
+        model.refresh()
+        expect(model.tables.isEmpty, "the Context tab reads no records")
+        model.select(.records)
+        expect(!model.tables.isEmpty, "the Records tab reads the records when it opens")
+    }
+
+    test("the app name of the debug panel changes only when another app comes to the front") {
+        let model = DebugPanelModel(records: nil)
+        var changes = 0
+        let watch = model.objectWillChange.sink { changes += 1 }
+        model.showApp("Notes")
+        model.showApp("Notes")
+        expectEqual(model.appName, "Notes")
+        expectEqual(changes, 1)
+        model.showApp("Mail")
+        expectEqual(model.appName, "Mail")
+        expectEqual(changes, 2)
+        watch.cancel()
     }
 }

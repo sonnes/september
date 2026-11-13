@@ -93,7 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .store(in: &subscriptions)
         // Private text in the field: the tree drops the value of the field.
         controller.$isFieldPrivate.dropFirst()
-            .sink { [weak self] _ in Task { @MainActor in self?.refreshTree() } }
+            .sink { [weak self] _ in Task { @MainActor in self?.debugModel.refreshTree() } }
             .store(in: &subscriptions)
 
         watchFocus()
@@ -120,9 +120,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 }
             })
 
-        debugModel.onRefreshTree = { [weak self] in self?.refreshTree() }
-        // Values in the tree and the records age between focus changes —
-        // keep them fresh enough to trust without a read on every keystroke.
+        debugModel.onRefreshTree = { [weak self] in self?.readTree() }
+        // The tab that shows ages between focus changes. Keep it fresh
+        // enough to trust without a read on every keystroke.
         debugTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.refreshDebug() }
         }
@@ -369,13 +369,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         refreshDebug()
     }
 
-    /// Reads the tree, and the records while the Records tab shows.
+    /// Reads the tab that shows. Only the Tree tab reads the app in front.
     private func refreshDebug() {
-        refreshTree()
-        if isDebugVisible, debugModel.tab == .records { debugModel.reloadRecords() }
+        guard isDebugVisible else { return }
+        debugModel.showApp(NSWorkspace.shared.frontmostApplication?.localizedName ?? "")
+        debugModel.refresh()
     }
 
-    private func refreshTree() {
+    private func readTree() {
         guard isDebugVisible else { return }
         let tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
         debugModel.tree.show(tree, hidingFocusedValue: controller.hidesFieldText)
@@ -388,7 +389,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         treeRefreshScheduled = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             self?.treeRefreshScheduled = false
-            self?.refreshTree()
+            self?.debugModel.showApp(NSWorkspace.shared.frontmostApplication?.localizedName ?? "")
+            self?.debugModel.refreshTree()
         }
     }
 

@@ -39,9 +39,12 @@ public final class DebugPanelModel: ObservableObject {
     /// The table that the Records tab shows.
     @Published public private(set) var table: String?
     @Published public private(set) var rows: [RecordRow] = []
+    /// The name of the app in front, for the header of each tab.
+    @Published public private(set) var appName = ""
     public let tree: AXTreeModel
     /// Reads the tree again. The app sets it, because the read needs the
-    /// running app.
+    /// running app. Each read costs many round trips to the app in front, so
+    /// the model calls it only while the Tree tab shows.
     public var onRefreshTree: (() -> Void)?
     private let records: RecordBrowser?
 
@@ -66,10 +69,32 @@ public final class DebugPanelModel: ObservableObject {
         reloadRecords()
     }
 
-    /// The refresh button reads the tree and the records again.
+    /// Shows the tab, and reads what it shows.
+    public func select(_ tab: DebugTab) {
+        self.tab = tab
+        refresh()
+    }
+
+    /// Reads the tree, or the records, again if their tab shows. The refresh
+    /// button and the timer of the app call it.
     public func refresh() {
-        onRefreshTree?()
-        reloadRecords()
+        switch tab {
+        case .context: break
+        case .records: reloadRecords()
+        case .tree: onRefreshTree?()
+        }
+    }
+
+    /// Reads the tree again if the Tree tab shows. The app calls it when the
+    /// focus moves or another app comes to the front.
+    public func refreshTree() {
+        if tab == .tree { onRefreshTree?() }
+    }
+
+    /// Shows the name of the app in front. The same name changes nothing,
+    /// so the panel does not draw again.
+    public func showApp(_ name: String) {
+        if appName != name { appName = name }
     }
 }
 
@@ -78,9 +103,11 @@ public final class DebugPanelModel: ObservableObject {
 /// right edge of the screen, the height of the keyboard.
 public struct DebugPanelView: View {
     @ObservedObject private var model: DebugPanelModel
-    @ObservedObject private var tree: AXTreeModel
-    @ObservedObject private var predictions: PredictionEngine
-    @ObservedObject private var permission: AccessibilityPermission
+    private let tree: AXTreeModel
+    /// Only the Context tab watches the predictions, so a new word does not
+    /// draw the whole panel again.
+    private let predictions: PredictionEngine
+    private let permission: AccessibilityPermission
     private let height: CGFloat
     private let scrolls: Bool
 
@@ -117,7 +144,7 @@ public struct DebugPanelView: View {
         .clipped()
         .panelSurface()
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Debug panel for \(tree.tree.appName)")
+        .accessibilityLabel("Debug panel for \(model.appName)")
     }
 
     @ViewBuilder
@@ -126,7 +153,7 @@ public struct DebugPanelView: View {
             switch model.tab {
             case .context: DebugContextView(predictions: predictions)
             case .records: DebugRecordsView(model: model)
-            case .tree: treeRows
+            case .tree: DebugTreeView(tree: tree, permission: permission)
             }
             Spacer(minLength: 0)
         }
@@ -137,7 +164,7 @@ public struct DebugPanelView: View {
         HStack(spacing: Metrics.Tree.headerSpacing) {
             VStack(alignment: .leading, spacing: Metrics.Tree.titleSpacing) {
                 SectionLabel(text: "Debug")
-                Text(tree.tree.appName.isEmpty ? "—" : tree.tree.appName)
+                Text(model.appName.isEmpty ? "—" : model.appName)
                     .font(Typography.treeTitle)
                     .foregroundStyle(Color(Tokens.keyText))
                     .lineLimit(1)
@@ -163,8 +190,7 @@ public struct DebugPanelView: View {
             ForEach(DebugTab.allCases, id: \.self) { tab in
                 let isOn = model.tab == tab
                 Button {
-                    model.tab = tab
-                    if tab == .records { model.reloadRecords() }
+                    model.select(tab)
                 } label: {
                     Text(tab.title)
                         .font(Typography.debugTab)
@@ -186,11 +212,18 @@ public struct DebugPanelView: View {
             RoundedRectangle(cornerRadius: Metrics.Debug.tabsCornerRadius, style: .continuous)
                 .fill(Color(Tokens.keySpecial)))
     }
+}
 
-    /// Not lazy: the tree is capped at a few hundred rows anyway, and a lazy
-    /// stack renders as nothing when the window is snapshotted.
-    @ViewBuilder
-    private var treeRows: some View {
+/// The Tree tab: the accessibility tree of the app in front. It watches the
+/// tree and the permission, so the other tabs do not draw again when the tree
+/// changes.
+private struct DebugTreeView: View {
+    @ObservedObject var tree: AXTreeModel
+    @ObservedObject var permission: AccessibilityPermission
+
+    // Not lazy: the tree is capped at a few hundred rows anyway, and a lazy
+    // stack renders as nothing when the window is snapshotted.
+    var body: some View {
         if !permission.isTrusted {
             DebugMessage(text: "Accessibility access is off, so no tree can be read.")
         } else if tree.tree.root == nil {

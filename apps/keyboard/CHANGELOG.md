@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Debug Panel
+
+- The Debug panel reads the accessibility tree of the app in front only while the Tree tab shows. Before, it read the tree every 2 seconds on each tab. The keyboard and the app in front now use less CPU.
+- A new prediction redraws only the Context tab, not the whole panel.
+
 ## 0.5.0
 
 ### Write
