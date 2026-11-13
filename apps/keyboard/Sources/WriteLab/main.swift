@@ -286,37 +286,10 @@ enum LabSnapshot {
 
     /// Renders the paper with `markdown` at the width of an A4 page.
     static func render(_ markdown: String, to url: URL, dark: Bool) -> Bool {
-        let width: CGFloat = 595
-        let editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: width, height: 400))
-        WritePaperController.configure(editor, width: width)
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: width, height: 400), styleMask: [.borderless], backing: .buffered,
-            defer: false)
-        window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-        window.backgroundColor = NSColor(Tokens.key)
-        let content = NSView(frame: window.contentLayoutRect)
-        content.wantsLayer = true
-        window.contentView = content
-        content.addSubview(editor)
-        editor.load(markdown)
-        let height = editor.contentHeight
-        window.setContentSize(NSSize(width: width, height: height))
-        content.frame = NSRect(x: 0, y: 0, width: width, height: height)
-        editor.frame = content.bounds
-        content.layoutSubtreeIfNeeded()
-        editor.display()
-
-        guard let rep = content.bitmapImageRepForCachingDisplay(in: content.bounds) else { return false }
-        NSAppearance(named: dark ? .darkAqua : .aqua)?.performAsCurrentDrawingAppearance {
-            let paper = NSColor(Tokens.key)
-            NSGraphicsContext.saveGraphicsState()
-            NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-            paper.setFill()
-            content.bounds.fill()
-            NSGraphicsContext.restoreGraphicsState()
-            content.cacheDisplay(in: content.bounds, to: rep)
-        }
-        guard let data = rep.representation(using: .png, properties: [:]) else { return false }
+        let appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        guard let rep = WritePaperController.renderSheet(markdown, width: 595, appearance: appearance),
+            let data = rep.representation(using: .png, properties: [:])
+        else { return false }
         return (try? data.write(to: url)) != nil
     }
 }

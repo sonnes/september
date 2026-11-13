@@ -215,7 +215,11 @@ enum Snapshot {
         // The input bar is as wide as the keys and sits over them.
         let bar = CGRect(x: keys.minX, y: window.maxY, width: keys.width, height: 0)
         let page = WritePaper.page(bar: bar, floor: window.maxY, screen: screen, margin: 24)
-        let sheet = paperSheet(markdown, width: page.width)
+        let sheet = NSImage(size: NSSize(width: page.width, height: 0))
+        if let rep = WritePaperController.renderSheet(markdown, width: page.width) {
+            sheet.size = rep.size
+            sheet.addRepresentation(rep)
+        }
         let paper = WritePaper.paper(height: sheet.size.height, on: page)
 
         let all = window.union(paper)
@@ -236,37 +240,6 @@ enum Snapshot {
                 keyboard.offset(place(window))
             }
             .frame(width: all.width + padding * 2, height: all.height + padding * 2, alignment: .topLeading))
-    }
-
-    /// The sheet of the Write paper with `markdown` in the native editor, at
-    /// `width`, as tall as its text.
-    private static func paperSheet(_ markdown: String, width: CGFloat) -> NSImage {
-        let editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: width, height: 400))
-        WritePaperController.configure(editor, width: width)
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: width, height: 400), styleMask: [.borderless],
-            backing: .buffered, defer: false)
-        let view = NSView(frame: window.contentLayoutRect)
-        window.contentView = view
-        view.addSubview(editor)
-        editor.load(markdown)
-        let height = editor.contentHeight
-        window.setContentSize(NSSize(width: width, height: height))
-        view.frame = NSRect(x: 0, y: 0, width: width, height: height)
-        editor.frame = view.bounds
-        view.layoutSubtreeIfNeeded()
-        editor.display()
-
-        let image = NSImage(size: NSSize(width: width, height: height))
-        guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return image }
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-        NSColor(Tokens.key).setFill()
-        view.bounds.fill()
-        NSGraphicsContext.restoreGraphicsState()
-        view.cacheDisplay(in: view.bounds, to: rep)
-        image.addRepresentation(rep)
-        return image
     }
 
     /// The value after a flag, such as the text of `--typed <text>`.

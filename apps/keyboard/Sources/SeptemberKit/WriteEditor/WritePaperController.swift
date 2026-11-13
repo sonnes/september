@@ -182,11 +182,48 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
     }
 
     /// Sets the width of `editor` and centres the text column on it, with
-    /// the margins of the paper. The snapshots use it to draw the paper.
-    public static func configure(_ editor: WriteTextView, width: CGFloat) {
+    /// the margins of the paper.
+    private static func configure(_ editor: WriteTextView, width: CGFloat) {
         let side = max(Metrics.WriteEditor.sideMargin, (width - Metrics.WriteEditor.textWidth) / 2)
         editor.textContainerInset = NSSize(width: side, height: Metrics.WriteEditor.paperMargin)
         editor.setFrameSize(NSSize(width: width, height: editor.frame.height))
+    }
+
+    /// Draws the sheet of the paper with `markdown` in the editor, at `width`
+    /// and as tall as its text, with no window on the screen. The snapshots
+    /// and Write Lab use it. With no `appearance`, the sheet takes the
+    /// appearance of the app.
+    public static func renderSheet(
+        _ markdown: String, width: CGFloat, appearance: NSAppearance? = nil
+    ) -> NSBitmapImageRep? {
+        let editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: width, height: 400))
+        configure(editor, width: width)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: width, height: 400), styleMask: [.borderless],
+            backing: .buffered, defer: false)
+        window.appearance = appearance
+        let content = NSView(frame: window.contentLayoutRect)
+        window.contentView = content
+        content.addSubview(editor)
+        editor.load(markdown)
+        let height = editor.contentHeight
+        window.setContentSize(NSSize(width: width, height: height))
+        content.frame = NSRect(x: 0, y: 0, width: width, height: height)
+        editor.frame = content.bounds
+        content.layoutSubtreeIfNeeded()
+        editor.display()
+
+        guard let rep = content.bitmapImageRepForCachingDisplay(in: content.bounds) else { return nil }
+        let draw = {
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+            NSColor(Tokens.key).setFill()
+            content.bounds.fill()
+            NSGraphicsContext.restoreGraphicsState()
+            content.cacheDisplay(in: content.bounds, to: rep)
+        }
+        if let appearance { appearance.performAsCurrentDrawingAppearance(draw) } else { draw() }
+        return rep
     }
 
     /// Grows or shrinks the open paper to its text, then keeps the caret line
