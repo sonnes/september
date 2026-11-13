@@ -426,7 +426,7 @@ swift run Keyboard --snapshot out.png --clipboard  # the clipboard history, open
 swift run Keyboard --snapshot out.png --mono     # mono variant
 swift run Keyboard --snapshot out.png --light    # light appearance
 swift run Keyboard --snapshot out.png --gallery  # the component library
-swift run Keyboard --snapshot out.png --viewer   # the tree viewer, reading the app in front
+swift run Keyboard --snapshot out.png --viewer   # the three tabs of the Debug panel
 ```
 
 The keyboard snapshots use sample text. They read nothing from your apps.
@@ -559,20 +559,33 @@ To add a rule for an app:
 4. Run the probe again. Make sure that the `extracted with the rule of` lines
    show the messages.
 
-## The accessibility tree viewer
+## The Debug Panel
 
-A second window sits at the right edge of the screen, the same height as the
-keyboard, showing the accessibility tree of whatever app is in front — the tree
-Keyboard itself reads to find the field it types into.
+The Debug panel is a second window at the right edge of the screen. It has the
+same height as the keyboard. It has three tabs:
 
-The viewer reads and opens only the branch that leads to the focused element.
-Every other element shows as a shut row with a count of its children. The
-element that gets the keystrokes is always the deepest row on screen. It follows
-along as focus moves, as the frontmost app changes, on a slow timer, and from
-its own refresh button.
+- **Context** shows the last prediction context: the field text with the caret
+  and the partial word, the text on screen, and the Said lines. It also shows
+  the instructions and the prompt that went to the model, the sentences that
+  fit the field, the answers that the engine dropped, the time of the answer,
+  and the word completions.
+- **Records** shows each table of `keyboard.sqlite` with its count of rows.
+  Pick a table to see its first 100 rows. A table with a time column shows the
+  newest rows first. This tab changes nothing.
+- **Tree** shows the accessibility tree of the app in front. This is the tree
+  that Keyboard reads to find the field that it types into.
 
-Toggle it from the menu bar item (**Accessibility Tree**); the keyboard centres
-in whatever space is left, so the two never overlap.
+The tree opens only the branch that leads to the focused element. Each other
+element shows as a shut row with a count of its children. The element that gets
+the keystrokes is the deepest row on screen. The tree reads again when the
+focus moves, when the app in front changes, every 2 seconds, and when you push
+the refresh button.
+
+For a password field or private text, the Context tab shows no text of the
+field, and the Tree tab shows no value on the focused element.
+
+To show or hide the panel, use **Debug Panel** in the menu bar item. The
+keyboard centres in the space that is left, so the two windows do not overlap.
 
 ## Accessibility permission
 

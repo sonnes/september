@@ -29,6 +29,12 @@ public final class PredictionEngine: ObservableObject {
     /// The message that the stack shows in place of predictions.
     @Published public private(set) var notice: PredictionNotice?
     @Published public private(set) var availability: PredictionAvailability
+    /// The context of the input bar, or `nil` when the keyboard must not
+    /// predict, as for a password field or private text.
+    @Published public private(set) var context: PredictionContext?
+    /// The last request for sentences, for the Debug panel. It is `nil`
+    /// while the engine asks for no sentences.
+    @Published public private(set) var trace: PredictionTrace?
 
     @Published public var sentencesEnabled: Bool {
         didSet {
@@ -71,7 +77,6 @@ public final class PredictionEngine: ObservableObject {
     private var baseline: (input: InputMirror, mode: PredictionMode)?
     /// True when the text of the field changed after the baseline.
     private var hasTyped = false
-    private var context: PredictionContext?
     /// The context of the current predictions. A failed or cancelled request
     /// leaves it as it was.
     private var requested: PredictionContext?
@@ -226,6 +231,7 @@ public final class PredictionEngine: ObservableObject {
         cancel()
         predictions = []
         requested = nil
+        trace = nil
     }
 
     private func refreshWords() {
@@ -300,6 +306,7 @@ public final class PredictionEngine: ObservableObject {
     private func ask(_ context: PredictionContext) {
         cancel()
         requested = context
+        trace = PredictionTrace(context: context)
         let generation = generation
         let predictor = predictor
         let delay = delay
@@ -309,18 +316,27 @@ public final class PredictionEngine: ObservableObject {
             } catch {
                 return
             }
-            var sentences = try? await predictor.predictions(for: context)
-                .compactMap(context.sentence(from:))
+            let clock = ContinuousClock()
+            let start = clock.now
+            var asked = context
+            var answers = try? await predictor.predictions(for: context)
+            var sentences = answers?.compactMap(context.sentence(from:))
             // The guardrail of the model can refuse a partial word that looks
             // like a bad word, such as "cu". The full word passes.
             if sentences == nil, !Task.isCancelled,
                 let best = self?.words.first, !best.partial.isEmpty, best.partial == context.partialWord
             {
                 let retry = context.completing(with: best)
-                sentences = try? await predictor.predictions(for: retry)
-                    .compactMap(retry.sentence(from:))
+                asked = retry
+                answers = try? await predictor.predictions(for: retry)
+                sentences = answers?.compactMap(retry.sentence(from:))
             }
             guard let self, self.generation == generation else { return }
+            var trace = PredictionTrace(context: asked)
+            trace.answers = answers ?? []
+            trace.sentences = sentences ?? []
+            trace.duration = clock.now - start
+            self.trace = trace
             self.predictions = Array((sentences ?? []).prefix(SuggestionPrompt.count))
             self.restripe()
         }

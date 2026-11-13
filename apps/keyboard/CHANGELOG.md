@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
 ### Write
 
@@ -10,6 +10,12 @@
 - A paste of Markdown text gives its blocks, so `# Title` becomes a heading.
 - Text that a code editor copies pastes as its plain source.
 - One undo removes a whole paste. Paste as Plain Text inserts the text with no conversion.
+
+### Debug Panel
+
+- The accessibility tree viewer is now the Debug panel, with the tabs Context, Records, and Tree. The menu bar item is **Debug Panel**.
+- Context shows the last prediction context, the instructions and the prompt that went to the model, the sentences, the dropped answers, the time of the answer, and the word completions.
+- Records shows the tables of `keyboard.sqlite` and their rows. It changes nothing.
 
 ## 0.4.0
 

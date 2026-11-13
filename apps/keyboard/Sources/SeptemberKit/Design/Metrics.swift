@@ -12,7 +12,7 @@ public enum Metrics {
     public static let rowSpacing: CGFloat = 3
     public static let sectionSpacing: CGFloat = 16
     public static let keyboardWidth: CGFloat = 980
-    /// The accessibility tree viewer, which sits at the right edge of the
+    /// The Debug panel, which sits at the right edge of the
     /// screen and takes its height from the keyboard beside it.
     public static let treeViewerWidth: CGFloat = 320
     public static let dualLabelGap: CGFloat = 2
@@ -99,5 +99,22 @@ public enum Metrics {
         public static let rowVerticalPadding: CGFloat = 2
         public static let rowHorizontalPadding: CGFloat = 4
         public static let rowCornerRadius: CGFloat = 4
+    }
+
+    /// The Debug panel, around the tree above.
+    public enum Debug {
+        public static let tabsPadding: CGFloat = 2
+        public static let tabsCornerRadius: CGFloat = 9
+        public static let tabCornerRadius: CGFloat = 7
+        public static let tabVerticalPadding: CGFloat = 5
+        public static let groupSpacing: CGFloat = 12
+        public static let itemSpacing: CGFloat = 4
+        public static let boxPadding: CGFloat = 8
+        public static let boxCornerRadius: CGFloat = 8
+        public static let keyColumn: CGFloat = 52
+        public static let chipHorizontalPadding: CGFloat = 6
+        public static let chipVerticalPadding: CGFloat = 2
+        /// A long table name shrinks to this share of its size to fit a chip.
+        public static let chipScale: CGFloat = 0.8
     }
 }

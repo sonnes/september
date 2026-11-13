@@ -7,7 +7,7 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var keyboardPanel: FloatingPanel?
     private var panels: [DetachedPanel: FloatingPanel] = [:]
-    private var treePanel: FloatingPanel?
+    private var debugPanel: FloatingPanel?
     private var statusItem: NSStatusItem?
     private var keyboardItem: NSMenuItem?
     private var styleMenu: NSMenu?
@@ -16,7 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let permission = AccessibilityPermission()
     private let sink = CGEventSink()
     private let focusWatcher = FocusWatcher()
-    private let treeModel = AXTreeModel()
+    private var debugModel: DebugPanelModel!
     private let keyboardPosition = KeyboardPosition()
     private var assembly: KeyboardAssembly!
     private var session: KeyboardSession { assembly.session }
@@ -34,16 +34,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var signalSources: [DispatchSourceSignal] = []
     private var clipboardTimer: Timer?
 
-    /// The tree viewer is on by default — it is the window that shows why an
-    /// app does or does not mirror.
-    private var isTreeVisible = true
+    /// The Debug panel is on by default. It shows why an app does or does
+    /// not mirror, and what the predictions get.
+    private var isDebugVisible = true
     private var treeRefreshScheduled = false
-    private var treeTimer: Timer?
+    private var debugTimer: Timer?
 
-    /// Room kept at the right edge for the viewer, so the keyboard centres in
-    /// what is left instead of sliding under it.
+    /// Room kept at the right edge for the Debug panel, so the keyboard
+    /// centres in what is left instead of sliding under it.
     private var reservedWidth: CGFloat {
-        isTreeVisible ? Metrics.treeViewerWidth + Metrics.sectionSpacing : 0
+        isDebugVisible ? Metrics.treeViewerWidth + Metrics.sectionSpacing : 0
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -52,6 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         speech = SpeechServices()
         speech.start()
         history = SentenceHistory(database: database)
+        debugModel = DebugPanelModel(records: RecordBrowser(database: database))
         let predictions = PredictionEngine(history: history)
         write = WriteController(host: self)
         do {
@@ -90,7 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 Task { @MainActor in self?.modeChanged(from: previous, to: mode) }
             }
             .store(in: &subscriptions)
-        // Private text in the field: the viewer drops the value of the field.
+        // Private text in the field: the tree drops the value of the field.
         controller.$isFieldPrivate.dropFirst()
             .sink { [weak self] _ in Task { @MainActor in self?.refreshTree() } }
             .store(in: &subscriptions)
@@ -119,11 +120,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 }
             })
 
-        treeModel.onRefresh = { [weak self] in self?.refreshTree() }
-        // Values in the tree age between focus changes — keep them fresh
-        // enough to trust without rebuilding it on every keystroke.
-        treeTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refreshTree() }
+        debugModel.onRefreshTree = { [weak self] in self?.refreshTree() }
+        // Values in the tree and the records age between focus changes —
+        // keep them fresh enough to trust without a read on every keystroke.
+        debugTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshDebug() }
         }
 
         showWindows()
@@ -274,7 +275,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             panels[panel] = window
         }
 
-        showTreePanel(height: size.height)
+        showDebugPanel(height: size.height)
     }
 
     /// Moves the shortcut panels around the keys, where the keyboard is now.
@@ -332,8 +333,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let (root, size) = makeKeyboardRoot()
         keyboardPanel.update(root: root, contentSize: size)
         keyboardPanel.setFrameOrigin(origin)
-        // The viewer takes its height from the keyboard beside it.
-        showTreePanel(height: size.height)
+        // The Debug panel takes its height from the keyboard beside it.
+        showDebugPanel(height: size.height)
     }
 
     /// Talk mode puts Phrases and the Said list in the keyboard window and
@@ -349,33 +350,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // MARK: - The tree viewer
+    // MARK: - The Debug panel
 
-    private func showTreePanel(height: CGFloat) {
-        guard isTreeVisible else { return }
+    private func showDebugPanel(height: CGFloat) {
+        guard isDebugVisible else { return }
         let size = CGSize(width: Metrics.treeViewerWidth, height: height)
-        let root = AnyView(AXTreeView(model: treeModel, permission: permission, height: height))
+        let root = AnyView(
+            DebugPanelView(
+                model: debugModel, predictions: session.predictions, permission: permission, height: height))
 
-        if let treePanel {
-            treePanel.update(root: root, contentSize: size)
+        if let debugPanel {
+            debugPanel.update(root: root, contentSize: size)
         } else {
-            let treePanel = FloatingPanel(root: root, contentSize: size, placement: .bottomRight)
-            treePanel.orderFront(nil)
-            self.treePanel = treePanel
+            let debugPanel = FloatingPanel(root: root, contentSize: size, placement: .bottomRight)
+            debugPanel.orderFront(nil)
+            self.debugPanel = debugPanel
         }
+        refreshDebug()
+    }
+
+    /// Reads the tree, and the records while the Records tab shows.
+    private func refreshDebug() {
         refreshTree()
+        if isDebugVisible, debugModel.tab == .records { debugModel.reloadRecords() }
     }
 
     private func refreshTree() {
-        guard isTreeVisible else { return }
+        guard isDebugVisible else { return }
         let tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
-        treeModel.show(tree, hidingFocusedValue: controller.hidesFieldText)
+        debugModel.tree.show(tree, hidingFocusedValue: controller.hidesFieldText)
     }
 
     /// Each read costs many round trips to the other app, so focus moves and
     /// app switches coalesce into one read.
     private func scheduleTreeRefresh() {
-        guard isTreeVisible, !treeRefreshScheduled else { return }
+        guard isDebugVisible, !treeRefreshScheduled else { return }
         treeRefreshScheduled = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             self?.treeRefreshScheduled = false
@@ -401,13 +410,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         )
         keyboardItem.target = self
         self.keyboardItem = keyboardItem
-        let treeItem = menu.addItem(
-            withTitle: "Accessibility Tree",
-            action: #selector(toggleTree),
+        let debugItem = menu.addItem(
+            withTitle: "Debug Panel",
+            action: #selector(toggleDebug),
             keyEquivalent: ""
         )
-        treeItem.target = self
-        treeItem.state = isTreeVisible ? .on : .off
+        debugItem.target = self
+        debugItem.state = isDebugVisible ? .on : .off
         menu.addItem(.separator())
 
         menu.addItem(withTitle: "Write", action: #selector(openWrite), keyEquivalent: "").target = self
@@ -468,13 +477,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    @objc private func toggleTree(_ sender: NSMenuItem) {
-        isTreeVisible.toggle()
-        sender.state = isTreeVisible ? .on : .off
-        if isTreeVisible {
-            treePanel?.orderFront(nil)
+    @objc private func toggleDebug(_ sender: NSMenuItem) {
+        isDebugVisible.toggle()
+        sender.state = isDebugVisible ? .on : .off
+        if isDebugVisible {
+            debugPanel?.orderFront(nil)
         } else {
-            treePanel?.orderOut(nil)
+            debugPanel?.orderOut(nil)
         }
         refreshKeyboard()
     }

@@ -32,7 +32,7 @@ public final class KeyboardController: ObservableObject {
     @Published public private(set) var isFieldPrivate = false
     /// True while the bar hides the text of the field: private text, or a
     /// password field. The predictions, Speak, the text on screen, the
-    /// clipboard history, and the tree viewer get no text of the field then.
+    /// clipboard history, and the Debug panel get no text of the field then.
     public var hidesFieldText: Bool { input == .secure }
     /// The store of the private text buttons. My Panel saves to the same store.
     public let privateTexts: any PrivateTextStore

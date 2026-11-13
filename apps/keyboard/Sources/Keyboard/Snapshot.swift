@@ -35,6 +35,47 @@ enum Snapshot {
         fail("snapshot: the run loop stopped")
     }
 
+    /// The three tabs of the Debug panel side by side. The Context and the
+    /// Records tabs show sample text. The Tree tab shows the real tree of
+    /// whatever is in front, so it can be checked with something in it.
+    private static func debugPanels(permission: AccessibilityPermission) async -> AnyView {
+        let predictions = PredictionEngine(
+            predictor: DebugSamplePredictor(), delay: .zero, defaults: UserDefaults(suiteName: "september-snapshot-\(UUID().uuidString)")!)
+        let screen = ScreenContext(
+            appName: "Messages", title: "Sam", field: "iMessage",
+            lines: ["Are you still up for coffee this week?", "I'm free Wed or Thu after 2"])
+        let said = ["I'll be home by six tonight", "Can you grab the charger?"]
+        predictions.update(input: .mirrored(text: "", caret: 0, selectionLength: 0), mode: .type, said: said)
+        let typed = "Sounds good, I can do Thursday aft"
+        predictions.update(
+            input: .mirrored(text: typed, caret: typed.utf16.count, selectionLength: 0), mode: .type, said: said,
+            screen: screen)
+        await predictions.settle()
+
+        let database = try! KeyboardDatabase(path: ":memory:")
+        let now = Date().timeIntervalSince1970
+        for (index, text) in ["Sounds good, see you then", "Running a few minutes late"].enumerated() {
+            try? database.execute(
+                "INSERT INTO sentence (text, key, uses, first_at, last_at) VALUES (?, ?, ?, ?, ?)",
+                [.text(text), .text(text.lowercased()), .int(Int64(9 - index)), .double(now - 86_400),
+                 .double(now - Double(index + 1) * 600)])
+        }
+        let tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
+        let panels = DebugTab.allCases.map { tab in
+            let model = DebugPanelModel(records: RecordBrowser(database: database))
+            model.tab = tab
+            model.reloadRecords()
+            model.tree.tree = tree
+            return DebugPanelView(
+                model: model, predictions: predictions, permission: permission, height: 460, scrolls: false)
+        }
+        return AnyView(
+            HStack(alignment: .top, spacing: 16) {
+                ForEach(Array(panels.enumerated()), id: \.offset) { $0.element }
+            }
+            .padding(16))
+    }
+
     private static func render(to path: String, arguments: [String]) async -> Never {
         // A snapshot shows the keyboard as a trusted app sees it, with no banner.
         let permission = AccessibilityPermission(isTrusted: true)
@@ -43,13 +84,7 @@ enum Snapshot {
         if arguments.contains("--gallery") {
             view = AnyView(ComponentGallery())
         } else if arguments.contains("--viewer") {
-            // The real tree of whatever is in front, so the viewer can be
-            // checked against the mocks with something in it.
-            let model = AXTreeModel()
-            model.tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
-            view = AnyView(
-                AXTreeView(model: model, permission: permission, height: 460, scrolls: false)
-                    .padding(16))
+            view = await debugPanels(permission: permission)
         } else {
             do {
                 view = try await keyboard(arguments: arguments, permission: permission)
@@ -387,4 +422,13 @@ private struct NoPrivateTexts: PrivateTextStore {
     func text(for id: String) throws -> String? { nil }
     func setText(_ text: String, for id: String) throws {}
     func removeText(for id: String) throws {}
+}
+
+/// Answers of the Debug panel snapshot, one of which does not fit the field.
+private struct DebugSamplePredictor: SentencePredicting {
+    var availability: PredictionAvailability { .ready }
+
+    func predictions(for context: PredictionContext) async throws -> [String] {
+        ["afternoon, around three?", "afternoon works for me", "Coffee is fine."]
+    }
 }

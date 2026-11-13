@@ -163,7 +163,7 @@ private func wiringTests() {
         expectEqual(hidden.root?.children.first?.role, "AXTextArea")
     }
 
-    test("the tree viewer hides the value of the focused field while the field text is hidden") {
+    test("the Tree tab hides the value of the focused field while the field text is hidden") {
         let tree = AXTree(
             appName: "Messages",
             root: AXNode(

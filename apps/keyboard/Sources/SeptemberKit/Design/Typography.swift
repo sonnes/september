@@ -22,6 +22,13 @@ public enum Typography {
         .system(size: 11, weight: focused ? .semibold : .regular, design: .monospaced)
     }
 
+    /// The Debug panel. Its tree uses the fonts of the tree above.
+    public static let debugTab = Font.system(size: 12, weight: .medium)
+    public static let debugField = Font.system(size: 12)
+    public static let debugCode = Font.system(size: 10, design: .monospaced)
+    public static let debugChip = Font.system(size: 10, weight: .semibold)
+    public static let debugMeta = Font.system(size: 10)
+
     public static func keyLabel(_ kind: KeyKind) -> Font {
         .system(size: Metrics.labelSize(for: kind), weight: kind == .function ? .medium : .regular)
     }
