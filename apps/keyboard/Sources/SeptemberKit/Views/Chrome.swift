@@ -18,7 +18,7 @@ extension View {
         .shadow(color: Color(Tokens.keyGlow), radius: 8)
     }
 
-    /// The surface that holds a group of keys or the tree viewer.
+    /// The surface that holds a group of keys or the Debug panel.
     func panelSurface(cornerRadius: CGFloat = Metrics.surfaceCornerRadius) -> some View {
         background(
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)

@@ -35,10 +35,10 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map, the key settings of macOS (`KeyTiming`) and the timing of a held key (`KeyPresser`) |
 | `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `KeyboardAssembly` (builds the controller and the session for the app and the snapshots), `SpeakText`, `FrontAppTracker`, `PanelPlacement`, `KeyboardPosition`, `InputBarVisibility`, and `LegacyImport` (the JSON files of older versions) |
 | `Sources/SeptemberKit/Panels` | panel model, JSON loading, the grid of Mine and the Write panels (`PanelLayout`), the shortcut suggestions |
-| `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence) and word completions |
+| `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence), word completions, and `PredictionTrace` (the last request, for the Debug panel) |
 | `Sources/SeptemberKit/ScreenContext` | `ScreenContext`, the rule of each app (`ContextRule`), and `ScreenContextExtractor` |
 | `Sources/SeptemberKit/Speech` | `Speaker`, the macOS voices, ElevenLabs, the Keychain store |
-| `Sources/SeptemberKit/Storage` | `KeyboardDatabase` (`keyboard.sqlite` and its migrations), `SentenceHistory` (the sentences that the user sent), and `TextLog` (the dated texts of the Said list and the clipboard history) |
+| `Sources/SeptemberKit/Storage` | `KeyboardDatabase` (`keyboard.sqlite` and its migrations), `SentenceHistory` (the sentences that the user sent), `TextLog` (the dated texts of the Said list and the clipboard history), and `RecordBrowser` (the read-only rows of the Records tab) |
 | `Sources/SeptemberKit/Talk` | Talk mode, the Said list, the Phrases panel |
 | `Sources/SeptemberKit/UserPanel` | My Panel, private text, the Accessibility Keyboard import |
 | `Sources/SeptemberKit/Settings` | the Settings pages and `KeyboardSettings` |
@@ -118,7 +118,7 @@ only what needs a running app — the panel, the event sink, the menu bar.
   sentence history. `KeyboardController.hidesFieldText` is the one privacy
   check: it is true for private text and for a password field. While it is
   true, the predictions, Speak, learning, the text on screen, the clipboard
-  history, and the tree viewer get no text of the field. Call `KeyboardSession.focusMoved()` only when the focused element
+  history, and the Debug panel get no text of the field. Call `KeyboardSession.focusMoved()` only when the focused element
   changes, not when its value changes.
 - **An app switch is one ordered step.** `FocusWatcher.onAppChanged` clears the
   last app's text through `KeyboardSession.appActivated` *before* the new app's
@@ -189,7 +189,7 @@ only what needs a running app — the panel, the event sink, the menu bar.
 - A locked screen makes every accessibility read collapse to `AXApplication`.
   Nothing probed then means anything.
 - `ImageRenderer` draws nothing inside a `ScrollView` — that is why
-  `AXTreeView` takes a `scrolls` flag and `--snapshot --viewer` passes `false`.
+  `DebugPanelView` takes a `scrolls` flag and `--snapshot --viewer` passes `false`.
 - `ImageRenderer` draws an AppKit view (`NSViewRepresentable`) as a yellow
   box. A view that holds one leaves it out when `isSnapshot` is true, as the
   grip does with its drag area.
@@ -212,7 +212,7 @@ only what needs a running app — the panel, the event sink, the menu bar.
   it with `make stop` when the check is done.
 - Do not test with the pointer of the user. To read the keyboard or press
   through `AXPress`, use headless agent-desktop.
-- The keyboard window, the tree viewer, and the default places of the shortcut
+- The keyboard window, the Debug panel, and the default places of the shortcut
   panels share the bottom margin of the screen. The keys and the panels
   centre in the space left after `reservedWidth`. `PanelPlacement` puts the
   panels beside the keys, with their tops in line with the top of the keys.

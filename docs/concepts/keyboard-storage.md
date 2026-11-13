@@ -247,3 +247,18 @@ The store throws if a row of the table does not decode. My Panel then shows
 an error, and the table stays as it is. The error message has one fixed text
 for each kind of error, because the text of a decoding error can quote a
 row.
+
+## The Records Tab
+
+The Records tab of the Debug panel shows the database. `RecordBrowser` reads
+each table of the schema and its count of rows, in the order that the
+migrations made the tables. It runs only `SELECT` statements, so the tab
+changes nothing.
+
+The tab shows the first 100 rows of the picked table. A table with a time
+column (`*_at`) shows the newest rows first, by its last time column. A table
+with a `position` column shows the rows in position order. A time shows as an
+age, such as "2 min" or "3 d".
+
+The rows hold private text, such as sentences and copied text. The tab shows
+this text on screen only. It never logs or prints it.

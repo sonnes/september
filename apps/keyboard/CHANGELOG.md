@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Debug Panel
+
+- The accessibility tree viewer is now the Debug panel, with the tabs Context, Records, and Tree. The menu bar item is **Debug Panel**.
+- Context shows the last prediction context, the instructions and the prompt that went to the model, the sentences, the dropped answers, the time of the answer, and the word completions.
+- Records shows the tables of `keyboard.sqlite` and their rows. It changes nothing.
+
 ## 0.4.0
 
 ### Modifier Keys
