@@ -72,6 +72,12 @@ private func heldKeyTests() {
         }
     }
 
+    test("an arrow with fn repeats, as Page Down does on a hardware keyboard") {
+        let button = PanelAction.shortcut(Shortcut(modifiers: .function, key: .virtual(.down)))
+        expectEqual(button.holdBehavior, .repeats)
+        expectEqual(HoldBehavior.forKey(.down, modifiers: [.function, .shift]), .repeats)
+    }
+
     test("an arrow or Delete on My Panel repeats") {
         for key in [VirtualKey.left, .delete] {
             let button = UserButton(

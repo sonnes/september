@@ -13,11 +13,11 @@ public enum HoldBehavior: Equatable, Sendable {
 
     /// What a held key does, on the keyboard or on a panel button. A key that
     /// repeats on a hardware keyboard, such as an arrow or Delete, repeats
-    /// alone or with Shift or Option. Thus a held key moves the caret or
-    /// extends the selection. With Command or Control, the key acts once, so
+    /// without Command or Control. Thus a held key moves the caret, extends
+    /// the selection, or pages. With Command or Control, the key acts once, so
     /// a long dwell does not do a window or app command again and again.
     public static func forKey(_ key: VirtualKey, modifiers: Modifiers) -> HoldBehavior {
-        key.repeatsWhenHeld && modifiers.isSubset(of: [.shift, .option]) ? .repeats : .once
+        key.repeatsWhenHeld && modifiers.isDisjoint(with: [.command, .control]) ? .repeats : .once
     }
 }
 

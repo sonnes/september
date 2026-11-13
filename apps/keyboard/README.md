@@ -327,9 +327,9 @@ and each press reads them again:
   the characters that are not letters repeat after the delay of System
   Settings, at its rate. If key repeat is off, no key repeats. One rule
   covers the keys, the panel buttons, and the buttons of My Panel: an arrow,
-  Delete, or Space repeats alone or with Shift or Option. Thus a held Down
-  button keeps the caret moving, and a held Shift-Down button extends the
-  selection. With Command or Control, the key acts once. The modifiers,
+  Delete, or Space repeats when Command and Control are off. Thus a held
+  Down button keeps the caret moving, and a held Shift-Down button extends
+  the selection. With Command or Control, the key acts once. The modifiers,
   Return, Escape, Tab, and a character with a chord do not repeat. A
   sequence and text act once.
 - Press and hold: if `ApplePressAndHoldEnabled` is on (the macOS default), a
