@@ -38,6 +38,33 @@ func writeControllerTests() {
         expectEqual(try String(contentsOf: saved, encoding: .utf8), "# New Plans")
     }
 
+    test("typing saves the document after the save delay") {
+        let url = try folder(["New.md": "# New"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        let clock = FakeClock()
+        let write = WriteController(host: RecordingWriteHost(), library: DocumentLibrary(folder: url), scheduler: clock)
+        write.start()
+
+        type(write.paper.editor, " Plans")
+        expectEqual(write.model.current?.title, "New")
+        clock.advance(to: WriteModel.saveDelay)
+        expectEqual(write.model.current?.title, "New Plans")
+        let saved = url.appendingPathComponent("New Plans.md")
+        expectEqual(try String(contentsOf: saved, encoding: .utf8), "# New Plans")
+    }
+
+    test("opening a document does not save it") {
+        let url = try folder(["draft.md": "# Garden\n\nTulips."])
+        defer { try? FileManager.default.removeItem(at: url) }
+        let clock = FakeClock()
+        let write = WriteController(host: RecordingWriteHost(), library: DocumentLibrary(folder: url), scheduler: clock)
+
+        write.start()
+        clock.advance(to: WriteModel.saveDelay * 2)
+        write.save()
+        expectEqual(write.model.documents.map(\.url.lastPathComponent), ["draft.md"])
+    }
+
     test("a document link opens that document, and a web link goes to the browser") {
         let url = try folder(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }

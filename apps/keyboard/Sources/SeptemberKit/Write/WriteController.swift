@@ -35,7 +35,7 @@ public protocol WriteReading: AnyObject {
 /// Write: the paper with the native editor, and the desk with the documents
 /// in the folder of Write.
 ///
-/// The editor saves the open document 0.12 seconds after the last edit, and
+/// The model saves the open document a short time after the last edit, and
 /// before another document opens, so Write has no Save command. A link to
 /// a document opens that document. A web link opens in the browser.
 ///
@@ -49,13 +49,9 @@ public final class WriteController: WriteReading {
     public let desk: WriteDeskController
     private weak var host: (any WriteHost)?
 
-    /// The time between the last edit and the save.
-    static let saveDelay: TimeInterval = 0.12
-
     private let openURL: (URL) -> Void
     private let reveal: (URL) -> Void
     private var started = false
-    private var pendingSave: DispatchWorkItem?
     private var failure: AnyCancellable?
     /// Where the paper opened last: the desk uses the same space.
     private var placement: (bar: CGRect?, floor: CGFloat, screen: CGRect, margin: CGFloat)?
@@ -64,14 +60,16 @@ public final class WriteController: WriteReading {
     ///   - host: the app around Write. Write keeps a weak reference to it.
     ///   - openURL: opens a web or mail link.
     ///   - reveal: shows a file in Finder.
+    ///   - scheduler: the clock of the delayed save.
     public init(
         host: any WriteHost,
         library: DocumentLibrary = DocumentLibrary(),
         openURL: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) },
-        reveal: @escaping (URL) -> Void = { NSWorkspace.shared.activateFileViewerSelecting([$0]) }
+        reveal: @escaping (URL) -> Void = { NSWorkspace.shared.activateFileViewerSelecting([$0]) },
+        scheduler: any DelayScheduler = MainQueueScheduler()
     ) {
         self.host = host
-        model = WriteModel(library: library)
+        model = WriteModel(library: library, scheduler: scheduler)
         paper = WritePaperController(host: host)
         desk = WriteDeskController(host: host)
         self.openURL = openURL
@@ -83,7 +81,7 @@ public final class WriteController: WriteReading {
             if text.isEmpty { editor.loadNewDocument() } else { editor.load(text) }
         }
         model.editorText = { [weak editor] in editor?.markdown ?? "" }
-        editor.onTextChange = { [weak self] in self?.scheduleSave() }
+        editor.onTextChange = { [weak model] in model?.edited() }
         editor.onCaretChange = { [weak self] caret in self?.host?.writeCaretMoved(caret) }
         editor.onOpenLink = { [weak self] link in self?.open(link) }
         paper.window.onNewDocument = { [weak self] in self?.newDocument() }
@@ -146,8 +144,6 @@ public final class WriteController: WriteReading {
 
     /// Saves the open document now. Call it before the app quits.
     public func save() {
-        pendingSave?.cancel()
-        pendingSave = nil
         model.save()
     }
 
@@ -166,17 +162,8 @@ public final class WriteController: WriteReading {
         desk.isOpen ? EditorSpeech(selection: desk.desk.query, markdown: "") : paper.editor.speech
     }
 
-    private func scheduleSave() {
-        guard started else { return }
-        pendingSave?.cancel()
-        let save = DispatchWorkItem { [weak self] in self?.save() }
-        pendingSave = save
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.saveDelay, execute: save)
-    }
-
     /// Starts a new document on the paper. The open document saves first.
     public func newDocument() {
-        pendingSave?.cancel()
         model.newDocument()
     }
 
@@ -257,7 +244,6 @@ public final class WriteController: WriteReading {
     private func open(_ link: WriteLink) {
         switch link {
         case .wiki(let target):
-            pendingSave?.cancel()
             model.openLink(title: target)
         case .url(let text):
             guard let url = URL(string: text),

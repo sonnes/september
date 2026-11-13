@@ -20,22 +20,29 @@ private func names(_ documents: [WriteDocument]) -> [String] {
     documents.map(\.url.lastPathComponent)
 }
 
-/// Stands in for the editor: it keeps the text that the model shows.
+/// Stands in for the editor: it keeps the text that the model shows, and
+/// counts the reads of its text, one for each save. As the editor does, it
+/// reports a load as a change of the text.
 @MainActor
 private final class EditorStub {
     var shown: [String] = []
     var text = ""
+    var reads = 0
 }
 
 @MainActor
-private func makeModel(_ folder: URL) -> (WriteModel, EditorStub) {
+private func makeModel(_ folder: URL, clock: FakeClock = FakeClock()) -> (WriteModel, EditorStub) {
     let editor = EditorStub()
-    let model = WriteModel(library: DocumentLibrary(folder: folder))
-    model.show = { text in
+    let model = WriteModel(library: DocumentLibrary(folder: folder), scheduler: clock)
+    model.show = { [weak model] text in
         editor.shown.append(text)
         editor.text = text
+        model?.edited()
     }
-    model.editorText = { editor.text }
+    model.editorText = {
+        editor.reads += 1
+        return editor.text
+    }
     return (model, editor)
 }
 
@@ -249,11 +256,13 @@ func writeTests() {
         model.start()
 
         editor.text = "# Questions for the Clinic\n\nAsk."
+        model.edited()
         model.save()
         expectEqual(model.current?.title, "Questions for the Clinic")
         expectEqual(names(model.documents), ["Questions for the Clinic.md"])
 
         editor.text = "# Questions for the Clinic\n\nAsk on Friday."
+        model.edited()
         model.save()
         let saved = folder.appendingPathComponent("Questions for the Clinic.md")
         expectEqual(try String(contentsOf: saved, encoding: .utf8), "# Questions for the Clinic\n\nAsk on Friday.")
@@ -267,6 +276,7 @@ func writeTests() {
         model.start()
 
         editor.text = "# First\n\nlast words"
+        model.edited()
         model.newDocument()
         expectEqual(try String(contentsOf: first, encoding: .utf8), "# First\n\nlast words")
         expectEqual(model.current?.url.lastPathComponent, "Untitled.md")
@@ -278,6 +288,7 @@ func writeTests() {
         defer { try? FileManager.default.removeItem(at: folder) }
         let (model, editor) = makeModel(folder)
         editor.text = "# Lost"
+        model.edited()
         model.save()
         expectEqual(try DocumentLibrary(folder: folder).documents().count, 0)
     }
@@ -291,6 +302,7 @@ func writeTests() {
         try Data().write(to: folder)
 
         editor.text = "# Gone"
+        model.edited()
         model.save()
         expect(model.failure != nil, "the failure is kept")
 
@@ -298,6 +310,54 @@ func writeTests() {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         model.save()
         expectEqual(model.failure, nil)
+    }
+
+    test("an edit saves after the save delay, not before") {
+        let folder = makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let notes = try write("# Notes", to: folder, name: "Notes.md", modified: now)
+        let clock = FakeClock()
+        let (model, editor) = makeModel(folder, clock: clock)
+        model.start()
+
+        editor.text = "# Notes\n\nBuy milk."
+        model.edited()
+        clock.advance(to: WriteModel.saveDelay / 2)
+        expectEqual(try String(contentsOf: notes, encoding: .utf8), "# Notes")
+        clock.advance(to: WriteModel.saveDelay)
+        expectEqual(try String(contentsOf: notes, encoding: .utf8), "# Notes\n\nBuy milk.")
+    }
+
+    test("a load saves nothing") {
+        let folder = makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        _ = try write("# Garden", to: folder, name: "draft.md", modified: now)
+        let clock = FakeClock()
+        let (model, editor) = makeModel(folder, clock: clock)
+
+        model.start()
+        clock.advance(to: WriteModel.saveDelay * 2)
+        model.save()
+        expectEqual(editor.reads, 0)
+        expectEqual(names(model.documents), ["draft.md"])
+    }
+
+    test("a switch to another document saves the edit of the old document once") {
+        let folder = makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let plans = try write("# Plans", to: folder, name: "Plans.md", modified: now - 100)
+        let notes = try write("# Notes", to: folder, name: "Notes.md", modified: now)
+        let clock = FakeClock()
+        let (model, editor) = makeModel(folder, clock: clock)
+        model.start()
+
+        editor.text = "# Notes\n\nBuy milk."
+        model.edited()
+        model.select(plans)
+        clock.advance(to: WriteModel.saveDelay * 2)
+        expectEqual(editor.reads, 1)
+        expectEqual(try String(contentsOf: notes, encoding: .utf8), "# Notes\n\nBuy milk.")
+        expectEqual(try String(contentsOf: plans, encoding: .utf8), "# Plans")
     }
 
     test("select opens a document once, and a wiki link opens it by title") {

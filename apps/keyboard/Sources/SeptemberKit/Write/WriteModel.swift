@@ -4,8 +4,10 @@ import Foundation
 /// saves of the editor text.
 ///
 /// The model shows a document in the editor through `show`, and reads the
-/// text of the editor through `editorText`. Before another document opens,
-/// the model saves the open document.
+/// text of the editor through `editorText`. The editor calls `edited()` after
+/// each edit. The model saves the edits `saveDelay` after the last edit, and
+/// before another document opens. A load of a document is not an edit, so it
+/// saves nothing.
 @MainActor
 public final class WriteModel: ObservableObject {
     @Published public private(set) var documents: [WriteDocument] = []
@@ -24,8 +26,25 @@ public final class WriteModel: ObservableObject {
 
     public let library: DocumentLibrary
 
-    public init(library: DocumentLibrary) {
+    /// The time between the last edit and the save.
+    public static let saveDelay: TimeInterval = 0.12
+
+    private let scheduler: any DelayScheduler
+    /// True when the editor has edits that are not saved.
+    private var isEdited = false
+    private var pendingSave: (any ScheduledWork)?
+
+    public init(library: DocumentLibrary, scheduler: any DelayScheduler = MainQueueScheduler()) {
         self.library = library
+        self.scheduler = scheduler
+    }
+
+    /// The user changed the text in the editor. The model saves it
+    /// `saveDelay` after the last edit.
+    public func edited() {
+        isEdited = true
+        pendingSave?.cancel()
+        pendingSave = scheduler.schedule(after: Self.saveDelay) { [weak self] in self?.save() }
     }
 
     /// Lists the folder and opens the newest document, or a new one.
@@ -117,12 +136,15 @@ public final class WriteModel: ObservableObject {
         select(document.url)
     }
 
-    /// Saves the text of the editor to the open document. The file takes the
-    /// name of its first heading.
+    /// Saves the edits of the editor to the open document now. The file takes
+    /// the name of its first heading. With no edits, the save does nothing.
     public func save() {
-        guard let url = current?.url else { return }
+        pendingSave?.cancel()
+        pendingSave = nil
+        guard isEdited, let url = current?.url else { return }
         do {
             let saved = try library.save(editorText(), to: url)
+            isEdited = false
             reload()
             current = documents.first { $0.url == saved } ?? WriteDocument(url: saved, modified: Date())
             failure = nil
@@ -136,6 +158,10 @@ public final class WriteModel: ObservableObject {
             let text = try library.read(document)
             current = document
             show(text)
+            // The editor reports the load as a change of its text.
+            isEdited = false
+            pendingSave?.cancel()
+            pendingSave = nil
         } catch {
             report(error)
         }

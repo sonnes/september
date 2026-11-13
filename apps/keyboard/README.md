@@ -282,8 +282,9 @@ as the user types. At the top of the page it stops, and the text moves up, so
 the typing line stays at the bottom. If Reduce Motion is on, nothing
 animates. `WritePaper` holds the rule.
 
-The editor saves the document 0.12 seconds after the last edit, so Write has
-no Save command. A document that the user did not edit saves byte for byte.
+`WriteModel` saves the document 0.12 seconds after the last edit, so Write
+has no Save command. A document that the user opens and does not edit is not
+saved.
 Command-N starts a new document. A `[[` link opens the document with that
 title. If a save fails, the error shows at the top of the paper.
 

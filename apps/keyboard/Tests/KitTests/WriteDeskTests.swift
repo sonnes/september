@@ -114,6 +114,7 @@ func writeDeskTests() {
         model.editorText = { text }
         model.start()
         text = "# Plans\n\nlast words"
+        model.edited()
 
         let copy = model.duplicate(model.documents[0].url)
         expectEqual(copy?.title, "Plans 2")
