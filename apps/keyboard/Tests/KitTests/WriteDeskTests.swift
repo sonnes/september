@@ -35,12 +35,9 @@ private struct DeskFolders {
 }
 
 @MainActor
-private func deskModel(_ folders: DeskFolders) -> (WriteModel, () -> String) {
-    var text = ""
-    let model = WriteModel(library: folders.library)
-    model.show = { text = $0 }
-    model.editorText = { text }
-    return (model, { text })
+private func deskModel(_ folders: DeskFolders) -> (WriteModel, FakeEditor) {
+    let editor = FakeEditor()
+    return (WriteModel(library: folders.library, editor: editor), editor)
 }
 
 private func doc(_ title: String, _ minutes: Double = 0) -> WriteDocument {
@@ -109,11 +106,9 @@ func writeDeskTests() {
         let folders = try DeskFolders()
         defer { folders.remove() }
         try folders.add("Plans.md", "# Plans", modified: now)
-        let (model, _) = deskModel(folders)
-        var text = "# Plans\n\nlast words"
-        model.editorText = { text }
+        let (model, editor) = deskModel(folders)
         model.start()
-        text = "# Plans\n\nlast words"
+        editor.text = "# Plans\n\nlast words"
         model.edited()
 
         let copy = model.duplicate(model.documents[0].url)
@@ -128,7 +123,7 @@ func writeDeskTests() {
         defer { folders.remove() }
         try folders.add("Old.md", "# Old", modified: now - 100)
         try folders.add("New.md", "# New", modified: now)
-        let (model, shown) = deskModel(folders)
+        let (model, editor) = deskModel(folders)
         model.start()
 
         model.moveToTrash(model.documents[0].url)
@@ -141,7 +136,7 @@ func writeDeskTests() {
         expectEqual(model.trashed, nil)
         expectEqual(model.documents.map(\.title), ["New", "Old"])
         model.select(try expectValue(back).url)
-        expectEqual(shown(), "# New")
+        expectEqual(editor.shown.last, "# New")
     }
 
     test("Move to Trash of another document keeps the open document") {
@@ -162,13 +157,13 @@ func writeDeskTests() {
         defer { folders.remove() }
         try folders.add("Old.md", "# Old", modified: now - 100)
         try folders.add("New.md", "# New", modified: now)
-        let (model, shown) = deskModel(folders)
+        let (model, editor) = deskModel(folders)
         model.start()
         model.moveToTrash(model.documents[0].url)
 
         model.select(model.documents[0].url)
         expectEqual(model.current?.title, "Old")
-        expectEqual(shown(), "# Old")
+        expectEqual(editor.shown.last, "# Old")
     }
 
     // MARK: WriteDesk

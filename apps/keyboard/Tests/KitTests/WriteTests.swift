@@ -20,28 +20,10 @@ private func names(_ documents: [WriteDocument]) -> [String] {
     documents.map(\.url.lastPathComponent)
 }
 
-/// Stands in for the editor: it keeps the text that the model shows, and
-/// counts the reads of its text, one for each save.
 @MainActor
-private final class EditorStub {
-    var shown: [String] = []
-    var text = ""
-    var reads = 0
-}
-
-@MainActor
-private func makeModel(_ folder: URL, clock: FakeClock = FakeClock()) -> (WriteModel, EditorStub) {
-    let editor = EditorStub()
-    let model = WriteModel(library: DocumentLibrary(folder: folder), scheduler: clock)
-    model.show = { text in
-        editor.shown.append(text)
-        editor.text = text
-    }
-    model.editorText = {
-        editor.reads += 1
-        return editor.text
-    }
-    return (model, editor)
+private func makeModel(_ folder: URL, clock: FakeClock = FakeClock()) -> (WriteModel, FakeEditor) {
+    let editor = FakeEditor()
+    return (WriteModel(library: DocumentLibrary(folder: folder), editor: editor, scheduler: clock), editor)
 }
 
 @MainActor

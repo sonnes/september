@@ -250,3 +250,25 @@ final class MemoryPrivateTexts: PrivateTextStore, @unchecked Sendable {
     func setText(_ text: String, for id: String) throws { texts[id] = text }
     func removeText(for id: String) throws { texts[id] = nil }
 }
+
+/// Stands in for the editor of a `WriteModel`: it keeps the text that the
+/// model shows, and counts the reads of its text, one for each save.
+@MainActor
+final class FakeEditor: WriteEditing {
+    var shown: [String] = []
+    private(set) var reads = 0
+    private var stored = ""
+
+    var text: String {
+        get {
+            reads += 1
+            return stored
+        }
+        set { stored = newValue }
+    }
+
+    func show(_ text: String) {
+        shown.append(text)
+        stored = text
+    }
+}

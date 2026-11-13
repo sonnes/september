@@ -69,18 +69,13 @@ public final class WriteController: WriteReading {
         scheduler: any DelayScheduler = MainQueueScheduler()
     ) {
         self.host = host
-        model = WriteModel(library: library, scheduler: scheduler)
         paper = WritePaperController(host: host)
+        model = WriteModel(library: library, editor: paper.editor, scheduler: scheduler)
         desk = WriteDeskController(host: host)
         self.openURL = openURL
         self.reveal = reveal
 
         let editor = paper.editor
-        model.show = { [weak editor] text in
-            guard let editor else { return }
-            if text.isEmpty { editor.loadNewDocument() } else { editor.load(text) }
-        }
-        model.editorText = { [weak editor] in editor?.markdown ?? "" }
         editor.onTextChange = { [weak model] in model?.edited() }
         editor.onCaretChange = { [weak self] caret in self?.host?.writeCaretMoved(caret) }
         editor.onOpenLink = { [weak self] link in self?.open(link) }
@@ -244,4 +239,12 @@ public final class WriteController: WriteReading {
             openURL(url)
         }
     }
+}
+
+extension WriteTextView: WriteEditing {
+    public func show(_ text: String) {
+        if text.isEmpty { loadNewDocument() } else { load(text) }
+    }
+
+    public var text: String { markdown }
 }
