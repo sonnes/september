@@ -577,9 +577,12 @@ same height as the keyboard. It has three tabs:
 
 The tree opens only the branch that leads to the focused element. Each other
 element shows as a shut row with a count of its children. The element that gets
-the keystrokes is the deepest row on screen. The tree reads again when the
-focus moves, when the app in front changes, every 2 seconds, and when you push
-the refresh button.
+the keystrokes is the deepest row on screen. Each read of the tree costs many
+round trips to the app in front, so the panel reads the tree only while the
+Tree tab shows. While the Tree tab shows, the tree reads again when the focus
+moves, when the app in front changes, and every 2 seconds. It also reads when
+the tab opens and when you push the refresh button. The Records tab reads its
+tables in the same way, only while it shows.
 
 For a password field or private text, the Context tab shows no text of the
 field, and the Tree tab shows no value on the focused element.

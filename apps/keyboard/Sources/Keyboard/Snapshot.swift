@@ -66,6 +66,7 @@ enum Snapshot {
             model.tab = tab
             model.reloadRecords()
             model.tree.tree = tree
+            model.showApp(tree.appName)
             return DebugPanelView(
                 model: model, predictions: predictions, permission: permission, height: 460, scrolls: false)
         }
