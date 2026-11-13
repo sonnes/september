@@ -20,14 +20,14 @@ public final class InputBarVisibility: ObservableObject {
     }
 
     /// True when the bar has something to show. In Type mode that is a
-    /// focused text input, a field with private text, or our own echo while
-    /// the app exposes no focused element. In Talk mode and in the Write
-    /// window, the bar always shows.
+    /// focused text input, a field whose text the bar hides, or our own echo
+    /// while the app exposes no focused element. In Talk mode and in the
+    /// Write window, the bar always shows.
     nonisolated public static func wantsBar(
-        mode: KeyboardMode, focusedField: FocusedField?, isFieldPrivate: Bool, input: InputMirror,
+        mode: KeyboardMode, focusedField: FocusedField?, hidesFieldText: Bool, input: InputMirror,
         isWriteInFront: Bool
     ) -> Bool {
-        mode == .talk || isWriteInFront || isFieldPrivate || focusedField?.isTextInput == true
+        mode == .talk || isWriteInFront || hidesFieldText || focusedField?.isTextInput == true
             || (focusedField == nil && !input.isEmpty)
     }
 

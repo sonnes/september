@@ -89,6 +89,11 @@ public final class KeyboardSession: ObservableObject {
     private var screenRead: Task<Void, Never>?
     /// True while the focused field has no text.
     private var fieldWasEmpty = true
+    /// True when the input bar has something to show, from the last change
+    /// of the field, the input, the mode, or the app in front.
+    private var wantsBar = false
+    /// Adds each copy to the clipboard history.
+    private var clipboardWatcher: ClipboardWatcher?
     /// The modifiers that macOS holds, after the hold delay.
     private var heldModifiers: Modifiers = []
     private var pendingHold: (any ScheduledWork)?
@@ -145,6 +150,10 @@ public final class KeyboardSession: ObservableObject {
             self.predictions.submit(keepsSentences: !self.isWriteInFront)
         }
         controller.talk.onSpeak = { [weak self] in self?.predictions.submit() }
+        clipboardWatcher = ClipboardWatcher(
+            pasteboard: pasteboard, history: clipboard,
+            shouldSkip: { [weak self] in self?.controller.hidesFieldText ?? true },
+            onChange: { [weak self] in self?.pasteboardChanged() })
         rankUserPanel()
         observe()
         pasteboardChanged()
@@ -271,6 +280,13 @@ public final class KeyboardSession: ObservableObject {
         }
     }
 
+    /// Reads the clipboard for a new copy. The history keeps no copy while
+    /// the bar hides the text of the field. macOS has no notification for a
+    /// change of the clipboard, so the app calls this on a timer.
+    public func pollClipboard() {
+        clipboardWatcher?.poll()
+    }
+
     /// The clipboard changed. Paste turns on or off.
     public func pasteboardChanged() {
         let hasText = pasteboard.string()?.isEmpty == false
@@ -301,7 +317,7 @@ public final class KeyboardSession: ObservableObject {
             case .type where isWriteInFront:
                 speakWrite()
             case .type:
-                guard let text = SpeakText(input: controller.input, isPrivate: controller.isFieldPrivate)
+                guard let text = SpeakText(input: controller.input, isPrivate: controller.hidesFieldText)
                 else { return }
                 speaking = text
                 speaker.speak(text.text)
@@ -402,10 +418,10 @@ public final class KeyboardSession: ObservableObject {
     }
 
     /// True when the session can read the text on screen: the switch is on,
-    /// the keyboard is in Type mode, and another app with no private text is
-    /// in front.
+    /// the keyboard is in Type mode, another app is in front, and the bar
+    /// shows the text of the field.
     private var mayReadScreen: Bool {
-        predictions.screenEnabled && controller.mode == .type && !controller.isFieldPrivate
+        predictions.screenEnabled && controller.mode == .type && !controller.hidesFieldText
     }
 
     /// Reads the text on screen of the app in front after
@@ -454,14 +470,13 @@ public final class KeyboardSession: ObservableObject {
         // The values come from the publishers: `@Published` publishes before
         // it stores the new value.
         controller.$focusedField
-            .combineLatest(controller.$input, controller.$mode, controller.$isFieldPrivate)
-            .combineLatest($front)
-            .sink { [weak self] values, front in
-                let (field, input, mode, isPrivate) = values
-                self?.inputBar.update(
-                    InputBarVisibility.wantsBar(
-                        mode: mode, focusedField: field, isFieldPrivate: isPrivate, input: input,
-                        isWriteInFront: front?.isWrite == true))
+            .combineLatest(controller.$input, controller.$mode, $front)
+            .sink { [weak self] field, input, mode, front in
+                let wantsBar = InputBarVisibility.wantsBar(
+                    mode: mode, focusedField: field, hidesFieldText: input == .secure, input: input,
+                    isWriteInFront: front?.isWrite == true)
+                self?.wantsBar = wantsBar
+                self?.inputBar.update(wantsBar)
             }
             .store(in: &subscriptions)
         controller.$mode
@@ -508,6 +523,9 @@ public final class KeyboardSession: ObservableObject {
     private func update() {
         let mode = controller.mode
         let talk = controller.talk
+        // The input of a field whose text the bar hides is `.secure`, so the
+        // predictions get no text. `isPrivate` tells private text from a
+        // password field for the notice.
         let isPrivate = mode == .type && controller.isFieldPrivate
         let input: InputMirror = mode == .talk ? .local(text: talk.text) : controller.input
         let usesScreen = mode == .type && !isWriteInFront && predictions.screenEnabled
@@ -534,7 +552,7 @@ public final class KeyboardSession: ObservableObject {
             canSpeak =
                 isWriteInFront
                 ? writeHasText
-                : SpeakText(input: controller.input, isPrivate: controller.isFieldPrivate) != nil
+                : SpeakText(input: controller.input, isPrivate: controller.hidesFieldText) != nil
         }
         let speakMode = SpeakButton.Mode(isSpeaking: isSpeaking, canSpeak: canSpeak)
         if speakMode != self.speakMode { self.speakMode = speakMode }
@@ -566,10 +584,7 @@ public final class KeyboardSession: ObservableObject {
         guard mode == .type, !isWriteInFront else { return [] }
         let on = controller.modifiers.own.union(heldModifiers)
         let byModifier = !on.isDisjoint(with: [.command, .control])
-        let hasTextInput = InputBarVisibility.wantsBar(
-            mode: mode, focusedField: controller.focusedField, isFieldPrivate: controller.isFieldPrivate,
-            input: controller.input, isWriteInFront: isWriteInFront)
-        guard byModifier || !hasTextInput else { return [] }
+        guard byModifier || !wantsBar else { return [] }
         if menu == nil, case .app(let app) = front { menu = reader.menuShortcuts(pid: app.pid) }
         return AppShortcut.suggestions(menu: menu ?? [], modifiers: byModifier ? on : [])
     }

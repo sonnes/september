@@ -30,6 +30,10 @@ public final class KeyboardController: ObservableObject {
     /// the focus moves. The bar hides the field, and the controller keeps none
     /// of its text, so predictions and learning never see it.
     @Published public private(set) var isFieldPrivate = false
+    /// True while the bar hides the text of the field: private text, or a
+    /// password field. The predictions, Speak, the text on screen, the
+    /// clipboard history, and the tree viewer get no text of the field then.
+    public var hidesFieldText: Bool { input == .secure }
     /// Where private text buttons keep their text.
     public var privateTexts: any PrivateTextStore = KeychainPrivateTextStore()
     /// In Talk mode, the keys type into `talk` and the app in front gets no

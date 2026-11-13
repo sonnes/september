@@ -90,8 +90,9 @@ An update does these steps in this order:
 6. It sets `shortcuts`. See [Shortcut Suggestions](#shortcut-suggestions).
 
 The input bar does not wait for the turn. The session takes the focused field,
-the input, the mode, the private state, and the Write paper from their
-publishers. Then it tells `InputBarVisibility` if the bar must show.
+the input, the mode, and the app in front from their publishers. Then it tells
+`InputBarVisibility` if the bar must show. The shortcut suggestions use the
+same result.
 
 My Panel ranks Mine again only when an app comes to the front, so a button
 never moves while the user aims at it. A change in the My Panel page of
@@ -143,7 +144,8 @@ When the wait ends, the session reads only if these conditions are true:
 - The switch is on.
 - The keyboard is in Type mode.
 - Another app is in front, not Write.
-- The field holds no private text.
+- The bar shows the text of the field (`controller.hidesFieldText` is
+  false): no private text and no password field.
 
 A read that ends after another app came to the front is dropped. A new app
 clears the text. Turning off the switch cancels the read.
@@ -168,16 +170,17 @@ stay.
 
 ### The clipboard changes
 
-macOS has no notification for a change of the clipboard. The app makes a
-`ClipboardWatcher`, and a timer calls `poll()` every 0.5 seconds. A poll with
-no change compares one number. For each change, the watcher adds the text to
-`ClipboardHistory` and calls `pasteboardChanged()`. The watcher keeps no copy
-in these conditions:
+macOS has no notification for a change of the clipboard. The session makes a
+`ClipboardWatcher`, and a timer of the app calls `pollClipboard()` every 0.5
+seconds. A poll with no change compares one number. For each change, the
+watcher adds the text to `ClipboardHistory` and calls `pasteboardChanged()`.
+The watcher keeps no copy in these conditions:
 
 - The copy has a type of `ClipboardWatcher.skippedTypes`. Password managers
   set these types (nspasteboard.org).
 - The copy is a file, or it has no plain text.
-- The focused field is a password field or holds private text.
+- The bar hides the text of the field (`controller.hidesFieldText`): the
+  field is a password field or holds private text.
 
 The text on the clipboard at launch does not go into the history.
 

@@ -33,7 +33,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// `applicationWillTerminate`. These handlers release the modifiers first.
     private var signalSources: [DispatchSourceSignal] = []
     private var tracker = FrontAppTracker(ownPID: ProcessInfo.processInfo.processIdentifier)
-    private var clipboardWatcher: ClipboardWatcher?
     private var clipboardTimer: Timer?
 
     /// The tree viewer is on by default — it is the window that shows why an
@@ -185,16 +184,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// a change of the clipboard, so the keyboard reads its change count every
     /// 0.5 seconds.
     private func watchClipboard() {
-        let watcher = ClipboardWatcher(
-            pasteboard: session.pasteboard, history: session.clipboard,
-            shouldSkip: { [weak self] in
-                guard let controller = self?.controller else { return true }
-                return controller.isFieldPrivate || controller.focusedField?.isSecure == true
-            },
-            onChange: { [weak self] in self?.session.pasteboardChanged() })
-        clipboardWatcher = watcher
-        clipboardTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
-            MainActor.assumeIsolated { watcher.poll() }
+        clipboardTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.session.pollClipboard() }
         }
     }
 
@@ -440,7 +431,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func refreshTree() {
         guard isTreeVisible else { return }
         let tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
-        treeModel.tree = controller.isFieldPrivate ? tree.hidingFocusedValue() : tree
+        treeModel.show(tree, hidingFocusedValue: controller.hidesFieldText)
     }
 
     /// Each read costs many round trips to the other app, so focus moves and

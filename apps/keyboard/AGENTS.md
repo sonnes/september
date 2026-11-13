@@ -104,9 +104,10 @@ only what needs a running app — the panel, the event sink, the menu bar.
   only what needs a running app. See `docs/concepts/keyboard-session.md`.
 - **Private text stays private.** Never log or print the text of a field, a
   private text button, or an API key. Keep the text of a field only in the
-  sentence history. While `isFieldPrivate` is true,
-  the predictions, Speak, learning, and the tree viewer get no text of the
-  field. Call `KeyboardSession.focusMoved()` only when the focused element
+  sentence history. `KeyboardController.hidesFieldText` is the one privacy
+  check: it is true for private text and for a password field. While it is
+  true, the predictions, Speak, learning, the text on screen, the clipboard
+  history, and the tree viewer get no text of the field. Call `KeyboardSession.focusMoved()` only when the focused element
   changes, not when its value changes.
 - **An app switch is one ordered step.** `FocusWatcher.onAppChanged` clears the
   last app's text through `KeyboardSession.frontChanged` *before* the new app's

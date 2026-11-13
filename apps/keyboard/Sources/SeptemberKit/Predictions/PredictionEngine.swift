@@ -269,8 +269,6 @@ public final class PredictionEngine: ObservableObject {
         for input: InputMirror, availability: PredictionAvailability, sentences: Bool
     ) -> PredictionNotice? {
         if case .secure = input { return .passwordField }
-        // A state with no text that is not a password field holds private text.
-        if !input.holdsText { return .privateText }
         if sentences, availability != .ready { return .appleIntelligence(availability) }
         return nil
     }

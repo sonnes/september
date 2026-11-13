@@ -51,16 +51,16 @@ private func inputBarTests() {
     }
 
     test("in Type mode the bar shows only for text input or an echo") {
-        func wants(_ field: FocusedField?, echo: String = "", isPrivate: Bool = false) -> Bool {
+        func wants(_ field: FocusedField?, echo: String = "", hidesText: Bool = false) -> Bool {
             InputBarVisibility.wantsBar(
-                mode: .type, focusedField: field, isFieldPrivate: isPrivate, input: .local(text: echo),
+                mode: .type, focusedField: field, hidesFieldText: hidesText, input: .local(text: echo),
                 isWriteInFront: false)
         }
         expect(!wants(nil))
         expect(!wants(focus("AXButton")))
         expect(wants(focus("AXTextField", editable: true)))
         expect(wants(focus("AXTextField", secure: true)), "a password field shows its notice")
-        expect(wants(nil, isPrivate: true), "a field with private text shows its notice")
+        expect(wants(nil, hidesText: true), "a field with private text shows its notice")
         expect(wants(nil, echo: "hi"), "an app with no readable field shows the echo")
         expect(!wants(focus("AXList"), echo: "hi"), "the echo hides when the focus is on a list")
     }
@@ -68,11 +68,11 @@ private func inputBarTests() {
     test("Talk mode and the Write window always show the bar") {
         expect(
             InputBarVisibility.wantsBar(
-                mode: .talk, focusedField: nil, isFieldPrivate: false, input: .local(text: ""),
+                mode: .talk, focusedField: nil, hidesFieldText: false, input: .local(text: ""),
                 isWriteInFront: false))
         expect(
             InputBarVisibility.wantsBar(
-                mode: .type, focusedField: nil, isFieldPrivate: false, input: .local(text: ""),
+                mode: .type, focusedField: nil, hidesFieldText: false, input: .local(text: ""),
                 isWriteInFront: true))
     }
 
@@ -172,6 +172,19 @@ private func wiringTests() {
         expectEqual(hidden.root?.children.first?.value, nil)
         expectEqual(hidden.root?.value, "title")
         expectEqual(hidden.root?.children.first?.role, "AXTextArea")
+    }
+
+    test("the tree viewer hides the value of the focused field while the field text is hidden") {
+        let tree = AXTree(
+            appName: "Messages",
+            root: AXNode(
+                id: 0, role: "AXWindow", value: "title",
+                children: [AXNode(id: 1, role: "AXTextArea", value: "secret", isFocused: true)]))
+        let model = AXTreeModel()
+        model.show(tree, hidingFocusedValue: true)
+        expectEqual(model.tree.root?.children.first?.value, nil)
+        model.show(tree, hidingFocusedValue: false)
+        expectEqual(model.tree.root?.children.first?.value, "secret")
     }
 
     test("the Write window counts as the app in front while it is key") {
@@ -782,6 +795,29 @@ private func sessionTests() async {
         expectEqual(parts.reader.screenReads, [], "private text")
     }
 
+    await asyncTest("a password field and private text hide the text of the field") {
+        let parts = try makeSession()
+        parts.controller.focusChanged(to: field("Hello", caret: 5))
+        expect(!parts.controller.hidesFieldText)
+        parts.controller.focusChanged(to: focus("AXTextField", editable: true, secure: true))
+        expect(parts.controller.hidesFieldText, "a password field")
+        parts.controller.focusChanged(to: field("Hello", caret: 5))
+        let texts = MemoryPrivateTexts()
+        texts.texts["home"] = "1 Main Street"
+        parts.controller.privateTexts = texts
+        parts.controller.perform(.privateText("home"))
+        expect(parts.controller.hidesFieldText, "private text")
+    }
+
+    await asyncTest("the keyboard does not read the screen for a password field") {
+        let parts = try makeSession()
+        parts.session.predictions.screenEnabled = true
+        parts.session.frontChanged(.app(whatsApp))
+        parts.session.focusChanged(to: focus("AXTextField", editable: true, secure: true))
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [])
+    }
+
     await asyncTest("turning off the switch stops a read that waits") {
         let parts = try makeSession()
         parts.session.predictions.screenEnabled = true
@@ -1138,6 +1174,30 @@ private func activationTests() {
 
 @MainActor
 private func clipboardSessionTests() async {
+    await asyncTest("the clipboard history keeps no copy while the field text is hidden") {
+        let pasteboard = MemoryPasteboard()
+        let parts = try makeSession(pasteboard: pasteboard)
+        parts.controller.focusChanged(to: field("Hello", caret: 5))
+        pasteboard.copy("Lunch at noon")
+        parts.session.pollClipboard()
+        expectEqual(parts.clipboard.items.map(\.text), ["Lunch at noon"])
+        expect(parts.session.canPaste)
+
+        parts.controller.focusChanged(to: focus("AXTextField", editable: true, secure: true))
+        pasteboard.copy("hunter2")
+        parts.session.pollClipboard()
+        expectEqual(parts.clipboard.items.map(\.text), ["Lunch at noon"], "a password field")
+
+        parts.controller.focusChanged(to: field("Hello", caret: 5))
+        let texts = MemoryPrivateTexts()
+        texts.texts["home"] = "1 Main Street"
+        parts.controller.privateTexts = texts
+        parts.controller.perform(.privateText("home"))
+        pasteboard.copy("1 Main Street")
+        parts.session.pollClipboard()
+        expectEqual(parts.clipboard.items.map(\.text), ["Lunch at noon"], "private text")
+    }
+
     let command = Modifiers.command
     let commandKey: UInt16 = 55
     /// The keys of the chords that the sink got, without the Command key.

@@ -7,6 +7,12 @@ public final class AXTreeModel: ObservableObject {
     public var onRefresh: (() -> Void)?
 
     public init() {}
+
+    /// Shows the tree. While the bar hides the text of the field, the tree
+    /// shows no value on the focused element.
+    public func show(_ tree: AXTree, hidingFocusedValue: Bool) {
+        self.tree = hidingFocusedValue ? tree.hidingFocusedValue() : tree
+    }
 }
 
 /// The accessibility tree of the app in front. It sits at the right edge of
