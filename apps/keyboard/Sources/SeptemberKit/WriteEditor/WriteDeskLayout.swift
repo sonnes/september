@@ -10,10 +10,10 @@ import CoreGraphics
 /// selected card. Frames use the coordinates of AppKit, with the origin at
 /// the bottom left.
 public struct WriteDeskLayout: Equatable, Sendable {
-    public static var cardSize: CGSize { Metrics.WriteDesk.cardSize }
-    public static var cardGap: CGFloat { Metrics.WriteDesk.cardGap }
-    public static var bottomPadding: CGFloat { Metrics.WriteDesk.bottomPadding }
-    public static var selectedLift: CGFloat { Metrics.WriteDesk.selectedLift }
+    public static var cardSize: CGSize { Metrics.Desk.cardSize }
+    public static var cardGap: CGFloat { Metrics.Desk.cardGap }
+    public static var bottomPadding: CGFloat { Metrics.Desk.bottomPadding }
+    public static var selectedLift: CGFloat { Metrics.Desk.selectedLift }
 
     /// The indexes of the cards in view.
     public let visible: Range<Int>
@@ -52,12 +52,12 @@ public struct WriteDeskLayout: Equatable, Sendable {
         }
         centre = left + width / 2
 
-        let space = Metrics.WriteDesk.spacing
+        let space = Metrics.Desk.spacing
         actions = CGRect(
-            x: area.minX, y: bottom + size.height + Metrics.WriteDesk.selectedLift + space,
-            width: area.width, height: Metrics.WriteDesk.actionHeight)
-        find = Self.centred(Metrics.WriteDesk.findSize, on: centre, y: actions.maxY + space, in: area)
-        notice = Self.centred(Metrics.WriteDesk.noticeSize, on: centre, y: find.maxY + space, in: area)
+            x: area.minX, y: bottom + size.height + Metrics.Desk.selectedLift + space,
+            width: area.width, height: Metrics.Desk.actionHeight)
+        find = Self.centred(Metrics.Desk.findSize, on: centre, y: actions.maxY + space, in: area)
+        notice = Self.centred(Metrics.Desk.noticeSize, on: centre, y: find.maxY + space, in: area)
     }
 
     /// The frame of the blur behind the desk: around the cards, the actions,
@@ -75,7 +75,7 @@ public struct WriteDeskLayout: Equatable, Sendable {
                 CGSize(width: actionWidth, height: actions.height), on: centre, y: actions.minY, in: area))
         }
         if withNotice { rect = rect.union(notice) }
-        let padding = Metrics.WriteDesk.backdropPadding
+        let padding = Metrics.Desk.backdropPadding
         return rect.insetBy(dx: -padding, dy: -padding).intersection(area)
     }
 

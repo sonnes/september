@@ -37,7 +37,6 @@ public enum WriteDeskCommand: Equatable, Sendable {
 @MainActor
 public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldDelegate {
     typealias Motion = Metrics.WriteMotion
-    typealias Sizes = Metrics.WriteDesk
 
     public let window: WriteDeskWindow
     /// The documents, the query, and the selected card.
@@ -64,11 +63,11 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
 
     private let root = DeskRootView()
     private let backdrop = NSVisualEffectView()
-    private let findBox = DeskPillView(fill: Tokens.writePaper)
+    private let findBox = DeskPillView(fill: Tokens.key)
     private let find = NSTextField()
     private let count = NSTextField(labelWithString: "")
     private let actions = NSStackView()
-    private let notice = DeskPillView(fill: Tokens.writeNoticeFill)
+    private let notice = DeskPillView(fill: Tokens.keyText)
     private let noticeText = NSTextField(labelWithString: "")
     private var cards: [CardKey: WriteCardView] = [:]
     private var area: CGRect = .zero
@@ -216,7 +215,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
             shown.insert(key)
             let isSelected = index == desk.selection
             var frame = local(layout.cards[offset])
-            if isSelected { frame.origin.y += Sizes.selectedLift }
+            if isSelected { frame.origin.y += Metrics.Desk.selectedLift }
             let card = cards[key] ?? makeCard(for: item, key: key, frame: frame)
             card.isSelected = isSelected
             card.onPress = { [weak self] in self?.pressed(index: index) }
@@ -305,7 +304,7 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         // The blur stays on while another app is in front, as the keyboard does.
         backdrop.state = .active
         backdrop.wantsLayer = true
-        backdrop.layer?.cornerRadius = Sizes.backdropCornerRadius
+        backdrop.layer?.cornerRadius = Metrics.Desk.backdropCornerRadius
         backdrop.layer?.cornerCurve = .continuous
         backdrop.layer?.masksToBounds = true
         root.addSubview(backdrop)
@@ -331,18 +330,18 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         find.drawsBackground = false
         find.focusRingType = .none
         find.font = Typography.writeFind
-        find.textColor = NSColor(Tokens.writeText)
+        find.textColor = NSColor(Tokens.keyText)
         find.placeholderString = "Find a document"
         find.delegate = self
         find.setAccessibilityLabel("Find a document")
         find.translatesAutoresizingMaskIntoConstraints = false
         count.font = Typography.writeFindCount
-        count.textColor = NSColor(Tokens.writeMuted)
+        count.textColor = NSColor(Tokens.labelSecondary)
         count.translatesAutoresizingMaskIntoConstraints = false
         count.setContentCompressionResistancePriority(.required, for: .horizontal)
         findBox.addSubview(find)
         findBox.addSubview(count)
-        let padding = Sizes.findPadding
+        let padding = Metrics.Desk.findPadding
         NSLayoutConstraint.activate([
             find.leadingAnchor.constraint(equalTo: findBox.leadingAnchor, constant: padding),
             find.centerYAnchor.constraint(equalTo: findBox.centerYAnchor),
@@ -365,13 +364,13 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
             actions.addArrangedSubview(button)
         }
         actions.orientation = .horizontal
-        actions.spacing = Sizes.actionGap
+        actions.spacing = Metrics.Desk.actionGap
         root.addSubview(actions)
     }
 
     private func setUpNotice() {
         noticeText.font = Typography.writeDeskAction
-        noticeText.textColor = NSColor(Tokens.writeNoticeText)
+        noticeText.textColor = NSColor(Tokens.background)
         noticeText.lineBreakMode = .byTruncatingMiddle
         noticeText.translatesAutoresizingMaskIntoConstraints = false
         let undo = DeskActionButton(title: "Undo", style: .primary) { [weak self] in
@@ -380,12 +379,12 @@ public final class WriteDeskController: NSObject, NSWindowDelegate, NSTextFieldD
         undo.translatesAutoresizingMaskIntoConstraints = false
         notice.addSubview(noticeText)
         notice.addSubview(undo)
-        let padding = Sizes.findPadding
+        let padding = Metrics.Desk.findPadding
         NSLayoutConstraint.activate([
             noticeText.leadingAnchor.constraint(equalTo: notice.leadingAnchor, constant: padding),
             noticeText.centerYAnchor.constraint(equalTo: notice.centerYAnchor),
             undo.leadingAnchor.constraint(greaterThanOrEqualTo: noticeText.trailingAnchor, constant: padding / 2),
-            undo.trailingAnchor.constraint(equalTo: notice.trailingAnchor, constant: -Sizes.actionGap),
+            undo.trailingAnchor.constraint(equalTo: notice.trailingAnchor, constant: -Metrics.Desk.actionGap),
             undo.centerYAnchor.constraint(equalTo: notice.centerYAnchor),
         ])
         notice.isHidden = true
@@ -497,8 +496,8 @@ private final class DeskPillView: NSView {
         wantsLayer = true
         layer?.cornerCurve = .continuous
         layer?.shadowOpacity = 1
-        layer?.shadowRadius = Metrics.WriteDesk.spacing / 2
-        layer?.shadowOffset = CGSize(width: 0, height: -Metrics.WriteDesk.selectionRing)
+        layer?.shadowRadius = Metrics.Desk.spacing / 2
+        layer?.shadowOffset = CGSize(width: 0, height: -Metrics.Desk.selectionRing)
     }
 
     @available(*, unavailable)
@@ -537,17 +536,17 @@ final class DeskActionButton: NSButton {
         action = #selector(press)
         let text: ThemeColor =
             switch style {
-            case .primary: Tokens.writeOnAccent
-            case .plain: Tokens.writeText
-            case .danger: Tokens.writeDanger
+            case .primary: Tokens.onAccent
+            case .plain: Tokens.keyText
+            case .danger: Tokens.warning
             }
         // A dynamic colour follows light and dark when the title draws.
         attributedTitle = NSAttributedString(
             string: title, attributes: [.font: Typography.writeDeskAction, .foregroundColor: NSColor(text)])
         layer?.cornerCurve = .continuous
         layer?.shadowOpacity = 1
-        layer?.shadowRadius = Metrics.WriteDesk.actionGap / 2
-        layer?.shadowOffset = CGSize(width: 0, height: -Metrics.WriteDesk.selectionRing / 2)
+        layer?.shadowRadius = Metrics.Desk.actionGap / 2
+        layer?.shadowOffset = CGSize(width: 0, height: -Metrics.Desk.selectionRing / 2)
     }
 
     @available(*, unavailable)
@@ -556,13 +555,13 @@ final class DeskActionButton: NSButton {
     override var intrinsicContentSize: NSSize {
         let text = (title as NSString).size(withAttributes: [.font: Typography.writeDeskAction])
         return NSSize(
-            width: ceil(text.width) + 2 * Metrics.WriteDesk.actionPadding, height: Metrics.WriteDesk.actionHeight)
+            width: ceil(text.width) + 2 * Metrics.Desk.actionPadding, height: Metrics.Desk.actionHeight)
     }
 
     override var wantsUpdateLayer: Bool { true }
 
     override func updateLayer() {
-        let fill = style == .primary ? Tokens.writeAccent : Tokens.writePaper
+        let fill = style == .primary ? Tokens.accent : Tokens.key
         layer?.backgroundColor = NSColor(fill).cgColor
         layer?.shadowColor = NSColor(Tokens.writeCardShadow).cgColor
         layer?.cornerRadius = bounds.height / 2

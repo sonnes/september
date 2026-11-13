@@ -22,11 +22,6 @@ public enum Typography {
         .system(size: 11, weight: focused ? .semibold : .regular, design: .monospaced)
     }
 
-    public static let galleryTitle = Font.system(size: 24, weight: .semibold, design: .monospaced)
-    public static let galleryCaption = Font.system(size: 12)
-    public static let gallerySampleTitle = Font.system(size: 12, weight: .medium, design: .monospaced)
-    public static let galleryNote = Font.system(size: 10)
-
     public static func keyLabel(_ kind: KeyKind) -> Font {
         .system(size: Metrics.labelSize(for: kind), weight: kind == .function ? .medium : .regular)
     }

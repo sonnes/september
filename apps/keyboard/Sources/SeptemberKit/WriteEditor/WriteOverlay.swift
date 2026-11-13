@@ -41,7 +41,7 @@ final class WriteOverlay {
             return
         }
         caret.isHidden = false
-        caret.backgroundColor = view.resolved(NSColor(Tokens.writeAccent))
+        caret.backgroundColor = view.resolved(NSColor(Tokens.accent))
         let glide = textView.lastInputWasKey && !reduceMotion && lastCaret != nil && lastCaret != frame
         move(to: frame, glide: glide)
         lastCaret = frame
@@ -162,7 +162,7 @@ private final class TaskLayer: CALayer {
         let bounds = CGRect(origin: .zero, size: frame.size)
         // The cover hides the box that the text draws under the motion.
         cover.frame = bounds.insetBy(dx: -1, dy: -1)
-        cover.backgroundColor = view.resolved(NSColor(Tokens.writePaper))
+        cover.backgroundColor = view.resolved(NSColor(Tokens.key))
         addSublayer(cover)
 
         let radius = M.taskBoxRadius * WriteStyle.bodySize
@@ -170,7 +170,7 @@ private final class TaskLayer: CALayer {
         box.frame = bounds
         box.path = CGPath(roundedRect: inset, cornerWidth: radius, cornerHeight: radius, transform: nil)
         box.lineWidth = M.taskBoxBorder
-        let accent = view.resolved(NSColor(Tokens.writeAccent))
+        let accent = view.resolved(NSColor(Tokens.accent))
         let border = view.resolved(NSColor(Tokens.writeTaskBorder))
         box.fillColor = checked ? accent : NSColor.clear.cgColor
         box.strokeColor = checked ? accent : border
@@ -178,7 +178,7 @@ private final class TaskLayer: CALayer {
 
         mark.frame = bounds
         mark.path = WriteLayoutFragment.checkMark(in: bounds).cgPath
-        mark.strokeColor = view.resolved(NSColor(Tokens.writePaper))
+        mark.strokeColor = view.resolved(NSColor(Tokens.key))
         mark.fillColor = nil
         mark.lineWidth = M.taskBoxBorder * 1.3
         mark.lineCap = .round

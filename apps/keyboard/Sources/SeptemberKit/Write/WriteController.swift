@@ -90,7 +90,7 @@ public final class WriteController {
         let library = model.library
         desk.preview = { document in
             let text = (try? library.read(document)) ?? ""
-            return DocumentLibrary.preview(of: text, lines: Metrics.WriteDesk.cardLines)
+            return DocumentLibrary.preview(of: text, lines: Metrics.Desk.cardLines)
         }
         desk.onCommand = { [weak self] command in self?.perform(command) }
         desk.onQueryChange = { [weak self] _ in

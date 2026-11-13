@@ -62,7 +62,7 @@ public final class WriteTextView: NSTextView, NSTextStorageDelegate, NSTextLayou
         isHorizontallyResizable = false
         autoresizingMask = [.width]
         insertionPointColor = .clear
-        selectedTextAttributes = [.backgroundColor: NSColor(Tokens.writeSelection)]
+        selectedTextAttributes = [.backgroundColor: NSColor(Tokens.selection)]
         linkTextAttributes = [:]
         setAccessibilityLabel("Document")
     }

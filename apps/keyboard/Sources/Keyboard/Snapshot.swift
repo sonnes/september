@@ -217,7 +217,7 @@ enum Snapshot {
 
         let all = window.union(paper)
         // Room for the shadow of the paper.
-        let padding = Metrics.WriteDesk.spacing * 2
+        let padding = Metrics.Desk.spacing * 2
         func place(_ frame: CGRect) -> CGSize {
             CGSize(width: frame.minX - all.minX + padding, height: all.maxY - frame.maxY + padding)
         }
@@ -227,8 +227,8 @@ enum Snapshot {
                 Image(nsImage: sheet)
                     .clipShape(corners)
                     .shadow(
-                        color: Color(Tokens.writeCardShadow), radius: Metrics.WriteDesk.spacing,
-                        y: Metrics.WriteDesk.actionGap)
+                        color: Color(Tokens.writeCardShadow), radius: Metrics.Desk.spacing,
+                        y: Metrics.Desk.actionGap)
                     .offset(place(paper))
                 keyboard.offset(place(window))
             }
@@ -261,7 +261,7 @@ enum Snapshot {
         guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return image }
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-        NSColor(Tokens.writePaper).setFill()
+        NSColor(Tokens.key).setFill()
         view.bounds.fill()
         NSGraphicsContext.restoreGraphicsState()
         view.cacheDisplay(in: view.bounds, to: rep)

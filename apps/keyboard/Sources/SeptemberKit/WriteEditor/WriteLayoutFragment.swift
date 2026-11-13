@@ -69,13 +69,13 @@ final class WriteLayoutFragment: NSTextLayoutFragment {
             let rect = CGRect(
                 x: x + indent - M.listIndent / 2 - diameter / 2, y: y + centre - diameter / 2,
                 width: diameter, height: diameter)
-            NSColor(Tokens.writeMuted).setFill()
+            NSColor(Tokens.labelSecondary).setFill()
             NSBezierPath(ovalIn: rect).fill()
         case .ordered:
             let number = (attributes[.writeOrdinal] as? NSNumber)?.intValue ?? 1
             let font = WriteStyle.font(.paragraph, marks: [])
             let label = NSAttributedString(
-                string: "\(number).", attributes: [.font: font, .foregroundColor: NSColor(Tokens.writeMuted)])
+                string: "\(number).", attributes: [.font: font, .foregroundColor: NSColor(Tokens.labelSecondary)])
             let width = label.size().width
             let top = baseline(kind).map { $0 - font.ascender } ?? first.midY - (font.ascender - font.descender) / 2
             label.draw(at: CGPoint(x: x + indent - width - M.listIndent * 0.25, y: y + top))
@@ -85,22 +85,22 @@ final class WriteLayoutFragment: NSTextLayoutFragment {
             let rect = CGRect(
                 x: x + M.quoteIndent - M.quoteBarWidth, y: y + first.minY, width: M.quoteBarWidth,
                 height: last.maxY - first.minY)
-            NSColor(Tokens.writeStroke).setFill()
+            NSColor(Tokens.strokeStandard).setFill()
             NSBezierPath(roundedRect: rect, xRadius: 1, yRadius: 1).fill()
         case .code:
             let rect = CGRect(
                 x: x, y: y + first.minY - M.codePaddingVertical, width: containerWidth,
                 height: last.maxY - first.minY + 2 * M.codePaddingVertical)
-            NSColor(Tokens.writeCode).setFill()
+            NSColor(Tokens.keySpecial).setFill()
             NSBezierPath(roundedRect: rect, xRadius: M.codeCornerRadius, yRadius: M.codeCornerRadius).fill()
         case .rule:
             let rect = CGRect(x: x, y: y + first.midY, width: containerWidth, height: M.ruleThickness)
-            NSColor(Tokens.writeStroke).setFill()
+            NSColor(Tokens.strokeStandard).setFill()
             rect.fill()
         case .heading(let level) where isEmpty:
             let font = WriteStyle.font(kind, marks: [])
             let label = NSAttributedString(
-                string: "Heading \(level)", attributes: [.font: font, .foregroundColor: NSColor(Tokens.writeMuted)])
+                string: "Heading \(level)", attributes: [.font: font, .foregroundColor: NSColor(Tokens.labelSecondary)])
             let height = font.ascender - font.descender
             label.draw(at: CGPoint(x: point.x + first.minX, y: y + first.midY - height / 2))
         default:
@@ -120,10 +120,10 @@ final class WriteLayoutFragment: NSTextLayoutFragment {
         let inset = rect.insetBy(dx: M.taskBoxBorder / 2, dy: M.taskBoxBorder / 2)
         let path = NSBezierPath(roundedRect: inset, xRadius: radius, yRadius: radius)
         if checked {
-            NSColor(Tokens.writeAccent).setFill()
+            NSColor(Tokens.accent).setFill()
             path.fill()
             let mark = checkMark(in: rect)
-            NSColor(Tokens.writePaper).setStroke()
+            NSColor(Tokens.key).setStroke()
             mark.lineWidth = M.taskBoxBorder * 1.3
             mark.lineCapStyle = .round
             mark.lineJoinStyle = .round

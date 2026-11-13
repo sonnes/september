@@ -10,7 +10,6 @@ import QuartzCore
 /// can press it.
 @MainActor
 final class WriteCardView: NSView {
-    typealias Sizes = Metrics.WriteDesk
 
     var onPress: (() -> Void)?
     var isSelected = false {
@@ -28,20 +27,20 @@ final class WriteCardView: NSView {
         isNewDocument = false
         super.init(frame: .zero)
         setUp()
-        let titleField = Self.label(title, font: Typography.writeCardTitle, color: Tokens.writeText, lines: 2)
+        let titleField = Self.label(title, font: Typography.writeCardTitle, color: Tokens.keyText, lines: 2)
         let body = Self.label(
-            lines.joined(separator: "\n"), font: Typography.writeCardLine, color: Tokens.writeMuted,
-            lines: Sizes.cardLines)
-        let dateField = Self.label(date, font: Typography.writeCardLine, color: Tokens.writeMuted, lines: 1)
+            lines.joined(separator: "\n"), font: Typography.writeCardLine, color: Tokens.labelSecondary,
+            lines: Metrics.Desk.cardLines)
+        let dateField = Self.label(date, font: Typography.writeCardLine, color: Tokens.labelSecondary, lines: 1)
         let stack = NSStackView(views: [titleField, body])
         stack.orientation = .vertical
         stack.alignment = .leading
-        stack.spacing = Sizes.actionGap
+        stack.spacing = Metrics.Desk.actionGap
         stack.translatesAutoresizingMaskIntoConstraints = false
         dateField.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
         addSubview(dateField)
-        let padding = Sizes.cardPadding
+        let padding = Metrics.Desk.cardPadding
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: topAnchor, constant: padding),
             stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: padding),
@@ -57,7 +56,7 @@ final class WriteCardView: NSView {
         isNewDocument = true
         super.init(frame: .zero)
         setUp()
-        let label = Self.label("+\nNew Document\n⌘N", font: Typography.writeCardNew, color: Tokens.writeMuted, lines: 3)
+        let label = Self.label("+\nNew Document\n⌘N", font: Typography.writeCardNew, color: Tokens.labelSecondary, lines: 3)
         label.alignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(label)
@@ -66,8 +65,8 @@ final class WriteCardView: NSView {
             label.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
         dash.fillColor = nil
-        dash.lineWidth = Sizes.newCardBorder
-        dash.lineDashPattern = Sizes.newCardDash.map { NSNumber(value: Double($0)) }
+        dash.lineWidth = Metrics.Desk.newCardBorder
+        dash.lineDashPattern = Metrics.Desk.newCardDash.map { NSNumber(value: Double($0)) }
         layer?.addSublayer(dash)
         setAccessibilityLabel("New Document")
     }
@@ -77,11 +76,11 @@ final class WriteCardView: NSView {
 
     private func setUp() {
         wantsLayer = true
-        layer?.cornerRadius = Sizes.cardCornerRadius
+        layer?.cornerRadius = Metrics.Desk.cardCornerRadius
         layer?.cornerCurve = .continuous
         layer?.shadowOpacity = 1
-        layer?.shadowRadius = Sizes.spacing
-        layer?.shadowOffset = CGSize(width: 0, height: -Sizes.actionGap)
+        layer?.shadowRadius = Metrics.Desk.spacing
+        layer?.shadowOffset = CGSize(width: 0, height: -Metrics.Desk.actionGap)
         setAccessibilityElement(true)
         setAccessibilityRole(.button)
     }
@@ -94,7 +93,7 @@ final class WriteCardView: NSView {
         field.lineBreakMode = .byTruncatingTail
         field.isSelectable = false
         field.setAccessibilityElement(false)
-        field.preferredMaxLayoutWidth = Sizes.cardSize.width - 2 * Sizes.cardPadding
+        field.preferredMaxLayoutWidth = Metrics.Desk.cardSize.width - 2 * Metrics.Desk.cardPadding
         return field
     }
 
@@ -102,20 +101,20 @@ final class WriteCardView: NSView {
 
     override func updateLayer() {
         guard let layer else { return }
-        let ring = Sizes.selectionRing
+        let ring = Metrics.Desk.selectionRing
         // A card with no fill has no shadow, or the shadow falls on its text.
         let isOutline = isNewDocument && !isSelected
-        layer.backgroundColor = isOutline ? nil : NSColor(Tokens.writePaper).cgColor
+        layer.backgroundColor = isOutline ? nil : NSColor(Tokens.key).cgColor
         layer.shadowColor = NSColor(Tokens.writeCardShadow).cgColor
         layer.shadowOpacity = isOutline ? 0 : 1
         dash.isHidden = !isOutline
-        dash.strokeColor = NSColor(Tokens.writeMuted).cgColor
+        dash.strokeColor = NSColor(Tokens.labelSecondary).cgColor
         dash.frame = bounds
         dash.path = CGPath(
-            roundedRect: bounds.insetBy(dx: Sizes.newCardBorder / 2, dy: Sizes.newCardBorder / 2),
-            cornerWidth: Sizes.cardCornerRadius, cornerHeight: Sizes.cardCornerRadius, transform: nil)
+            roundedRect: bounds.insetBy(dx: Metrics.Desk.newCardBorder / 2, dy: Metrics.Desk.newCardBorder / 2),
+            cornerWidth: Metrics.Desk.cardCornerRadius, cornerHeight: Metrics.Desk.cardCornerRadius, transform: nil)
         layer.borderWidth = isSelected ? ring : 0
-        layer.borderColor = NSColor(Tokens.writeAccent).cgColor
+        layer.borderColor = NSColor(Tokens.accent).cgColor
     }
 
     override func layout() {
@@ -149,9 +148,9 @@ final class WriteCardView: NSView {
     /// Down and smaller. The layer of a view scales from its bottom-left
     /// corner, so the move keeps the card centred.
     private var awayTransform: CATransform3D {
-        let scale = Sizes.riseScale
+        let scale = Metrics.Desk.riseScale
         let shift = CATransform3DMakeTranslation(
-            bounds.width * (1 - scale) / 2, -Sizes.riseDepth, 0)
+            bounds.width * (1 - scale) / 2, -Metrics.Desk.riseDepth, 0)
         return CATransform3DConcat(CATransform3DMakeScale(scale, scale, 1), shift)
     }
 

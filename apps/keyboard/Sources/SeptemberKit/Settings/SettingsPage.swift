@@ -34,6 +34,21 @@ public enum SettingsPage: String, Sendable, Hashable, CaseIterable, Identifiable
         case .accessibility: "accessibility"
         }
     }
+
+    /// The fill of the sidebar icon. The mock uses the same fill in light
+    /// and dark.
+    public var iconFill: ThemeColor {
+        let fill: RGBA =
+            switch self {
+            case .voice, .accessibility: Tokens.accent.dark
+            case .speech: RGBA(hex: 0x8B5CF6)
+            case .predictions: RGBA(hex: 0xFF9F0A)
+            case .clipboard: Tokens.rowShift.dark
+            case .myPanel: RGBA(hex: 0x5E5CE6)
+            case .look: RGBA(hex: 0xFF375F)
+            }
+        return ThemeColor(light: fill, dark: fill)
+    }
 }
 
 /// A group of pages in the sidebar of the Settings window.

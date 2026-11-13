@@ -279,7 +279,7 @@ enum LabSnapshot {
             contentRect: NSRect(x: 0, y: 0, width: width, height: 400), styleMask: [.borderless], backing: .buffered,
             defer: false)
         window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-        window.backgroundColor = NSColor(Tokens.writePaper)
+        window.backgroundColor = NSColor(Tokens.key)
         let content = NSView(frame: window.contentLayoutRect)
         content.wantsLayer = true
         window.contentView = content
@@ -295,7 +295,7 @@ enum LabSnapshot {
 
         guard let rep = content.bitmapImageRepForCachingDisplay(in: content.bounds) else { return false }
         NSAppearance(named: dark ? .darkAqua : .aqua)?.performAsCurrentDrawingAppearance {
-            let paper = NSColor(Tokens.writePaper)
+            let paper = NSColor(Tokens.key)
             NSGraphicsContext.saveGraphicsState()
             NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
             paper.setFill()

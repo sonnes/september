@@ -63,7 +63,7 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         sheet.addSubview(scrollView)
 
         notice.font = Typography.writeNotice
-        notice.textColor = NSColor(Tokens.writeMuted)
+        notice.textColor = NSColor(Tokens.labelSecondary)
         notice.isHidden = true
         notice.translatesAutoresizingMaskIntoConstraints = false
         sheet.addSubview(notice)
@@ -292,7 +292,7 @@ private final class PaperSheetView: NSView {
     /// AppKit calls this again when the appearance changes, so the colour
     /// follows light and dark.
     override func updateLayer() {
-        layer?.backgroundColor = NSColor(Tokens.writePaper).cgColor
+        layer?.backgroundColor = NSColor(Tokens.key).cgColor
     }
 }
 

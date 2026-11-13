@@ -6,6 +6,8 @@ extension Metrics {
     /// The sizes of the Write editor. They come from the Piper editor. An
     /// `em` value is a multiple of the text size of its block.
     public enum WriteEditor {
+        /// The text size of body text.
+        public static let textSize: CGFloat = 18
         /// The line height of body text, in `em`.
         public static let lineHeight: CGFloat = 1.6
         /// The space after a block, in `em`.
@@ -59,7 +61,7 @@ extension Metrics {
     }
 
     /// The sizes of the desk of Write, where the documents stand as cards.
-    public enum WriteDesk {
+    public enum Desk {
         /// A card has the shape of A4 paper, as the paper does.
         public static let cardSize = CGSize(width: 200, height: 283)
         public static let cardGap: CGFloat = 24

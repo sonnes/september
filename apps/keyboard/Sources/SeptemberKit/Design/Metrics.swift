@@ -29,11 +29,6 @@ public enum Metrics {
         }
     }
 
-    /// "48×48", as the component library writes a size.
-    public static func describe(_ size: CGSize) -> String {
-        "\(Int(size.width))×\(Int(size.height))"
-    }
-
     /// A special key with a symbol for its label, such as ⌘, as large as a
     /// letter.
     public static let symbolLabelSize: CGFloat = 18
@@ -103,18 +98,5 @@ public enum Metrics {
         public static let rowVerticalPadding: CGFloat = 2
         public static let rowHorizontalPadding: CGFloat = 4
         public static let rowCornerRadius: CGFloat = 4
-    }
-
-    public enum Gallery {
-        public static let width: CGFloat = 1120
-        public static let padding: CGFloat = 40
-        public static let spacing: CGFloat = 28
-        public static let headerSpacing: CGFloat = 6
-        public static let columns = 3
-        public static let columnWidth: CGFloat = 300
-        public static let columnSpacing: CGFloat = 24
-        public static let sampleSpacing: CGFloat = 16
-        public static let noteSpacing: CGFloat = 4
-        public static let noteWidth: CGFloat = 150
     }
 }
