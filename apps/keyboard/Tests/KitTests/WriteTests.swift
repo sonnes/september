@@ -294,6 +294,23 @@ func writeTests() {
         expectEqual(model.failure, nil)
     }
 
+    test("a card that cannot be read keeps its error until a document opens") {
+        let folder = makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        _ = try write("# Notes", to: folder, name: "Notes.md", modified: now)
+        let locked = try write("# Locked", to: folder, name: "Locked.md", modified: now - 60)
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: locked.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: locked.path) }
+        let (model, _) = makeModel(folder)
+        model.start()
+        let card = try expectValue(model.documents.first { $0.url.lastPathComponent == "Locked.md" })
+
+        expectEqual(model.preview(card, lines: 2), [])
+        expect(model.failure != nil, "the read error is kept")
+        model.newDocument()
+        expectEqual(model.failure, nil)
+    }
+
     test("an edit saves after the save delay, not before") {
         let folder = makeFolder()
         defer { try? FileManager.default.removeItem(at: folder) }

@@ -12,8 +12,9 @@ import Foundation
 public final class WriteModel: ObservableObject {
     @Published public private(set) var documents: [WriteDocument] = []
     @Published public private(set) var current: WriteDocument?
-    /// The last error of the folder, for the paper and the desk to show. It
-    /// never holds document text.
+    /// The last error of the folder, for the paper and the desk to show. A
+    /// list or an open of a document that succeeds clears it. It never holds
+    /// document text.
     @Published public private(set) var failure: String?
     /// The document of the last Move to Trash, until Undo or the next move.
     @Published public private(set) var trashed: WriteDocument?
@@ -156,7 +157,6 @@ public final class WriteModel: ObservableObject {
             isEdited = false
             reload()
             current = documents.first { $0.url == saved } ?? WriteDocument(url: saved, modified: Date())
-            failure = nil
         } catch {
             report(error)
         }
@@ -166,6 +166,7 @@ public final class WriteModel: ObservableObject {
         do {
             let text = try library.read(document)
             current = document
+            failure = nil
             show(text)
         } catch {
             report(error)
@@ -175,6 +176,7 @@ public final class WriteModel: ObservableObject {
     private func reload() {
         do {
             documents = try library.documents()
+            failure = nil
         } catch {
             report(error)
         }
