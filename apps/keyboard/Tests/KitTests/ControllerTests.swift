@@ -19,7 +19,9 @@ final class RecordingSink: KeystrokeSink, @unchecked Sendable {
     func reset() {
         posted = []
         typed = []
+        beeps = 0
         media = []
+        scrolls = []
     }
 
     var downs: [(key: UInt16, flags: Modifiers)] {

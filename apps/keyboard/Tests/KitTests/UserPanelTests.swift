@@ -30,7 +30,7 @@ func temporaryDirectory() -> URL {
 @MainActor
 private struct PanelParts {
     var database = memoryDatabase()
-    var defaults = UserDefaults(suiteName: "kit-mypanel-\(UUID().uuidString)")!
+    var defaults = freshDefaults()
     var texts = MemoryPrivateTexts()
 
     func store() throws -> UserPanelStore {

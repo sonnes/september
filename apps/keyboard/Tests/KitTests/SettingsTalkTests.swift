@@ -33,14 +33,6 @@ private func type(_ ids: [String], into controller: KeyboardController) {
 }
 
 @MainActor
-private func makeDefaults() -> UserDefaults {
-    let name = "SettingsTalkTests.\(UUID().uuidString)"
-    let defaults = UserDefaults(suiteName: name)!
-    defaults.removePersistentDomain(forName: name)
-    return defaults
-}
-
-@MainActor
 func settingsTalkTests() {
     // MARK: Talk mode keys
 
@@ -210,13 +202,13 @@ func settingsTalkTests() {
     }
 
     test("keyboard settings start at the defaults") {
-        let settings = KeyboardSettings(defaults: makeDefaults())
+        let settings = KeyboardSettings(defaults: freshDefaults())
         expectEqual(settings.style, .rainbow)
         expectEqual(settings.returnSpeaksInTalk, true)
     }
 
     test("keyboard settings persist in the defaults") {
-        let defaults = makeDefaults()
+        let defaults = freshDefaults()
         let first = KeyboardSettings(defaults: defaults)
         first.style = .mono
         first.returnSpeaksInTalk = false

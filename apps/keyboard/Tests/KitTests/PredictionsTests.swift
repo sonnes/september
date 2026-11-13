@@ -330,53 +330,13 @@ private func noticeTests() {
     }
 }
 
-private actor FakePredictor: SentencePredicting {
-    nonisolated let availability: PredictionAvailability
-    private let answer: @Sendable (PredictionContext) throws -> [String]
-    private let wait: @Sendable (PredictionContext) -> Duration
-    private(set) var requests: [PredictionContext] = []
-
-    init(
-        availability: PredictionAvailability = .ready,
-        wait: @escaping @Sendable (PredictionContext) -> Duration = { _ in .zero },
-        answer: @escaping @Sendable (PredictionContext) throws -> [String]
-    ) {
-        self.availability = availability
-        self.wait = wait
-        self.answer = answer
-    }
-
-    func predictions(for context: PredictionContext) async throws -> [String] {
-        requests.append(context)
-        // Ignores cancellation, so the engine must drop a late answer itself.
-        let deadline = ContinuousClock.now + wait(context)
-        while ContinuousClock.now < deadline { await Task.yield() }
-        return try answer(context)
-    }
-}
-
-@MainActor
-private final class FakeCompleter: WordCompleting {
-    var wait: Duration = .zero
-    private(set) var responses: [String] = []
-
-    func completions(for context: PredictionContext) async -> [WordCompletion] {
-        if wait > .zero { try? await Task.sleep(for: wait) }
-        return WordCompletion(word: "cup", partial: context.partialWord).map { [$0] } ?? []
-    }
-
-    func record(_ response: WordResponse, to completion: WordCompletion) {
-        responses.append("\(response) \(completion.word)")
-    }
-}
-
 private struct PredictionFailed: Error {}
 
 @MainActor
 private func makeEngine(
     _ predictor: FakePredictor,
     completer: FakeCompleter = FakeCompleter(),
-    defaults: UserDefaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!,
+    defaults: UserDefaults = freshDefaults(),
     history: SentenceHistory? = nil
 ) -> PredictionEngine {
     PredictionEngine(
@@ -388,7 +348,7 @@ private func makeEngine(
 private func makeHistory(_ sentences: [String] = []) throws -> SentenceHistory {
     let history = SentenceHistory(
         database: try KeyboardDatabase(path: ":memory:"),
-        defaults: UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!)
+        defaults: freshDefaults())
     for sentence in sentences { history.record(sentence) }
     return history
 }
@@ -406,16 +366,6 @@ extension PredictionEngine {
             if case .mirrored = input { .mirrored(text: "", caret: 0, selectionLength: 0) } else { .local(text: "") }
         update(input: empty, mode: mode, said: said)
         update(input: input, mode: mode, said: said, screen: screen)
-    }
-}
-
-@MainActor
-private func asyncTest(_ name: String, _ body: () async throws -> Void) async {
-    Run.current = name
-    do {
-        try await body()
-    } catch {
-        Run.failures.append("\(name) — threw \(error)")
     }
 }
 
@@ -617,7 +567,7 @@ private func engineTests() async {
     }
 
     await asyncTest("the screen switch is off until the user turns it on, and keeps its state") {
-        let defaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         let engine = makeEngine(FakePredictor(answer: tea), defaults: defaults)
         expect(!engine.screenEnabled)
         engine.screenEnabled = true
@@ -638,7 +588,7 @@ private func engineTests() async {
     }
 
     await asyncTest("the switches keep their state") {
-        let defaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         makeEngine(FakePredictor(answer: tea), defaults: defaults).wordsEnabled = false
         let again = makeEngine(FakePredictor(answer: tea), defaults: defaults)
         expect(!again.wordsEnabled)
@@ -898,7 +848,7 @@ private func liveModelTests() async {
     await asyncTest("Apple Intelligence gives three predictions that continue the field") {
         let engine = PredictionEngine(
             predictor: AppleIntelligencePredictor(),
-            defaults: UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!)
+            defaults: freshDefaults())
         expectEqual(engine.availability, .ready)
         for text in ["I would like a cu", "I would like a cup of t", "Can we me"] {
             engine.update(

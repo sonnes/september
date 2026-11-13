@@ -117,7 +117,7 @@ private func legacyImportTests() {
         KeyboardDatabase.open(at: folder.appendingPathComponent("keyboard.sqlite"))
     }
 
-    func run(_ folder: URL, defaults: UserDefaults = UserDefaults(suiteName: "kit-legacy-\(UUID().uuidString)")!)
+    func run(_ folder: URL, defaults: UserDefaults = freshDefaults())
         -> KeyboardDatabase
     {
         let database = open(folder)
@@ -156,7 +156,7 @@ private func legacyImportTests() {
         ]
         try JSONEncoder().encode(old).write(to: folder.appendingPathComponent("clipboard-history.json"))
         let history = ClipboardHistory(
-            database: run(folder), defaults: UserDefaults(suiteName: "kit-legacy-\(UUID().uuidString)")!,
+            database: run(folder), defaults: freshDefaults(),
             now: { now })
         expectEqual(history.items, old)
     }
@@ -193,7 +193,7 @@ private func legacyImportTests() {
               {"id": "a", "name": "Home", "action": {"type": "privateText"}},
               {"id": "c", "name": "Hi", "action": {"type": "text", "text": "Hello"}}]}
             """, to: "my-panel.json", in: folder)
-        let defaults = UserDefaults(suiteName: "kit-legacy-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         let store = try UserPanelStore(
             database: run(folder, defaults: defaults), defaults: defaults, privateTexts: MemoryPrivateTexts())
         expectEqual(store.buttons.map(\.id), ["b", "a", "c"])
@@ -208,7 +208,7 @@ private func sentenceHistoryTests() {
 
     func makeHistory(
         now: @escaping () -> Date = Date.init, limit: Int = SentenceHistory.rowLimit,
-        defaults: UserDefaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        defaults: UserDefaults = freshDefaults()
     ) throws -> SentenceHistory {
         SentenceHistory(
             database: try KeyboardDatabase(path: ":memory:"), defaults: defaults, now: now, limit: limit)
@@ -307,7 +307,7 @@ private func sentenceHistoryTests() {
     }
 
     test("the history is on by default, and turning it off removes every sentence") {
-        let defaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         let history = try makeHistory(defaults: defaults)
         expect(history.isEnabled)
         history.record("Hello there.")
@@ -321,7 +321,7 @@ private func sentenceHistoryTests() {
 
     test("the sentences of a history file stay across launches") {
         let url = try temporaryFolder().appendingPathComponent("keyboard.sqlite")
-        let defaults = UserDefaults(suiteName: "kit-tests-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         SentenceHistory(database: KeyboardDatabase.open(at: url), defaults: defaults).record("Good night.")
         let again = SentenceHistory(database: KeyboardDatabase.open(at: url), defaults: defaults)
         expectEqual(again.matches(for: "Good"), ["Good night."])

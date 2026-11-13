@@ -160,23 +160,6 @@ private func settle() async {
     for _ in 0..<20 { await Task.yield() }
 }
 
-@MainActor
-private func testAsync(_ name: String, _ body: () async throws -> Void) async {
-    Run.current = name
-    do {
-        try await body()
-    } catch {
-        Run.failures.append("\(name) — threw \(error)")
-    }
-}
-
-private func freshDefaults() -> UserDefaults {
-    let name = "september.keyboard.tests.\(UUID().uuidString)"
-    let defaults = UserDefaults(suiteName: name)!
-    defaults.removePersistentDomain(forName: name)
-    return defaults
-}
-
 // MARK: - Tests
 
 @MainActor
@@ -279,7 +262,7 @@ func speechTests() async {
 
     // The ElevenLabs client
 
-    await testAsync("the client reads the voices of the account with the key") {
+    await asyncTest("the client reads the voices of the account with the key") {
         StubURLProtocol.reset(accountRoutes)
         let voices = try await stubClient().voices(key: "good")
         let request = StubURLProtocol.requests.first?.request
@@ -290,7 +273,7 @@ func speechTests() async {
         expectEqual(voices[0].previewURL, URL(string: "https://eleven.test/sarah.mp3"))
     }
 
-    await testAsync("the voices fall into groups, with the voices of the user first") {
+    await asyncTest("the voices fall into groups, with the voices of the user first") {
         StubURLProtocol.reset(accountRoutes)
         let voices = try await stubClient().voices(key: "good")
         let groups = ElevenLabsVoice.grouped(voices)
@@ -302,7 +285,7 @@ func speechTests() async {
         expectEqual(groups[2].voices.map(\.detail), ["Soft, young, American"])
     }
 
-    await testAsync("the client reads the credits of the account") {
+    await asyncTest("the client reads the credits of the account") {
         StubURLProtocol.reset(accountRoutes)
         let subscription = try await stubClient().subscription(key: "good")
         expectEqual(StubURLProtocol.requests.first?.request.url?.path, "/v1/user/subscription")
@@ -310,7 +293,7 @@ func speechTests() async {
         expectEqual(subscription.resetsAt, Date(timeIntervalSince1970: 1_764_547_200))
     }
 
-    await testAsync("the client asks for speech with word times") {
+    await asyncTest("the client asks for speech with word times") {
         let text = "Can we go"
         // ElevenLabs sends one time for each character of the text.
         let starts: [Double] = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]
@@ -349,7 +332,7 @@ func speechTests() async {
         expectEqual(speech.words.map(\.start), [0, 0.2, 0.35])
     }
 
-    await testAsync("the client turns a refusal into an error that says why") {
+    await asyncTest("the client turns a refusal into an error that says why") {
         StubURLProtocol.reset { _, _ in .init(status: 401) }
         do {
             _ = try await stubClient().subscription(key: "bad")
@@ -407,7 +390,7 @@ func speechTests() async {
 
     // The ElevenLabs account
 
-    await testAsync("connect tests a key before the keyboard keeps it") {
+    await asyncTest("connect tests a key before the keyboard keeps it") {
         StubURLProtocol.reset(accountRoutes)
         let secrets = MemorySecretStore()
         let account = ElevenLabsAccount(keychain: ElevenLabsKeychain(store: secrets), client: stubClient())
@@ -423,7 +406,7 @@ func speechTests() async {
         expectEqual(account.voices.count, 4)
     }
 
-    await testAsync("Use This Key copies the key of the September app one time") {
+    await asyncTest("Use This Key copies the key of the September app one time") {
         StubURLProtocol.reset(accountRoutes)
         let secrets = MemorySecretStore()
         secrets.items["com.september.desktop/elevenlabs"] = "good"
@@ -441,7 +424,7 @@ func speechTests() async {
         expectEqual(secrets.reads.filter { $0 == "com.september.desktop/elevenlabs" }.count, 1)
     }
 
-    await testAsync("a saved key connects at load, and Disconnect forgets it") {
+    await asyncTest("a saved key connects at load, and Disconnect forgets it") {
         StubURLProtocol.reset(accountRoutes)
         let secrets = MemorySecretStore()
         secrets.items["com.september.keyboard/elevenlabs"] = "good"
@@ -463,7 +446,7 @@ func speechTests() async {
 
     // The Speaker
 
-    await testAsync("Speak publishes the current word, then the speaker is idle") {
+    await asyncTest("Speak publishes the current word, then the speaker is idle") {
         let system = FakeEngine()
         system.holds = true
         system.words = [NSRange(location: 0, length: 3), NSRange(location: 4, length: 2)]
@@ -481,7 +464,7 @@ func speechTests() async {
         expectEqual(speaker.error, nil)
     }
 
-    await testAsync("Stop ends the speech at once") {
+    await asyncTest("Stop ends the speech at once") {
         let system = FakeEngine()
         system.holds = true
         let speaker = Speaker(settings: VoiceSettingsStore(defaults: freshDefaults()), system: system, elevenLabs: FakeEngine())
@@ -495,7 +478,7 @@ func speechTests() async {
         expectEqual(speaker.error, nil)
     }
 
-    await testAsync("an empty text speaks nothing") {
+    await asyncTest("an empty text speaks nothing") {
         let system = FakeEngine()
         let speaker = Speaker(settings: VoiceSettingsStore(defaults: freshDefaults()), system: system, elevenLabs: FakeEngine())
         speaker.speak("  \n ")
@@ -504,7 +487,7 @@ func speechTests() async {
         expectEqual(speaker.state, .idle)
     }
 
-    await testAsync("a new Speak during speech replaces the old speech") {
+    await asyncTest("a new Speak during speech replaces the old speech") {
         let system = FakeEngine()
         system.holds = true
         let speaker = Speaker(settings: VoiceSettingsStore(defaults: freshDefaults()), system: system, elevenLabs: FakeEngine())
@@ -519,7 +502,7 @@ func speechTests() async {
         expectEqual(speaker.state, .idle)
     }
 
-    await testAsync("the macOS voice speaks when ElevenLabs is not the service") {
+    await asyncTest("the macOS voice speaks when ElevenLabs is not the service") {
         let system = FakeEngine()
         let cloud = FakeEngine()
         let speaker = Speaker(settings: VoiceSettingsStore(defaults: freshDefaults()), system: system, elevenLabs: cloud)
@@ -529,7 +512,7 @@ func speechTests() async {
         expectEqual(cloud.spoken, [])
     }
 
-    await testAsync("ElevenLabs speaks when it is the service and it is ready") {
+    await asyncTest("ElevenLabs speaks when it is the service and it is ready") {
         let settings = VoiceSettingsStore(defaults: freshDefaults())
         settings.value.provider = .elevenLabs
         let system = FakeEngine()
@@ -542,7 +525,7 @@ func speechTests() async {
         expectEqual(speaker.state, .idle)
     }
 
-    await testAsync("if ElevenLabs fails, the macOS voice speaks the same text and the error shows") {
+    await asyncTest("if ElevenLabs fails, the macOS voice speaks the same text and the error shows") {
         let settings = VoiceSettingsStore(defaults: freshDefaults())
         settings.value.provider = .elevenLabs
         let system = FakeEngine()
@@ -562,7 +545,7 @@ func speechTests() async {
         expectEqual(speaker.error, nil, "a new Speak clears the old error")
     }
 
-    await testAsync("an ElevenLabs voice that is not set up speaks with the macOS voice and no error") {
+    await asyncTest("an ElevenLabs voice that is not set up speaks with the macOS voice and no error") {
         let settings = VoiceSettingsStore(defaults: freshDefaults())
         settings.value.provider = .elevenLabs
         let system = FakeEngine()
@@ -576,7 +559,7 @@ func speechTests() async {
         expectEqual(speaker.error, nil)
     }
 
-    await testAsync("ElevenLabs is ready with a key and a voice") {
+    await asyncTest("ElevenLabs is ready with a key and a voice") {
         StubURLProtocol.reset(accountRoutes)
         let secrets = MemorySecretStore()
         let account = ElevenLabsAccount(keychain: ElevenLabsKeychain(store: secrets), client: stubClient())

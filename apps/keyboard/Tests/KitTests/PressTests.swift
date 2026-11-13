@@ -419,13 +419,8 @@ private func keyTimingTests() {
     }
 
     test("key timing reads Slow Keys and press and hold from the defaults") {
-        let suite = "september-test-\(UUID().uuidString)"
-        let global = UserDefaults(suiteName: suite + "-global")!
-        let access = UserDefaults(suiteName: suite + "-access")!
-        defer {
-            removeDefaults(suite + "-global")
-            removeDefaults(suite + "-access")
-        }
+        let global = freshDefaults()
+        let access = freshDefaults()
         global.set(false, forKey: "ApplePressAndHoldEnabled")
         access.set(true, forKey: "slowKey")
         access.set(500, forKey: "slowKeyDelay")

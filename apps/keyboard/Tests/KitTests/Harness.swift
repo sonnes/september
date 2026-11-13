@@ -6,14 +6,42 @@ enum Run {
     nonisolated(unsafe) static var passed = 0
     nonisolated(unsafe) static var failures: [String] = []
     nonisolated(unsafe) static var current = ""
+    static let defaultsFolder = FileManager.default.temporaryDirectory
+        .appendingPathComponent("kit-defaults-\(UUID().uuidString)", isDirectory: true)
 }
 
+/// Runs one test. A test fails when it throws, when an `expect` fails, or
+/// when its body ran no `expect`.
 func test(_ name: String, _ body: () throws -> Void) {
-    Run.current = name
+    let checks = begin(name)
     do {
         try body()
     } catch {
         Run.failures.append("\(name) — threw \(error)")
+    }
+    end(name, checks: checks)
+}
+
+/// Runs one async test with the same rules as `test`.
+@MainActor
+func asyncTest(_ name: String, _ body: () async throws -> Void) async {
+    let checks = begin(name)
+    do {
+        try await body()
+    } catch {
+        Run.failures.append("\(name) — threw \(error)")
+    }
+    end(name, checks: checks)
+}
+
+private func begin(_ name: String) -> Int {
+    Run.current = name
+    return Run.passed + Run.failures.count
+}
+
+private func end(_ name: String, checks: Int) {
+    if Run.passed + Run.failures.count == checks {
+        Run.failures.append("\(name) — ran no expect")
     }
 }
 
@@ -35,6 +63,7 @@ func expectEqual<V: Equatable>(
 }
 
 func summarize() -> Never {
+    try? FileManager.default.removeItem(at: Run.defaultsFolder)
     if Run.failures.isEmpty {
         print("✓ \(Run.passed) checks passed")
         exit(0)
@@ -44,12 +73,10 @@ func summarize() -> Never {
     exit(1)
 }
 
-/// Removes the defaults domain `name` and its file in `~/Library/Preferences`.
-/// `removePersistentDomain(forName:)` empties the domain but keeps the file,
-/// so `defaults domains` still lists the name until the file is gone.
-func removeDefaults(_ name: String) {
-    UserDefaults.standard.removePersistentDomain(forName: name)
-    let file = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent("Library/Preferences/\(name).plist")
-    try? FileManager.default.removeItem(at: file)
+/// Returns an empty defaults domain. A suite name that is an absolute path
+/// keeps the domain in that file, not in `~/Library/Preferences`, and
+/// `summarize` removes the folder of these files when the run ends.
+func freshDefaults() -> UserDefaults {
+    let file = Run.defaultsFolder.appendingPathComponent("\(UUID().uuidString).plist")
+    return UserDefaults(suiteName: file.path)!
 }

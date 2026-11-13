@@ -295,9 +295,7 @@ private func placementTests() {
     }
 
     test("the keyboard window keeps the place where the user put it") {
-        let suite = "september-test-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { removeDefaults(suite) }
+        let defaults = freshDefaults()
         let position = KeyboardPosition(defaults: defaults)
         expectEqual(position.saved, nil)
         position.saved = CGPoint(x: 300, y: 200)
@@ -351,7 +349,7 @@ private struct SessionParts {
     let clock: FakeClock
     let reader: FakeFrontAppReader
     let write: FakeWrite
-    let completer: CupCompleter
+    let completer: FakeCompleter
     let pasteboard: MemoryPasteboard
     let clipboard: ClipboardHistory
     let history: SentenceHistory
@@ -362,16 +360,16 @@ private struct SessionParts {
 private func makeSession(
     userPanel: Result<UserPanelStore, any Error>? = nil,
     voiceHolds: Bool = false,
-    predictor: any SentencePredicting = SilentPredictor(),
+    predictor: any SentencePredicting = FakePredictor(),
     pasteboard: MemoryPasteboard = MemoryPasteboard()
 ) throws -> SessionParts {
     let (controller, sink) = try makeController()
-    let defaults = UserDefaults(suiteName: "kit-integration-\(UUID().uuidString)")!
+    let defaults = freshDefaults()
     let voice = FakeEngine()
     voice.holds = voiceHolds
     let speaker = Speaker(
         settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: FakeEngine())
-    let completer = CupCompleter()
+    let completer = FakeCompleter()
     let database = try KeyboardDatabase(path: ":memory:")
     let history = SentenceHistory(database: database, defaults: defaults)
     let engine = PredictionEngine(
@@ -426,34 +424,6 @@ private final class FakeWrite: WriteReading {
 private func passScreenDelay(_ parts: SessionParts) async {
     parts.clock.advance(to: parts.clock.now + KeyboardSession.screenReadDelay)
     await parts.session.settle()
-}
-
-private struct SilentPredictor: SentencePredicting {
-    var availability: PredictionAvailability { .ready }
-    func predictions(for context: PredictionContext) async throws -> [String] { [] }
-}
-
-private actor RecordingPredictor: SentencePredicting {
-    nonisolated var availability: PredictionAvailability { .ready }
-    private(set) var requests: [PredictionContext] = []
-
-    func predictions(for context: PredictionContext) async throws -> [String] {
-        requests.append(context)
-        return []
-    }
-}
-
-@MainActor
-private final class CupCompleter: WordCompleting {
-    private(set) var responses: [String] = []
-
-    func completions(for context: PredictionContext) -> [WordCompletion] {
-        WordCompletion(word: "cup", partial: context.partialWord).map { [$0] } ?? []
-    }
-
-    func record(_ response: WordResponse, to completion: WordCompletion) {
-        responses.append("\(response) \(completion.word)")
-    }
 }
 
 @MainActor
@@ -669,7 +639,7 @@ private func sessionTests() async {
     }
 
     await asyncTest("the text on screen reaches the predictions in Type mode with the switch on") {
-        let predictor = RecordingPredictor()
+        let predictor = FakePredictor()
         let parts = try makeSession(predictor: predictor)
         let screen = ScreenContext(
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
@@ -695,7 +665,7 @@ private func sessionTests() async {
     }
 
     await asyncTest("Type mode sends no Talk history, and Talk mode sends the last hour") {
-        let predictor = RecordingPredictor()
+        let predictor = FakePredictor()
         let parts = try makeSession(predictor: predictor)
         let said = parts.controller.talk.said
         said.add("Yesterday", at: Date().addingTimeInterval(-24 * 3600))
@@ -713,7 +683,7 @@ private func sessionTests() async {
     }
 
     await asyncTest("a read from another app is dropped, and a new app clears the screen") {
-        let predictor = RecordingPredictor()
+        let predictor = FakePredictor()
         let parts = try makeSession(predictor: predictor)
         parts.session.predictions.screenEnabled = true
         parts.reader.screens[whatsApp.pid] = ScreenContext(
@@ -998,7 +968,7 @@ private func sessionTests() async {
     }
 
     await asyncTest("the assembly joins the keyboard to its sink, its database, its pasteboard, and Write") {
-        let defaults = UserDefaults(suiteName: "kit-assembly-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         let database = try KeyboardDatabase(path: ":memory:")
         let sink = RecordingSink()
         let pasteboard = MemoryPasteboard()
@@ -1009,7 +979,7 @@ private func sessionTests() async {
         let assembly = try KeyboardAssembly(
             sink: sink, database: database, pasteboard: pasteboard, reader: FakeFrontAppReader(),
             speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: FakeEngine()),
-            write: write, predictions: PredictionEngine(predictor: SilentPredictor(), defaults: defaults),
+            write: write, predictions: PredictionEngine(predictor: FakePredictor(), defaults: defaults),
             defaults: defaults, privateTexts: MemoryPrivateTexts())
         let session = assembly.session
         expect(session.canPaste, "the session reads the pasteboard")
@@ -1050,7 +1020,7 @@ private func sessionTests() async {
         let parts = try makeSession(
             userPanel: Result {
                 try UserPanelStore(
-                    database: database, defaults: UserDefaults(suiteName: "kit-broken-\(UUID().uuidString)")!,
+                    database: database, defaults: freshDefaults(),
                     privateTexts: MemoryPrivateTexts())
             })
         let error = parts.session.userPanelError ?? ""
@@ -1076,7 +1046,7 @@ private func sessionTests() async {
         }
         let texts = MemoryPrivateTexts()
         texts.texts["d"] = "1 Main Street"
-        let defaults = UserDefaults(suiteName: "kit-rows-\(UUID().uuidString)")!
+        let defaults = freshDefaults()
         let store = try UserPanelStore(database: database, defaults: defaults, privateTexts: texts)
         let parts = try makeSession(userPanel: .success(store))
         parts.controller.privateTexts = texts
@@ -1135,16 +1105,6 @@ private func field(_ text: String, caret: Int, selection: Int = 0) -> FocusedFie
     FocusedField(
         appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false, text: text,
         selection: NSRange(location: caret, length: selection))
-}
-
-@MainActor
-private func asyncTest(_ name: String, _ body: () async throws -> Void) async {
-    Run.current = name
-    do {
-        try await body()
-    } catch {
-        Run.failures.append("\(name) — threw \(error)")
-    }
 }
 
 // MARK: - The height of the panels
