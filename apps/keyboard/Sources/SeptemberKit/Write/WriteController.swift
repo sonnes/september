@@ -22,7 +22,7 @@ public final class WriteController {
     /// reads the editor here.
     public var onCaretChange: ((EditorCaret) -> Void)?
     /// Called with the panel of Write when the desk opens or closes.
-    public var onPanelChange: ((String) -> Void)?
+    public var onPanelChange: ((WritePanel) -> Void)?
     /// Called with `true` when the paper or the desk becomes the key window,
     /// and with `false` when it stops being the key window.
     public var onKeyChanged: ((Bool) -> Void)? {
@@ -126,7 +126,7 @@ public final class WriteController {
 
     /// The panel of Write: the Documents keys while the desk is open,
     /// and the Write keys on the paper.
-    public var panel: String { desk.isOpen ? WritePanel.documentsID : WritePanel.id }
+    public var panel: WritePanel { desk.isOpen ? .desk : .paper }
 
     /// Opens the desk. The open document saves first, and the paper shrinks
     /// into its card.

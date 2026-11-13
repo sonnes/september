@@ -19,7 +19,7 @@ public struct EditorCaret: Equatable, Sendable {
     /// The paragraph as a focused field, for `KeyboardController.focusChanged(to:)`.
     public var focusedField: FocusedField {
         FocusedField(
-            appName: "Write", role: "AXTextArea", isEditable: true, isSecure: false,
+            appName: FrontTarget.writeName, role: "AXTextArea", isEditable: true, isSecure: false,
             text: text, selection: NSRange(location: caret, length: length))
     }
 }

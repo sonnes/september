@@ -97,21 +97,21 @@ func writeControllerTests() {
     test("Command-O opens the desk on the open document, and the Write panel turns to Documents") {
         let (write, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
-        var panels: [String] = []
+        var panels: [WritePanel] = []
         write.onPanelChange = { panels.append($0) }
-        expectEqual(write.panel, WritePanel.id)
+        expectEqual(write.panel, .paper)
 
         write.paper.window.onShowDocuments?()
         expect(write.isDeskOpen, "the desk is open")
         expectEqual(write.desk.desk.selected, .document(write.model.documents[0]))
-        expectEqual(write.panel, WritePanel.documentsID)
-        expectEqual(panels, [WritePanel.documentsID])
+        expectEqual(write.panel, .desk)
+        expectEqual(panels, [.desk])
     }
 
     test("Return on a card opens its document on the paper") {
         let (write, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
-        var panels: [String] = []
+        var panels: [WritePanel] = []
         write.onPanelChange = { panels.append($0) }
         write.showDesk()
 
@@ -120,7 +120,7 @@ func writeControllerTests() {
         expect(!write.isDeskOpen, "the desk closes")
         expectEqual(write.model.current?.title, "Old")
         expectEqual(write.paper.editor.markdown, "# Old")
-        expectEqual(panels, [WritePanel.documentsID, WritePanel.id])
+        expectEqual(panels, [.desk, .paper])
     }
 
     test("the New Document card and Command-N on the desk start a new document") {
@@ -219,6 +219,6 @@ func writeControllerTests() {
         write.showDesk()
         write.desk.onCommand?(.close)
         expect(!write.isDeskOpen, "the desk closes")
-        expectEqual(write.panel, WritePanel.id)
+        expectEqual(write.panel, .paper)
     }
 }

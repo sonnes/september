@@ -73,9 +73,9 @@ public final class KeyboardSession: ObservableObject {
     /// A modifier that macOS holds shows the shortcuts after this hold, so a
     /// quick chord does not make the bar blink.
     public static let modifierHoldDelay: TimeInterval = 0.4
-    @Published private var isWriteInFront = false
-    /// The bundle ID of the app in front.
-    private var frontBundleID: String?
+    /// The app or the Write panel that the keyboard types into.
+    @Published private var front: FrontTarget?
+    private var isWriteInFront: Bool { front?.isWrite == true }
     /// The text near the field of the app in front, from the last read.
     private var screen: ScreenContext?
     /// False while the document of the Write window has no text.
@@ -308,25 +308,37 @@ public final class KeyboardSession: ObservableObject {
 
     // MARK: - The app in front
 
-    /// A different app came to the front. The last app's text goes first,
-    /// then My Panel takes its new order. `WritePanel.id` and
-    /// `WritePanel.documentsID` stand for Write.
-    public func appChanged(name: String?, bundleID: String?) {
-        controller.appChanged(name: name)
+    /// A different app or Write came to the front. The last app's text goes
+    /// first, then My Panel takes its new order.
+    public func frontChanged(_ target: FrontTarget) {
+        controller.appChanged(name: target.name)
         isHistoryOpen = false
-        isWriteInFront = WritePanel.isWrite(bundleID)
-        frontBundleID = bundleID
+        front = target
         screen = nil
         menu = nil
-        writePanel = controller.panels.writePanel(for: bundleID)
+        if case .write(let panel) = target {
+            writePanel = controller.panels.writePanel(for: panel)
+        } else {
+            writePanel = nil
+        }
         predictions.focusMoved()
         rankUserPanel()
+        scheduleUpdate()
+    }
+
+    /// The paper of Write turned into the desk, or the desk into the paper.
+    /// Only the keys of Write change. The caret comes next, with
+    /// `writeCaretMoved(_:)`.
+    public func writePanelChanged(_ panel: WritePanel) {
+        guard isWriteInFront else { return }
+        front = .write(panel)
+        writePanel = controller.panels.writePanel(for: panel)
     }
 
     /// The app read the text near the field. A read of an app that is no
     /// longer in front is dropped.
     public func screenRead(_ screen: ScreenContext?) {
-        guard screen == nil || screen?.bundleID == frontBundleID else { return }
+        guard case .app(let app) = front, screen == nil || screen?.bundleID == app.bundleID else { return }
         self.screen = screen
         scheduleUpdate()
     }
@@ -341,8 +353,9 @@ public final class KeyboardSession: ObservableObject {
 
     /// The editor of the Write window reported the paragraph at the caret.
     /// The paragraph goes to the input bar. An empty document turns Speak
-    /// off.
-    public func writeCaretRead(_ caret: EditorCaret) {
+    /// off. Nothing changes while another app is in front.
+    public func writeCaretMoved(_ caret: EditorCaret) {
+        guard isWriteInFront else { return }
         writeHasText = !caret.documentIsEmpty
         controller.focusChanged(to: caret.focusedField)
         scheduleUpdate()
@@ -398,13 +411,13 @@ public final class KeyboardSession: ObservableObject {
         // it stores the new value.
         controller.$focusedField
             .combineLatest(controller.$input, controller.$mode, controller.$isFieldPrivate)
-            .combineLatest($isWriteInFront)
-            .sink { [weak self] values, isWriteInFront in
+            .combineLatest($front)
+            .sink { [weak self] values, front in
                 let (field, input, mode, isPrivate) = values
                 self?.inputBar.update(
                     InputBarVisibility.wantsBar(
                         mode: mode, focusedField: field, isFieldPrivate: isPrivate, input: input,
-                        isWriteInFront: isWriteInFront))
+                        isWriteInFront: front?.isWrite == true))
             }
             .store(in: &subscriptions)
         controller.$mode

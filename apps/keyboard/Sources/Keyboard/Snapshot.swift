@@ -119,14 +119,14 @@ enum Snapshot {
                 session.speakPressed()
             }
         } else if arguments.contains("--write") {
-            session.appChanged(name: "Write", bundleID: WritePanel.id)
+            session.frontChanged(.write(.paper))
             let line = typed ?? "Send the release notes before the we"
             controller.focusChanged(to: EditorCaret(text: "", caret: 0, length: 0).focusedField)
             settle(session)
             controller.focusChanged(
                 to: EditorCaret(text: line, caret: (line as NSString).length, length: 0).focusedField)
         } else {
-            session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS")
+            session.frontChanged(.app(FrontApp(pid: 0, name: "Messages", bundleID: "com.apple.MobileSMS")))
             let text = typed ?? "Are we still on for t"
             for sample in ["", text] {
                 controller.focusChanged(
@@ -153,7 +153,7 @@ enum Snapshot {
             if arguments.contains("--mine") {
                 try addSampleButtons(to: userPanel)
                 // My Panel ranks its buttons when an app comes to the front.
-                session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS")
+                session.frontChanged(.app(FrontApp(pid: 0, name: "Messages", bundleID: "com.apple.MobileSMS")))
             }
         }
         settle(session)

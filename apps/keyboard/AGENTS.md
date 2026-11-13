@@ -109,12 +109,14 @@ only what needs a running app — the panel, the event sink, the menu bar.
   field. Call `KeyboardSession.focusMoved()` only when the focused element
   changes, not when its value changes.
 - **An app switch is one ordered step.** `FocusWatcher.onAppChanged` clears the
-  last app's text through `KeyboardSession.appChanged` *before* the new app's
+  last app's text through `KeyboardSession.frontChanged` *before* the new app's
   field is read. Do not observe `didActivateApplication` anywhere else: two
   observers of one notification cannot promise that order, and the bar ends up
   stuck empty. The Write paper belongs to the keyboard process, so
-  `FrontAppTracker` decides between the Write paper and another app. It
-  matches apps on the process ID.
+  `FrontAppTracker` decides between Write and another app, and gives a
+  `FrontTarget`. It matches apps on the process ID. A switch between the
+  paper and the desk is not an app switch: it goes to
+  `KeyboardSession.writePanelChanged`.
 - **The input bar is a mirror, not a buffer.** It shows the focused field's own
   text (`InputMirror.mirrored`), our echo only when the app exposes none, and
   nothing for a password field. Never keep text typed into an

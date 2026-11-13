@@ -76,7 +76,7 @@ An update does these steps in this order:
    the input is the Talk bar, and the lines of the last hour of the Talk
    history are the conversation. Private text gives the predictions no input.
    The engine shows sentence predictions only after the user types in the
-   field. `focusMoved()` and `appChanged(...)` start a new field.
+   field. `focusMoved()` and `frontChanged(_:)` start a new field.
 2. If the speech ended after the last update, it tells Talk mode. Talk mode
    then empties the bar.
 3. It sets `speakMode`. In Type mode, Speak is on when the field has text to
@@ -100,13 +100,15 @@ Settings ranks Mine at once, because the user is in the Settings window.
 `FocusWatcher` follows the app in front. For a new app, the calls come in this
 order:
 
-1. `FrontAppTracker` decides between the Write paper and another app.
-2. `appChanged(name:bundleID:)`. The controller clears the text of the last
-   app. Then `writePanel` changes, and Mine takes its new order.
+1. `FrontAppTracker` decides between Write and another app. It gives a
+   `FrontTarget`: `.app(FrontApp)` or `.write(WritePanel)`.
+2. `frontChanged(_:)`. The controller clears the text of the last app. The
+   clipboard history closes. Then `writePanel` changes, and Mine takes its
+   new order.
 3. `focusMoved()`. The private state of the last field ends.
 4. `controller.focusChanged(to:)` with the field of the new app.
 
-If the field of the new app comes before `appChanged`, the controller clears
+If the field of the new app comes before `frontChanged`, the controller clears
 it, and the bar stays empty. For this reason, `FocusWatcher.onAppChanged` is
 the only observer of the app switch.
 
@@ -121,16 +123,19 @@ the only observer of the app switch.
 
 The Write paper is in the keyboard process, and the keyboard cannot read its
 own window through the accessibility API. When the paper becomes the key
-window, the app calls `appChanged` with `WritePanel.id`. Then the editor
+window, the app calls `frontChanged(.write(.paper))`. Then the editor
 reports the paragraph at the caret after each edit and each caret move. The
-app gives it to `writeCaretRead(_:)`. The session sends the paragraph to
-`controller.focusChanged(to:)` and records if the document has text.
+app gives it to `writeCaretMoved(_:)`. The session sends the paragraph to
+`controller.focusChanged(to:)` and records if the document has text. While
+another app is in front, the session ignores the caret of Write.
 
 The desk of Write is the other window of Write. When the paper turns into the
-desk, the app calls `appChanged` with `WritePanel.documentsID`, so the Write
-tab shows the Documents keys. The desk reports its Find query in place of
-the paragraph. When the desk turns back into the paper, the app calls
-`appChanged` with `WritePanel.id` again.
+desk, the app calls `writePanelChanged(.desk)`, so the Write tab shows the
+Documents keys. The desk reports its Find query in place of the paragraph.
+When the desk turns back into the paper, the app calls
+`writePanelChanged(.paper)`. A switch between the paper and the desk changes
+only the keys and the caret. The history, the echo, and the order of Mine
+stay.
 
 ### The clipboard changes
 

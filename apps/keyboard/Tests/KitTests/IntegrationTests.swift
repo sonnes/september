@@ -179,9 +179,15 @@ private func wiringTests() {
         let messages = FrontApp(pid: 2, name: "Messages", bundleID: "com.apple.MobileSMS")
         expectEqual(tracker.appActivated(messages), .app(messages))
         expectEqual(tracker.appActivated(FrontApp(pid: 1, name: "Keyboard", bundleID: nil)), nil)
-        expectEqual(tracker.writeKeyChanged(true, front: nil), .write)
-        expectEqual(tracker.writeKeyChanged(false, front: messages), .app(messages))
+        expectEqual(tracker.writeKeyChanged(true, panel: .paper, front: nil), .write(.paper))
+        expectEqual(tracker.writeKeyChanged(false, panel: .paper, front: messages), .app(messages))
         expectEqual(tracker.appActivated(messages), nil)
+    }
+
+    test("the Write window comes to the front with its panel") {
+        var tracker = FrontAppTracker(ownPID: 1)
+        expectEqual(tracker.writeKeyChanged(true, panel: .desk, front: nil), .write(.desk))
+        expectEqual(tracker.writeKeyChanged(true, panel: .paper, front: nil), nil)
     }
 
     test("the app in front after the Write window matches on the process") {
@@ -189,17 +195,18 @@ private func wiringTests() {
         let first = FrontApp(pid: 2, name: "Terminal", bundleID: "com.apple.Terminal")
         let second = FrontApp(pid: 3, name: "Terminal", bundleID: "com.apple.Terminal")
         _ = tracker.appActivated(first)
-        _ = tracker.writeKeyChanged(true, front: nil)
+        _ = tracker.writeKeyChanged(true, panel: .paper, front: nil)
         expectEqual(tracker.appActivated(second), .app(second))
-        expectEqual(tracker.writeKeyChanged(false, front: second), nil)
+        expectEqual(tracker.writeKeyChanged(false, panel: .paper, front: second), nil)
     }
 
     test("Settings in front keeps the panel of the last app") {
         var tracker = FrontAppTracker(ownPID: 1)
         let mail = FrontApp(pid: 4, name: "Mail", bundleID: "com.apple.mail")
         _ = tracker.appActivated(mail)
-        _ = tracker.writeKeyChanged(true, front: nil)
-        expectEqual(tracker.writeKeyChanged(false, front: FrontApp(pid: 1, name: nil, bundleID: nil)), nil)
+        _ = tracker.writeKeyChanged(true, panel: .paper, front: nil)
+        expectEqual(
+            tracker.writeKeyChanged(false, panel: .paper, front: FrontApp(pid: 1, name: nil, bundleID: nil)), nil)
     }
 }
 
@@ -506,7 +513,7 @@ private func shortcutTests() async {
         parts.controller.focusChanged(to: focus("AXGroup"))
         await parts.session.settle()
         expectEqual(reads, 1)
-        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes")
+        parts.session.frontChanged(.app(notes))
         await parts.session.settle()
         expectEqual(reads, 2)
     }
@@ -544,9 +551,9 @@ private func sessionTests() async {
         parts.controller.mode = .type
         parts.clock.advance(to: 0.25)
         expect(!bar.isVisible)
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
+        parts.session.frontChanged(.write(.paper))
         expect(bar.isVisible)
-        parts.session.appChanged(name: "Finder", bundleID: "com.apple.finder")
+        parts.session.frontChanged(.app(FrontApp(pid: 14, name: "Finder", bundleID: "com.apple.finder")))
         parts.clock.advance(to: 0.5)
         expect(!bar.isVisible)
     }
@@ -577,7 +584,7 @@ private func sessionTests() async {
         parts.controller.press(returnKey)
         expectEqual(parts.history.matches(for: "See"), ["See you soon."])
 
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
+        parts.session.frontChanged(.write(.paper))
         try await userTypes("My diary.", in: parts)
         parts.controller.press(returnKey)
         expectEqual(parts.history.count, 1)
@@ -626,7 +633,7 @@ private func sessionTests() async {
     await asyncTest("the text on screen reaches the predictions in Type mode with the switch on") {
         let predictor = RecordingPredictor()
         let parts = try makeSession(predictor: predictor)
-        parts.session.appChanged(name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp")
+        parts.session.frontChanged(.app(whatsApp))
         try await userTypes("Yes", in: parts)
         let screen = ScreenContext(
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
@@ -670,12 +677,12 @@ private func sessionTests() async {
         let predictor = RecordingPredictor()
         let parts = try makeSession(predictor: predictor)
         parts.session.predictions.screenEnabled = true
-        parts.session.appChanged(name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp")
+        parts.session.frontChanged(.app(whatsApp))
         try await userTypes("Yes", in: parts)
         parts.session.screenRead(
             ScreenContext(bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"]))
         await parts.session.settle()
-        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes")
+        parts.session.frontChanged(.app(notes))
         try await userTypes("Ye", in: parts)
         parts.session.screenRead(
             ScreenContext(bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Late"]))
@@ -739,8 +746,8 @@ private func sessionTests() async {
     await asyncTest("Speak in the Write window reads the document without its marks") {
         let parts = try makeSession(voiceHolds: true)
         parts.session.writeSpeech = { EditorSpeech(selection: "", markdown: "# Plan\n\nSee **the roses**.") }
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
-        parts.session.writeCaretRead(EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: false))
+        parts.session.frontChanged(.write(.paper))
+        parts.session.writeCaretMoved(EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: false))
         await parts.session.settle()
         expectEqual(parts.session.speakMode, .speak, "an empty paragraph at the caret leaves Speak on")
         expectEqual(parts.controller.input, .mirrored(text: "", caret: 0, selectionLength: 0))
@@ -753,11 +760,11 @@ private func sessionTests() async {
 
     await asyncTest("Speak in the Write window is off while the document has no text") {
         let parts = try makeSession()
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
-        parts.session.writeCaretRead(EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: true))
+        parts.session.frontChanged(.write(.paper))
+        parts.session.writeCaretMoved(EditorCaret(text: "", caret: 0, length: 0, documentIsEmpty: true))
         await parts.session.settle()
         expectEqual(parts.session.speakMode, .off)
-        parts.session.writeCaretRead(EditorCaret(text: "Hi", caret: 2, length: 0, documentIsEmpty: false))
+        parts.session.writeCaretMoved(EditorCaret(text: "Hi", caret: 2, length: 0, documentIsEmpty: false))
         await parts.session.settle()
         expectEqual(parts.session.speakMode, .speak)
     }
@@ -765,8 +772,8 @@ private func sessionTests() async {
     await asyncTest("Speak in the Write window reads the selection") {
         let parts = try makeSession()
         parts.session.writeSpeech = { EditorSpeech(selection: "the roses", markdown: "See **the roses**.") }
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
-        parts.session.writeCaretRead(EditorCaret(text: "See the roses.", caret: 4, length: 9, documentIsEmpty: false))
+        parts.session.frontChanged(.write(.paper))
+        parts.session.writeCaretMoved(EditorCaret(text: "See the roses.", caret: 4, length: 9, documentIsEmpty: false))
         parts.session.speakPressed()
         await parts.session.settle()
         expectEqual(parts.voice.spoken, ["the roses"])
@@ -775,8 +782,8 @@ private func sessionTests() async {
     await asyncTest("Speak in another app reads its field, not the Write document") {
         let parts = try makeSession()
         parts.session.writeSpeech = { EditorSpeech(selection: "", markdown: "The document") }
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
-        parts.session.appChanged(name: "Messages", bundleID: "com.apple.MobileSMS")
+        parts.session.frontChanged(.write(.paper))
+        parts.session.frontChanged(.app(messages))
         parts.controller.focusChanged(to: field("Hello", caret: 5))
         await parts.session.settle()
         parts.session.speakPressed()
@@ -814,24 +821,46 @@ private func sessionTests() async {
 
     await asyncTest("the Write window gets the Write panel, and another app gets none") {
         let parts = try makeSession()
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.id)
+        parts.session.frontChanged(.write(.paper))
         expectEqual(parts.session.writePanel, parts.controller.panels.write)
         expectEqual(parts.controller.frontmostAppName, "Write")
-        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes")
+        parts.session.frontChanged(.app(notes))
         expectEqual(parts.session.writePanel, nil)
     }
 
     await asyncTest("the desk of Write gets the Documents panel, and Speak reads what Write gives") {
         let parts = try makeSession()
         parts.session.writeSpeech = { EditorSpeech(selection: "Garden Plans", markdown: "") }
-        parts.session.appChanged(name: "Write", bundleID: WritePanel.documentsID)
+        parts.session.frontChanged(.write(.desk))
         expectEqual(parts.session.writePanel, parts.controller.panels.writeDocuments)
-        parts.session.writeCaretRead(EditorCaret(text: "gar", caret: 3, length: 0))
+        parts.session.writeCaretMoved(EditorCaret(text: "gar", caret: 3, length: 0))
         await parts.session.settle()
         expectEqual(parts.controller.input, .mirrored(text: "gar", caret: 3, selectionLength: 0))
         parts.session.speakPressed()
         await parts.session.settle()
         expectEqual(parts.voice.spoken, ["Garden Plans"])
+    }
+
+    await asyncTest("a switch between the paper and the desk changes only the panel and the caret") {
+        let parts = try makeSession()
+        parts.session.frontChanged(.write(.paper))
+        parts.session.writeCaretMoved(EditorCaret(text: "Dear", caret: 4, length: 0))
+        parts.session.toggleHistory()
+        parts.session.writePanelChanged(.desk)
+        parts.session.writeCaretMoved(EditorCaret(text: "gar", caret: 3, length: 0))
+        expect(parts.session.isHistoryOpen, "the history stays open")
+        expectEqual(parts.session.writePanel, parts.controller.panels.writeDocuments)
+        expectEqual(parts.controller.input, .mirrored(text: "gar", caret: 3, selectionLength: 0))
+    }
+
+    await asyncTest("the Write panel and the caret of Write change nothing while another app is in front") {
+        let parts = try makeSession()
+        parts.session.frontChanged(.app(notes))
+        parts.controller.focusChanged(to: field("Hi", caret: 2))
+        parts.session.writePanelChanged(.desk)
+        parts.session.writeCaretMoved(EditorCaret(text: "gar", caret: 3, length: 0))
+        expectEqual(parts.session.writePanel, nil)
+        expectEqual(parts.controller.input, .mirrored(text: "Hi", caret: 2, selectionLength: 0))
     }
 
     await asyncTest("Mine ranks its buttons again only when an app comes to the front") {
@@ -849,7 +878,7 @@ private func sessionTests() async {
         expect(!parts.sink.posted.isEmpty)
         expectEqual(parts.session.mineButtons.map(\.name), ["Save", "Undo"])
 
-        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes")
+        parts.session.frontChanged(.app(notes))
         expectEqual(parts.session.mineButtons.map(\.name), ["Undo", "Save"])
     }
 
@@ -922,11 +951,11 @@ private func panelHeightTests() async {
         let system = height(KeypadCard(panel: controller.panels.system), controller: controller)
         expectEqual(height(KeypadCard(panel: controller.panels.text), controller: controller), system, "Text")
         let card = MyPanelCard(session: parts.session)
-        for bundleID in [WritePanel.id, WritePanel.documentsID] {
-            parts.session.appChanged(name: "Write", bundleID: bundleID)
-            expectEqual(height(card, controller: controller), system, bundleID)
+        for panel in [WritePanel.paper, .desk] {
+            parts.session.frontChanged(.write(panel))
+            expectEqual(height(card, controller: controller), system, "\(panel)")
         }
-        parts.session.appChanged(name: "Notes", bundleID: "com.apple.Notes")
+        parts.session.frontChanged(.app(notes))
         expectEqual(height(card, controller: controller), system, "an empty Mine")
         let store = try expectValue(parts.userPanel)
         for index in 0..<14 {
@@ -1120,7 +1149,7 @@ private func clipboardSessionTests() async {
     await asyncTest("an app change and a mode change close the history") {
         let parts = try makeSession()
         parts.session.toggleHistory()
-        parts.session.appChanged(name: "Mail", bundleID: "com.apple.mail")
+        parts.session.frontChanged(.app(FrontApp(pid: 13, name: "Mail", bundleID: "com.apple.mail")))
         expect(!parts.session.isHistoryOpen)
         parts.session.toggleHistory()
         parts.controller.mode = .talk
@@ -1144,3 +1173,7 @@ private func clipboardSessionTests() async {
         expectEqual(parts.session.historyPage, 0)
     }
 }
+
+private let notes = FrontApp(pid: 10, name: "Notes", bundleID: "com.apple.Notes")
+private let whatsApp = FrontApp(pid: 11, name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp")
+private let messages = FrontApp(pid: 12, name: "Messages", bundleID: "com.apple.MobileSMS")
