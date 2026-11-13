@@ -21,8 +21,6 @@ extension Metrics {
         /// Three rows. The stack keeps this height, so the input bar does not
         /// move when the predictions change.
         public static let stackHeight: CGFloat = tileHeight * 3 + rowSpacing * 2
-        /// The gap between the stack and the input bar.
-        public static let stackBottomSpacing: CGFloat = 14
 
         public static let noticeHeight: CGFloat = 58
         public static let noticeHorizontalPadding: CGFloat = 18

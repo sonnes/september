@@ -7,17 +7,11 @@ public enum Metrics {
     public static let keyboardCornerRadius: CGFloat = 12
     public static let surfaceCornerRadius: CGFloat = 16
     public static let surfacePadding: CGFloat = 16
-    /// The long press that gives the pressed look to a control that acts
-    /// when the button goes up.
-    public static let holdDuration: TimeInterval = 0.4
     public static let pressAnimation: TimeInterval = 0.08
     public static let activeAnimation: TimeInterval = 0.12
-    /// The gap between the stacked keypads on the right of the keyboard.
-    public static let keypadStackSpacing: CGFloat = 12
     public static let rowSpacing: CGFloat = 3
     public static let sectionSpacing: CGFloat = 16
     public static let keyboardWidth: CGFloat = 980
-    public static let keypadWidth: CGFloat = 200
     /// The accessibility tree viewer, which sits at the right edge of the
     /// screen and takes its height from the keyboard beside it.
     public static let treeViewerWidth: CGFloat = 320
@@ -26,9 +20,6 @@ public enum Metrics {
     /// design system.
     public static let lockBarSize = CGSize(width: 12, height: 2)
     public static let dualSecondaryLabelSize: CGFloat = 11
-
-    public static let shortcutButton = CGSize(width: 120, height: 40)
-    public static let shortcutFull = CGSize(width: 160, height: 36)
 
     public static func size(for kind: KeyKind) -> CGSize {
         switch kind {
@@ -96,15 +87,6 @@ public enum Metrics {
         /// height.
         public static let titleHeight: CGFloat =
             Metrics.Detached.tabHeight + Metrics.Detached.tabsBottom - titleSpacing
-        public static let appSpacing: CGFloat = 6
-        public static let appHeaderBottom: CGFloat = 2
-        public static let appDot: CGFloat = 5
-        public static let buttonSpacing: CGFloat = 6
-        public static let buttonIcon: CGFloat = 14
-        public static let rowSpacing: CGFloat = 8
-        public static let rowIcon: CGFloat = 16
-        public static let rowMinGap: CGFloat = 4
-        public static let rowPadding: CGFloat = 8
     }
 
     public enum Tree {

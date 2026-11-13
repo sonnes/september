@@ -34,7 +34,6 @@ extension Metrics {
         public static let settingsGap: CGFloat = 8
         public static let modeCircle: CGFloat = 44
         public static let modeLabelSpacing: CGFloat = 5
-        public static let modeIcon: CGFloat = 18
         public static let modeBorder: CGFloat = 1
         public static let modeBorderOn: CGFloat = 2
     }

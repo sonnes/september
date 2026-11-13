@@ -25,9 +25,6 @@ extension Metrics {
         /// The space inside a code block, at the left and the right.
         public static let codePaddingHorizontal: CGFloat = 13.6
         public static let codeCornerRadius: CGFloat = 6
-        /// The space inside an inline code run, at the left and the right.
-        public static let inlineCodePadding: CGFloat = 0.3
-        public static let inlineCodeCornerRadius: CGFloat = 3
         /// The indent of each list level.
         public static let listIndent: CGFloat = 20.8
         /// The space between a quote bar and the text of the quote.
