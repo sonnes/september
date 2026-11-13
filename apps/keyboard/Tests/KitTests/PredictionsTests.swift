@@ -340,7 +340,7 @@ private func makeEngine(
     history: SentenceHistory? = nil
 ) -> PredictionEngine {
     PredictionEngine(
-        predictor: predictor, completer: completer, delay: .milliseconds(20), defaults: defaults,
+        predictor: predictor, completer: completer, delay: .zero, defaults: defaults,
         history: history)
 }
 
@@ -396,11 +396,13 @@ private func engineTests() async {
         let engine = makeEngine(FakePredictor(answer: tea), completer: completer)
         engine.update(input: cu, mode: .type, said: [])
         await engine.settleWords()
-        completer.wait = .milliseconds(50)
+        completer.holds = true
         engine.update(input: .local(text: "I would like a c"), mode: .type, said: [])
         expectEqual(engine.words.map(\.textToType), ["up "])
         engine.update(input: .local(text: "I would like a cx"), mode: .type, said: [])
         expect(engine.words.isEmpty, "a word that no longer fits must not type wrong letters")
+        completer.release()
+        await engine.settleWords()
     }
 
     await asyncTest("a space clears the completions of the last word at once") {
@@ -408,9 +410,11 @@ private func engineTests() async {
         let engine = makeEngine(FakePredictor(answer: tea), completer: completer)
         engine.update(input: cu, mode: .type, said: [])
         await engine.settleWords()
-        completer.wait = .milliseconds(50)
+        completer.holds = true
         engine.update(input: .local(text: "I would like a cu "), mode: .type, said: [])
         expect(engine.words.isEmpty)
+        completer.release()
+        await engine.settleWords()
     }
 
     await asyncTest("Return records a picked word that the text still holds as accepted") {
@@ -485,14 +489,16 @@ private func engineTests() async {
 
     await asyncTest("a new input drops the answer of an old request") {
         let predictor = FakePredictor(
-            wait: { $0.typed == "old" ? .milliseconds(150) : .zero },
+            holds: { $0.typed == "old" },
             answer: { ["\($0.typed) answer"] })
         let engine = makeEngine(predictor)
         engine.userTypes(.local(text: "old"))
-        while await predictor.requests.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+        await predictor.waitUntilHeld(1)
         engine.update(input: .local(text: "new"), mode: .type, said: [])
         await engine.settle()
-        try await Task.sleep(for: .milliseconds(250))
+        expectEqual(engine.stripes.map(\.prediction), ["new answer"])
+        await predictor.release()
+        await predictor.waitUntilAnswered(2)
         expectEqual(engine.stripes.map(\.prediction), ["new answer"])
     }
 

@@ -127,7 +127,10 @@ final class FakeEngine: SpeechEngine {
     var failure: (any Error)?
     /// When true, `speak` waits until `finish()` or `stop()`.
     var holds = false
+    /// The number of calls to `speak` that returned or threw.
+    private(set) var ended = 0
     private var waiting: CheckedContinuation<Void, any Error>?
+    private var waiters: [(ready: () -> Bool, go: CheckedContinuation<Void, Never>)] = []
 
     func canSpeak(_ voice: VoiceSettings) -> Bool { ready }
 
@@ -136,9 +139,38 @@ final class FakeEngine: SpeechEngine {
     ) async throws {
         spoken.append(text)
         for word in words { onWord(word) }
+        // The caller continues in the same job after the return, so it is
+        // done before a waiter that this signal resumes.
+        defer {
+            ended += 1
+            signal()
+        }
         if let failure { throw failure }
         guard holds else { return }
+        signal()
         try await withCheckedThrowingContinuation { waiting = $0 }
+    }
+
+    /// Returns when `speak` got `count` texts.
+    func waitUntilSpoken(_ count: Int) async {
+        await wait { self.spoken.count >= count }
+    }
+
+    /// Returns when `count` calls to `speak` ended, and the speaker handled
+    /// the end.
+    func waitUntilEnded(_ count: Int) async {
+        await wait { self.ended >= count }
+    }
+
+    private func wait(until ready: @escaping () -> Bool) async {
+        if ready() { return }
+        await withCheckedContinuation { waiters.append((ready, $0)) }
+    }
+
+    private func signal() {
+        let ready = waiters.filter { $0.ready() }
+        waiters.removeAll { $0.ready() }
+        for waiter in ready { waiter.go.resume() }
     }
 
     func stop() {
@@ -154,11 +186,6 @@ final class FakeEngine: SpeechEngine {
 }
 
 private struct Broken: Error {}
-
-@MainActor
-private func settle() async {
-    for _ in 0..<20 { await Task.yield() }
-}
 
 // MARK: - Tests
 
@@ -453,13 +480,13 @@ func speechTests() async {
         let speaker = Speaker(settings: VoiceSettingsStore(defaults: freshDefaults()), system: system, elevenLabs: FakeEngine())
 
         speaker.speak("Can we go")
-        await settle()
+        await system.waitUntilSpoken(1)
         expectEqual(system.spoken, ["Can we go"])
         expectEqual(speaker.state, .speaking(text: "Can we go", word: NSRange(location: 4, length: 2)))
         expect(speaker.isSpeaking)
 
         system.finish()
-        await settle()
+        await system.waitUntilEnded(1)
         expectEqual(speaker.state, .idle)
         expectEqual(speaker.error, nil)
     }
@@ -469,10 +496,10 @@ func speechTests() async {
         system.holds = true
         let speaker = Speaker(settings: VoiceSettingsStore(defaults: freshDefaults()), system: system, elevenLabs: FakeEngine())
         speaker.speak("Hello")
-        await settle()
+        await system.waitUntilSpoken(1)
         speaker.stop()
         expectEqual(speaker.state, .idle)
-        await settle()
+        await system.waitUntilEnded(1)
         expectEqual(system.stops, 1)
         expectEqual(speaker.state, .idle)
         expectEqual(speaker.error, nil)
@@ -482,7 +509,6 @@ func speechTests() async {
         let system = FakeEngine()
         let speaker = Speaker(settings: VoiceSettingsStore(defaults: freshDefaults()), system: system, elevenLabs: FakeEngine())
         speaker.speak("  \n ")
-        await settle()
         expectEqual(system.spoken, [])
         expectEqual(speaker.state, .idle)
     }
@@ -492,13 +518,13 @@ func speechTests() async {
         system.holds = true
         let speaker = Speaker(settings: VoiceSettingsStore(defaults: freshDefaults()), system: system, elevenLabs: FakeEngine())
         speaker.speak("One")
-        await settle()
+        await system.waitUntilSpoken(1)
         speaker.speak("Two")
-        await settle()
+        await system.waitUntilSpoken(2)
         expectEqual(system.spoken, ["One", "Two"])
         expectEqual(speaker.state, .speaking(text: "Two", word: nil))
         system.finish()
-        await settle()
+        await system.waitUntilEnded(2)
         expectEqual(speaker.state, .idle)
     }
 
@@ -507,7 +533,7 @@ func speechTests() async {
         let cloud = FakeEngine()
         let speaker = Speaker(settings: VoiceSettingsStore(defaults: freshDefaults()), system: system, elevenLabs: cloud)
         speaker.speak("Hi")
-        await settle()
+        await system.waitUntilEnded(1)
         expectEqual(system.spoken, ["Hi"])
         expectEqual(cloud.spoken, [])
     }
@@ -519,7 +545,7 @@ func speechTests() async {
         let cloud = FakeEngine()
         let speaker = Speaker(settings: settings, system: system, elevenLabs: cloud)
         speaker.speak("Hi")
-        await settle()
+        await cloud.waitUntilEnded(1)
         expectEqual(cloud.spoken, ["Hi"])
         expectEqual(system.spoken, [])
         expectEqual(speaker.state, .idle)
@@ -533,7 +559,7 @@ func speechTests() async {
         cloud.failure = ElevenLabsError.quotaEmpty
         let speaker = Speaker(settings: settings, system: system, elevenLabs: cloud)
         speaker.speak("Can we go")
-        await settle()
+        await system.waitUntilEnded(1)
         expectEqual(cloud.spoken, ["Can we go"])
         expectEqual(system.spoken, ["Can we go"])
         expectEqual(speaker.error, SpeechError(message: ElevenLabsError.quotaEmpty.message))
@@ -541,7 +567,7 @@ func speechTests() async {
 
         cloud.failure = nil
         speaker.speak("Again")
-        await settle()
+        await cloud.waitUntilEnded(2)
         expectEqual(speaker.error, nil, "a new Speak clears the old error")
     }
 
@@ -553,7 +579,7 @@ func speechTests() async {
         cloud.ready = false
         let speaker = Speaker(settings: settings, system: system, elevenLabs: cloud)
         speaker.speak("Hi")
-        await settle()
+        await system.waitUntilEnded(1)
         expectEqual(cloud.spoken, [])
         expectEqual(system.spoken, ["Hi"])
         expectEqual(speaker.error, nil)

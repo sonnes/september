@@ -373,7 +373,7 @@ private func makeSession(
     let database = try KeyboardDatabase(path: ":memory:")
     let history = SentenceHistory(database: database, defaults: defaults)
     let engine = PredictionEngine(
-        predictor: predictor, completer: completer, delay: .milliseconds(5),
+        predictor: predictor, completer: completer, delay: .zero,
         defaults: defaults, history: history)
     let store =
         userPanel
