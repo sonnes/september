@@ -934,7 +934,7 @@ private func candidateTests() async {
     await asyncTest("the system candidates give more words than a row of eight for a common start") {
         let found = await words("th")
         expect(found.count > 8, "\(found.count) words")
-        expect(found.count <= Metrics.Predictions.wordLimit)
+        expect(found.count <= CandidateCompleter.limit)
     }
 
     await asyncTest("the system candidates give the next word after a space") {

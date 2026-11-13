@@ -446,13 +446,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// Rebuilds the keyboard window at its new size. The bottom left corner
-    /// stays, less `shift`.
-    private func refreshKeyboard(shift: CGFloat = 0) {
+    /// stays.
+    private func refreshKeyboard() {
         guard let keyboardPanel else { return }
         let origin = keyboardPanel.frame.origin
         let (root, size) = makeKeyboardRoot()
         keyboardPanel.update(root: root, contentSize: size)
-        keyboardPanel.setFrameOrigin(NSPoint(x: origin.x - shift, y: origin.y))
+        keyboardPanel.setFrameOrigin(origin)
         // The viewer takes its height from the keyboard beside it.
         showTreePanel(height: size.height)
     }
@@ -460,12 +460,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Talk mode puts Phrases and the Said list in the keyboard window and
     /// hides the shortcut panels. The keys stay where they are on the screen.
     private func modeChanged(to mode: KeyboardMode) {
-        let shift = KeyboardScreen.keysInset(mode) - KeyboardScreen.keysInset(self.mode)
+        let previous = self.mode
         self.mode = mode
-        refreshKeyboard(shift: shift)
-        guard keyboardPanel?.isVisible == true else { return }
+        guard let keyboardPanel else { return }
+        let typeOrigin = KeyboardPosition.typeOrigin(of: keyboardPanel.frame.origin, in: previous)
+        refreshKeyboard()
+        keyboardPanel.setFrameOrigin(KeyboardPosition.windowOrigin(typeOrigin, in: mode))
+        guard keyboardPanel.isVisible else { return }
         for window in panels.values {
-            if mode == .talk { window.orderOut(nil) } else { window.orderFront(nil) }
+            if DetachedPanel.isShown(in: mode) { window.orderFront(nil) } else { window.orderOut(nil) }
         }
     }
 
@@ -578,7 +581,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleKeyboard(_ sender: NSMenuItem) {
         guard let keyboardPanel else { return }
-        let windows = [keyboardPanel] + (mode == .type ? Array(panels.values) : [])
+        let windows = [keyboardPanel] + (DetachedPanel.isShown(in: mode) ? Array(panels.values) : [])
         if keyboardPanel.isVisible {
             windows.forEach { $0.orderOut(nil) }
         } else {

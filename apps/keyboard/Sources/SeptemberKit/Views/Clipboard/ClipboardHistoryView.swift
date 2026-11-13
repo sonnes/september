@@ -35,13 +35,16 @@ public struct ClipboardHistoryView: View {
         .accessibilityLabel("Clipboard history")
     }
 
+    /// The rows of a page of the history.
+    private static let rows = ClipboardHistory.pageSize / Metrics.Clipboard.columns
+
     private var grid: some View {
         let items = history.page(session.historyPage)
         let date = now()
         let columns = Metrics.Clipboard.columns
         return VStack(spacing: Metrics.Clipboard.spacing) {
             // The newest row is last, next to the input bar.
-            ForEach((0..<Metrics.Clipboard.rows).reversed(), id: \.self) { row in
+            ForEach((0..<Self.rows).reversed(), id: \.self) { row in
                 HStack(spacing: Metrics.Clipboard.spacing) {
                     ForEach(0..<columns, id: \.self) { column in
                         let index = row * columns + column
@@ -68,7 +71,7 @@ public struct ClipboardHistoryView: View {
         // One page needs no pager.
         case _ where count == 1:
             Color.clear
-        case Metrics.Clipboard.rows - 1:
+        case Self.rows - 1:
             PagerButton(title: "Newer", symbol: "chevron.up", label: "Newer copied texts", isEnabled: page > 0) {
                 session.newerPage()
             }

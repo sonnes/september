@@ -3,10 +3,7 @@ import CoreGraphics
 extension Metrics {
     /// Talk mode: the Phrases panel, the Said list, and the Talk bar.
     public enum Talk {
-        public static let phrasesWidth: CGFloat = 150
-        public static let phraseHeight: CGFloat = 44
-        public static let phraseSpacing: CGFloat = 6
-        public static let buttonCornerRadius: CGFloat = 8
+        public static let saidRowCornerRadius: CGFloat = 8
 
         public static let saidWidth: CGFloat = 432
         public static let saidRowMinHeight: CGFloat = 48

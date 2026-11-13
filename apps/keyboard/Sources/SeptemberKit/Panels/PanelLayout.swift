@@ -1,8 +1,8 @@
-/// The grid of a Write panel: two columns and six rows. A key button takes
-/// one slot, and a text button takes a whole row.
+/// The grid of a Write panel: two columns, and the rows of a keypad. A key
+/// button takes one slot, and a text button takes a whole row.
 public enum PanelLayout {
     public static let columns = 2
-    public static let slotCount = 12
+    public static let slotCount = columns * Metrics.Keypad.rows
 
     public static func span(of button: PanelButton) -> Int {
         button.isText ? columns : 1

@@ -22,6 +22,12 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
     public static func shown(rectangleInstalled: Bool) -> [DetachedPanel] {
         allCases.filter { $0 != .rectangle || rectangleInstalled }
     }
+
+    /// The panels show only in Type mode. Talk mode holds Phrases in the
+    /// keyboard window.
+    public static func isShown(in mode: KeyboardMode) -> Bool {
+        mode == .type
+    }
 }
 
 /// Where the panels sit until the user drags them: System and My Panel
@@ -166,15 +172,15 @@ public struct KeyboardPosition {
     /// clipboard buttons.
     public static func keysOrigin(ofWindow origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
         let type = typeOrigin(of: origin, in: mode)
-        return CGPoint(x: type.x + KeyboardScreen.cardInset(.type), y: type.y)
+        return CGPoint(x: type.x + Metrics.Screen.cardInset(.type), y: type.y)
     }
 
     /// The corner of the Type mode window whose keys card is at `keys`.
     public static func typeWindowOrigin(forKeys keys: CGPoint) -> CGPoint {
-        CGPoint(x: keys.x - KeyboardScreen.cardInset(.type), y: keys.y)
+        CGPoint(x: keys.x - Metrics.Screen.cardInset(.type), y: keys.y)
     }
 
     private static func shift(_ mode: KeyboardMode) -> CGFloat {
-        KeyboardScreen.keysInset(mode) - KeyboardScreen.keysInset(.type)
+        Metrics.Screen.keysInset(mode) - Metrics.Screen.keysInset(.type)
     }
 }

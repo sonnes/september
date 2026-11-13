@@ -9,44 +9,28 @@ import SwiftUI
 /// to the front, so that a button never moves while the user aims at it.
 public struct MinePanelView: View {
     private let buttons: [UserButton]
-    private let width: CGFloat
     private let press: (UserButton) -> Void
 
     @State private var page = 0
 
-    public init(
-        buttons: [UserButton],
-        width: CGFloat = Metrics.UserPanel.width,
-        press: @escaping (UserButton) -> Void
-    ) {
+    public init(buttons: [UserButton], press: @escaping (UserButton) -> Void) {
         self.buttons = buttons
-        self.width = width
         self.press = press
     }
 
     public var body: some View {
         let pages = MinePages.pages(buttons)
         let current = min(page, pages.count - 1)
-        let spacing = Metrics.UserPanel.spacing
-        let column = (width - spacing) / CGFloat(MinePages.columns)
-
-        VStack(spacing: spacing) {
-            ForEach(
-                Array(MinePages.rows(for: pages[current], page: current, of: pages.count).enumerated()),
-                id: \.offset
-            ) { _, row in
-                switch row {
-                case .wide(let cell):
-                    cellView(cell, width: width, pages: pages.count)
-                case .pair(let left, let right):
-                    HStack(spacing: spacing) {
-                        cellView(left, width: column, pages: pages.count)
-                        cellView(right, width: column, pages: pages.count)
-                    }
-                }
+        let rows = MinePages.rows(for: pages[current], page: current, of: pages.count).map { row in
+            switch row {
+            case .wide(let cell): KeypadRow.wide(cell)
+            case .pair(let left, let right): KeypadRow.cells([left, right])
             }
         }
-        .frame(width: width)
+
+        KeypadGrid(rows: rows, columns: MinePages.columns) { cell, width in
+            cellView(cell, width: width, pages: pages.count)
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("My Panel")
     }
@@ -61,12 +45,12 @@ public struct MinePanelView: View {
                 page = MinePages.next(after: index, of: count)
             }
         case .empty:
-            RoundedRectangle(cornerRadius: Metrics.UserPanel.cornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.Keypad.cornerRadius, style: .continuous)
                 .strokeBorder(
                     Color(Tokens.strokeSpecial),
-                    style: StrokeStyle(lineWidth: 1, dash: Metrics.UserPanel.emptyDash)
+                    style: StrokeStyle(lineWidth: 1, dash: Metrics.emptySlotDash)
                 )
-                .frame(width: width, height: Metrics.UserPanel.buttonHeight)
+                .frame(width: width, height: Metrics.Keypad.buttonHeight)
                 .accessibilityHidden(true)
         }
     }
@@ -84,7 +68,7 @@ struct MineButtonView: View {
 
     var body: some View {
         label
-            .frame(width: width, height: Metrics.UserPanel.buttonHeight)
+            .frame(width: width, height: Metrics.Keypad.buttonHeight)
             .mineChrome(fill: fill, stroke: stroke)
             .pressable(label: button.accessibilityLabel, trigger: .down(.once)) { isPressed = $0 } action: {
                 press()
@@ -98,10 +82,10 @@ struct MineButtonView: View {
         switch button.action {
         case .shortcut, .sequence:
             Text(button.keysLabel ?? button.name)
-                .font(Typography.UserPanel.keys)
+                .font(Typography.shortcutKeys)
                 .foregroundStyle(Color(Tokens.shortcutLabel))
                 .lineLimit(1)
-                .minimumScaleFactor(Metrics.UserPanel.keysMinimumScale)
+                .minimumScaleFactor(Metrics.Keypad.keysMinimumScale)
         case .text:
             name
         case .privateText:
@@ -120,7 +104,7 @@ struct MineButtonView: View {
             .foregroundStyle(Color(Tokens.keyText))
             .lineLimit(1)
             .truncationMode(.tail)
-            .padding(.horizontal, Metrics.UserPanel.textPadding)
+            .padding(.horizontal, Metrics.Keypad.textPadding)
     }
 
     private var fill: ThemeColor {
@@ -153,9 +137,9 @@ struct MinePageButton: View {
 
     var body: some View {
         Text(MinePages.pageLabel(page: page, of: count))
-            .font(Typography.UserPanel.keys)
+            .font(Typography.shortcutKeys)
             .foregroundStyle(Color(Tokens.accent))
-            .frame(width: width, height: Metrics.UserPanel.buttonHeight)
+            .frame(width: width, height: Metrics.Keypad.buttonHeight)
             .mineChrome(
                 fill: isPressed ? Tokens.keySpecial.pressed : Tokens.keySpecial,
                 stroke: Tokens.strokeSpecial)
@@ -171,11 +155,11 @@ extension View {
     /// The surface of a Mine button: the radius of the keypad buttons.
     fileprivate func mineChrome(fill: ThemeColor, stroke: ThemeColor) -> some View {
         background(
-            RoundedRectangle(cornerRadius: Metrics.UserPanel.cornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.Keypad.cornerRadius, style: .continuous)
                 .fill(Color(fill))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: Metrics.UserPanel.cornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.Keypad.cornerRadius, style: .continuous)
                 .strokeBorder(Color(stroke), lineWidth: 1)
         )
     }

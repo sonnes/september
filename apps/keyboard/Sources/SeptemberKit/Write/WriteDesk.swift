@@ -7,6 +7,9 @@ import Foundation
 /// first. Find keeps the documents whose title has the query, in any case
 /// and with or without accents.
 public struct WriteDesk: Equatable, Sendable {
+    /// The lines of the document on its card.
+    public static let cardLines = 6
+
     public enum Item: Equatable, Sendable {
         case newDocument
         case document(WriteDocument)

@@ -171,7 +171,8 @@ of their own. By default they sit beside the keys. To move the keyboard window o
 panel, drag it by the grip at its top. A drag does not take focus from the app
 in front. The keyboard keeps the place of each window for the next launch. If
 a saved place is on no screen, the window goes back to its default place. The
-keyboard window and the panels never take focus.
+keyboard window and the panels never take focus. The panels show only in Type
+mode. `DetachedPanel.isShown(in:)` holds the rule.
 
 Arrange moves the panels back beside the keys, at the place where the keyboard
 is now. The menu bar item has the same command, Arrange Panels. System and

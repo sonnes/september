@@ -9,6 +9,7 @@ package: keyboard
 Panels are on each side of the macOS keyboard. SYSTEM and My Panel are on the
 left. TEXT and RECTANGLE are on the right. RECTANGLE shows only when the
 Rectangle window manager is installed (`DetachedPanel.shown(rectangleInstalled:)`).
+The panels show only in Type mode (`DetachedPanel.isShown(in:)`).
 Cut, Copy, and Paste are buttons at the left of the input bar, so no keypad
 has them. While Write is in front, My Panel has a Write tab with the keys of
 the paper or of the desk. Each panel is a grid of buttons in a JSON file that

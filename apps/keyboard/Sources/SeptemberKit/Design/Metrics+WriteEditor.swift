@@ -68,8 +68,6 @@ extension Metrics {
         public static let cardCornerRadius: CGFloat = 12
         /// The space inside a card.
         public static let cardPadding: CGFloat = 16
-        /// The lines of the document on its card.
-        public static let cardLines = 6
         /// The selected card rises by this height.
         public static let selectedLift: CGFloat = 14
         public static let selectionRing: CGFloat = 3

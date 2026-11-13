@@ -30,7 +30,7 @@ final class WriteCardView: NSView {
         let titleField = Self.label(title, font: Typography.writeCardTitle, color: Tokens.keyText, lines: 2)
         let body = Self.label(
             lines.joined(separator: "\n"), font: Typography.writeCardLine, color: Tokens.labelSecondary,
-            lines: Metrics.Desk.cardLines)
+            lines: WriteDesk.cardLines)
         let dateField = Self.label(date, font: Typography.writeCardLine, color: Tokens.labelSecondary, lines: 1)
         let stack = NSStackView(views: [titleField, body])
         stack.orientation = .vertical

@@ -39,6 +39,35 @@ extension Metrics {
     }
 }
 
+extension Metrics {
+    /// The keyboard window: the clipboard buttons, the bar, and the keys.
+    public enum Screen {
+        /// The distance from the left edge of the window to the keys and the
+        /// bar. The clipboard buttons fit in this space. The app keeps the
+        /// keys in place when the mode changes.
+        public static func keysInset(_ mode: KeyboardMode) -> CGFloat {
+            max(cardKeysInset(mode), clipboardReach)
+        }
+
+        /// The clear space at the left of the keys card in Type mode, or of
+        /// the Talk card in Talk mode, under the clipboard buttons.
+        public static func cardInset(_ mode: KeyboardMode) -> CGFloat {
+            keysInset(mode) - cardKeysInset(mode)
+        }
+
+        /// The clipboard buttons and the gap between them and the bar.
+        public static let clipboardReach = Clipboard.buttonsWidth + TopRow.spacing
+
+        /// The distance from the left edge of the card to the keys.
+        private static func cardKeysInset(_ mode: KeyboardMode) -> CGFloat {
+            switch mode {
+            case .type: Detached.keysSidePadding
+            case .talk: surfacePadding + Keypad.width + sectionSpacing
+            }
+        }
+    }
+}
+
 extension Metrics.Keypad {
     /// The height of the grid of six rows. Mine and a message in place of a
     /// panel take the same height, so the window does not change size.

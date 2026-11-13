@@ -243,6 +243,11 @@ private func placementTests() {
         expectEqual(Set(DetachedPanel.shown(rectangleInstalled: false)), [.text, .system, .mine])
     }
 
+    test("the shortcut panels show in Type mode and hide in Talk mode") {
+        expect(DetachedPanel.isShown(in: .type))
+        expect(!DetachedPanel.isShown(in: .talk))
+    }
+
     test("arranging puts the panels around the keys where the keyboard is now") {
         let moved = keys.offsetBy(dx: -400, dy: 300)
         let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .mine: panel]
@@ -300,7 +305,7 @@ private func placementTests() {
     test("the keyboard keeps one place in both modes") {
         let talk = CGPoint(x: 100, y: 50)
         let type = KeyboardPosition.typeOrigin(of: talk, in: .talk)
-        expectEqual(type.x, talk.x + KeyboardScreen.keysInset(.talk) - KeyboardScreen.keysInset(.type))
+        expectEqual(type.x, talk.x + Metrics.Screen.keysInset(.talk) - Metrics.Screen.keysInset(.type))
         expectEqual(KeyboardPosition.windowOrigin(type, in: .talk), talk)
         expectEqual(KeyboardPosition.typeOrigin(of: talk, in: .type), talk)
     }
@@ -308,11 +313,11 @@ private func placementTests() {
     test("the clipboard buttons fit at the left of the bar, and the keys stay in place in both modes") {
         let reach = Metrics.Clipboard.buttonsWidth + Metrics.TopRow.spacing
         for mode in [KeyboardMode.type, .talk] {
-            expect(KeyboardScreen.keysInset(mode) >= reach, "no room for the buttons in \(mode)")
+            expect(Metrics.Screen.keysInset(mode) >= reach, "no room for the buttons in \(mode)")
         }
         let window = CGPoint(x: 100, y: 50)
         let keys = KeyboardPosition.keysOrigin(ofWindow: window, in: .type)
-        expectEqual(keys.x, window.x + KeyboardScreen.cardInset(.type))
+        expectEqual(keys.x, window.x + Metrics.Screen.cardInset(.type))
         expectEqual(keys.y, window.y)
         let talk = KeyboardPosition.windowOrigin(window, in: .talk)
         expectEqual(KeyboardPosition.keysOrigin(ofWindow: talk, in: .talk), keys)

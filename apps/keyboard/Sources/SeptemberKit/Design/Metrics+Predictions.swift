@@ -27,9 +27,6 @@ extension Metrics {
         public static let noticeCornerRadius: CGFloat = 14
         public static let noticeSpacing: CGFloat = 12
 
-        /// The most words that the word row asks for. The row shows the
-        /// words that fit.
-        public static let wordLimit = 20
         /// The space at each side of a word in its button.
         public static let wordPadding: CGFloat = 14
         /// The least width of a word button, so a short word is easy to hit.
@@ -44,7 +41,5 @@ extension Metrics {
         public static let wordRowBottomSpacing: CGFloat = 2
         /// An accent of a held letter is a square tile as high as a word.
         public static let accentTile: CGFloat = wordHeight
-        /// The dashes of an empty word slot.
-        public static let emptySlotDash: [CGFloat] = [4, 3]
     }
 }
