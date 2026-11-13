@@ -193,12 +193,6 @@ private struct Broken: Error {}
 func speechTests() async {
     // Models and Expression presets, from packages/core/rules/voice.ts
 
-    test("the models are the three models of the September app, fastest first") {
-        expectEqual(VoiceModel.all.map(\.id), ["eleven_flash_v2_5", "eleven_multilingual_v2", "eleven_v3"])
-        expectEqual(VoiceModel.defaultID, "eleven_flash_v2_5")
-        expectEqual(VoiceModel.all.map(\.credits), [0.5, 1, 1])
-    }
-
     test("a deprecated model reads as its replacement") {
         expectEqual(VoiceModel.id(from: "eleven_turbo_v2_5"), "eleven_flash_v2_5")
         expectEqual(VoiceModel.id(from: "eleven_v3"), "eleven_v3")

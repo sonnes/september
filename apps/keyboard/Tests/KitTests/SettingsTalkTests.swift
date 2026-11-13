@@ -191,14 +191,10 @@ func settingsTalkTests() {
 
     // MARK: Settings
 
-    test("the sidebar groups match the mock") {
-        expectEqual(SettingsGroup.allCases, [.speak, .type, .keyboard])
-        expectEqual(
-            SettingsGroup.allCases.map(\.pages),
-            [[.voice, .speech], [.predictions, .clipboard, .myPanel], [.look, .accessibility]])
-        expectEqual(
-            Set(SettingsGroup.allCases.flatMap(\.pages)), Set(SettingsPage.allCases),
-            "each page is in one group")
+    test("each Settings page is in one group of the sidebar") {
+        let pages = SettingsGroup.allCases.flatMap(\.pages)
+        expectEqual(pages.count, Set(pages).count, "a page is in two groups")
+        expectEqual(Set(pages), Set(SettingsPage.allCases), "a page is in no group")
     }
 
     test("keyboard settings start at the defaults") {

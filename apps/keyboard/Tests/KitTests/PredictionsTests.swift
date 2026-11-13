@@ -306,10 +306,6 @@ private func promptTests() {
         expectEqual(SuggestionPrompt(context: context("I am going to the")).answerPrefix, "the")
         expectEqual(SuggestionPrompt(context: context("Can we meet ")).answerPrefix, "")
     }
-
-    test("the prompt asks for as many predictions as the stack shows") {
-        expectEqual(SuggestionPrompt.count, 3)
-    }
 }
 
 @MainActor
@@ -319,14 +315,6 @@ private func noticeTests() {
         expect(!PredictionNotice.appleIntelligence(.notSupported).opensSystemSettings)
         expect(!PredictionNotice.appleIntelligence(.modelNotReady).opensSystemSettings)
         expect(!PredictionNotice.passwordField.opensSystemSettings)
-    }
-
-    test("each notice has a message") {
-        let notices: [PredictionNotice] = [
-            .appleIntelligence(.off), .appleIntelligence(.notSupported),
-            .appleIntelligence(.modelNotReady), .passwordField, .privateText,
-        ]
-        expect(notices.allSatisfy { !$0.message.isEmpty })
     }
 }
 

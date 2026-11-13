@@ -8,6 +8,10 @@ private func key(_ id: String) -> KeyDefinition {
 }
 
 private func state(_ taps: Modifiers...) -> ModifierState {
+    state(taps)
+}
+
+private func state(_ taps: [Modifiers]) -> ModifierState {
     var state = ModifierState()
     for modifier in taps { state.tap(modifier) }
     return state
@@ -15,12 +19,6 @@ private func state(_ taps: Modifiers...) -> ModifierState {
 
 @MainActor
 func keyFaceTests() {
-    test("an F-key shows its media icon when no modifier is on") {
-        let face = key("f8").face(under: ModifierState())
-        expectEqual(face.glyph, .symbol("playpause.fill"))
-        expectEqual(face.accessibilityLabel, "Play or Pause")
-    }
-
     test("an F-key shows its F name under shift, control, option, command, or fn") {
         for modifier in [Modifiers.shift, .control, .option, .command, .function] {
             let face = key("f8").face(under: state(modifier))
@@ -36,17 +34,7 @@ func keyFaceTests() {
         expectEqual(key("fn").face(under: held).look, .latched)
         held.mac = .shift
         expectEqual(key("key-a").face(under: held).glyph, .text("A"))
-        expectEqual(key("shift-left").face(under: held).glyph, .symbol("shift.fill"))
-    }
-
-    test("Mission Control opens its app, because macOS ignores a posted Mission Control key") {
-        expectEqual(MediaKey.missionControl.event, .app("/System/Applications/Mission Control.app"))
-    }
-
-    test("F4, F5, and F6 use routes that macOS accepts from an app") {
-        expectEqual(MediaKey.spotlight.event, .spotlight)
-        expectEqual(MediaKey.dictation.event, .dictation)
-        expectEqual(MediaKey.doNotDisturb.event, .shortcut(MediaKey.doNotDisturbShortcut))
+        expectEqual(key("shift-left").face(under: held).look, .latched)
     }
 
     test("the Spotlight shortcut comes from the settings of macOS") {
@@ -70,7 +58,7 @@ func keyFaceTests() {
     }
 
     test("caps lock does not change the F-row") {
-        expectEqual(key("f8").face(under: state(.capsLock)).glyph, .symbol("playpause.fill"))
+        expectEqual(key("f8").face(under: state(.capsLock)), key("f8").face(under: ModifierState()))
     }
 
     test("a letter shows its case: lower, upper under shift or caps lock") {
@@ -89,12 +77,10 @@ func keyFaceTests() {
         let off = shift.face(under: ModifierState())
         let once = shift.face(under: state(.shift))
         let locked = shift.face(under: state(.shift, .shift))
-        expectEqual(off.glyph, .symbol("shift"))
         expectEqual(off.look, .off)
-        expectEqual(once.glyph, .symbol("shift.fill"))
         expectEqual(once.look, .latched)
-        expectEqual(locked.glyph, .symbol("capslock.fill"))
         expectEqual(locked.look, .locked)
+        expect(off.glyph != once.glyph && once.glyph != locked.glyph && off.glyph != locked.glyph)
         expectEqual(locked.accessibilityLabel, "Shift, locked")
     }
 
@@ -109,12 +95,16 @@ func keyFaceTests() {
 
     test("caps lock shows its light when on") {
         let caps = key("capslock")
-        expectEqual(caps.face(under: ModifierState()).glyph, .symbol("capslock"))
-        expectEqual(caps.face(under: state(.capsLock)).glyph, .symbol("capslock.fill"))
+        expectEqual(caps.face(under: ModifierState()).look, .off)
         expectEqual(caps.face(under: state(.capsLock)).look, .locked)
+        expect(caps.face(under: ModifierState()).glyph != caps.face(under: state(.capsLock)).glyph)
     }
 
     test("a modifier key on the right side follows the same state") {
+        for taps in [[], [Modifiers.command], [.command, .command]] {
+            let modifiers = state(taps)
+            expectEqual(key("command-right").face(under: modifiers).look, key("command-left").face(under: modifiers).look)
+        }
         expectEqual(key("command-right").face(under: state(.command, .command)).look, .locked)
     }
 

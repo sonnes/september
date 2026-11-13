@@ -115,11 +115,11 @@ func controllerTests() {
         controller.press(key("key-q"))
         expectEqual(sink.downs.map(\.key), [55], "only the Command down of the latch")
         expectEqual(sink.beeps, 1)
-        expectEqual(controller.modifiers.active, .command)
 
         controller.press(key("key-c"))
         expectEqual(sink.downs.last?.flags, .command)
-        expectEqual(controller.modifiers.active, [])
+        controller.press(key("key-a"))
+        expectEqual(sink.downs.last?.flags, [], "the chord used up the latch")
     }
 
     test("typing a letter posts that key and echoes it") {
@@ -277,11 +277,12 @@ func controllerTests() {
         controller.press(key("command-left"))
         sink.reset()
         controller.otherInputPressed()
-        expectEqual(controller.modifiers.active, .command)
         expectEqual(sink.posted, [Keystroke(virtualKey: 56, flags: .command, isDown: false)])
         sink.reset()
         controller.otherInputPressed()
         expect(sink.posted.isEmpty)
+        controller.press(key("key-c"))
+        expectEqual(sink.downs.last?.flags, .command, "the locked Command stays on")
     }
 
     test("Talk mode releases the modifiers at the OS and holds none") {
@@ -315,15 +316,17 @@ func controllerTests() {
     test("a modifier that macOS holds goes into the next key without a posted down") {
         let (controller, sink) = try makeController()
         controller.macModifiersChanged(.shift)
-        expectEqual(controller.modifiers.active, .shift)
         expect(sink.posted.isEmpty, "macOS already holds Shift")
         controller.press(key("key-a"))
         expectEqual(sink.posted.map(\.virtualKey), [0, 0])
         expectEqual(sink.downs.first?.flags, .shift)
         expectEqual(controller.input, .local(text: "A"))
-        expectEqual(controller.modifiers.active, .shift, "macOS releases its own modifier")
+        controller.press(key("key-a"))
+        expectEqual(controller.input, .local(text: "AA"), "macOS releases its own modifier")
         controller.macModifiersChanged([])
-        expectEqual(controller.modifiers.active, [])
+        controller.press(key("key-a"))
+        expectEqual(controller.input, .local(text: "AAa"))
+        expect(sink.posted.allSatisfy { $0.virtualKey == 0 }, "the keyboard posts no Shift")
     }
 
     test("a latched Command that the hardware then holds stays down for each key until the hardware lets go") {

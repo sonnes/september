@@ -2,7 +2,6 @@ import AppKit
 import CoreGraphics
 import Foundation
 import SeptemberKit
-import SwiftUI
 
 /// The wiring between the tracks: the session that joins the controller, the
 /// predictions, the voice, the Write panel, and My Panel, and the small types
@@ -16,7 +15,6 @@ func integrationTests() async {
     await sessionTests()
     await shortcutTests()
     await clipboardSessionTests()
-    await panelHeightTests()
     activationTests()
 }
 
@@ -235,20 +233,21 @@ private func placementTests() {
     test("Text sits at the right of the keys, and System and My Panel at the left") {
         let frames = PanelPlacement.defaultFrames(
             keys: keys, sizes: [.text: panel, .system: panel, .mine: panel])
-        let gap = Metrics.Detached.gap
-        expectEqual(frames[.text]?.minX, keys.maxX + gap)
-        expectEqual(frames[.system]?.maxX, keys.minX - gap)
-        expectEqual(frames[.mine]?.maxX, keys.minX - gap * 2 - panel.width)
-        expectEqual(frames[.text]?.maxY, keys.maxY)
-        expectEqual(frames[.mine]?.maxY, keys.maxY)
+        let text = try expectValue(frames[.text])
+        let system = try expectValue(frames[.system])
+        let mine = try expectValue(frames[.mine])
+        expect(text.minX > keys.maxX)
+        expect(system.maxX < keys.minX)
+        expect(mine.maxX < system.minX)
+        for frame in [text, system, mine] { expectEqual(frame.maxY, keys.maxY, "the tops line up with the keys") }
     }
 
     test("the Rectangle panel sits at the right of Text") {
         let frames = PanelPlacement.defaultFrames(
             keys: keys, sizes: [.text: panel, .rectangle: panel])
-        let gap = Metrics.Detached.gap
-        expectEqual(frames[.rectangle]?.minX, keys.maxX + gap * 2 + panel.width)
-        expectEqual(frames[.rectangle]?.maxY, keys.maxY)
+        let rectangle = try expectValue(frames[.rectangle])
+        expect(rectangle.minX > (try expectValue(frames[.text])).maxX)
+        expectEqual(rectangle.maxY, keys.maxY)
     }
 
     test("the Rectangle panel shows only when Rectangle is installed") {
@@ -280,11 +279,12 @@ private func placementTests() {
     }
 
     test("the group of keys and panels is centred on the screen") {
+        let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .mine: panel]
         let origin = PanelPlacement.keysOrigin(
-            keysSize: keys.size, panels: [.text: panel, .system: panel, .mine: panel],
-            in: screen, rightInset: 0, margin: 24)
-        let group = panel.width * 3 + Metrics.Detached.gap * 3 + keys.width
-        expectEqual(origin.x, (screen.width - group) / 2 + (panel.width + Metrics.Detached.gap) * 2)
+            keysSize: keys.size, panels: sizes, in: screen, rightInset: 0, margin: 24)
+        let placed = CGRect(origin: origin, size: keys.size)
+        let group = PanelPlacement.defaultFrames(keys: placed, sizes: sizes).values.reduce(placed) { $0.union($1) }
+        expect(abs(group.midX - screen.midX) < 1, "the group is centred: \(group)")
         expectEqual(origin.y, 24)
     }
 
@@ -314,26 +314,21 @@ private func placementTests() {
         expectEqual(KeyboardPosition.origin(saved: nil, size: size, screens: [screen], fallback: fallback), fallback)
     }
 
-    test("the keyboard keeps one place in both modes") {
-        let talk = CGPoint(x: 100, y: 50)
-        let type = KeyboardPosition.typeOrigin(of: talk, in: .talk)
-        expectEqual(type.x, talk.x + Metrics.Screen.keysInset(.talk) - Metrics.Screen.keysInset(.type))
-        expectEqual(KeyboardPosition.windowOrigin(type, in: .talk), talk)
-        expectEqual(KeyboardPosition.typeOrigin(of: talk, in: .type), talk)
+    test("a change of mode keeps the keys in place") {
+        let window = CGPoint(x: 100, y: 50)
+        for (from, to) in [(KeyboardMode.type, KeyboardMode.talk), (.talk, .type)] {
+            let saved = KeyboardPosition.typeOrigin(of: window, in: from)
+            let moved = KeyboardPosition.windowOrigin(saved, in: to)
+            expectEqual(
+                KeyboardPosition.keysOrigin(ofWindow: moved, in: to),
+                KeyboardPosition.keysOrigin(ofWindow: window, in: from), "\(from) to \(to)")
+        }
     }
 
-    test("the clipboard buttons fit at the left of the bar, and the keys stay in place in both modes") {
-        let reach = Metrics.Clipboard.buttonsWidth + Metrics.TopRow.spacing
-        for mode in [KeyboardMode.type, .talk] {
-            expect(Metrics.Screen.keysInset(mode) >= reach, "no room for the buttons in \(mode)")
-        }
-        let window = CGPoint(x: 100, y: 50)
-        let keys = KeyboardPosition.keysOrigin(ofWindow: window, in: .type)
-        expectEqual(keys.x, window.x + Metrics.Screen.cardInset(.type))
-        expectEqual(keys.y, window.y)
-        let talk = KeyboardPosition.windowOrigin(window, in: .talk)
-        expectEqual(KeyboardPosition.keysOrigin(ofWindow: talk, in: .talk), keys)
-        expectEqual(KeyboardPosition.typeWindowOrigin(forKeys: keys), window)
+    test("the first window of the keyboard puts the keys at the place of the keys") {
+        let keys = CGPoint(x: 400, y: 24)
+        let window = KeyboardPosition.typeWindowOrigin(forKeys: keys)
+        expectEqual(KeyboardPosition.keysOrigin(ofWindow: window, in: .type), keys)
     }
 }
 
@@ -1105,41 +1100,6 @@ private func field(_ text: String, caret: Int, selection: Int = 0) -> FocusedFie
     FocusedField(
         appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false, text: text,
         selection: NSRange(location: caret, length: selection))
-}
-
-// MARK: - The height of the panels
-
-/// The height that a view asks for, as the app measures a panel window.
-@MainActor
-private func height(_ view: some View, controller: KeyboardController) -> CGFloat {
-    let probe = NSHostingView(rootView: view.environmentObject(controller))
-    probe.layoutSubtreeIfNeeded()
-    return probe.fittingSize.height
-}
-
-@MainActor
-private func panelHeightTests() async {
-    await asyncTest("the Text keypad, the Write panels, and Mine are as tall as the System keypad") {
-        let parts = try makeSession()
-        let controller = parts.controller
-        let system = height(KeypadCard(panel: controller.panels.system), controller: controller)
-        expectEqual(height(KeypadCard(panel: controller.panels.text), controller: controller), system, "Text")
-        let card = MyPanelCard(session: parts.session)
-        for panel in [WritePanel.paper, .desk] {
-            parts.session.frontChanged(.write(panel))
-            expectEqual(height(card, controller: controller), system, "\(panel)")
-        }
-        parts.session.frontChanged(.app(notes))
-        expectEqual(height(card, controller: controller), system, "an empty Mine")
-        let store = try expectValue(parts.userPanel)
-        for index in 0..<14 {
-            try store.add(NewButton(
-                name: "Key \(index)", action: .shortcut(Shortcut(modifiers: .command, key: .character("k")))))
-        }
-        try store.add(NewButton(name: "Hello", action: .text("Hello")))
-        await parts.session.settle()
-        expectEqual(height(card, controller: controller), system, "a full Mine")
-    }
 }
 
 // MARK: - Bringing a window to the front

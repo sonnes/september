@@ -26,7 +26,6 @@ func modifierStateTests() {
         state.mac = .shift
         expectEqual(state.active, .shift)
         expectEqual(state.look(of: .shift), .latched)
-        expectEqual(state.own, [])
         state.consume()
         expectEqual(state.active, .shift)
         state.mac = []

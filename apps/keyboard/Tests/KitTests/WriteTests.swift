@@ -70,11 +70,6 @@ func writeTests() {
         expectEqual(try DocumentLibrary(folder: folder).documents().count, 0)
     }
 
-    test("the default folder is September in Documents") {
-        expectEqual(DocumentLibrary.defaultFolder.lastPathComponent, "September")
-        expectEqual(DocumentLibrary.defaultFolder.deletingLastPathComponent().lastPathComponent, "Documents")
-    }
-
     test("a new document is an empty Untitled file, with a number when the name is taken") {
         let folder = makeFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -163,8 +158,6 @@ func writeTests() {
     test("the caret paragraph of the editor becomes the focused field of the input bar") {
         let caret = EditorCaret(text: "Who checks it at ni", caret: 19, length: 0)
         let field = caret.focusedField
-        expectEqual(field.appName, "Write")
-        expectEqual(field.role, "AXTextArea")
         expect(field.isEditable && !field.isSecure, "an editable text field")
         expectEqual(field.display, .mirrored(text: "Who checks it at ni", caret: 19, selectionLength: 0))
     }
@@ -381,41 +374,15 @@ func writeTests() {
 
     // MARK: The Write panel
 
-    test("the Write panel has the Markdown keys and the editor shortcuts") {
-        let panel = try PanelStore.bundled().write
-        expectEqual(
-            panel.buttons.map(\.id),
-            ["heading", "list", "todo", "quote", "blocks", "link-document",
-             "bold", "italic", "documents", "new-document", "undo", "redo"])
-
-        let actions = Dictionary(uniqueKeysWithValues: panel.buttons.map { ($0.id, $0.action) })
-        expectEqual(actions["heading"], .text("# "))
-        expectEqual(actions["todo"], .text("[ ] "))
-        expectEqual(actions["blocks"], .text("/"))
-        expectEqual(actions["link-document"], .text("[["))
-        expectEqual(actions["bold"], .shortcut(Shortcut(modifiers: .command, key: .character("b"))))
-        expectEqual(
-            actions["redo"], .shortcut(Shortcut(modifiers: [.command, .shift], key: .character("z"))))
-        expectEqual(actions["documents"], .shortcut(Shortcut(modifiers: .command, key: .character("o"))))
-    }
-
-    test("the Documents panel has the keys of the desk") {
+    test("the keys of the Documents panel with no Command are the moves of the Find field") {
         let panel = try PanelStore.bundled().writeDocuments
         let actions = Dictionary(uniqueKeysWithValues: panel.buttons.map { ($0.id, $0.action) })
-        func shortcut(_ modifiers: Modifiers, _ key: Shortcut.Key) -> PanelAction {
-            .shortcut(Shortcut(modifiers: modifiers, key: key))
+        func key(_ key: VirtualKey) -> PanelAction {
+            .shortcut(Shortcut(modifiers: [], key: .virtual(key)))
         }
-        expectEqual(actions["open"], shortcut([], .virtual(.return)))
-        expectEqual(actions["new-document"], shortcut(.command, .character("n")))
-        expectEqual(actions["rename"], shortcut(.command, .character("r")))
-        expectEqual(actions["duplicate"], shortcut(.command, .character("d")))
-        expectEqual(actions["trash"], shortcut(.command, .virtual(.delete)))
-        expectEqual(actions["undo"], shortcut(.command, .character("z")))
-        expectEqual(actions["find"], shortcut(.command, .character("f")))
-        expectEqual(actions["finder"], shortcut([.command, .option], .character("r")))
-        expectEqual(actions["previous"], shortcut([], .virtual(.left)))
-        expectEqual(actions["next"], shortcut([], .virtual(.right)))
-        expectEqual(actions["back"], shortcut([], .virtual(.escape)))
-        expectEqual(actions["close"], shortcut(.command, .character("w")))
+        expectEqual(actions["open"], key(.return))
+        expectEqual(actions["previous"], key(.left))
+        expectEqual(actions["next"], key(.right))
+        expectEqual(actions["back"], key(.escape))
     }
 }

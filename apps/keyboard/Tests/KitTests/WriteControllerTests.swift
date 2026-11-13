@@ -84,14 +84,14 @@ func writeControllerTests() {
         expectEqual(opened.count, 1, "only web and mail links open")
     }
 
-    test("Command-N starts a new document with an empty heading") {
+    test("a new document starts with an empty heading") {
         let url = try folder(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }
         let host = RecordingWriteHost()
         let write = WriteController(host: host, library: DocumentLibrary(folder: url))
         write.start()
 
-        write.paper.window.onNewDocument?()
+        write.newDocument()
         expectEqual(write.model.current?.url.lastPathComponent, "Untitled.md")
         type(write.paper.editor, "Garden")
         expectEqual(write.paper.editor.markdown, "# Garden")
@@ -125,12 +125,12 @@ func writeControllerTests() {
         return (write, host, url)
     }
 
-    test("Command-O opens the desk on the open document, and the Write panel turns to Documents") {
+    test("the desk opens on the open document, and the Write panel turns to Documents") {
         let (write, host, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
         expectEqual(write.panel, .paper)
 
-        write.paper.window.onShowDocuments?()
+        write.showDesk()
         expect(write.isDeskOpen, "the desk is open")
         expectEqual(write.desk.desk.selected, .document(write.model.documents[0]))
         expectEqual(write.panel, .desk)
@@ -273,6 +273,31 @@ func writeControllerTests() {
         expect(write.desk.failure != nil, "the desk shows the error")
     }
 
+    test("each shortcut of the Write panel reaches the paper") {
+        let (write, _, url) = try deskWrite(["New.md": "# New"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        for button in try PanelStore.bundled().write.buttons {
+            guard case .shortcut = button.action else { continue }
+            write.paper.window.makeFirstResponder(write.paper.editor)
+            let event = try keyEvent(of: button.action)
+            expect(write.paper.window.performKeyEquivalent(with: event), "\(button.id)")
+        }
+    }
+
+    // A key with no Command goes through the key bindings of the Find field.
+    // These need an active input context, which a window that is not key
+    // does not have, so only the Command shortcuts are sent here.
+    test("each Command shortcut of the Documents panel reaches the desk") {
+        let (write, _, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        for button in try PanelStore.bundled().writeDocuments.buttons {
+            guard case .shortcut(let shortcut) = button.action, shortcut.modifiers.contains(.command) else { continue }
+            write.showDesk()
+            let event = try keyEvent(of: button.action)
+            expect(write.desk.window.performKeyEquivalent(with: event), "\(button.id)")
+        }
+    }
+
     test("New Document saves the open document and starts an empty one") {
         let (write, _, url) = try deskWrite(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }
@@ -297,3 +322,22 @@ private final class RecordingWriteHost: WriteHost {
     func writePanelChanged(_ panel: WritePanel) { panels.append(panel) }
     func writeCaretMoved(_ caret: EditorCaret) { carets.append(caret) }
 }
+
+/// The key event of the main key that a press of `action` posts, as the app
+/// in front gets it on the current keyboard layout.
+@MainActor
+private func keyEvent(of action: PanelAction) throws -> NSEvent {
+    let sink = RecordingSink()
+    let controller = KeyboardController(
+        sink: sink, panels: try PanelStore.bundled(), accents: try AccentTable.bundled("en"),
+        keyCodeMap: SystemKeyboardLayout.currentMap(), talk: TalkSession(said: SaidList(database: memoryDatabase())))
+    controller.perform(action)
+    guard let key = sink.downs.last,
+        let event = CGEvent(keyboardEventSource: nil, virtualKey: key.key, keyDown: true)
+    else { throw NoKeyEvent() }
+    event.flags = key.flags.eventFlags
+    guard let keyEvent = NSEvent(cgEvent: event) else { throw NoKeyEvent() }
+    return keyEvent
+}
+
+private struct NoKeyEvent: Error {}
