@@ -323,14 +323,15 @@ Control, Voice Control) acts at once.
 A held key obeys the keyboard settings of macOS. `KeyPresser` applies them,
 and each press reads them again:
 
-- Key repeat: Delete, Space, the volume and brightness keys, and the
-  characters that are not letters repeat after the delay of System Settings,
-  at its rate. A panel button for an arrow, Delete, or Space repeats too,
-  alone or with Shift or Option. Thus a held Down button keeps the caret
-  moving, and a held Shift-Down button extends the selection. If key repeat
-  is off, no key repeats. The modifiers, Return, Escape, Tab, and the chords
-  of the keys do not repeat. A panel button with Command or Control, a
-  sequence, or text acts once.
+- Key repeat: Delete, Space, an arrow, the volume and brightness keys, and
+  the characters that are not letters repeat after the delay of System
+  Settings, at its rate. If key repeat is off, no key repeats. One rule
+  covers the keys, the panel buttons, and the buttons of My Panel: an arrow,
+  Delete, or Space repeats alone or with Shift or Option. Thus a held Down
+  button keeps the caret moving, and a held Shift-Down button extends the
+  selection. With Command or Control, the key acts once. The modifiers,
+  Return, Escape, Tab, and a character with a chord do not repeat. A
+  sequence and text act once.
 - Press and hold: if `ApplePressAndHoldEnabled` is on (the macOS default), a
   held letter shows its accents over the word row and does not repeat. A press
   on an accent replaces the letter. A press on any key closes the accents. If

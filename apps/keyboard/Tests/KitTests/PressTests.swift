@@ -52,6 +52,34 @@ private func heldKeyTests() {
         expectEqual(controller.holdBehavior(for: layoutKey("key-1")), .repeats)
     }
 
+    test("a keyboard arrow repeats, alone or with Shift or Option") {
+        let (controller, _) = try makeController()
+        let left = KeyDefinition(id: "left", kind: .special, label: "←", action: .virtual(.left))
+        expectEqual(controller.holdBehavior(for: left), .repeats)
+        controller.press(layoutKey("shift-left"))
+        expectEqual(controller.holdBehavior(for: left), .repeats)
+        controller.press(layoutKey("option-left"))
+        expectEqual(controller.holdBehavior(for: left), .repeats)
+    }
+
+    test("a keyboard arrow or Delete under a latched Command or Control acts once") {
+        let left = KeyDefinition(id: "left", kind: .special, label: "←", action: .virtual(.left))
+        for id in ["command-left", "control"] {
+            let (controller, _) = try makeController()
+            controller.press(layoutKey(id))
+            expectEqual(controller.holdBehavior(for: left), .once, id)
+            expectEqual(controller.holdBehavior(for: layoutKey("delete")), .once, id)
+        }
+    }
+
+    test("an arrow or Delete on My Panel repeats") {
+        for key in [VirtualKey.left, .delete] {
+            let button = UserButton(
+                id: "b", name: "Move", action: .shortcut(Shortcut(modifiers: .shift, key: .virtual(key))))
+            expectEqual(button.action.holdBehavior, .repeats, "\(key)")
+        }
+    }
+
     test("a panel arrow repeats, alone or with Shift or Option") {
         for modifiers in [Modifiers(), .shift, .option, [.shift, .option]] {
             let action = PanelAction.shortcut(Shortcut(modifiers: modifiers, key: .virtual(.down)))

@@ -70,7 +70,10 @@ struct MineButtonView: View {
         label
             .frame(width: width, height: Metrics.Keypad.buttonHeight)
             .mineChrome(fill: fill, stroke: stroke)
-            .pressable(label: button.accessibilityLabel, trigger: .down(.once)) { isPressed = $0 } action: {
+            .pressable(
+                label: button.accessibilityLabel,
+                trigger: .down(KeyHold(behavior: { [action = button.action] in action.holdBehavior }))
+            ) { isPressed = $0 } action: {
                 press()
             }
             .onHover { isHovered = $0 }

@@ -15,19 +15,12 @@ public enum PanelAction: Sendable, Hashable {
 }
 
 extension PanelAction {
-    /// What the button does while the user holds it. A key that repeats on
-    /// a hardware keyboard, such as an arrow or Delete, repeats alone or
-    /// with Shift or Option, so a held button moves the caret or extends the
-    /// selection. A chord with Command or Control acts once, so a long dwell
-    /// does not press a window or app command again and again.
+    /// What the button does while the user holds it. A scroll repeats. A
+    /// shortcut follows the rule of a held key. Everything else acts once.
     public var holdBehavior: HoldBehavior {
         if case .scroll = self { return .repeats }
-        guard case .shortcut(let shortcut) = self,
-            case .virtual(let key) = shortcut.key,
-            key.repeatsWhenHeld,
-            shortcut.modifiers.isSubset(of: [.shift, .option])
-        else { return .once }
-        return .repeats
+        guard case .shortcut(let shortcut) = self, case .virtual(let key) = shortcut.key else { return .once }
+        return .forKey(key, modifiers: shortcut.modifiers)
     }
 }
 

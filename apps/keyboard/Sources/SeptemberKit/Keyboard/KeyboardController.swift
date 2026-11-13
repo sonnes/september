@@ -102,7 +102,7 @@ public final class KeyboardController: ObservableObject {
         case .modifier:
             return .once
         case .virtual(let virtual):
-            return virtual.repeatsWhenHeld ? .repeats : .once
+            return .forKey(virtual, modifiers: modifiers.flags)
         case .function:
             guard case .media(let media) = control(for: key.action, modifiers: modifiers) else { return .once }
             return media.repeatsWhenHeld ? .repeats : .once

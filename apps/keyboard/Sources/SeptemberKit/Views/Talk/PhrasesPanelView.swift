@@ -42,7 +42,10 @@ private struct PhraseButton: View {
             .frame(width: width, height: Metrics.Keypad.buttonHeight)
             .background(shape.fill(Color(isPressed ? Tokens.key.pressed : Tokens.key)))
             .overlay(shape.strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1))
-            .pressable(label: button.accessibilityLabel, trigger: .down(.once)) { isPressed = $0 } action: {
+            .pressable(
+                label: button.accessibilityLabel,
+                trigger: .down(KeyHold(behavior: { [action = button.action] in action.holdBehavior }))
+            ) { isPressed = $0 } action: {
                 press()
             }
     }
