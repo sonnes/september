@@ -1,13 +1,36 @@
 import Combine
 import Foundation
 
-/// Counts the presses of each button of My Panel. My Panel ranks its buttons
-/// by these counts.
+/// Counts the presses of each button of My Panel, or of each shortcut of an
+/// app. My Panel and the shortcut suggestions rank their buttons by these
+/// counts.
 ///
-/// A press loses half its weight in `halfLife`. The `button_use` table holds
-/// button IDs and weights, never typed text.
+/// A press loses half its weight in `halfLife`. The tables hold IDs and
+/// weights, never typed text.
 @MainActor
 public final class UsageStore: ObservableObject, ButtonUsage {
+    /// The table that holds the counts.
+    public enum Table: Sendable {
+        /// The buttons of My Panel, by button ID.
+        case buttons
+        /// The shortcuts of the apps, by `AppShortcut.usageID(app:)`.
+        case shortcuts
+
+        var name: String {
+            switch self {
+            case .buttons: "button_use"
+            case .shortcuts: "shortcut_use"
+            }
+        }
+
+        var idColumn: String {
+            switch self {
+            case .buttons: "button_id"
+            case .shortcuts: "shortcut_id"
+            }
+        }
+    }
+
     public static let halfLife: TimeInterval = 14 * 24 * 60 * 60
 
     /// At launch, a count with a weight below this value is removed.
@@ -20,11 +43,13 @@ public final class UsageStore: ObservableObject, ButtonUsage {
     }
 
     private let database: KeyboardDatabase
+    private let table: Table
     private let now: () -> Date
     private var counts: [String: Count] = [:]
 
-    public init(database: KeyboardDatabase, now: @escaping () -> Date = Date.init) {
+    public init(database: KeyboardDatabase, table: Table = .buttons, now: @escaping () -> Date = Date.init) {
         self.database = database
+        self.table = table
         self.now = now
         counts = load()
         removeFaded()
@@ -37,7 +62,7 @@ public final class UsageStore: ObservableObject, ButtonUsage {
         // The counts only order the buttons. A failed write loses a little
         // order and nothing else.
         try? database.execute(
-            "INSERT OR REPLACE INTO button_use (button_id, weight, updated_at) VALUES (?, ?, ?)",
+            "INSERT OR REPLACE INTO \(table.name) (\(table.idColumn), weight, updated_at) VALUES (?, ?, ?)",
             [.text(buttonID), .double(count.weight), .double(count.updated.timeIntervalSince1970)])
     }
 
@@ -59,13 +84,13 @@ public final class UsageStore: ObservableObject, ButtonUsage {
         for buttonID in faded { counts[buttonID] = nil }
         try? database.transaction {
             for buttonID in faded {
-                try database.execute("DELETE FROM button_use WHERE button_id = ?", [.text(buttonID)])
+                try database.execute("DELETE FROM \(table.name) WHERE \(table.idColumn) = ?", [.text(buttonID)])
             }
         }
     }
 
     private func load() -> [String: Count] {
-        let rows = (try? database.query("SELECT button_id, weight, updated_at FROM button_use")) ?? []
+        let rows = (try? database.query("SELECT \(table.idColumn), weight, updated_at FROM \(table.name)")) ?? []
         var counts: [String: Count] = [:]
         for row in rows {
             guard let buttonID = row[0].text, let weight = row[1].double, let at = row[2].double else { continue }

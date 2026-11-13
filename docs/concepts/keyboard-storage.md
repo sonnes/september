@@ -19,7 +19,7 @@ documents.
 | A secret | Keychain | The ElevenLabs key (`com.september.keyboard`) and the text of each private button (`com.september.keyboard.private`) |
 | A document of the user | Markdown files | The Write documents in `~/Documents/September/` |
 | A definition that ships with the app | JSON in the bundle | Panels, accents, and context rules in `Sources/SeptemberKit/Resources/` |
-| A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history, the Said list of Talk mode, the clipboard history, and the buttons of My Panel and their presses |
+| A record that the keyboard keeps or learns | `keyboard.sqlite` | The sentence history, the Said list of Talk mode, the clipboard history, the buttons of My Panel and their presses, and the presses of the shortcut suggestions |
 
 ## The Database
 
@@ -191,6 +191,24 @@ database.
 The old file `my-panel-usage.json` kept the counts under the key
 `my-panel`, with dates in seconds since 2001. The import changes the dates to
 seconds since 1970.
+
+## The Presses of the Shortcut Suggestions
+
+`UsageStore` also owns the `shortcut_use` table. Each row holds the presses
+of one shortcut suggestion in one app. The ID is the bundle ID of the app and
+the keys of the shortcut, such as `com.apple.Notes command+l`. The table holds
+no menu names and no text that the user typed.
+
+```sql
+CREATE TABLE shortcut_use (
+  shortcut_id  TEXT PRIMARY KEY,
+  weight       REAL NOT NULL,          -- the weight at `updated_at`
+  updated_at   REAL NOT NULL           -- seconds since 1970
+) WITHOUT ROWID;
+```
+
+The weights decay as the presses of My Panel do. The suggestions show the
+most pressed shortcuts first, and a tie keeps the menu bar order.
 
 ## The Buttons of My Panel
 

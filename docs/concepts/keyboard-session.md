@@ -200,7 +200,7 @@ The text on the clipboard at launch does not go into the history.
 | `pickWord(_:)` | A word completion | Types the rest of the word as `type(_:)` does. The engine keeps the word until the user submits the text. |
 | `speakPressed()` | Speak | See [Speak](#speak). |
 | `pressMine(_:)` | A button of Mine | Counts the press for the order of Mine, then does the action. |
-| `pressShortcut(_:)` | A shortcut suggestion | Presses the chord of the suggestion in the app. A latched modifier ends. |
+| `pressShortcut(_:)` | A shortcut suggestion | Presses the chord of the suggestion in the app. A latched modifier ends. The press counts toward the order of the shortcuts of the app. |
 | `toggleHistory()` | History | Shows the clipboard history in the place of the predictions, on its newest page, or shows the predictions again. An app change and a mode change close the history. |
 | `olderPage()`, `newerPage()` | Older and Newer | Turns the pages of the history. |
 | `pasteClip(_:)` | A copied text | See [The Clipboard](#the-clipboard). |
@@ -236,8 +236,11 @@ in the place of the input bar. Otherwise `shortcuts` is empty, and the bar
 shows. Talk mode and the Write window have no shortcuts.
 
 - The shortcuts come from `AppShortcut.suggestions(menu:modifiers:)`: the
-  menu items of the app with a chord, in menu bar order. Each chord shows one
-  time.
+  menu items of the app with a chord. Each chord shows one time.
+- `AppShortcut.ranked(_:app:by:)` puts the shortcuts that the user pressed
+  most in this app first. A tie keeps the menu bar order. The session ranks
+  the menu when it reads it, so the order does not change while the app is in
+  front. `pressShortcut(_:)` adds one press in the `shortcut_use` table.
 - The session reads the menu with `FrontAppReading.menuShortcuts(pid:)` for
   the app in front. It reads only when it needs shortcuts, and keeps the
   result until the next app change.

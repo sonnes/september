@@ -381,7 +381,8 @@ private func makeSession(
     let write = FakeWrite()
     let session = KeyboardSession(
         controller: controller, predictions: engine, speaker: speaker, userPanel: store,
-        userPanelUsage: UsageStore(database: database), reader: reader, write: write,
+        userPanelUsage: UsageStore(database: database),
+        shortcutUsage: UsageStore(database: database, table: .shortcuts), reader: reader, write: write,
         inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25),
         clipboard: clipboard, pasteboard: pasteboard, scheduler: clock)
     return SessionParts(
@@ -445,6 +446,30 @@ private func shortcutTests() async {
 
     await asyncTest("with no text field in focus, the place of the bar shows the shortcuts of the menu") {
         let parts = try makeParts()
+        parts.controller.focusChanged(to: focus("AXButton"))
+        await parts.session.settle()
+        expectEqual(parts.session.shortcuts, [copy, lock])
+    }
+
+    await asyncTest("the shortcuts that the user presses most come first when the app comes to the front again") {
+        let parts = try makeParts()
+        parts.controller.focusChanged(to: focus("AXButton"))
+        await parts.session.settle()
+        parts.session.pressShortcut(lock)
+        await parts.session.settle()
+        expectEqual(parts.session.shortcuts, [copy, lock], "the order stays while the app is in front")
+
+        parts.session.frontChanged(.app(FrontApp(pid: 4, name: "Mail", bundleID: "com.apple.mail")))
+        parts.session.frontChanged(.app(notes))
+        parts.controller.focusChanged(to: focus("AXButton"))
+        await parts.session.settle()
+        expectEqual(parts.session.shortcuts, [lock, copy])
+    }
+
+    await asyncTest("the presses in one app do not order the shortcuts of another app") {
+        let parts = try makeParts()
+        parts.session.pressShortcut(lock)
+        parts.session.frontChanged(.app(FrontApp(pid: 4, name: "Mail", bundleID: "com.apple.mail")))
         parts.controller.focusChanged(to: focus("AXButton"))
         await parts.session.settle()
         expectEqual(parts.session.shortcuts, [copy, lock])

@@ -37,6 +37,7 @@ public struct KeyboardAssembly {
             controller: controller, predictions: predictions, speaker: speaker,
             userPanel: Result { try UserPanelStore(database: database, defaults: defaults, privateTexts: privateTexts) },
             userPanelUsage: UsageStore(database: database),
+            shortcutUsage: UsageStore(database: database, table: .shortcuts),
             reader: reader, write: write, inputBar: InputBarVisibility(scheduler: scheduler),
             clipboard: ClipboardHistory(database: database, defaults: defaults, now: clipboardClock),
             pasteboard: pasteboard, scheduler: scheduler)

@@ -110,6 +110,13 @@ public final class KeyboardDatabase {
           action    TEXT NOT NULL
         );
         """,
+        """
+        CREATE TABLE shortcut_use (
+          shortcut_id  TEXT PRIMARY KEY,
+          weight       REAL NOT NULL,
+          updated_at   REAL NOT NULL
+        ) WITHOUT ROWID;
+        """,
     ]
 
     /// The folder of the keyboard files:

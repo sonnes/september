@@ -24,6 +24,8 @@ public final class KeyboardSession: ObservableObject {
     public let speaker: Speaker
     public let userPanel: UserPanelStore?
     public let userPanelUsage: UsageStore
+    /// The presses of the shortcut suggestions, by app.
+    private let shortcutUsage: UsageStore
     /// Why My Panel could not load its buttons. The table stays as it is.
     public let userPanelError: String?
 
@@ -101,6 +103,7 @@ public final class KeyboardSession: ObservableObject {
         speaker: Speaker,
         userPanel: Result<UserPanelStore, any Error>,
         userPanelUsage: UsageStore,
+        shortcutUsage: UsageStore,
         reader: any FrontAppReading,
         write: any WriteReading,
         inputBar: InputBarVisibility = InputBarVisibility(),
@@ -118,6 +121,7 @@ public final class KeyboardSession: ObservableObject {
         self.predictions = predictions
         self.speaker = speaker
         self.userPanelUsage = userPanelUsage
+        self.shortcutUsage = shortcutUsage
         switch userPanel {
         case .success(let store):
             self.userPanel = store
@@ -164,8 +168,12 @@ public final class KeyboardSession: ObservableObject {
     }
 
     /// A press on a shortcut suggestion. It presses the chord in the app and
-    /// ends a latched modifier.
+    /// ends a latched modifier. It counts toward the order of the shortcuts
+    /// of the app.
     public func pressShortcut(_ shortcut: AppShortcut) {
+        if case .app(let app) = front, let bundleID = app.bundleID {
+            shortcutUsage.record(shortcut.usageID(app: bundleID))
+        }
         controller.perform(.shortcut(shortcut.shortcut))
     }
 
@@ -566,7 +574,12 @@ public final class KeyboardSession: ObservableObject {
         let on = controller.modifiers.own.union(heldModifiers)
         let byModifier = !on.isDisjoint(with: [.command, .control])
         guard byModifier || !wantsBar else { return [] }
-        if menu == nil, case .app(let app) = front { menu = reader.menuShortcuts(pid: app.pid) }
+        // The order is set when the menu is read, so a suggestion never moves
+        // while the app stays in front.
+        if menu == nil, case .app(let app) = front {
+            let shortcuts = reader.menuShortcuts(pid: app.pid)
+            menu = app.bundleID.map { AppShortcut.ranked(shortcuts, app: $0, by: shortcutUsage) } ?? shortcuts
+        }
         return AppShortcut.suggestions(menu: menu ?? [], modifiers: byModifier ? on : [])
     }
 

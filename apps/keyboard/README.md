@@ -585,9 +585,12 @@ bar in two cases:
 The shortcuts are panel buttons in one row, 12 at most. A button shows only
 its keys. Its name shows above it on hover, and its accessibility label holds
 the name and the keys. A press presses the keys in the app and ends a latched
-modifier. The shortcuts are the menu items of the app with a chord, in menu
-bar order. The keyboard reads the menu bar through accessibility when
-a suggestion needs it, and keeps the read until another app comes to the front.
+modifier. The shortcuts are the menu items of the app with a chord. The
+shortcuts that you press most in this app come first, and the others keep
+the menu bar order. The keyboard reads the menu bar through accessibility
+when a suggestion needs it, and keeps the read until another app comes to
+the front. The order is set at the read, so a shortcut does not move while
+the app stays in front.
 The suggestions leave out the Apple menu, which holds Log Out and Lock Screen,
 and the menu items that are off. The app menu, with Hide and Quit, comes last.
 Talk mode and the Write window show no shortcut suggestions.

@@ -39,6 +39,13 @@ func usageTests() {
         expectEqual(try rowCount(folder), .int(1))
     }
 
+    test("the counts of the app shortcuts survive a restart apart from the counts of My Panel") {
+        let folder = temporaryDirectory()
+        UsageStore(database: open(folder), table: .shortcuts).record("com.apple.Notes command+l")
+        expectEqual(UsageStore(database: open(folder), table: .shortcuts).uses(of: "com.apple.Notes command+l"), 1)
+        expectEqual(UsageStore(database: open(folder)).uses(of: "com.apple.Notes command+l"), 0)
+    }
+
     test("a count that has decayed below 0.01 is removed at launch") {
         let folder = temporaryDirectory()
         UsageStore(database: open(folder), now: { start }).record("save")
