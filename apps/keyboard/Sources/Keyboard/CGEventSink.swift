@@ -63,20 +63,14 @@ final class CGEventSink: KeystrokeSink {
     /// Presses the Start Dictation item of the menu bar of the app in front.
     /// Returns false when the app has no such item.
     private static func startDictation() -> Bool {
-        guard let app = NSWorkspace.shared.frontmostApplication else { return false }
-        let root = AXUIElementCreateApplication(app.processIdentifier)
-        guard let bar = root.element(kAXMenuBarAttribute) else { return false }
-        for menuBarItem in bar.children {
-            for menu in menuBarItem.children {
-                for item in menu.children {
-                    guard let title = item.string(kAXTitleAttribute), DictationMenu.isStartItem(title) else {
-                        continue
-                    }
-                    return AXUIElementPerformAction(item, kAXPressAction as CFString) == .success
-                }
-            }
-        }
-        return false
+        guard let app = NSWorkspace.shared.frontmostApplication,
+            let item = AXFocus.menuBar(pid: app.processIdentifier, { element, _, found -> AXUIElement? in
+                if let item = found.first { return item }
+                let title = element.string(kAXTitleAttribute) ?? ""
+                return DictationMenu.isStartItem(title) ? element : nil
+            })
+        else { return false }
+        return AXUIElementPerformAction(item, kAXPressAction as CFString) == .success
     }
 
     /// Runs a Shortcut of the Shortcuts app. Beeps when it does not run, for

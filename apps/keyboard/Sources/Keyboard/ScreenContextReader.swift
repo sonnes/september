@@ -63,21 +63,13 @@ enum ScreenContextReader {
         let app = AXUIElementCreateApplication(request.pid)
         // A slow app must not hold the read for the default 6 seconds.
         AXUIElementSetMessagingTimeout(app, 0.25)
-        if request.isElectron {
-            AXUIElementSetAttributeValue(app, "AXManualAccessibility" as CFString, kCFBooleanTrue)
-        }
-        guard let focused = app.element(kAXFocusedUIElementAttribute),
-            focused.string(kAXSubroleAttribute) != (kAXSecureTextFieldSubrole as String)
+        if request.isElectron { AXFocus.enableManualAccessibility(app) }
+        guard let focused = app.element(kAXFocusedUIElementAttribute), !AXFocus.isSecure(focused)
         else { return nil }
 
-        var path = [AXContextNode(element: focused)]
-        var current = focused
-        while path.count < 64, current.string(kAXRoleAttribute) != (kAXWindowRole as String),
-            let parent = current.element(kAXParentAttribute)
-        {
-            path.append(AXContextNode(element: parent))
-            current = parent
-        }
+        let full = AXFocus.path(of: focused)
+        let window = full.firstIndex { $0.string(kAXRoleAttribute) == (kAXWindowRole as String) }
+        let path = full[...(window ?? full.count - 1)].map(AXContextNode.init)
 
         let deadline = Date().addingTimeInterval(timeLimit)
         return ScreenContextExtractor.extract(

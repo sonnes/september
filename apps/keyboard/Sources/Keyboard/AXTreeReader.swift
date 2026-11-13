@@ -14,21 +14,9 @@ enum AXTreeReader {
         let root = AXUIElementCreateApplication(app.processIdentifier)
         let focused = root.element(kAXFocusedUIElementAttribute)
 
-        var reader = PathReader(focused: focused, path: ancestry(of: focused))
+        var reader = PathReader(focused: focused, path: AXFocus.path(of: focused))
         let node = reader.read(root, opens: true)
         return AXTree(appName: app.localizedName ?? "", root: node)
-    }
-
-    /// The focused element and everything above it, up to the app.
-    private static func ancestry(of focused: AXUIElement?) -> [AXUIElement] {
-        var chain: [AXUIElement] = []
-        var current = focused
-        // A misbehaving app can report a parent cycle.
-        while let element = current, chain.count < 64 {
-            chain.append(element)
-            current = element.element(kAXParentAttribute)
-        }
-        return chain
     }
 
     private struct PathReader {

@@ -95,10 +95,7 @@ final class FocusWatcher {
         }
 
         let element = AXUIElementCreateApplication(app.processIdentifier)
-        // Electron and Chromium apps build no accessibility tree until an
-        // assistive app asks for one. VoiceOver flips the same switch.
-        AXUIElementSetAttributeValue(
-            element, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+        AXFocus.enableManualAccessibility(element)
 
         var created: AXObserver?
         guard AXObserverCreate(app.processIdentifier, focusWatcherCallback, &created) == .success,
@@ -206,7 +203,7 @@ final class FocusWatcher {
         guard let element = focusedElement() else { return nil }
 
         let subrole = element.string(kAXSubroleAttribute)
-        let isSecure = subrole == (kAXSecureTextFieldSubrole as String)
+        let isSecure = FocusedField.isSecure(subrole: subrole)
         var settable: DarwinBoolean = false
         AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &settable)
 

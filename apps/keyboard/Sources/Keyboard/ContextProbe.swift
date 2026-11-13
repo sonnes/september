@@ -30,16 +30,11 @@ enum ContextProbe {
         guard let app else { return print("no app in front") }
         let root = AXUIElementCreateApplication(app.processIdentifier)
         if electron {
-            AXUIElementSetAttributeValue(root, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+            AXFocus.enableManualAccessibility(root)
             CFRunLoopRunInMode(.defaultMode, 1, false)
         }
         let focused = root.element(kAXFocusedUIElementAttribute)
-        var path: [AXUIElement] = []
-        var current = focused
-        while let element = current, path.count < 64 {
-            path.append(element)
-            current = element.element(kAXParentAttribute)
-        }
+        let path = AXFocus.path(of: focused)
         let window =
             path.first { $0.string(kAXRoleAttribute) == (kAXWindowRole as String) }
             ?? root.element(kAXFocusedWindowAttribute) ?? root
@@ -61,7 +56,12 @@ enum ContextProbe {
 
     /// What the context step reads for the predictions, as shapes.
     private static func printExtracted(app: NSRunningApplication) {
-        let rules = (try? ContextRules.bundled()) ?? ContextRules(rules: [:])
+        let rules: ContextRules
+        do {
+            rules = try ContextRules.bundled()
+        } catch {
+            return print("\nbroken context rule: \(error)\n")
+        }
         let request = ScreenContextReader.Request(app: app, rules: rules)
         let start = Date()
         let screen = ScreenContextReader.read(request)
@@ -108,7 +108,7 @@ enum ContextProbe {
 
             var texts: [ProbeText] = []
             // A password field gives no value, and the probe does not ask.
-            if subrole != (kAXSecureTextFieldSubrole as String) {
+            if !FocusedField.isSecure(subrole: subrole) {
                 for name in [kAXTitleAttribute, kAXDescriptionAttribute, kAXValueAttribute,
                     kAXPlaceholderValueAttribute, kAXHelpAttribute]
                 {

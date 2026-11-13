@@ -48,7 +48,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`rectangle`/`phrases`/`write`/`write-documents.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
-| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `OtherInputMonitor`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, the Settings window, snapshots |
+| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `OtherInputMonitor`, `SystemPasteboard`, `MenuBarReader`, `AXTreeReader`, `AXFocus` (the focus path, the password check, `AXManualAccessibility`, and the walk of the menu bar), the Settings window, snapshots |
 | `Sources/WriteLab` | Write Lab: the Write paper on its own, with a stand-in for the keyboard bar (`make lab`) |
 | `Tests/KitTests` | tests + the harness |
 

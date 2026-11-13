@@ -36,6 +36,14 @@ public struct FocusedField: Equatable, Sendable {
         self.selection = selection
     }
 
+    /// The subrole of a password field.
+    public static let secureSubrole = "AXSecureTextField"
+
+    /// True when an element with `subrole` is a password field.
+    public static func isSecure(subrole: String?) -> Bool {
+        subrole == secureSubrole
+    }
+
     /// The roles of a text input. Terminal exposes a text area with no
     /// settable value, so the role counts by itself.
     static let textRoles: Set<String> = ["AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"]

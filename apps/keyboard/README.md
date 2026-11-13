@@ -28,7 +28,7 @@ Sources/
     Resources/      Panels/{text,system,rectangle,phrases,write,write-documents}.json,
                     Context/<bundle id>.json
   Keyboard/         the app: floating panels, CGEvent sink, focus watcher, modifier tap, other input monitor, tree reader,
-                    menu bar, the Settings window
+                    menu bar, the shared accessibility reads (AXFocus), the Settings window
   WriteLab/         the Write paper on its own, with a stand-in for the keyboard bar
 Tests/KitTests/     tests (see "Tests" below)
 ```
