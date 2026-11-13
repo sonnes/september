@@ -33,11 +33,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// `applicationWillTerminate`. These handlers release the modifiers first.
     private var signalSources: [DispatchSourceSignal] = []
     private var tracker = FrontAppTracker(ownPID: ProcessInfo.processInfo.processIdentifier)
-    /// How to read the text near the field in each app.
-    private var contextRules = ContextRules(rules: [:])
-    /// The read of the text near the field that runs now.
-    private var screenRead: Task<Void, Never>?
-    private var fieldWasEmpty = true
     private var clipboardWatcher: ClipboardWatcher?
     private var clipboardTimer: Timer?
 
@@ -55,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let phrases: PanelDefinition
+        let contextRules: ContextRules
         let database = KeyboardDatabase.open(at: KeyboardDatabase.defaultURL)
         KeyboardDatabase.removeStaleFiles(in: KeyboardDatabase.defaultURL.deletingLastPathComponent())
         do {
@@ -76,6 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             controller: controller, predictions: predictions, speaker: speech.speaker,
             userPanel: Result { try UserPanelStore(database: database, importing: UserPanelStore.jsonURL) },
             userPanelUsage: UsageStore(database: database, importing: UsageStore.jsonURL),
+            reader: AXFrontAppReader(rules: contextRules),
             clipboard: ClipboardHistory(database: database, importing: ClipboardHistory.jsonURL),
             pasteboard: SystemPasteboard())
         watchClipboard()
@@ -222,16 +219,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Mirror the focused field of whatever app is in front, and re-read it
         // after every key we send — some apps never announce their own changes.
         focusWatcher.onChange = { [weak self] field in
-            guard let self else { return }
-            self.controller.focusChanged(to: field)
-            // A field that empties was sent, and the chat above it changed.
-            let isEmpty = field?.text?.isEmpty ?? true
-            if isEmpty, !self.fieldWasEmpty { self.readScreenSoon() }
-            self.fieldWasEmpty = isEmpty
+            self?.session.focusChanged(to: field)
         }
         focusWatcher.onFocusMoved = { [weak self] in
             self?.session.focusMoved()
-            self?.readScreenSoon()
             // The tree only needs rebuilding when focus lands somewhere else;
             // the text of the field it is already showing is caught by the
             // slow timer.
@@ -245,32 +236,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.focusWatcher.refreshSoon()
         }
         focusWatcher.start()
-        session.predictions.$screenEnabled
-            .dropFirst()
-            .sink { [weak self] isOn in
-                if isOn { self?.readScreenSoon(enabled: true) } else { self?.screenRead?.cancel() }
-            }
-            .store(in: &subscriptions)
-    }
-
-    /// Reads the text near the field of the app in front, off the main
-    /// thread, when the user turned it on. A newer read cancels this one.
-    private func readScreenSoon(enabled: Bool? = nil) {
-        screenRead?.cancel()
-        guard enabled ?? session.predictions.screenEnabled, controller.mode == .type,
-            !controller.isFieldPrivate,
-            let app = NSWorkspace.shared.frontmostApplication,
-            app.processIdentifier != ProcessInfo.processInfo.processIdentifier
-        else { return }
-        let request = ScreenContextReader.Request(app: app, rules: contextRules)
-        screenRead = Task { [weak self] in
-            // Lets the focus settle after a switch.
-            try? await Task.sleep(for: .milliseconds(150))
-            guard !Task.isCancelled else { return }
-            let screen = await Task.detached { ScreenContextReader.read(request) }.value
-            guard !Task.isCancelled else { return }
-            self?.session.screenRead(screen)
-        }
     }
 
     private func writeKeyChanged(_ isKey: Bool) {
@@ -284,16 +249,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func apply(_ change: FrontTarget?) {
         guard let change else { return }
-        switch change {
-        case .write:
-            session.readMenu = { [] }
-            session.frontChanged(change)
-            session.writeCaretMoved(write.caret)
-        case .app(let app):
-            session.readMenu = { MenuBarReader.shortcuts(pid: app.pid) }
-            session.frontChanged(change)
-            readScreenSoon()
-        }
+        session.frontChanged(change)
+        if change.isWrite { session.writeCaretMoved(write.caret) }
     }
 
     /// The paper turned into the desk, or the desk into the paper: the Write

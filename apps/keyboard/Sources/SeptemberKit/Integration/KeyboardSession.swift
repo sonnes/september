@@ -60,19 +60,12 @@ public final class KeyboardSession: ObservableObject {
     /// bar: in Type mode with no text field in focus, and while Command or
     /// Control is on. Empty when the bar shows.
     @Published public private(set) var shortcuts: [AppShortcut] = []
-    /// Reads the menu items with a chord of the app in front. The app reads
-    /// the menu bar through accessibility. The session reads it only when a
-    /// suggestion needs it, and keeps the read until another app comes to the
-    /// front.
-    public var readMenu: () -> [AppShortcut] = { [] } {
-        didSet {
-            menu = nil
-            scheduleUpdate()
-        }
-    }
     /// A modifier that macOS holds shows the shortcuts after this hold, so a
     /// quick chord does not make the bar blink.
     public static let modifierHoldDelay: TimeInterval = 0.4
+    /// The time before a read of the text on screen. Other apps move the
+    /// focus late after a switch.
+    public static let screenReadDelay: TimeInterval = 0.15
     /// The app or the Write panel that the keyboard types into.
     @Published private var front: FrontTarget?
     private var isWriteInFront: Bool { front?.isWrite == true }
@@ -85,8 +78,17 @@ public final class KeyboardSession: ObservableObject {
     /// accessibility API, so the app asks the editor page.
     public var writeSpeech: () async -> EditorSpeech? = { nil }
 
-    /// The menu shortcuts of the app in front, from the last read.
+    /// Reads the menu and the text on screen of the app in front.
+    private let reader: any FrontAppReading
+    /// The menu shortcuts of the app in front, from the last read. The
+    /// session reads the menu only when a suggestion needs it, and keeps the
+    /// read until another app comes to the front.
     private var menu: [AppShortcut]?
+    /// The wait before a read of the text on screen, and the read.
+    private var pendingScreenRead: (any ScheduledWork)?
+    private var screenRead: Task<Void, Never>?
+    /// True while the focused field has no text.
+    private var fieldWasEmpty = true
     /// The modifiers that macOS holds, after the hold delay.
     private var heldModifiers: Modifiers = []
     private var pendingHold: (any ScheduledWork)?
@@ -108,12 +110,14 @@ public final class KeyboardSession: ObservableObject {
         speaker: Speaker,
         userPanel: Result<UserPanelStore, any Error>,
         userPanelUsage: UsageStore,
+        reader: any FrontAppReading,
         inputBar: InputBarVisibility = InputBarVisibility(),
         clipboard: ClipboardHistory = ClipboardHistory(),
         pasteboard: any ClipboardAccess = MemoryPasteboard(),
         scheduler: any DelayScheduler = MainQueueScheduler()
     ) {
         self.scheduler = scheduler
+        self.reader = reader
         self.inputBar = inputBar
         self.clipboard = clipboard
         self.pasteboard = pasteboard
@@ -324,6 +328,7 @@ public final class KeyboardSession: ObservableObject {
         predictions.focusMoved()
         rankUserPanel()
         scheduleUpdate()
+        readScreenSoon()
     }
 
     /// The paper of Write turned into the desk, or the desk into the paper.
@@ -335,13 +340,6 @@ public final class KeyboardSession: ObservableObject {
         writePanel = controller.panels.writePanel(for: panel)
     }
 
-    /// The app read the text near the field. A read of an app that is no
-    /// longer in front is dropped.
-    public func screenRead(_ screen: ScreenContext?) {
-        guard case .app(let app) = front, screen == nil || screen?.bundleID == app.bundleID else { return }
-        self.screen = screen
-        scheduleUpdate()
-    }
 
     /// The focus moved to a different element. Call it only for a new element,
     /// not for new text in the same one: private text stays hidden until the
@@ -349,6 +347,17 @@ public final class KeyboardSession: ObservableObject {
     public func focusMoved() {
         controller.focusMoved()
         predictions.focusMoved()
+        readScreenSoon()
+    }
+
+    /// The app in front reported its focused field, or new text in it. A
+    /// field that empties was sent, and the text above it changed, so the
+    /// session reads the screen again.
+    public func focusChanged(to field: FocusedField?) {
+        controller.focusChanged(to: field)
+        let isEmpty = field?.text?.isEmpty ?? true
+        if isEmpty, !fieldWasEmpty { readScreenSoon() }
+        fieldWasEmpty = isEmpty
     }
 
     /// The editor of the Write window reported the paragraph at the caret.
@@ -367,6 +376,7 @@ public final class KeyboardSession: ObservableObject {
         // empties the Talk bar.
         for _ in 0..<4 {
             await readingWrite?.value
+            await screenRead?.value
             await pending?.value
             await Task.yield()
         }
@@ -389,6 +399,40 @@ public final class KeyboardSession: ObservableObject {
             self.speaker.speak(text)
             self.update()
         }
+    }
+
+    /// True when the session can read the text on screen: the switch is on,
+    /// the keyboard is in Type mode, and another app with no private text is
+    /// in front.
+    private var mayReadScreen: Bool {
+        predictions.screenEnabled && controller.mode == .type && !controller.isFieldPrivate
+    }
+
+    /// Reads the text on screen of the app in front after
+    /// `screenReadDelay`. A newer read cancels this one. The rules apply when
+    /// the read starts.
+    private func readScreenSoon() {
+        cancelScreenRead()
+        guard case .app(let app) = front else { return }
+        pendingScreenRead = scheduler.schedule(after: Self.screenReadDelay) { [weak self] in
+            guard let self else { return }
+            self.pendingScreenRead = nil
+            guard self.mayReadScreen, self.front == .app(app) else { return }
+            self.screenRead = Task { [weak self, reader] in
+                let screen = await reader.screenContext(pid: app.pid)
+                guard let self, !Task.isCancelled, self.front == .app(app) else { return }
+                self.screenRead = nil
+                self.screen = screen
+                self.scheduleUpdate()
+            }
+        }
+    }
+
+    private func cancelScreenRead() {
+        pendingScreenRead?.cancel()
+        pendingScreenRead = nil
+        screenRead?.cancel()
+        screenRead = nil
     }
 
     private func rankUserPanel() {
@@ -431,12 +475,15 @@ public final class KeyboardSession: ObservableObject {
             .dropFirst()
             .sink { [weak self] in self?.macModifiersChanged($0) }
             .store(in: &subscriptions)
-        // A button added in Settings shows at once. The user is in the Settings
-        // window, not aiming at the panel.
         predictions.$screenEnabled
             .dropFirst()
-            .sink { [weak self] _ in self?.scheduleUpdate() }
+            .sink { [weak self] isOn in
+                if isOn { self?.readScreenSoon() } else { self?.cancelScreenRead() }
+                self?.scheduleUpdate()
+            }
             .store(in: &subscriptions)
+        // A button added in Settings shows at once. The user is in the Settings
+        // window, not aiming at the panel.
         userPanel?.$buttons
             .dropFirst()
             .sink { [weak self] _ in self?.scheduleUpdate(rank: true) }
@@ -523,7 +570,7 @@ public final class KeyboardSession: ObservableObject {
             mode: mode, focusedField: controller.focusedField, isFieldPrivate: controller.isFieldPrivate,
             input: controller.input, isWriteInFront: isWriteInFront)
         guard byModifier || !hasTextInput else { return [] }
-        if menu == nil { menu = readMenu() }
+        if menu == nil, case .app(let app) = front { menu = reader.menuShortcuts(pid: app.pid) }
         return AppShortcut.suggestions(menu: menu ?? [], modifiers: byModifier ? on : [])
     }
 

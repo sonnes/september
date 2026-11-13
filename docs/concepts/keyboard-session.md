@@ -25,10 +25,14 @@ It runs on the main actor. The checks are in
 | The input bar | `InputBarVisibility` | Shows the bar and the suggestions only when there is text input. |
 | The clipboard | `ClipboardHistory`, `ClipboardAccess` | Pastes a copied text, and does Cut, Copy, and Paste in each mode. |
 
-The app sets two hooks:
+`init` takes a `FrontAppReading`. It reads the menu shortcuts and the text on
+screen of the app in front, for a process ID. The app passes
+`AXFrontAppReader`, which reads them through accessibility and holds the
+context rules. See [Shortcut Suggestions](#shortcut-suggestions) and
+[The Text on Screen](#the-text-on-screen).
 
-- `readMenu` reads the menu shortcuts of the app in front. See
-  [Shortcut Suggestions](#shortcut-suggestions).
+The app sets one hook:
+
 - `writeSpeech` reads the selection and the document of the Write paper, or
   the Find query of the desk. The keyboard cannot read its own window through
   the accessibility API.
@@ -106,7 +110,7 @@ order:
    clipboard history closes. Then `writePanel` changes, and Mine takes its
    new order.
 3. `focusMoved()`. The private state of the last field ends.
-4. `controller.focusChanged(to:)` with the field of the new app.
+4. `focusChanged(to:)` with the field of the new app.
 
 If the field of the new app comes before `frontChanged`, the controller clears
 it, and the bar stays empty. For this reason, `FocusWatcher.onAppChanged` is
@@ -117,7 +121,32 @@ the only observer of the app switch.
 1. `focusMoved()`, only for a different element. New text in the same element
    is not a focus move, so private text stays hidden until the focus leaves its
    field.
-2. `controller.focusChanged(to:)` with the new field.
+2. `focusChanged(to:)` with the new field. The session gives the field to
+   `controller.focusChanged(to:)`.
+
+### The text on screen
+
+The session decides when to read the text near the field, and if it can read
+it. It reads the text after these events:
+
+- `frontChanged(_:)` brings another app to the front.
+- `focusMoved()`.
+- `focusChanged(to:)` gives an empty field after a field with text. The user
+  sent the text, and the text above the field changed.
+- The switch `PredictionEngine.screenEnabled` turns on.
+
+The read waits `screenReadDelay` (0.15 seconds) on the scheduler of the
+session, because other apps move the focus late after a switch. A newer
+event cancels the read that waits or runs, so an app switch reads one time.
+When the wait ends, the session reads only if these conditions are true:
+
+- The switch is on.
+- The keyboard is in Type mode.
+- Another app is in front, not Write.
+- The field holds no private text.
+
+A read that ends after another app came to the front is dropped. A new app
+clears the text. Turning off the switch cancels the read.
 
 ### The Write paper
 
@@ -157,7 +186,6 @@ The text on the clipboard at launch does not go into the history.
 | Call | From | What happens |
 |---|---|---|
 | `type(_:)` | A prediction tile | Types into the app in Type mode, or into the Talk bar in Talk mode. |
-| `screenRead(_:)` | `AppDelegate`, after a read of the text near the field | Keeps the text for the sentence predictions of Type mode. A read of an app that is no longer in front is dropped. A new app clears the text. |
 | `pickWord(_:)` | A word completion | Types the rest of the word as `type(_:)` does. The engine keeps the word until the user submits the text. |
 | `speakPressed()` | Speak | See [Speak](#speak). |
 | `pressMine(_:)` | A button of Mine | Counts the press for the order of Mine, then does the action. |
@@ -199,9 +227,9 @@ shows. Talk mode and the Write window have no shortcuts.
 - The shortcuts come from `AppShortcut.suggestions(menu:modifiers:)`: the
   menu items of the app with a chord, in menu bar order. Each chord shows one
   time.
-- `readMenu` reads the menu shortcuts of the app in front. The app shell sets
-  it in each app change. The session calls it only when it needs shortcuts,
-  and keeps the result until the next app change.
+- The session reads the menu with `FrontAppReading.menuShortcuts(pid:)` for
+  the app in front. It reads only when it needs shortcuts, and keeps the
+  result until the next app change.
 - The modifiers that are on are the modifiers of the keys, latched or locked,
   and the modifiers that macOS holds. With Command or Control on, only the
   chords that hold all these modifiers stay.
@@ -243,5 +271,7 @@ A press on a copied text closes the history.
 ## Checks
 
 `settle()` waits until the parts take the last change: the read of the Write
-window, the pending update, and the request of the predictions. A check calls
+window, the read of the text on screen, the pending update, and the request
+of the predictions. The wait before a read of the text on screen runs on the
+scheduler, so a check moves its `FakeClock` past `screenReadDelay`. A check calls
 `settle()` before it reads a result.

@@ -1,3 +1,5 @@
+import Foundation
+
 /// An app that came to the front, as far as the shell can tell.
 public struct FrontApp: Equatable, Sendable {
     public let pid: Int32
@@ -73,4 +75,15 @@ public struct FrontAppTracker: Sendable {
         front = next
         return target
     }
+}
+
+/// Reads the app in front for the session. The app reads it through
+/// accessibility, and the checks read it from memory.
+@MainActor
+public protocol FrontAppReading {
+    /// The menu items with a chord of the app.
+    func menuShortcuts(pid: pid_t) -> [AppShortcut]
+    /// The text near the focused field of the app, with the rule of the app.
+    /// Nil when the app shows no text to read.
+    func screenContext(pid: pid_t) async -> ScreenContext?
 }

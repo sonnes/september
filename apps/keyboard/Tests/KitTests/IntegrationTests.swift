@@ -342,6 +342,7 @@ private struct SessionParts {
     let voice: FakeEngine
     let userPanel: UserPanelStore?
     let clock: FakeClock
+    let reader: FakeFrontAppReader
     let completer: CupCompleter
     let pasteboard: MemoryPasteboard
     let clipboard: ClipboardHistory
@@ -375,16 +376,44 @@ private func makeSession(
         }
     let clock = FakeClock()
     let clipboard = ClipboardHistory(defaults: defaults)
+    let reader = FakeFrontAppReader()
     let session = KeyboardSession(
         controller: controller, predictions: engine, speaker: speaker, userPanel: store,
-        userPanelUsage: UsageStore(),
+        userPanelUsage: UsageStore(), reader: reader,
         inputBar: InputBarVisibility(scheduler: clock, hideDelay: 0.25),
         clipboard: clipboard, pasteboard: pasteboard, scheduler: clock)
     return SessionParts(
         session: session, controller: controller, sink: sink, voice: voice,
-        userPanel: try? store.get(), clock: clock, completer: completer,
+        userPanel: try? store.get(), clock: clock, reader: reader, completer: completer,
         pasteboard: pasteboard, clipboard: clipboard, history: history,
         database: database)
+}
+
+/// Reads the menu and the screen of the app in front from memory, and
+/// counts the reads.
+@MainActor
+private final class FakeFrontAppReader: FrontAppReading {
+    var menu: [AppShortcut] = []
+    var screens: [pid_t: ScreenContext] = [:]
+    private(set) var menuReads: [pid_t] = []
+    private(set) var screenReads: [pid_t] = []
+
+    func menuShortcuts(pid: pid_t) -> [AppShortcut] {
+        menuReads.append(pid)
+        return menu
+    }
+
+    func screenContext(pid: pid_t) async -> ScreenContext? {
+        screenReads.append(pid)
+        return screens[pid]
+    }
+}
+
+/// Lets the time of a screen read pass, then waits for the read.
+@MainActor
+private func passScreenDelay(_ parts: SessionParts) async {
+    parts.clock.advance(to: parts.clock.now + KeyboardSession.screenReadDelay)
+    await parts.session.settle()
 }
 
 private struct SilentPredictor: SentencePredicting {
@@ -433,7 +462,8 @@ private func shortcutTests() async {
 
     func makeParts() throws -> SessionParts {
         let parts = try makeSession()
-        parts.session.readMenu = { [copy, lock] }
+        parts.reader.menu = [copy, lock]
+        parts.session.frontChanged(.app(notes))
         return parts
     }
 
@@ -503,19 +533,16 @@ private func shortcutTests() async {
 
     await asyncTest("the keyboard reads the menu bar one time for each app") {
         let parts = try makeSession()
-        var reads = 0
-        parts.session.readMenu = {
-            reads += 1
-            return [copy]
-        }
+        parts.reader.menu = [copy]
+        parts.session.frontChanged(.app(notes))
         parts.controller.focusChanged(to: focus("AXButton"))
         await parts.session.settle()
         parts.controller.focusChanged(to: focus("AXGroup"))
         await parts.session.settle()
-        expectEqual(reads, 1)
-        parts.session.frontChanged(.app(notes))
+        expectEqual(parts.reader.menuReads, [notes.pid])
+        parts.session.frontChanged(.app(messages))
         await parts.session.settle()
-        expectEqual(reads, 2)
+        expectEqual(parts.reader.menuReads, [notes.pid, messages.pid])
     }
 }
 
@@ -633,17 +660,18 @@ private func sessionTests() async {
     await asyncTest("the text on screen reaches the predictions in Type mode with the switch on") {
         let predictor = RecordingPredictor()
         let parts = try makeSession(predictor: predictor)
-        parts.session.frontChanged(.app(whatsApp))
-        try await userTypes("Yes", in: parts)
         let screen = ScreenContext(
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
-        parts.session.screenRead(screen)
-        await parts.session.settle()
+        parts.reader.screens[whatsApp.pid] = screen
+        parts.session.frontChanged(.app(whatsApp))
+        try await userTypes("Yes", in: parts)
+        await passScreenDelay(parts)
         var last = await predictor.requests.last
         expect(last != nil && last?.screen == nil, "the switch is off")
+        expectEqual(parts.reader.screenReads, [])
 
         parts.session.predictions.screenEnabled = true
-        await parts.session.settle()
+        await passScreenDelay(parts)
         last = await predictor.requests.last
         expectEqual(last?.screen, screen)
 
@@ -677,18 +705,90 @@ private func sessionTests() async {
         let predictor = RecordingPredictor()
         let parts = try makeSession(predictor: predictor)
         parts.session.predictions.screenEnabled = true
+        parts.reader.screens[whatsApp.pid] = ScreenContext(
+            bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
         parts.session.frontChanged(.app(whatsApp))
         try await userTypes("Yes", in: parts)
-        parts.session.screenRead(
-            ScreenContext(bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"]))
-        await parts.session.settle()
+        await passScreenDelay(parts)
+        var last = await predictor.requests.last
+        expect(last?.screen != nil, "the read of WhatsApp lands")
+
         parts.session.frontChanged(.app(notes))
         try await userTypes("Ye", in: parts)
-        parts.session.screenRead(
-            ScreenContext(bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Late"]))
-        await parts.session.settle()
-        let last = await predictor.requests.last
-        expect(last != nil && last?.screen == nil)
+        await passScreenDelay(parts)
+        last = await predictor.requests.last
+        expect(last != nil && last?.screen == nil, "a new app clears the screen")
+
+        parts.session.frontChanged(.app(whatsApp))
+        parts.clock.advance(to: parts.clock.now + KeyboardSession.screenReadDelay)
+        parts.session.frontChanged(.app(notes))
+        try await userTypes("Y", in: parts)
+        last = await predictor.requests.last
+        expect(last != nil && last?.screen == nil, "the read of an app that left the front is dropped")
+    }
+
+    await asyncTest("the keyboard reads the screen one time for each app switch") {
+        let parts = try makeSession()
+        parts.session.predictions.screenEnabled = true
+        parts.session.frontChanged(.app(whatsApp))
+        parts.session.focusMoved()
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [whatsApp.pid])
+    }
+
+    await asyncTest("a focus move and a field that empties read the screen again") {
+        let parts = try makeSession()
+        parts.session.predictions.screenEnabled = true
+        parts.session.frontChanged(.app(whatsApp))
+        await passScreenDelay(parts)
+        parts.session.focusChanged(to: field("Hi", caret: 2))
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads.count, 1, "new text in the field reads nothing")
+        parts.session.focusChanged(to: field("", caret: 0))
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads.count, 2, "the field was sent")
+        parts.session.focusMoved()
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads.count, 3)
+    }
+
+    await asyncTest("the keyboard does not read the screen in Talk mode, in Write, for private text, or with the switch off") {
+        let parts = try makeSession()
+        parts.session.frontChanged(.app(whatsApp))
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [], "the switch is off")
+
+        parts.session.predictions.screenEnabled = true
+        parts.controller.mode = .talk
+        parts.session.frontChanged(.app(notes))
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [], "Talk mode")
+
+        parts.controller.mode = .type
+        parts.session.frontChanged(.write(.paper))
+        parts.session.focusMoved()
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [], "Write")
+
+        parts.session.predictions.screenEnabled = false
+        parts.session.frontChanged(.app(whatsApp))
+        await passScreenDelay(parts)
+        let texts = MemoryPrivateTexts()
+        texts.texts["home"] = "1 Main Street"
+        parts.controller.privateTexts = texts
+        parts.controller.perform(.privateText("home"))
+        parts.session.predictions.screenEnabled = true
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [], "private text")
+    }
+
+    await asyncTest("turning off the switch stops a read that waits") {
+        let parts = try makeSession()
+        parts.session.predictions.screenEnabled = true
+        parts.session.frontChanged(.app(whatsApp))
+        parts.session.predictions.screenEnabled = false
+        await passScreenDelay(parts)
+        expectEqual(parts.reader.screenReads, [])
     }
 
     await asyncTest("Talk mode feeds the predictions with the bar") {

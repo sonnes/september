@@ -85,6 +85,7 @@ enum Snapshot {
         controller.style = arguments.contains("--mono") ? .mono : .rainbow
         let voice = SampleVoice()
         let userPanel = try UserPanelStore(defaults: defaults, privateTexts: NoPrivateTexts())
+        let reader = SampleReader()
         let session = KeyboardSession(
             controller: controller,
             predictions: PredictionEngine(
@@ -94,6 +95,7 @@ enum Snapshot {
                 settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
             userPanel: .success(userPanel),
             userPanelUsage: UsageStore(),
+            reader: reader,
             clipboard: ClipboardHistory(defaults: defaults, now: { Date().addingTimeInterval(-40 * 60) }),
             pasteboard: MemoryPasteboard())
         let content = WindowContent(
@@ -140,7 +142,7 @@ enum Snapshot {
                 session.toggleHistory()
             }
             if arguments.contains("--shortcuts") || arguments.contains("--command") {
-                session.readMenu = { sampleMenu }
+                reader.menu = sampleMenu
                 if arguments.contains("--command") {
                     controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "command-left" }!)
                 } else {
@@ -381,6 +383,15 @@ private final class SampleVoice: SpeechEngine {
     }
 
     func stop() {}
+}
+
+/// The menu of the sample app, and no text on screen.
+@MainActor
+private final class SampleReader: FrontAppReading {
+    var menu: [AppShortcut] = []
+
+    func menuShortcuts(pid: pid_t) -> [AppShortcut] { menu }
+    func screenContext(pid: pid_t) async -> ScreenContext? { nil }
 }
 
 private struct NoPrivateTexts: PrivateTextStore {
