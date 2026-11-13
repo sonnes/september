@@ -38,7 +38,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence) and word completions |
 | `Sources/SeptemberKit/ScreenContext` | `ScreenContext`, the rule of each app (`ContextRule`), and `ScreenContextExtractor` |
 | `Sources/SeptemberKit/Speech` | `Speaker`, the macOS voices, ElevenLabs, the Keychain store |
-| `Sources/SeptemberKit/Storage` | `KeyboardDatabase` (`keyboard.sqlite` and its migrations) and `SentenceHistory` (the sentences that the user sent) |
+| `Sources/SeptemberKit/Storage` | `KeyboardDatabase` (`keyboard.sqlite` and its migrations), `SentenceHistory` (the sentences that the user sent), and `TextLog` (the dated texts of the Said list and the clipboard history) |
 | `Sources/SeptemberKit/Talk` | Talk mode, the Said list, the Phrases panel |
 | `Sources/SeptemberKit/UserPanel` | My Panel, private text, the Accessibility Keyboard import |
 | `Sources/SeptemberKit/Settings` | the Settings pages and `KeyboardSettings` |

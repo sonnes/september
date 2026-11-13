@@ -110,6 +110,16 @@ no new ones.
 `PredictionEngine.submit(keepsSentences:)` is the only caller of `record(_:)`.
 See [keyboard-session.md](keyboard-session.md).
 
+## The Text Log
+
+`TextLog` keeps dated texts in one table, for a maximum age and up to a
+maximum count. The Said list and the clipboard history use it. The table has
+the columns `id`, `text`, and one date column. A new row with the same unique
+key replaces the old row. Each read removes the old rows and the rows after
+the newest `limit` in SQL. Then it gives the rows that stay, newest first.
+`TextLogEntry` is the type of one row. `SaidLine` and `ClipboardItem` are its
+names in the two stores.
+
 ## The Said List
 
 `SaidList` owns the `talk_line` table. Each row is one line that the user

@@ -18,7 +18,7 @@ Sources/
     Predictions/    sentence predictions and word completions
     ScreenContext/  the text near the focused field, and the rule of each app
     Speech/         the voice: macOS voices, Personal Voice, ElevenLabs
-    Storage/        the keyboard database (keyboard.sqlite) and the sentence history
+    Storage/        the keyboard database (keyboard.sqlite), the sentence history, and the text log
     Talk/           Talk mode, the Said list, the Phrases panel
     UserPanel/      My Panel, its use counts, private text, the Accessibility Keyboard import
     Settings/       the pages of the Settings window
