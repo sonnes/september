@@ -48,7 +48,7 @@ public final class TalkSession: ObservableObject {
             case .return where returnSpeaks: speak()
             default: break
             }
-        case .function:
+        case .function, .system:
             break
         }
         modifiers.consume()

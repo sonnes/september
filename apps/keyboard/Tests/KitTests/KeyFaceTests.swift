@@ -85,7 +85,7 @@ func keyFaceTests() {
     }
 
     test("a second tap on control locks it, and a third tap clears it") {
-        let control = key("control")
+        let control = key("control-left")
         expectEqual(control.face(under: state(.control)).look, .latched)
         expectEqual(control.face(under: state(.control, .control)).look, .locked)
         expectEqual(control.face(under: state(.control, .control)).accessibilityLabel, "Control, locked")

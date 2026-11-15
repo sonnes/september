@@ -39,6 +39,8 @@ extension KeyDefinition {
                 return face(.symbol(media.symbolName), label: media.spokenName, shifted: shifted)
             }
             return face(.text(label), label: accessibilityLabel, shifted: shifted)
+        case .system(let system):
+            return face(.symbol(system.symbolName), label: accessibilityLabel, shifted: shifted)
         case .modifier(let modifier):
             let look = state.look(of: modifier)
             let label = look == .locked ? "\(accessibilityLabel), locked" : accessibilityLabel

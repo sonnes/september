@@ -189,6 +189,52 @@ func controllerTests() {
         expectEqual(controller.talk.text, "")
     }
 
+    test("Home posts the Home key with a latched shift, and uses up the latch") {
+        let (controller, sink) = try makeController()
+        controller.press(key("shift-left"))
+        controller.press(key("home"))
+        expectEqual(sink.downs.last?.key, VirtualKey.home.rawValue)
+        expectEqual(sink.downs.last?.flags, .shift)
+        controller.press(key("key-a"))
+        expectEqual(sink.downs.last?.flags, [])
+    }
+
+    test("Screenshot posts Shift-Command-4 in Type mode and in Talk mode") {
+        for mode in [KeyboardMode.type, .talk] {
+            let (controller, sink) = try makeController()
+            controller.mode = mode
+            controller.press(key("screenshot"))
+            expectEqual(sink.downs.last?.key, 21, "\(mode)")
+            expectEqual(sink.downs.last?.flags, [.shift, .command], "\(mode)")
+            expectEqual(controller.talk.text, "")
+        }
+    }
+
+    test("Lock Screen posts Control-Command-Q and keeps a latched modifier") {
+        let (controller, sink) = try makeController()
+        controller.press(key("shift-left"))
+        controller.press(key("lock-screen"))
+        expectEqual(sink.downs.last?.key, 12)
+        expectEqual(sink.downs.last?.flags, [.control, .command])
+        controller.press(key("key-a"))
+        expectEqual(sink.downs.last?.flags, .shift, "the latched shift is still on")
+    }
+
+    test("Screenshot and Lock Screen do not repeat while held") {
+        let (controller, _) = try makeController()
+        expectEqual(controller.holdBehavior(for: key("screenshot")), .once)
+        expectEqual(controller.holdBehavior(for: key("lock-screen")), .once)
+    }
+
+    test("an arrow key in Talk mode leaves the Talk text as it is") {
+        let (controller, sink) = try makeController()
+        controller.mode = .talk
+        controller.press(key("key-a"))
+        controller.press(key("arrow-left"))
+        expectEqual(controller.talk.text, "a")
+        expect(sink.posted.isEmpty)
+    }
+
     test("volume and brightness repeat while held, play or pause does not") {
         let (controller, _) = try makeController()
         expectEqual(controller.holdBehavior(for: key("f12")), .repeats)
@@ -266,7 +312,7 @@ func controllerTests() {
         controller.mode = .talk
         expectEqual(sink.posted, [Keystroke(virtualKey: 58, flags: [], isDown: false)])
         sink.reset()
-        controller.press(key("control"))
+        controller.press(key("control-left"))
         expect(sink.posted.isEmpty, "the app in front gets no events in Talk mode")
         controller.mode = .type
         expectEqual(sink.posted, [
@@ -277,8 +323,8 @@ func controllerTests() {
 
     test("a quit releases every modifier that the keyboard holds at the OS") {
         let (controller, sink) = try makeController()
-        controller.press(key("control"))
-        controller.press(key("control"))
+        controller.press(key("control-left"))
+        controller.press(key("control-left"))
         sink.reset()
         controller.releaseSystemModifiers()
         expectEqual(sink.posted, [Keystroke(virtualKey: 59, flags: [], isDown: false)])

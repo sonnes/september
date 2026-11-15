@@ -110,6 +110,8 @@ public final class KeyboardController: ObservableObject {
         case .function:
             guard case .media(let media) = control(for: key.action, modifiers: modifiers) else { return .once }
             return media.repeatsWhenHeld ? .repeats : .once
+        case .system:
+            return .once
         case .character(let character):
             guard modifiers.chord.isEmpty else { return .once }
             guard character.count == 1, character.first?.isLetter == true else { return .repeats }
@@ -147,6 +149,9 @@ public final class KeyboardController: ObservableObject {
             guard let virtual = VirtualKey.function(number) else { return sink.beep() }
             post(virtual, modifiers: modifiers.flags)
             modifiers.consume()
+        case .system:
+            // `control(for:modifiers:)` runs every system key above.
+            break
         }
     }
 
@@ -154,18 +159,29 @@ public final class KeyboardController: ObservableObject {
     /// Talk mode, and it keeps a latched modifier for the next key.
     private enum MacControl {
         case media(MediaKey)
+        case system(SystemKey)
         case scroll(ScrollDirection)
     }
 
     private func control(for action: KeyAction, modifiers: ModifierState) -> MacControl? {
-        guard case .function(let number) = action, !modifiers.holdsChord else { return nil }
-        return MediaKey.onFunctionKey(number).map(MacControl.media)
+        switch action {
+        case .system(let system):
+            return .system(system)
+        case .function(let number) where !modifiers.holdsChord:
+            return MediaKey.onFunctionKey(number).map(MacControl.media)
+        default:
+            return nil
+        }
     }
 
     private func run(_ control: MacControl) {
         switch control {
         case .media(let media):
             sink.post(media: media)
+        case .system(let system):
+            sink.post(
+                Keystroke.events(
+                    virtualKey: system.virtualKey, modifiers: system.modifiers, held: heldAtOS))
         case .scroll(let direction):
             guard let scrollPoint else { return sink.beep() }
             sink.scroll(direction, at: scrollPoint)

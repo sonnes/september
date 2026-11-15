@@ -11,7 +11,7 @@ Sources/
     Accessibility/  AXNode and AXTree (a snapshot of the tree of another app), AccessibilityPermission
     Clipboard/      the clipboard history and the watcher of the clipboard
     Design/         tokens, metrics, typography, rainbow and mono styles
-    Keyboard/       key definitions, the QWERTY layout, KeyboardController, PressTracker
+    Keyboard/       key definitions, the K2 layout, KeyboardController, PressTracker
     Input/          modifiers, keystrokes, layout-aware key code map
     Integration/    the session that joins the parts, the assembly that builds it, panel placement, the app in front, the import of old JSON files
     Panels/         panel model, JSON loading, the grid of Mine and the Write panels, the shortcut suggestions
@@ -332,19 +332,39 @@ the keyboard. Then the window shows on top of the app in front, and it takes
 the focus when the keyboard becomes active, for example after a click on the
 window.
 
+## The layout of the keys
+
+The keys use the 75% layout of a Keychron K2. `KeyboardLayout` holds the
+rows. Each row is 16 units wide, and the weight of a key is its width in
+units. A key spans its units and the gaps between them, so the key edges line
+up from row to row.
+
+- The top row has esc, F1 to F12, Screenshot, Forward Delete, and Lock Screen.
+- The right column has Home, Page Up, Page Down, and End.
+- The arrows sit under the right shift.
+- The bottom row has Control, Option, Command, Space, Command, fn, Control, and
+  the arrows. It has no right Option key.
+
+Screenshot presses Shift-Command-4, and Lock Screen presses
+Control-Command-Q. These shortcuts of macOS match the key code, so the
+keyboard posts the ANSI key codes for 4 and Q on each layout. Both keys work
+in Type mode and in Talk mode, and they keep a latched modifier for the next
+key.
+
 ## Pressing and holding keys
 
 The keys, the word row, the accents, the buttons of the shortcut panels, and
 Cut, Copy, and Paste act when the mouse button goes down. The prediction
 tiles, Speak, the mode buttons, History, the copied texts, the tabs, and the
 Said list act when the button goes up, so a slide off the control cancels the
-press. A press through `AXPress` (Dwell, Switch
+press. The Lock Screen key also acts when the button goes up, because a press
+by mistake locks the Mac. A press through `AXPress` (Dwell, Switch
 Control, Voice Control) acts at once.
 
 A held key obeys the keyboard settings of macOS. `KeyPresser` applies them,
 and each press reads them again:
 
-- Key repeat: Delete, Space, an arrow, the volume and brightness keys, and
+- Key repeat: Delete, Forward Delete, Space, an arrow, the volume and brightness keys, and
   the characters that are not letters repeat after the delay of System
   Settings, at its rate. If key repeat is off, no key repeats. One rule
   covers the keys, the panel buttons, and the buttons of My Panel: an arrow,

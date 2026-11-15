@@ -35,7 +35,7 @@ public struct KeyView: View {
                 height: Metrics.size(for: key.kind).height
             )
             .keyChrome(fill: fill, stroke: stroke)
-            .pressable(label: face.accessibilityLabel, isSelected: isActive, trigger: .down(hold)) {
+            .pressable(label: face.accessibilityLabel, isSelected: isActive, trigger: key.actsOnRelease ? .up : .down(hold)) {
                 isPressed = $0
             } action: {
                 press()

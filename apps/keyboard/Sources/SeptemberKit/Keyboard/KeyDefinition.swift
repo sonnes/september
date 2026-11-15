@@ -9,6 +9,46 @@ public enum KeyAction: Sendable, Hashable {
     /// An F-key by its number. It posts its media key. While a modifier
     /// other than caps lock is on, it posts the F-key with the modifiers.
     case function(Int)
+    /// A key that controls the Mac. It acts in Type and Talk mode.
+    case system(SystemKey)
+}
+
+/// A key that presses a fixed shortcut of macOS. The shortcuts of macOS
+/// match the key code, not the character, so the key codes are fixed too.
+public enum SystemKey: Sendable, Hashable {
+    /// Shift-Command-4: the crosshair of a screenshot.
+    case screenshot
+    /// Control-Command-Q: locks the Mac.
+    case lockScreen
+
+    /// The ANSI key code of the key of the shortcut.
+    public var virtualKey: UInt16 {
+        switch self {
+        case .screenshot: 21
+        case .lockScreen: 12
+        }
+    }
+
+    public var modifiers: Modifiers {
+        switch self {
+        case .screenshot: [.shift, .command]
+        case .lockScreen: [.control, .command]
+        }
+    }
+
+    public var spokenName: String {
+        switch self {
+        case .screenshot: "Screenshot"
+        case .lockScreen: "Lock Screen"
+        }
+    }
+
+    public var symbolName: String {
+        switch self {
+        case .screenshot: "camera.viewfinder"
+        case .lockScreen: "lock"
+        }
+    }
 }
 
 public struct Shortcut: Sendable, Hashable {
@@ -103,6 +143,11 @@ public struct KeyDefinition: Sendable, Hashable, Identifiable {
     public let action: KeyAction
     public let accessibilityLabel: String
 
+    /// True when the key acts on the button up, so that the user can slide
+    /// off the key to cancel it. Only Lock Screen does this, because a press
+    /// by mistake locks the Mac.
+    public var actsOnRelease: Bool { action == .system(.lockScreen) }
+
     public init(
         id: String,
         kind: KeyKind,
@@ -136,6 +181,7 @@ public struct KeyDefinition: Sendable, Hashable, Identifiable {
         switch action {
         case .virtual(let virtual): virtual.spokenName
         case .function(let number): VirtualKey.function(number)?.spokenName ?? label
+        case .system(let system): system.spokenName
         case .modifier(let modifier) where !modifier.spokenName.isEmpty: modifier.spokenName
         case .modifier, .character: label.capitalized
         }
