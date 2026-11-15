@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
+
+### Keys
+
+- The keys use the 75% layout of a Keychron K2. Each row is 16 units wide, and the key edges line up from row to row.
+- New keys: the arrows, Home, End, Page Up, Page Down, and Forward Delete.
+- A Screenshot key presses Shift-Command-4.
+- A Lock Screen key locks the Mac. It acts when the button goes up, so a slide off the key cancels the press.
+- The fn key moved to the right of the space bar. The right Option key is gone, and a right Control key is new.
 
 ### Debug Panel
 

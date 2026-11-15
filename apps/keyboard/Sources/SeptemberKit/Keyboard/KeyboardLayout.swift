@@ -5,11 +5,15 @@ public struct KeyRow: Sendable, Identifiable {
     public let keys: [KeyDefinition]
 }
 
-/// The US QWERTY keyboard from the design mock.
+/// The US keyboard in the 75% layout of a Keychron K2.
 ///
-/// Keys carry a weight, not a fixed width: an assembled row fills the keyboard
-/// width in proportion, as the mock shows.
+/// Each row is 16 units wide. A key carries its width in units as its
+/// weight. The right column holds the navigation keys, and the arrows sit
+/// under the right shift.
 public enum KeyboardLayout {
+    /// The width of each row, in units of a standard key.
+    public static let units: CGFloat = 16
+
     public static let rows: [KeyRow] = [
         KeyRow(id: .function, keys: functionRow),
         KeyRow(id: .number, keys: numberRow),
@@ -19,29 +23,23 @@ public enum KeyboardLayout {
         KeyRow(id: .bottom, keys: bottomRow),
     ]
 
-    /// Widths for one row, filling `totalWidth` exactly.
+    /// Widths for one row on a grid of `units` columns. A key of weight `w`
+    /// spans `w` columns and the gaps between them, so a key edge in one row
+    /// lines up with the key edges in the other rows.
     public static func widths(
         for row: KeyRow,
         totalWidth: CGFloat = Metrics.keyboardWidth,
         spacing: CGFloat = Metrics.rowSpacing
     ) -> [CGFloat] {
-        let available = totalWidth - spacing * CGFloat(row.keys.count - 1)
-        let totalWeight = row.keys.reduce(0) { $0 + $1.weight }
-        guard totalWeight > 0 else { return row.keys.map { _ in 0 } }
-        return row.keys.map { available * $0.weight / totalWeight }
+        let unit = (totalWidth - spacing * (units - 1)) / units
+        return row.keys.map { $0.weight * unit + ($0.weight - 1) * spacing }
     }
 
     // MARK: - Rows
 
     private static let functionRow: [KeyDefinition] = {
         var keys: [KeyDefinition] = [
-            KeyDefinition(
-                id: "esc",
-                kind: .function,
-                label: "esc",
-                weight: 1.5,
-                action: .virtual(.escape)
-            )
+            KeyDefinition(id: "esc", kind: .function, label: "esc", action: .virtual(.escape))
         ]
         for number in 1...12 {
             keys.append(
@@ -53,6 +51,11 @@ public enum KeyboardLayout {
                 )
             )
         }
+        keys += [
+            KeyDefinition(id: "screenshot", kind: .function, label: "", action: .system(.screenshot)),
+            KeyDefinition(id: "forward-delete", kind: .function, label: "⌦", action: .virtual(.forwardDelete)),
+            KeyDefinition(id: "lock-screen", kind: .function, label: "", action: .system(.lockScreen)),
+        ]
         return keys
     }()
 
@@ -62,33 +65,23 @@ public enum KeyboardLayout {
             ("6", "^"), ("7", "&"), ("8", "*"), ("9", "("), ("0", ")"), ("-", "_"), ("=", "+"),
         ]
         var keys = pairs.map { dualKey(primary: $0.primary, secondary: $0.secondary) }
-        keys.append(
-            KeyDefinition(
-                id: "delete",
-                kind: .special,
-                label: "⌫",
-                weight: 1.5,
-                action: .virtual(.delete)
-            )
-        )
+        keys += [
+            KeyDefinition(id: "delete", kind: .special, label: "⌫", weight: 2, action: .virtual(.delete)),
+            navigationKey("home", label: "home", .home),
+        ]
         return keys
     }()
 
     private static let qwertyRow: [KeyDefinition] =
         [
-            KeyDefinition(
-                id: "tab",
-                kind: .special,
-                label: "⇥",
-                weight: 1.5,
-                action: .virtual(.tab)
-            )
+            KeyDefinition(id: "tab", kind: .special, label: "⇥", weight: 1.5, action: .virtual(.tab))
         ]
         + "QWERTYUIOP".map(letterKey)
         + [
             dualKey(primary: "[", secondary: "{"),
             dualKey(primary: "]", secondary: "}"),
-            dualKey(primary: "\\", secondary: "|"),
+            dualKey(primary: "\\", secondary: "|", weight: 1.5),
+            navigationKey("page-up", label: "pg up", .pageUp),
         ]
 
     private static let homeRow: [KeyDefinition] =
@@ -107,68 +100,39 @@ public enum KeyboardLayout {
         + [
             dualKey(primary: ";", secondary: ":"),
             dualKey(primary: "'", secondary: "\""),
-            KeyDefinition(
-                id: "return",
-                kind: .special,
-                label: "↩",
-                weight: 1.75,
-                action: .virtual(.return)
-            ),
+            KeyDefinition(id: "return", kind: .special, label: "↩", weight: 2.25, action: .virtual(.return)),
+            navigationKey("page-down", label: "pg dn", .pageDown),
         ]
 
     private static let shiftRow: [KeyDefinition] =
         [
-            KeyDefinition(
-                id: "shift-left",
-                kind: .special,
-                label: "⇧",
-                weight: 2.25,
-                action: .modifier(.shift)
-            )
+            KeyDefinition(id: "shift-left", kind: .special, label: "⇧", weight: 2.25, action: .modifier(.shift))
         ]
         + "ZXCVBNM".map(letterKey)
         + [
             dualKey(primary: ",", secondary: "<"),
             dualKey(primary: ".", secondary: ">"),
             dualKey(primary: "/", secondary: "?"),
-            KeyDefinition(
-                id: "shift-right",
-                kind: .special,
-                label: "⇧",
-                weight: 2.25,
-                action: .modifier(.shift)
-            ),
+            KeyDefinition(id: "shift-right", kind: .special, label: "⇧", weight: 1.75, action: .modifier(.shift)),
+            navigationKey("arrow-up", label: "↑", .up),
+            navigationKey("end", label: "end", .end),
         ]
 
     private static let bottomRow: [KeyDefinition] = [
         KeyDefinition(
-            id: "fn", kind: .special, label: "fn", weight: 1.2,
-            action: .modifier(.function)
-        ),
+            id: "control-left", kind: .special, label: "⌃", weight: 1.25, action: .modifier(.control)),
         KeyDefinition(
-            id: "control", kind: .special, label: "⌃", weight: 1.2,
-            action: .modifier(.control)
-        ),
+            id: "option-left", kind: .special, label: "⌥", weight: 1.25, action: .modifier(.option)),
         KeyDefinition(
-            id: "option-left", kind: .special, label: "⌥", weight: 1.2,
-            action: .modifier(.option)
-        ),
+            id: "command-left", kind: .special, label: "⌘", weight: 1.25, action: .modifier(.command)),
         KeyDefinition(
-            id: "command-left", kind: .special, label: "⌘", weight: 1.4,
-            action: .modifier(.command)
-        ),
-        KeyDefinition(
-            id: "space", kind: .special, label: "space", weight: 6.5,
-            action: .virtual(.space)
-        ),
-        KeyDefinition(
-            id: "command-right", kind: .special, label: "⌘", weight: 1.4,
-            action: .modifier(.command)
-        ),
-        KeyDefinition(
-            id: "option-right", kind: .special, label: "⌥", weight: 1.2,
-            action: .modifier(.option)
-        ),
+            id: "space", kind: .special, label: "space", weight: 6.25, action: .virtual(.space)),
+        KeyDefinition(id: "command-right", kind: .special, label: "⌘", action: .modifier(.command)),
+        KeyDefinition(id: "fn", kind: .special, label: "fn", action: .modifier(.function)),
+        KeyDefinition(id: "control-right", kind: .special, label: "⌃", action: .modifier(.control)),
+        navigationKey("arrow-left", label: "←", .left),
+        navigationKey("arrow-down", label: "↓", .down),
+        navigationKey("arrow-right", label: "→", .right),
     ]
 
     // MARK: - Key builders
@@ -182,13 +146,18 @@ public enum KeyboardLayout {
         )
     }
 
-    private static func dualKey(primary: String, secondary: String) -> KeyDefinition {
+    private static func dualKey(primary: String, secondary: String, weight: CGFloat = 1) -> KeyDefinition {
         KeyDefinition(
             id: "key-\(primary)",
             kind: .dual,
             label: primary,
             secondaryLabel: secondary,
+            weight: weight,
             action: .character(primary)
         )
+    }
+
+    private static func navigationKey(_ id: String, label: String, _ key: VirtualKey) -> KeyDefinition {
+        KeyDefinition(id: id, kind: .special, label: label, action: .virtual(key))
     }
 }

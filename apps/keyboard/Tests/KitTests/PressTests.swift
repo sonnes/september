@@ -66,7 +66,7 @@ private func heldKeyTests() {
 
     test("a keyboard arrow or Delete under a latched Command or Control acts once") {
         let left = KeyDefinition(id: "left", kind: .special, label: "←", action: .virtual(.left))
-        for id in ["command-left", "control"] {
+        for id in ["command-left", "control-left"] {
             let (controller, _) = try makeController()
             controller.press(layoutKey(id))
             expectEqual(controller.holdBehavior(for: left), .once, id)
