@@ -22,7 +22,7 @@ place it comes from:
 
 | State | When | Shown |
 |---|---|---|
-| `.mirrored(text:caret:selectionLength:)` | The field reports editable text | The text, split at the caret, selection tinted |
+| `.mirrored(text:caret:selectionLength:)` | The field reports editable text | The line of the caret, split at the caret, selection tinted |
 | `.local(text:)` | The app exposes no text (terminals, canvases, Zed) | What September has typed since the last Return |
 | `.secure` | A password field (`AXSecureTextField`) | "Password field — hidden", and nothing else |
 
@@ -37,7 +37,19 @@ Two rules follow, and both are tested:
 - **Nothing typed into a password field is kept.** Not in the buffer, not on
   screen. The keystrokes still go through.
 
+## One line
+
+The bar draws one line: the line of the field that holds the caret.
+`InputMirror.caretLine` cuts it at the line breaks around the caret. A
+selection that crosses lines ends at the end of its first line.
+`InputMirror` keeps the whole text, because the predictions and Speak read
+it.
+
 ## Where the text comes from
+
+In a web or Electron editor, such as a contenteditable field, the focus can
+be on an element inside the editable area. When the focused element has no
+settable value, `FocusWatcher` reads its `AXEditableAncestor` instead.
 
 `FocusWatcher` (app target — it needs a running app and the permission) reads
 the frontmost app's `AXFocusedUIElement` and turns it into a `FocusedField`. It

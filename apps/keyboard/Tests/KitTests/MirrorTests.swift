@@ -79,6 +79,36 @@ func mirrorTests() {
         expectEqual(parts.selected, "ell")
         expectEqual(parts.after, "o")
     }
+
+    test("the bar draws only the line that holds the caret") {
+        let text = "# Title\n\nFirst line\nSecond line"
+        let caret = (text as NSString).range(of: "line\nSecond").location
+        let parts = InputMirror.caretLine(text, caret: caret, selectionLength: 0)
+        expectEqual(parts.before, "First ")
+        expectEqual(parts.selected, "")
+        expectEqual(parts.after, "line")
+    }
+
+    test("the caret on an empty line or at the end of the text gives that line") {
+        let text = "one\n\ntwo"
+        expectEqual(InputMirror.caretLine(text, caret: 4, selectionLength: 0).before, "")
+        expectEqual(InputMirror.caretLine(text, caret: 4, selectionLength: 0).after, "")
+        expectEqual(InputMirror.caretLine(text, caret: 8, selectionLength: 0).before, "two")
+        expectEqual(InputMirror.caretLine("end\n", caret: 4, selectionLength: 0).before, "")
+    }
+
+    test("a selection that crosses lines shows its first line up to the end of that line") {
+        let parts = InputMirror.caretLine("ab\ncd\nef", caret: 1, selectionLength: 5)
+        expectEqual(parts.before, "a")
+        expectEqual(parts.selected, "b")
+        expectEqual(parts.after, "")
+    }
+
+    test("a caret line keeps an emoji whole") {
+        let parts = InputMirror.caretLine("x\n🙂ok", caret: 4, selectionLength: 0)
+        expectEqual(parts.before, "🙂")
+        expectEqual(parts.after, "ok")
+    }
 }
 
 @MainActor

@@ -200,7 +200,8 @@ final class FocusWatcher {
     }
 
     func readFocusedField() -> FocusedField? {
-        guard let element = focusedElement() else { return nil }
+        guard let focused = focusedElement() else { return nil }
+        let element = editableArea(of: focused)
 
         let subrole = element.string(kAXSubroleAttribute)
         let isSecure = FocusedField.isSecure(subrole: subrole)
@@ -219,6 +220,16 @@ final class FocusWatcher {
             text: read.text,
             selection: read.selection
         )
+    }
+
+    /// The editable area that holds `element`. In a web or Electron editor,
+    /// such as a contenteditable field, the focus can be on an element inside
+    /// the area, and only the area gives the text and the caret of the field.
+    private func editableArea(of element: AXUIElement) -> AXUIElement {
+        var settable: DarwinBoolean = false
+        AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &settable)
+        guard !settable.boolValue, let area = element.element("AXEditableAncestor") else { return element }
+        return area
     }
 
     /// The field's text, or a window of it around the caret when the field

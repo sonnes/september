@@ -89,7 +89,9 @@ public struct InputBar: View {
                 Spacer(minLength: 0)
             }
         case .mirrored(let text, let caret, let selectionLength):
-            let parts = InputMirror.split(text, caret: caret, selectionLength: selectionLength)
+            // A field of many lines, such as a Markdown editor, shows only
+            // the line of the caret.
+            let parts = InputMirror.caretLine(text, caret: caret, selectionLength: selectionLength)
             HStack(spacing: 0) {
                 Line(parts.before)
                     .truncationMode(.head)
