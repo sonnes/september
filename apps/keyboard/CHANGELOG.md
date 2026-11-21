@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0
+
+### Write
+
+- The Write paper uses the Markdown editor of Hubble.md, the editor of Piper.
+- The body text is serif, the headings are sans-serif, and the text column is about 70 characters wide. The colours follow the keyboard in light and dark.
+- Slash commands, find, tables, and code blocks with highlighting come from Hubble.md.
+- A paste keeps its formatting as Hubble.md reads it.
+- A document that the editor cannot keep as formatted text, such as one with raw HTML, opens as Markdown source.
+
 ## 0.6.0
 
 ### Keys

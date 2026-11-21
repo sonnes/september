@@ -32,7 +32,7 @@ public protocol WriteReading: AnyObject {
     var speech: EditorSpeech { get }
 }
 
-/// Write: the paper with the native editor, and the desk with the documents
+/// Write: the paper with the Markdown editor of Hubble.md, and the desk with the documents
 /// in the folder of Write.
 ///
 /// The model saves the open document a short time after the last edit, and
@@ -64,16 +64,18 @@ public final class WriteController: WriteReading {
     ///   - share: shares the file of the open document. If it is nil, the
     ///     share picker of macOS opens at the tools rail.
     ///   - scheduler: the clock of the delayed save.
+    ///   - page: the page of the editor. If it is nil, Write loads the editor page.
     public init(
         host: any WriteHost,
         library: DocumentLibrary = DocumentLibrary(),
         openURL: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) },
         reveal: @escaping (URL) -> Void = { NSWorkspace.shared.activateFileViewerSelecting([$0]) },
         share: ((URL) -> Void)? = nil,
-        scheduler: any DelayScheduler = MainQueueScheduler()
+        scheduler: any DelayScheduler = MainQueueScheduler(),
+        page: (any EditorPage)? = nil
     ) {
         self.host = host
-        paper = WritePaperController(host: host)
+        paper = WritePaperController(host: host, page: page ?? EditorWebPage())
         model = WriteModel(library: library, editor: paper.editor, scheduler: scheduler)
         desk = WriteDeskController(host: host)
         self.openURL = openURL
@@ -261,12 +263,4 @@ public final class WriteController: WriteReading {
             openURL(url)
         }
     }
-}
-
-extension WriteTextView: WriteEditing {
-    public func show(_ text: String) {
-        if text.isEmpty { loadNewDocument() } else { load(text) }
-    }
-
-    public var text: String { markdown }
 }

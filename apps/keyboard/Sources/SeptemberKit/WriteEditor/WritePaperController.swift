@@ -1,38 +1,42 @@
 import AppKit
+import WebKit
 
-/// The Write paper: a sheet with the native editor, round corners, and no
+/// The Write paper: a sheet with the Markdown editor, round corners, and no
 /// window frame.
 ///
 /// The paper grows out of the input bar of the keyboard when it opens. Its
 /// width is the width of the largest A4 page above the keyboard. Its height
 /// is the height of its text, so the paper grows up a line at a time as the
 /// user types, as paper comes out of a typewriter. At the top of the page,
-/// the paper stops, and the text moves up so that the typing line stays at
-/// the bottom. With Reduce Motion on, the paper and the text move with no
-/// animation.
+/// the paper stops, and the editor scrolls its text. With Reduce Motion on,
+/// the paper moves with no animation.
+///
+/// The editor page is as large as the full page, and its top stays on the
+/// top of the paper. The paper shows the top part of the page, so the text
+/// does not wrap again while the paper opens or grows.
 @MainActor
 public final class WritePaperController: NSObject, NSWindowDelegate {
     typealias Motion = Metrics.WriteMotion
 
     public let window: WritePaperWindow
-    public let editor: WriteTextView
+    public let editor: WriteWebEditor
     /// The tools rail at the left of the paper.
     public let tools = WriteToolsController()
-    private let scrollView = NSScrollView()
     private let notice = NSTextField(labelWithString: "")
     /// The frame of the full page. The paper grows up to it.
     private var page: CGRect = .zero
     private let frameMotion = WriteMotionDriver()
-    private let scrollMotion = WriteMotionDriver()
     private var targetFrame: CGRect?
 
     public var onClose: (() -> Void)?
     private weak var host: (any WriteHost)?
 
-    public init(host: any WriteHost) {
+    private var pageView: NSView { editor.page.view }
+
+    public init(host: any WriteHost, page: any EditorPage) {
         self.host = host
         window = WritePaperWindow(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: true)
-        editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        editor = WriteWebEditor(page: page)
         super.init()
 
         window.isReleasedWhenClosed = false
@@ -43,14 +47,8 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         window.delegate = self
 
         let sheet = PaperSheetView()
-        scrollView.drawsBackground = false
-        scrollView.borderType = .noBorder
-        scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
-        scrollView.scrollerStyle = .overlay
-        scrollView.documentView = editor
-        scrollView.autoresizingMask = [.width, .height]
-        sheet.addSubview(scrollView)
+        pageView.autoresizingMask = [.minYMargin, .maxXMargin]
+        sheet.addSubview(pageView)
 
         notice.font = Typography.writeNotice
         notice.textColor = NSColor(Tokens.labelSecondary)
@@ -65,12 +63,6 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         ])
         window.contentView = sheet
 
-        editor.paperScrolls = true
-        // The paper sets the width of the text itself, so that the text does
-        // not wrap again while the paper opens.
-        editor.autoresizingMask = []
-        editor.minSize = .zero
-        editor.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
         editor.onLayoutChange = { [weak self] in self?.fit() }
     }
 
@@ -112,7 +104,6 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
     /// close, so the open document stays in the editor.
     public func shrink(into card: CGRect?) {
         guard window.isVisible else { return }
-        scrollMotion.stop()
         targetFrame = nil
         tools.hide()
         guard let card, !reduceMotion else {
@@ -133,7 +124,6 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
     }
 
     private func present(from start: CGRect?) {
-        setWidth(page.width)
         let frame = paperFrame
         let animates = start != nil && !reduceMotion && (!window.isVisible || window.alphaValue < 1)
         if let start, animates {
@@ -144,9 +134,9 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
             window.setFrame(frame, display: false)
             window.invalidateShadow()
         }
+        placePage()
         host?.bringToFront(window)
-        window.makeFirstResponder(editor)
-        scrollToCaret(animated: false)
+        window.makeFirstResponder(pageView)
         guard animates else {
             frameMotion.stop()
             targetFrame = frame
@@ -156,6 +146,13 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         // The keyboard floats above the paper, so the paper comes out from
         // behind the bar.
         move(to: frame, duration: Motion.paperOpen, fadeIn: true)
+    }
+
+    /// Puts the page at the size of the full page, with its top on the top of the sheet.
+    private func placePage() {
+        guard let sheet = window.contentView else { return }
+        pageView.frame = NSRect(
+            x: 0, y: sheet.bounds.height - page.height, width: page.width, height: page.height)
     }
 
     private func move(to frame: CGRect, duration: TimeInterval, fadeIn: Bool = false) {
@@ -191,114 +188,91 @@ public final class WritePaperController: NSObject, NSWindowDelegate {
         WritePaper.paper(height: editor.contentHeight, on: page)
     }
 
-    private func setWidth(_ width: CGFloat) {
-        Self.configure(editor, width: width)
-    }
-
-    /// Sets the width of `editor` and centres the text column on it, with
-    /// the margins of the paper.
-    private static func configure(_ editor: WriteTextView, width: CGFloat) {
-        let side = max(Metrics.WriteEditor.sideMargin, (width - Metrics.WriteEditor.textWidth) / 2)
-        editor.textContainerInset = NSSize(width: side, height: Metrics.WriteEditor.paperMargin)
-        editor.setFrameSize(NSSize(width: width, height: editor.frame.height))
+    /// Grows or shrinks the open paper to its text.
+    private func fit() {
+        guard window.isVisible else { return }
+        let frame = paperFrame
+        guard targetFrame != frame else { return }
+        if reduceMotion {
+            targetFrame = frame
+            window.setFrame(frame, display: true)
+            window.invalidateShadow()
+        } else {
+            move(to: frame, duration: Motion.paperFeed, fadeIn: window.alphaValue < 1)
+        }
     }
 
     /// Draws the sheet of the paper with `markdown` in the editor, at `width`
     /// and as tall as its text, with no window on the screen. The snapshots
-    /// and Write Lab use it. With no `appearance`, the sheet takes the
-    /// appearance of the app.
+    /// and Write Lab use it. It waits up to `timeout` seconds for the page.
+    /// With no `appearance`, the sheet takes the appearance of the app.
     public static func renderSheet(
-        _ markdown: String, width: CGFloat, appearance: NSAppearance? = nil
-    ) -> NSBitmapImageRep? {
-        let editor = WriteTextView(frame: NSRect(x: 0, y: 0, width: width, height: 400))
-        configure(editor, width: width)
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: width, height: 400), styleMask: [.borderless],
-            backing: .buffered, defer: false)
-        window.appearance = appearance
-        let content = NSView(frame: window.contentLayoutRect)
-        window.contentView = content
-        content.addSubview(editor)
-        editor.load(markdown)
-        let height = editor.contentHeight
-        window.setContentSize(NSSize(width: width, height: height))
-        content.frame = NSRect(x: 0, y: 0, width: width, height: height)
-        editor.frame = content.bounds
-        content.layoutSubtreeIfNeeded()
-        editor.display()
+        _ markdown: String, width: CGFloat, appearance: NSAppearance? = nil, timeout: TimeInterval = 10
+    ) async -> NSBitmapImageRep? {
+        let deadline = Date(timeIntervalSinceNow: timeout)
+        func wait(until done: () -> Bool) async -> Bool {
+            while !done() {
+                guard Date() < deadline else { return false }
+                try? await Task.sleep(for: .milliseconds(20))
+            }
+            return true
+        }
 
-        guard let rep = content.bitmapImageRepForCachingDisplay(in: content.bounds) else { return nil }
+        let page = EditorWebPage()
+        let editor = WriteWebEditor(page: page)
+        let pageHeight = width * WritePaper.pageRatio
+        let window = NSWindow(
+            contentRect: NSRect(x: -10_000, y: -10_000, width: width, height: pageHeight),
+            styleMask: [.borderless], backing: .buffered, defer: false)
+        window.appearance = appearance
+        page.webView.frame = NSRect(x: 0, y: 0, width: width, height: pageHeight)
+        window.contentView = page.webView
+        window.orderFrontRegardless()
+        defer { window.orderOut(nil) }
+
+        var laidOut = false
+        editor.onLayoutChange = { laidOut = true }
+        editor.show(markdown)
+        guard await wait(until: { page.isReady && laidOut }) else { return nil }
+        // The page draws its fonts and its last frame after it reports its height.
+        try? await Task.sleep(for: .seconds(Metrics.WriteMotion.snapshotSettle))
+
+        let height = min(editor.contentHeight, pageHeight)
+        let configuration = WKSnapshotConfiguration()
+        configuration.rect = NSRect(x: 0, y: 0, width: width, height: height)
+        guard let image = try? await page.webView.takeSnapshot(configuration: configuration),
+            let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
+            let rep = NSBitmapImageRep(
+                bitmapDataPlanes: nil, pixelsWide: cg.width, pixelsHigh: cg.height, bitsPerSample: 8,
+                samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+                bytesPerRow: 0, bitsPerPixel: 0)
+        else { return nil }
+        let size = NSSize(width: width, height: height)
+        rep.size = size
         let draw = {
             NSGraphicsContext.saveGraphicsState()
             NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
             NSColor(Tokens.key).setFill()
-            content.bounds.fill()
+            NSRect(origin: .zero, size: size).fill()
+            image.draw(in: NSRect(origin: .zero, size: size))
             NSGraphicsContext.restoreGraphicsState()
-            content.cacheDisplay(in: content.bounds, to: rep)
         }
         if let appearance { appearance.performAsCurrentDrawingAppearance(draw) } else { draw() }
         return rep
     }
 
-    /// Grows or shrinks the open paper to its text, then keeps the caret line
-    /// in view.
-    private func fit() {
-        guard window.isVisible else { return }
-        let frame = paperFrame
-        if targetFrame != frame {
-            if reduceMotion {
-                targetFrame = frame
-                window.setFrame(frame, display: true)
-                window.invalidateShadow()
-            } else {
-                move(to: frame, duration: Motion.paperFeed, fadeIn: window.alphaValue < 1)
-            }
-        }
-        scrollToCaret(animated: !reduceMotion, visibleHeight: frame.height)
-    }
-
-    /// On a full page, moves the text so that the caret line stays in view,
-    /// at the bottom of the paper when the user types at the end.
-    private func scrollToCaret(animated: Bool, visibleHeight: CGFloat? = nil) {
-        let clip = scrollView.contentView
-        let height = visibleHeight ?? clip.bounds.height
-        let content = editor.contentHeight
-        guard let caret = editor.caretFrame() else { return }
-        let target = WritePaper.scrollOrigin(
-            caretMaxY: caret.maxY, current: clip.bounds.origin.y, visibleHeight: height, contentHeight: content,
-            margin: Metrics.WriteEditor.paperMargin, caretHeight: caret.height)
-        guard abs(target - clip.bounds.origin.y) > 0.5 else { return }
-        let start = clip.bounds.origin.y
-        let apply = { [weak self] (y: CGFloat) in
-            guard let self else { return }
-            clip.setBoundsOrigin(NSPoint(x: 0, y: y))
-            scrollView.reflectScrolledClipView(clip)
-        }
-        guard animated else {
-            scrollMotion.stop()
-            apply(target)
-            return
-        }
-        scrollMotion.run(duration: Motion.paperFeed, curve: .easeOut) { progress in
-            apply(start + (target - start) * CGFloat(progress))
-        }
-    }
-
     // MARK: - NSWindowDelegate
 
     public func windowDidBecomeKey(_ notification: Notification) {
-        editor.overlay.update()
         host?.writeKeyChanged(true)
     }
 
     public func windowDidResignKey(_ notification: Notification) {
-        editor.overlay.update()
         host?.writeKeyChanged(false)
     }
 
     public func windowWillClose(_ notification: Notification) {
         frameMotion.stop()
-        scrollMotion.stop()
         targetFrame = nil
         tools.hide()
         host?.windowClosed(window)

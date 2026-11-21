@@ -14,7 +14,7 @@ TIMESTAMP ?= --timestamp=none
 ENVRC ?= ../../.envrc
 SNAPSHOT_DIR ?= .build/snapshots
 
-.PHONY: run dev test app dmg release publish icon open stop snapshots landing-media clean lab
+.PHONY: run dev test app dmg release publish icon open stop snapshots landing-media clean lab editor
 
 # Runs unbundled as a child of this shell, so it inherits the terminal's own
 # Accessibility permission — keys type into other apps with nothing to grant.
@@ -28,10 +28,16 @@ dev:
 	.build/debug/Keyboard &
 	@echo "Keyboard running detached — stop it with: make stop"
 
-# The native Write editor on its own, with a stand-in for the keyboard bar.
+# The Write paper on its own, with a stand-in for the keyboard bar.
 lab:
 	swift build --product WriteLab
 	exec .build/debug/WriteLab
+
+# Copies the editor page of Write and its licenses from a Piper checkout.
+PIPER ?= ../../../piper
+editor:
+	cp "$(PIPER)/Sources/Piper/Resources/editor.html" Sources/SeptemberKit/Resources/Editor/editor.html
+	cp "$(PIPER)/Licenses/Editor.txt" Sources/SeptemberKit/Resources/Editor/Licenses/Editor.txt
 
 # The tests are an executable, not a test target, so `swift test` finds none.
 test:
