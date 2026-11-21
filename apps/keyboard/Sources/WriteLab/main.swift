@@ -26,11 +26,12 @@ func argument(after flag: String) -> String? {
 let app = NSApplication.shared
 
 if let output = argument(after: "--snapshot") {
-    MainActor.assumeIsolated {
+    Task { @MainActor in
         let markdown = argument(after: "--file").flatMap { try? String(contentsOfFile: $0, encoding: .utf8) } ?? LabSample.text
-        let ok = LabSnapshot.render(markdown, to: URL(fileURLWithPath: output), dark: arguments.contains("--dark"))
+        let ok = await LabSnapshot.render(markdown, to: URL(fileURLWithPath: output), dark: arguments.contains("--dark"))
         exit(ok ? 0 : 1)
     }
+    app.run()
 }
 
 let delegate = MainActor.assumeIsolated { LabDelegate() }
@@ -73,7 +74,7 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
             Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated {
                     guard let self else { return }
-                    print("paper", self.paper.window.frame, "alpha", self.paper.window.alphaValue, "content", self.paper.editor.contentHeight, "visible", self.paper.window.isVisible, "sheet", self.paper.window.contentView?.frame ?? .zero, "scroll", self.paper.editor.enclosingScrollView?.frame ?? .zero, "editor", self.paper.editor.frame, "container", self.paper.editor.textContainer?.size ?? .zero)
+                    print("paper", self.paper.window.frame, "alpha", self.paper.window.alphaValue, "content", self.paper.editor.contentHeight, "visible", self.paper.window.isVisible, "sheet", self.paper.window.contentView?.frame ?? .zero, "page", self.paper.editor.page.view.frame)
                     fflush(stdout)
                     self.frames += 1
                     LabSnapshot.capture(self.paper.window, to: URL(fileURLWithPath: "/tmp/writelab-\(self.frames).png"))
@@ -130,7 +131,7 @@ final class LabDelegate: NSObject, NSApplicationDelegate {
 
     private func runDemo() {
         newDocument()
-        let demo = LabDemo(editor: paper.editor)
+        let demo = LabDemo(view: paper.editor.page.view)
         self.demo = demo
         demo.start()
     }
@@ -229,12 +230,12 @@ struct LabBar: View {
 
 // MARK: - Demo
 
-/// Types a short document into the editor, one character at a time, through
-/// the same calls that key events make. It shows the paper feed with no key
-/// events, so it never types into another app.
+/// Types a short document into the editor page, one character at a time,
+/// through the same calls that key events make. It shows the paper feed with
+/// no key events, so it never types into another app.
 @MainActor
 final class LabDemo {
-    private let editor: WriteTextView
+    private let view: NSView
     private var steps: [Character] = []
     private static let script = """
         # Morning notes
@@ -248,8 +249,8 @@ final class LabDemo {
 
         """
 
-    init(editor: WriteTextView) {
-        self.editor = editor
+    init(view: NSView) {
+        self.view = view
     }
 
     func start() {
@@ -261,9 +262,9 @@ final class LabDemo {
         guard !steps.isEmpty else { return }
         let char = steps.removeFirst()
         if char == "\n" {
-            editor.insertNewline(nil)
+            view.insertNewline(nil)
         } else {
-            editor.insertText(String(char), replacementRange: NSRange(location: NSNotFound, length: 0))
+            view.insertText(String(char))
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + (char == "\n" ? 0.35 : 0.06)) { [weak self] in
             self?.tick()
@@ -285,9 +286,9 @@ enum LabSnapshot {
     }
 
     /// Renders the paper with `markdown` at the width of an A4 page.
-    static func render(_ markdown: String, to url: URL, dark: Bool) -> Bool {
+    static func render(_ markdown: String, to url: URL, dark: Bool) async -> Bool {
         let appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-        guard let rep = WritePaperController.renderSheet(markdown, width: 595, appearance: appearance),
+        guard let rep = await WritePaperController.renderSheet(markdown, width: 595, appearance: appearance),
             let data = rep.representation(using: .png, properties: [:])
         else { return false }
         return (try? data.write(to: url)) != nil
@@ -300,7 +301,7 @@ enum LabSample {
     static let text = """
         # Write Lab
 
-        The native editor of the **Write** paper. Type Markdown marks and they turn into the *look*: `# ` for a heading, `- ` for a list, `[ ] ` for a to-do item, and `**bold**` for ~~plain~~ bold text. Links go to [the web](https://september.app) and to [[Welcome]].
+        The Hubble.md editor of the **Write** paper. Type Markdown marks and they turn into the *look*: `# ` for a heading, `- ` for a list, `[ ] ` for a to-do item, and `**bold**` for ~~plain~~ bold text. Links go to [the web](https://september.app) and to [[Welcome]].
 
         ## Today
 

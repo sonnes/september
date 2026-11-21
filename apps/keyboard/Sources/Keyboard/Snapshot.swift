@@ -201,7 +201,7 @@ enum Snapshot {
             return content.keyboard()
         }
         if arguments.contains("--write"), let path = value(of: "--paper", in: arguments) {
-            return paperScene(content, markdown: try String(contentsOfFile: path, encoding: .utf8))
+            return await paperScene(content, markdown: try String(contentsOfFile: path, encoding: .utf8))
         }
         return composite(content)
     }
@@ -243,7 +243,7 @@ enum Snapshot {
     /// with room for the paper above the keyboard. The keyboard floats above
     /// the paper, so it is drawn last. The tools rail stands at the left
     /// of the paper.
-    private static func paperScene(_ content: WindowContent, markdown: String) -> AnyView {
+    private static func paperScene(_ content: WindowContent, markdown: String) async -> AnyView {
         let keyboard = content.keyboard()
         let keyboardSize = WindowContent.measure(keyboard)
         let keys = CGRect(origin: .zero, size: WindowContent.measure(content.keysCard()))
@@ -257,7 +257,7 @@ enum Snapshot {
             bar: bar, floor: window.maxY, screen: screen, margin: 24,
             leading: toolsSize.width + Metrics.WriteEditor.railGap)
         let sheet = NSImage(size: NSSize(width: page.width, height: 0))
-        if let rep = WritePaperController.renderSheet(markdown, width: page.width) {
+        if let rep = await WritePaperController.renderSheet(markdown, width: page.width) {
             sheet.size = rep.size
             sheet.addRepresentation(rep)
         }

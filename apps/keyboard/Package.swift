@@ -10,13 +10,16 @@ let package = Package(
     targets: [
         .target(
             name: "SeptemberKit",
-            resources: [.copy("Resources/Panels"), .copy("Resources/Accents"), .copy("Resources/Context")]
+            resources: [
+                .copy("Resources/Panels"), .copy("Resources/Accents"), .copy("Resources/Context"),
+                .copy("Resources/Editor"),
+            ]
         ),
         .executableTarget(
             name: "Keyboard",
             dependencies: ["SeptemberKit"]
         ),
-        // The native Write editor on its own: `make lab`.
+        // The Write paper on its own: `make lab`.
         .executableTarget(
             name: "WriteLab",
             dependencies: ["SeptemberKit"]

@@ -23,7 +23,7 @@ Sources/
     UserPanel/      My Panel, its use counts, private text, the Accessibility Keyboard import
     Settings/       the pages of the Settings window
     Write/          the documents of Write, `WriteController`, and the text that Speak reads
-    WriteEditor/    the native Markdown editor and the Write paper
+    WriteEditor/    the editor page of Write, the Write paper, and the desk
     Views/          keys, shortcut buttons, panels, the keyboard screen, the views of each part
     Resources/      Panels/{text,system,rectangle,phrases,write,write-documents}.json,
                     Context/<bundle id>.json
@@ -46,7 +46,7 @@ make release    # sign with Developer ID, notarize, staple, and check the app an
 make publish    # upload the DMG of make release to a GitHub Release
 make open       # build, sign and launch
 make snapshots  # render the keyboard and component library to .build/snapshots
-make lab        # run Write Lab, the native Write editor on its own
+make lab        # run Write Lab, the Write paper on its own
 make landing-media  # render the screenshots and animations of the keyboard page of the web app
 ```
 
@@ -274,13 +274,27 @@ At launch, the keyboard also removes `usage.json` and `learned.json`. No part
 of the keyboard reads these files.
 
 Write opens the Write paper: a sheet with round corners, no window frame,
-and a native Markdown editor (`WriteTextView`). The editor hides the Markdown
-marks and shows the look of the text. The paper comes out of the input bar
-and opens above the keyboard. It is as wide as the largest A4 page above the
-keyboard, and as tall as its text. The paper grows up by one line at a time
-as the user types. At the top of the page it stops, and the text moves up, so
-the typing line stays at the bottom. If Reduce Motion is on, nothing
-animates. `WritePaper` holds the rule.
+and the Markdown editor of [Hubble.md](https://github.com/bholmesdev/hubble.md).
+The editor is the editor page of Piper, `Resources/Editor/editor.html`, in a
+web view. Its licenses are in `Resources/Editor/Licenses/Editor.txt`. The
+editor hides the Markdown marks and shows the look of the text. The paper
+comes out of the input bar and opens above the keyboard. It is as wide as the
+largest A4 page above the keyboard, and as tall as its text. The paper grows
+up by one line at a time as the user types. At the top of the page it stops,
+and the editor scrolls its text. If Reduce Motion is on, nothing animates.
+`WritePaper` holds the rule.
+
+The look of the paper is `WriteEditorStyle`: CSS from the keyboard tokens and
+`Metrics.WriteEditor`. The body is serif, the headings are sans-serif, and the
+text column is about 70 characters wide.
+
+The keyboard calls the page through `EditorCall` and reads its messages
+through `EditorMessage`. A script that the keyboard adds to the page sends
+the text, the paragraph at the caret, the selection, and the height after
+each edit and each caret move. `WriteWebEditor` keeps the last state, so the
+input bar and Speak read it with no wait. If the rich editor cannot keep a
+part of a document, such as raw HTML, the document opens as Markdown source.
+To take a new build of the editor from Piper, run `make editor`.
 
 `WriteModel` saves the document 0.12 seconds after the last edit, so Write
 has no Save command. A document that the user opens and does not edit is not
@@ -298,15 +312,7 @@ and opens the share picker of macOS with its `.md` file. Close closes the
 paper and saves the document. The rail is hidden while the desk is open. The
 page keeps the width of the rail free on its left.
 
-A paste keeps the formatting of the copied text. `WritePaste` reads the
-pasteboard in this order: HTML, RTF, and then plain text. HTML and RTF become
-Markdown, with bold, italic, strikethrough, code, links, headings, and lists.
-Plain text is read as Markdown, so a paste of `# Title` gives a heading. If
-all of the rich text is monospace, the paste uses the plain text, because a
-code editor copies Markdown source as coloured code. Text of one paragraph
-takes the block of the paragraph at the caret. One undo removes the whole
-paste. Paste as Plain Text (Option-Shift-Command-V) inserts the text with no
-conversion.
+A paste keeps the formatting of the copied text, as in Hubble.md.
 
 Command-O, or the Documents key of the Write panel, turns the paper into the
 desk. The paper shrinks into its card, and the other documents rise out of

@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import SeptemberKit
 
 /// A sentence model that records each request and answers with `answer`.
@@ -270,5 +270,50 @@ final class FakeEditor: WriteEditing {
     func show(_ text: String) {
         shown.append(text)
         stored = text
+    }
+}
+
+/// Stands in for the web page of the Write editor. It records each call, and
+/// sends the states that the page sends after a key press or a caret move.
+@MainActor
+final class FakeEditorPage: EditorPage {
+    let view = NSView()
+    var onMessage: ((EditorMessage) -> Void)?
+    var onReload: (() -> Void)?
+    private(set) var calls: [EditorCall] = []
+    /// The text on the page, and the number of the last open.
+    private(set) var text = ""
+    private(set) var open = 0
+    private var selection = ""
+    let height: CGFloat = 240
+
+    func send(_ call: EditorCall) {
+        calls.append(call)
+        if case .open(let request, let number) = call {
+            open = number
+            text = request.text
+            selection = ""
+        }
+    }
+
+    /// Types at the end of the document. The caret is at the end of the last line.
+    func type(_ typed: String) {
+        text += typed
+        let line = text.components(separatedBy: "\n").last ?? ""
+        let paragraph = line.hasPrefix("# ") ? String(line.dropFirst(2)) : line
+        deliver(state: text, open: open, caret: EditorCaret(text: paragraph, caret: paragraph.utf16.count, length: 0))
+    }
+
+    func moveCaret(_ caret: EditorCaret) {
+        deliver(state: text, open: open, caret: caret)
+    }
+
+    func select(_ selected: String) {
+        selection = selected
+        deliver(state: text, open: open, caret: nil)
+    }
+
+    func deliver(state text: String, open: Int, caret: EditorCaret? = nil) {
+        onMessage?(.state(EditorPageState(open: open, text: text, caret: caret, selection: selection, height: height)))
     }
 }

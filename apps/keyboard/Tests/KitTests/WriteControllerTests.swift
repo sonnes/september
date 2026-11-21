@@ -17,20 +17,18 @@ func writeControllerTests() {
         }
         return url
     }
-    func type(_ view: WriteTextView, _ text: String) {
-        for char in text {
-            view.insertText(String(char), replacementRange: NSRange(location: NSNotFound, length: 0))
-        }
+    func type(_ view: WriteWebEditor, _ text: String) {
+        (view.page as? FakeEditorPage)?.type(text)
     }
 
     test("Write shows the newest document on the paper, and saves the edits") {
         let url = try folder(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
         let host = RecordingWriteHost()
-        let write = WriteController(host: host, library: DocumentLibrary(folder: url))
+        let write = WriteController(host: host, library: DocumentLibrary(folder: url), page: FakeEditorPage())
 
         write.start()
-        expectEqual(write.paper.editor.markdown, "# New")
+        expectEqual(write.paper.editor.text, "# New")
         type(write.paper.editor, " Plans")
         write.save()
         expectEqual(write.model.current?.title, "New Plans")
@@ -42,7 +40,7 @@ func writeControllerTests() {
         let url = try folder(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }
         let clock = FakeClock()
-        let write = WriteController(host: RecordingWriteHost(), library: DocumentLibrary(folder: url), scheduler: clock)
+        let write = WriteController(host: RecordingWriteHost(), library: DocumentLibrary(folder: url), scheduler: clock, page: FakeEditorPage())
         write.start()
 
         type(write.paper.editor, " Plans")
@@ -57,7 +55,7 @@ func writeControllerTests() {
         let url = try folder(["draft.md": "# Garden\n\nTulips."])
         defer { try? FileManager.default.removeItem(at: url) }
         let clock = FakeClock()
-        let write = WriteController(host: RecordingWriteHost(), library: DocumentLibrary(folder: url), scheduler: clock)
+        let write = WriteController(host: RecordingWriteHost(), library: DocumentLibrary(folder: url), scheduler: clock, page: FakeEditorPage())
 
         write.start()
         clock.advance(to: WriteModel.saveDelay * 2)
@@ -71,12 +69,12 @@ func writeControllerTests() {
         var opened: [URL] = []
         let host = RecordingWriteHost()
         let write = WriteController(
-            host: host, library: DocumentLibrary(folder: url), openURL: { opened.append($0) })
+            host: host, library: DocumentLibrary(folder: url), openURL: { opened.append($0) }, page: FakeEditorPage())
         write.start()
 
         write.paper.editor.onOpenLink?(.wiki(target: "Old"))
         expectEqual(write.model.current?.title, "Old")
-        expectEqual(write.paper.editor.markdown, "# Old")
+        expectEqual(write.paper.editor.text, "# Old")
 
         write.paper.editor.onOpenLink?(.url("https://example.com"))
         expectEqual(opened, [URL(string: "https://example.com")!])
@@ -88,20 +86,20 @@ func writeControllerTests() {
         let url = try folder(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }
         let host = RecordingWriteHost()
-        let write = WriteController(host: host, library: DocumentLibrary(folder: url))
+        let write = WriteController(host: host, library: DocumentLibrary(folder: url), page: FakeEditorPage())
         write.start()
 
         write.newDocument()
         expectEqual(write.model.current?.url.lastPathComponent, "Untitled.md")
         type(write.paper.editor, "Garden")
-        expectEqual(write.paper.editor.markdown, "# Garden")
+        expectEqual(write.paper.editor.text, "# Garden")
     }
 
     test("Write reports the caret paragraph and the text for Speak") {
         let url = try folder([:])
         defer { try? FileManager.default.removeItem(at: url) }
         let host = RecordingWriteHost()
-        let write = WriteController(host: host, library: DocumentLibrary(folder: url))
+        let write = WriteController(host: host, library: DocumentLibrary(folder: url), page: FakeEditorPage())
         write.start()
 
         type(write.paper.editor, "Hi")
@@ -120,7 +118,7 @@ func writeControllerTests() {
         try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
         let host = RecordingWriteHost()
         let write = WriteController(
-            host: host, library: DocumentLibrary(folder: url, trash: .folder(trash)), reveal: revealed ?? { _ in })
+            host: host, library: DocumentLibrary(folder: url, trash: .folder(trash)), reveal: revealed ?? { _ in }, page: FakeEditorPage())
         write.start()
         return (write, host, url)
     }
@@ -147,7 +145,7 @@ func writeControllerTests() {
         write.desk.onCommand?(.open)
         expectEqual(write.panel, .paper, "the desk closes")
         expectEqual(write.model.current?.title, "Old")
-        expectEqual(write.paper.editor.markdown, "# Old")
+        expectEqual(write.paper.editor.text, "# Old")
         expectEqual(host.panels, [.desk, .paper])
     }
 
@@ -198,7 +196,7 @@ func writeControllerTests() {
         expectEqual(write.model.current, nil)
         write.desk.onCommand?(.back)
         expectEqual(write.model.current?.title, "Old")
-        expectEqual(write.paper.editor.markdown, "# Old")
+        expectEqual(write.paper.editor.text, "# Old")
     }
 
     test("Esc goes back to the open document") {
@@ -218,7 +216,7 @@ func writeControllerTests() {
         write.desk.move(by: 1)
         write.desk.onCommand?(.rename)
         expectEqual(write.model.current?.title, "Old")
-        expectEqual(write.paper.editor.selectedRange(), NSRange(location: 0, length: 3))
+        expectEqual((write.paper.editor.page as? FakeEditorPage)?.calls.last, .selectTitle)
     }
 
     test("Duplicate puts the copy first on the desk and selects it") {
@@ -274,12 +272,14 @@ func writeControllerTests() {
         expectEqual(write.desk.failure, write.model.failure)
     }
 
-    test("each shortcut of the Write panel reaches the paper") {
+    // The editing shortcuts, such as Bold and Undo, go to the editor in the
+    // web page. The paper window answers the shortcuts of the documents.
+    test("the document shortcuts of the Write panel reach the paper") {
         let (write, _, url) = try deskWrite(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }
-        for button in try PanelStore.bundled().write.buttons {
+        for button in try PanelStore.bundled().write.buttons where ["documents", "new-document"].contains(button.id) {
             guard case .shortcut = button.action else { continue }
-            write.paper.window.makeFirstResponder(write.paper.editor)
+            write.paper.window.makeFirstResponder(write.paper.editor.page.view)
             let event = try keyEvent(of: button.action)
             expect(write.paper.window.performKeyEquivalent(with: event), "\(button.id)")
         }
@@ -335,7 +335,7 @@ func writeControllerTests() {
         defer { try? FileManager.default.removeItem(at: url) }
         var shared: [URL] = []
         let write = WriteController(
-            host: RecordingWriteHost(), library: DocumentLibrary(folder: url), share: { shared.append($0) })
+            host: RecordingWriteHost(), library: DocumentLibrary(folder: url), share: { shared.append($0) }, page: FakeEditorPage())
         write.start()
         type(write.paper.editor, " Plans")
 

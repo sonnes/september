@@ -1,7 +1,8 @@
 # Keyboard for macOS — agent guide
 
 Native floating keyboard. SwiftUI + AppKit, SwiftPM, no third-party
-dependencies. Read this before changing anything in `apps/keyboard/`; it augments
+package dependencies. The Write editor is a built web page from Piper in the
+resources of `SeptemberKit`. Read this before changing anything in `apps/keyboard/`; it augments
 the root [CLAUDE.md](../../CLAUDE.md) (symlink of the root `AGENTS.md`) and
 [apps/keyboard/README.md](README.md).
 
@@ -42,12 +43,13 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Talk` | Talk mode, the Said list, the Phrases panel |
 | `Sources/SeptemberKit/UserPanel` | My Panel, private text, the Accessibility Keyboard import |
 | `Sources/SeptemberKit/Settings` | the Settings pages and `KeyboardSettings` |
-| `Sources/SeptemberKit/Write` | the document library, `WriteModel` (the open document and its saves), `WriteController` (joins the documents, the paper, and the desk), `WriteDesk` (the cards, the Find query, and the selected card), `EditorCaret` and `EditorSpeech`, and `MarkdownSpeech` (the text that Speak reads) |
-| `Sources/SeptemberKit/WriteEditor` | the native Markdown editor (`WriteTextView`), the Markdown blocks (`WriteMarkdown`), the Write paper with round corners (`WritePaperController`, `WritePaper`), and the desk of document cards (`WriteDeskController`, `WriteDeskLayout`, `WriteCardView`) |
+| `Sources/SeptemberKit/Write` | the document library, `WriteModel` (the open document and its saves), `WriteController` (joins the documents, the paper, and the desk), `WriteDesk` (the cards, the Find query, and the selected card), `EditorCaret` and `EditorSpeech`, the bridge to the editor page (`EditorCall`, `EditorMessage`), and `MarkdownSpeech` (the text that Speak reads) |
+| `Sources/SeptemberKit/WriteEditor` | the editor page in a web view (`EditorWebPage`, `WriteWebEditor`), the Write paper with round corners (`WritePaperController`, `WritePaper`), and the desk of document cards (`WriteDeskController`, `WriteDeskLayout`, `WriteCardView`) |
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, the keyboard screen, and the views of each part |
 | `Sources/SeptemberKit/Resources/Panels` | `text`/`system`/`rectangle`/`phrases`/`write`/`write-documents.json` |
 | `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/SeptemberKit/Resources/Context` | the rule of each app for the text on screen (`<bundle id>.json`) |
+| `Sources/SeptemberKit/Resources/Editor` | `editor.html`, the editor page of Piper with the editor of Hubble.md, and its licenses (`make editor`) |
 | `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `OtherInputMonitor`, `SystemPasteboard`, `MenuBarReader`, `AXFrontAppReader` (the menu and the text on screen for the session), `AXTreeReader`, `AXFocus` (the focus path, the password check, `AXManualAccessibility`, and the walk of the menu bar), the Settings window, snapshots |
 | `Sources/WriteLab` | Write Lab: the Write paper on its own, with a stand-in for the keyboard bar (`make lab`) |
 | `Tests/KitTests` | tests + the harness |
