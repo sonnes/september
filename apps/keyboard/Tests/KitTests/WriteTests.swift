@@ -345,18 +345,4 @@ func writeTests() {
         model.openLink(title: "Missing")
         expectEqual(model.current?.title, "Notes")
     }
-
-    // MARK: The Write panel
-
-    test("the keys of the Documents panel with no Command are the moves of the Find field") {
-        let panel = try PanelStore.bundled().writeDocuments
-        let actions = Dictionary(uniqueKeysWithValues: panel.buttons.map { ($0.id, $0.action) })
-        func key(_ key: VirtualKey) -> PanelAction {
-            .shortcut(Shortcut(modifiers: [], key: .virtual(key)))
-        }
-        expectEqual(actions["open"], key(.return))
-        expectEqual(actions["previous"], key(.left))
-        expectEqual(actions["next"], key(.right))
-        expectEqual(actions["back"], key(.escape))
-    }
 }

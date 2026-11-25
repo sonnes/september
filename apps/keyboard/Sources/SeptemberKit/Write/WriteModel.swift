@@ -65,6 +65,11 @@ public final class WriteModel: ObservableObject {
         }
     }
 
+    /// Lists the folder again. It opens no document.
+    public func list() {
+        reload()
+    }
+
     public func newDocument() {
         save()
         do {

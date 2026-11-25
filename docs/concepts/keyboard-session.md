@@ -243,12 +243,14 @@ text field has focus, or when Command or Control is on. The view shows them
 in the place of the input bar. Otherwise `shortcuts` is empty, and the bar
 shows. Talk mode and the Write window have no shortcuts.
 
-- The shortcuts come from `AppShortcut.suggestions(menu:modifiers:)`: the
-  menu items of the app with a chord. Each chord shows one time.
+- The shortcuts come from `AppShortcut.suggestions(menu:modifiers:excluding:)`:
+  the menu items of the app with a chord. Each chord shows one time. The
+  session excludes `PanelStore.keypadShortcuts` and `ClipboardShortcut.all`,
+  so a chord that a keypad or a clipboard button has does not show again.
 - `AppShortcut.ranked(_:app:by:)` puts the shortcuts that the user pressed
   most in this app first. A tie keeps the menu bar order. The session ranks
-  the menu when it reads it, so the order does not change while the app is in
-  front. `pressShortcut(_:)` adds one press in the `shortcut_use` table.
+  the menu when it reads it. `pressShortcut(_:)` adds one press in the
+  `shortcut_use` table, and then ranks the menu again.
 - The session reads the menu with `FrontAppReading.menuShortcuts(pid:)` for
   the app in front. It reads only when it needs shortcuts, and keeps the
   result until the next app change.

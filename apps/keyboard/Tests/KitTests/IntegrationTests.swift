@@ -431,7 +431,7 @@ private func userTypes(_ text: String, in parts: SessionParts) async throws {
 
 @MainActor
 private func shortcutTests() async {
-    let copy = AppShortcut(name: "Copy", shortcut: Shortcut(modifiers: .command, key: .character("c")))
+    let copy = AppShortcut(name: "Show Notes", shortcut: Shortcut(modifiers: .command, key: .character("1")))
     let lock = AppShortcut(
         name: "Lock Notes", shortcut: Shortcut(modifiers: [.control, .option], key: .character("l")))
     let commandKey = KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "command-left" }!
@@ -450,13 +450,25 @@ private func shortcutTests() async {
         expectEqual(parts.session.shortcuts, [copy, lock])
     }
 
-    await asyncTest("the shortcuts that the user presses most come first when the app comes to the front again") {
+    await asyncTest("the place of the bar leaves out the shortcuts of the keypads and the clipboard buttons") {
+        let parts = try makeSession()
+        let undo = AppShortcut(name: "Undo", shortcut: Shortcut(modifiers: .command, key: .character("z")))
+        let paste = AppShortcut(name: "Paste", shortcut: ClipboardShortcut.paste)
+        let lineEnd = AppShortcut(name: "End of Line", shortcut: Shortcut(modifiers: .command, key: .virtual(.right)))
+        parts.reader.menu = [undo, copy, paste, lineEnd, lock]
+        parts.session.appActivated(notes)
+        parts.controller.focusChanged(to: focus("AXButton"))
+        await parts.session.settle()
+        expectEqual(parts.session.shortcuts, [copy, lock])
+    }
+
+    await asyncTest("a press puts the shortcuts that the user presses most first at once") {
         let parts = try makeParts()
         parts.controller.focusChanged(to: focus("AXButton"))
         await parts.session.settle()
         parts.session.pressShortcut(lock)
         await parts.session.settle()
-        expectEqual(parts.session.shortcuts, [copy, lock], "the order stays while the app is in front")
+        expectEqual(parts.session.shortcuts, [lock, copy])
 
         parts.session.appActivated(FrontApp(pid: 4, name: "Mail", bundleID: "com.apple.mail"))
         parts.session.appActivated(notes)

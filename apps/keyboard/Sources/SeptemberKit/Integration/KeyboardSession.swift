@@ -176,6 +176,8 @@ public final class KeyboardSession: ObservableObject {
     public func pressShortcut(_ shortcut: AppShortcut) {
         if case .app(let app) = front, let bundleID = app.bundleID {
             shortcutUsage.record(shortcut.usageID(app: bundleID))
+            // The press orders the shortcuts again at once.
+            if let menu { self.menu = AppShortcut.ranked(menu, app: bundleID, by: shortcutUsage) }
         }
         controller.perform(.shortcut(shortcut.shortcut))
     }
@@ -596,13 +598,17 @@ public final class KeyboardSession: ObservableObject {
         let on = controller.modifiers.own.union(heldModifiers)
         let byModifier = !on.isDisjoint(with: [.command, .control])
         guard byModifier || !wantsBar else { return [] }
-        // The order is set when the menu is read, so a suggestion never moves
-        // while the app stays in front.
+        // The menu is ranked when it is read, and again after each press of
+        // a shortcut.
         if menu == nil, case .app(let app) = front {
             let shortcuts = reader.menuShortcuts(pid: app.pid)
             menu = app.bundleID.map { AppShortcut.ranked(shortcuts, app: $0, by: shortcutUsage) } ?? shortcuts
         }
-        return AppShortcut.suggestions(menu: menu ?? [], modifiers: byModifier ? on : [])
+        // A chord that a keypad or a clipboard button already has is not
+        // suggested again.
+        return AppShortcut.suggestions(
+            menu: menu ?? [], modifiers: byModifier ? on : [],
+            excluding: controller.panels.keypadShortcuts.union(ClipboardShortcut.all))
     }
 
     private func spokenWord(mode: KeyboardMode) -> NSRange? {

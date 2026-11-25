@@ -29,6 +29,17 @@ public struct PanelStore: Sendable {
         self.writeDocuments = writeDocuments
     }
 
+    /// The key combinations of the Text, System, and Rectangle keypads.
+    public var keypadShortcuts: Set<Shortcut> {
+        Set(
+            [text, system, rectangle]
+                .flatMap { $0.buttons + ($0.arrows?.buttons ?? []) }
+                .compactMap { button -> Shortcut? in
+                    if case .shortcut(let shortcut) = button.action { return shortcut }
+                    return nil
+                })
+    }
+
     /// The keys of the paper or the desk of Write.
     public func writePanel(for panel: WritePanel) -> PanelDefinition {
         switch panel {

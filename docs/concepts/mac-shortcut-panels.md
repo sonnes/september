@@ -45,9 +45,14 @@ Mine. A text button takes a whole row, and a key button fills the gap that an
 earlier key button left.
 
 `arrows` is an optional `PanelBlock` below the grid, with columns of its own.
-The Text keypad uses it for an inverted T of arrow keys, in three columns. A
-keypad with three columns, in its grid or in its arrows, is three buttons
-wide. System has three columns.
+No bundled keypad uses it. A keypad with three columns, in its grid or in its
+arrows, is three buttons wide. System has three columns.
+
+No keypad and no Write panel repeats a key of the keyboard, a button of
+another keypad, or a clipboard button. System holds the shortcuts that are
+the same in each app, such as Undo, New, Open, and Close. While Write is in
+front, these System buttons reach the paper and the desk, so the Write panels
+hold only the actions that System does not have.
 
 A button presses a key combination or types a phrase. A text button uses up
 the latched modifiers, the same as a text key.

@@ -83,6 +83,13 @@ private func suggestionTests() {
         expectEqual(both, ["Reopen Tab"])
     }
 
+    test("a shortcut that a keypad or the bar already has does not show") {
+        let undo = AppShortcut(name: "Undo", shortcut: Shortcut(modifiers: .command, key: .character("z")))
+        let tab = AppShortcut(name: "New Tab", shortcut: Shortcut(modifiers: .command, key: .character("t")))
+        let names = AppShortcut.suggestions(menu: [undo, tab], modifiers: [], excluding: [undo.shortcut]).map(\.name)
+        expectEqual(names, ["New Tab"])
+    }
+
     test("caps lock and fn do not filter the shortcuts") {
         let names = AppShortcut.suggestions(menu: menu, modifiers: [.control, .capsLock, .function]).map(\.name)
         expectEqual(names, ["Deep"])
