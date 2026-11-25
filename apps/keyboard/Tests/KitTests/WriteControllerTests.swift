@@ -136,6 +136,44 @@ func writeControllerTests() {
         expectEqual(host.broughtToFront, [write.desk.window])
     }
 
+    test("Write opens the desk of documents, and creates no document") {
+        let url = try folder([:])
+        defer { try? FileManager.default.removeItem(at: url) }
+        let host = RecordingWriteHost()
+        let write = WriteController(host: host, library: DocumentLibrary(folder: url), page: FakeEditorPage())
+
+        write.show(from: nil, floor: 0, screen: CGRect(x: 0, y: 0, width: 1200, height: 800), margin: 24)
+        expectEqual(write.panel, .desk)
+        expectEqual(host.panels, [.desk])
+        expect(write.model.current == nil, "no document opens")
+        let files = try FileManager.default.contentsOfDirectory(atPath: url.path)
+        expectEqual(files, [], "no document is created")
+    }
+
+    test("Esc closes the desk that Write opened, and creates no document") {
+        let url = try folder([:])
+        defer { try? FileManager.default.removeItem(at: url) }
+        let host = RecordingWriteHost()
+        let write = WriteController(host: host, library: DocumentLibrary(folder: url), page: FakeEditorPage())
+
+        write.show(from: nil, floor: 0, screen: CGRect(x: 0, y: 0, width: 1200, height: 800), margin: 24)
+        write.desk.onCommand?(.back)
+        expect(!write.desk.isOpen, "the desk closes")
+        expect(write.model.current == nil, "no document opens")
+        expectEqual(try FileManager.default.contentsOfDirectory(atPath: url.path), [])
+    }
+
+    test("Write selects the newest card on the desk") {
+        let url = try folder(["New.md": "# New", "Old.md": "# Old"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        let write = WriteController(host: RecordingWriteHost(), library: DocumentLibrary(folder: url), page: FakeEditorPage())
+
+        write.show(from: nil, floor: 0, screen: CGRect(x: 0, y: 0, width: 1200, height: 800), margin: 24)
+        expectEqual(write.desk.desk.selected, .document(write.model.documents[0]))
+        write.desk.onCommand?(.open)
+        expectEqual(write.paper.editor.text, "# New")
+    }
+
     test("Return on a card opens its document on the paper") {
         let (write, host, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
         defer { try? FileManager.default.removeItem(at: url) }
@@ -274,10 +312,10 @@ func writeControllerTests() {
 
     // The editing shortcuts, such as Bold and Undo, go to the editor in the
     // web page. The paper window answers the shortcuts of the documents.
-    test("the document shortcuts of the Write panel reach the paper") {
+    test("New and Open of the System keypad reach the paper") {
         let (write, _, url) = try deskWrite(["New.md": "# New"])
         defer { try? FileManager.default.removeItem(at: url) }
-        for button in try PanelStore.bundled().write.buttons where ["documents", "new-document"].contains(button.id) {
+        for button in try PanelStore.bundled().system.buttons where ["new", "open"].contains(button.id) {
             guard case .shortcut = button.action else { continue }
             write.paper.window.makeFirstResponder(write.paper.editor.page.view)
             let event = try keyEvent(of: button.action)
@@ -293,6 +331,16 @@ func writeControllerTests() {
         defer { try? FileManager.default.removeItem(at: url) }
         for button in try PanelStore.bundled().writeDocuments.buttons {
             guard case .shortcut(let shortcut) = button.action, shortcut.modifiers.contains(.command) else { continue }
+            write.showDesk()
+            let event = try keyEvent(of: button.action)
+            expect(write.desk.window.performKeyEquivalent(with: event), "\(button.id)")
+        }
+    }
+
+    test("New, Close, Find, and Undo of the System keypad reach the desk") {
+        let (write, _, url) = try deskWrite(["New.md": "# New", "Old.md": "# Old"])
+        defer { try? FileManager.default.removeItem(at: url) }
+        for button in try PanelStore.bundled().system.buttons where ["new", "close", "find", "undo"].contains(button.id) {
             write.showDesk()
             let event = try keyEvent(of: button.action)
             expect(write.desk.window.performKeyEquivalent(with: event), "\(button.id)")

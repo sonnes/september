@@ -132,6 +132,30 @@ private func panelFileTests() {
         expect(Set(chords).isDisjoint(with: ClipboardShortcut.all), "a keypad repeats a clipboard button")
     }
 
+    test("no keypad and no Write panel repeats a key of the keyboard or a button of another panel") {
+        let store = try PanelStore.bundled()
+        func chords(_ panel: PanelDefinition) -> [Shortcut] {
+            (panel.buttons + (panel.arrows?.buttons ?? [])).compactMap { button -> Shortcut? in
+                if case .shortcut(let shortcut) = button.action { return shortcut }
+                return nil
+            }
+        }
+        let keys: Set<Shortcut> = Set(
+            KeyboardLayout.rows.flatMap(\.keys).compactMap { key -> Shortcut? in
+                if case .virtual(let virtual) = key.action { return Shortcut(modifiers: [], key: .virtual(virtual)) }
+                return nil
+            }
+        ).union([Shortcut(modifiers: [.shift, .command], key: .character("4"))])
+        var seen = keys.union(ClipboardShortcut.all)
+        for panel in [store.system, store.text, store.rectangle, store.write, store.writeDocuments] {
+            for chord in chords(panel) {
+                expect(!seen.contains(chord), "\(panel.title) repeats \(chord.spokenName)")
+            }
+            // The paper and the desk never show at the same time.
+            if panel.title != store.write.title { seen.formUnion(chords(panel)) }
+        }
+    }
+
     test("the Write panels fit the two-column grid") {
         let store = try PanelStore.bundled()
         for panel in [store.write, store.writeDocuments] {

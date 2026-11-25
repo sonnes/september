@@ -58,9 +58,12 @@ public struct AppShortcut: Equatable, Hashable, Sendable, Identifiable {
     }
 
     /// The suggestions from the menu shortcuts. When modifiers are on, only
-    /// the chords that hold all of them stay.
-    public static func suggestions(menu: [AppShortcut], modifiers: Modifiers) -> [AppShortcut] {
+    /// the chords that hold all of them stay. A chord in `excluding`, such as
+    /// a button of a keypad, does not show.
+    public static func suggestions(
+        menu: [AppShortcut], modifiers: Modifiers, excluding: Set<Shortcut> = []
+    ) -> [AppShortcut] {
         let required = modifiers.intersection(filterModifiers)
-        return menu.filter { $0.shortcut.modifiers.isSuperset(of: required) }
+        return menu.filter { $0.shortcut.modifiers.isSuperset(of: required) && !excluding.contains($0.shortcut) }
     }
 }

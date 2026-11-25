@@ -54,6 +54,8 @@ public final class WriteController: WriteReading {
     private let share: ((URL) -> Void)?
     private var started = false
     private var failure: AnyCancellable?
+    /// False when Write opened the desk with no paper, so that Esc closes it.
+    private var deskOverPaper = false
     /// Where the paper opened last: the desk uses the same space.
     private var placement: (bar: CGRect?, floor: CGFloat, screen: CGRect, margin: CGFloat)?
 
@@ -114,17 +116,23 @@ public final class WriteController: WriteReading {
         model.start()
     }
 
-    /// Opens the paper, or brings it to the front. See
+    /// Opens the desk of documents. It creates no document. If the paper
+    /// or the desk is open, it comes to the front. See
     /// `WritePaperController.show(from:floor:screen:margin:)`.
     public func show(from bar: CGRect?, floor: CGFloat, screen: CGRect, margin: CGFloat) {
-        start()
         placement = (bar, floor, screen, margin)
         if desk.isOpen {
             host?.bringToFront(desk.window)
             return
         }
-        if model.current == nil { model.start() }
-        paper.show(from: bar, floor: floor, screen: screen, margin: margin)
+        if paper.isOpen {
+            paper.show(from: bar, floor: floor, screen: screen, margin: margin)
+            return
+        }
+        started = true
+        model.list()
+        showDesk()
+        deskOverPaper = false
     }
 
     public var panel: WritePanel { desk.isOpen ? .desk : .paper }
@@ -135,6 +143,7 @@ public final class WriteController: WriteReading {
         guard !desk.isOpen else { return }
         start()
         save()
+        deskOverPaper = true
         let (area, centre) = deskArea
         desk.show(documents: model.documents, current: model.current?.url, area: area, centre: centre)
         paper.shrink(into: desk.cardFrame(of: model.current?.url))
@@ -204,7 +213,9 @@ public final class WriteController: WriteReading {
         case .newDocument:
             open(.newDocument)
         case .back:
-            if let current = model.current {
+            if !deskOverPaper {
+                closeDesk()
+            } else if let current = model.current {
                 open(.document(current))
             } else {
                 open(selected)

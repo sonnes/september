@@ -184,16 +184,16 @@ Rectangle go to the right, with Text nearest the keys. If a panel does not fit o
 its side, it goes to the other side. Each panel stays on the screen.
 `PanelPlacement.arrangedFrames` holds the rule.
 
-The Text keypad has the arrow keys of a Mac keyboard at its bottom, as an
-inverted T. Page Up and Page Down fill the two top corners of the T. The word,
-line, and selection moves are in the grid above the arrows. The arrows are the
-`arrows` block of `text.json`, with three columns, so the Text keypad is three
-buttons wide.
+The Text keypad holds the word, line, and selection moves, in two columns.
+The arrow keys, Page Up, and Page Down are keys of the keyboard, so the Text
+keypad does not have them.
 
 The System keypad has three columns. It holds Undo, Redo, Select All, Save,
 New, Open, Print, and Close, and then Find, Mission Control, Scroll Up,
-Scroll Down, the zoom keys, Full Screen, Screenshot, and Quit. No keypad
-repeats Cut, Copy, or Paste.
+Scroll Down, the zoom keys, Full Screen, and Quit. These shortcuts are the
+same in each app, so System is the one place for them. No keypad and no Write
+panel repeats a key of the keyboard, a button of another keypad, or Cut, Copy,
+or Paste.
 
 Scroll Up and Scroll Down scroll the place where the pointer last rested
 outside the keyboard, as the scroll menu of Dwell of macOS does. The pointer
@@ -276,8 +276,10 @@ Then it removes the files. If a file does not decode, the keyboard moves it to
 At launch, the keyboard also removes `usage.json` and `learned.json`. No part
 of the keyboard reads these files.
 
-Write opens the Write paper: a sheet with round corners, no window frame,
-and the Markdown editor of [Hubble.md](https://github.com/bholmesdev/hubble.md).
+Write opens the desk of documents. It does not create a document. If the
+paper is open, Write brings the paper to the front. Return on a card opens the
+Write paper: a sheet with round corners, no window frame, and the Markdown
+editor of [Hubble.md](https://github.com/bholmesdev/hubble.md).
 The editor is the editor page of Piper, `Resources/Editor/editor.html`, in a
 web view. Its licenses are in `Resources/Editor/Licenses/Editor.txt`. The
 editor hides the Markdown marks and shows the look of the text. The paper
@@ -322,7 +324,7 @@ desk. The paper shrinks into its card, and the other documents rise out of
 the bar as paper cards, newest first. The first card is always New Document.
 The Find field takes the typing, and the input bar shows the query. The left
 and the right arrows move between the cards. Return opens the selected card,
-and Esc goes back to the paper.
+and Esc goes back to the paper. If Write opened the desk, Esc closes the desk.
 
 While the desk is open, the Write tab of My Panel shows the Documents keys. Rename opens
 the document with its heading selected, because the heading is the file
@@ -488,7 +490,7 @@ Write paper. Then look at the animations, and commit the files in
 Write Lab runs the Write paper on its own, with the same `WriteController`
 as the keyboard. Write Lab shows a stand-in for the keyboard bar at the bottom of
 the screen. The bar shows the paragraph at the caret, as the keyboard reads it
-for the predictions. Write opens the paper out of the bar, and Documents opens
+for the predictions. Write opens the desk, and Documents turns the paper into
 the desk.
 
 ```sh
@@ -655,10 +657,11 @@ modifier. The shortcuts are the menu items of the app with a chord. The
 shortcuts that you press most in this app come first, and the others keep
 the menu bar order. The keyboard reads the menu bar through accessibility
 when a suggestion needs it, and keeps the read until another app comes to
-the front. The order is set at the read, so a shortcut does not move while
-the app stays in front.
+the front. After each press on the bar, the shortcuts take the new order at
+once.
 The suggestions leave out the Apple menu, which holds Log Out and Lock Screen,
-and the menu items that are off. The app menu, with Hide and Quit, comes last.
+and the menu items that are off. They also leave out a chord that a keypad or
+the Cut, Copy, and Paste buttons already have, such as Undo. The app menu, with Hide and Quit, comes last.
 Talk mode and the Write window show no shortcut suggestions.
 
 ## Stored data
