@@ -158,12 +158,17 @@ before the caret ends with a space, a mark, or a new line. The request waits
 word, the history rows change at each letter, and a row of the model stays
 while it still continues the typed text. The model never gets a partial word.
 
-The stack has three rows. The rows come from the sentence history and from
-Apple Intelligence. History rows show at once. Up to two history rows come
-first, then the rows of the model, and then the other history rows. A row
-with the same words as an earlier row does not show. When Apple Intelligence
-is not ready, the history rows still show, and its notice shows only when no
-row matches.
+The stack has two columns of up to three rows. The left column holds the
+sentences of the history, best score first, with a green fill and the icon ↺.
+They show at once. The right column holds the rows of Apple Intelligence,
+with an indigo fill and the icon ✦. A row never goes to the other column. The
+spoken label of a tile starts with "Said before" or "Suggested", so the
+source does not depend on colour only. A model row with the words of a
+history row does not show. A row that shows keeps its place while it still
+continues the typed text, so a row does not move under a dwell or a switch.
+A new row fills only an empty place. A row shows the most tiles that fit in
+its column. When Apple Intelligence is not ready, the history rows still
+show, and its notice shows only when no row matches.
 
 When you press Return on the keys, or Speak in Talk mode, the keyboard splits
 the whole field, or the Talk bar, at each new line and then into sentences.

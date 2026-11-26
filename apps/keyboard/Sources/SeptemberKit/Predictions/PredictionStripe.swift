@@ -1,5 +1,22 @@
 import Foundation
 
+/// Where a row of the stack comes from.
+public enum PredictionSource: Equatable, Sendable {
+    /// A sentence that the user sent before, from `SentenceHistory`.
+    case history
+    /// A sentence from Apple Intelligence.
+    case model
+
+    /// The start of the spoken label of each tile, so that the source does
+    /// not depend on colour only.
+    public var spokenName: String {
+        switch self {
+        case .history: "Said before"
+        case .model: "Suggested"
+        }
+    }
+}
+
 /// One sentence prediction as a row of word tiles. A press on a tile types the
 /// sentence up to that word.
 ///
@@ -10,6 +27,7 @@ public struct PredictionStripe: Equatable, Sendable {
     public static let maxTiles = 6
 
     public let prediction: String
+    public let source: PredictionSource
     public let tiles: [String]
     /// The count of words that the field already holds. In Type mode the
     /// row shows a lead-in mark in their place.
@@ -24,33 +42,37 @@ public struct PredictionStripe: Equatable, Sendable {
     /// with a full word.
     private let lead: String
 
-    public init(prediction: String, typed: String) {
+    public init(prediction: String, typed: String, source: PredictionSource = .model) {
         let words = Self.words(prediction)
         var fieldWords = Self.words(typed)
         let endsWithSpace = typed.last.map(\.isWhitespace) ?? true
         let partial = endsWithSpace ? "" : fieldWords.popLast() ?? ""
 
         guard let overlap = Self.overlap(of: fieldWords, partial: partial, with: words) else {
-            self.init(prediction: prediction, tiles: Self.row(words), hidden: 0, partial: "", lead: "", matches: false)
+            self.init(
+                prediction: prediction, source: source, tiles: Self.row(words), hidden: 0, partial: "", lead: "",
+                matches: false)
             return
         }
 
         // A partial that is the whole next word is a word that the field holds.
         if !partial.isEmpty, overlap < words.count, words[overlap].lowercased() == partial.lowercased() {
             self.init(
-                prediction: prediction, tiles: Self.row(Array(words[(overlap + 1)...])),
+                prediction: prediction, source: source, tiles: Self.row(Array(words[(overlap + 1)...])),
                 hidden: overlap + 1, partial: "", lead: " ", matches: true)
             return
         }
         self.init(
-            prediction: prediction, tiles: Self.row(Array(words[overlap...])),
+            prediction: prediction, source: source, tiles: Self.row(Array(words[overlap...])),
             hidden: overlap, partial: partial, lead: "", matches: true)
     }
 
     private init(
-        prediction: String, tiles: [String], hidden: Int, partial: String, lead: String, matches: Bool
+        prediction: String, source: PredictionSource, tiles: [String], hidden: Int, partial: String, lead: String,
+        matches: Bool
     ) {
         self.prediction = prediction
+        self.source = source
         self.tiles = tiles
         self.hidden = hidden
         self.partial = partial
@@ -73,10 +95,16 @@ public struct PredictionStripe: Equatable, Sendable {
         mode == .type && hidden > 0
     }
 
-    /// The words of the row up to the tile at `index`, for a spoken label.
+    /// The words of the row up to the tile at `index`.
     public func words(through index: Int) -> String {
         guard tiles.indices.contains(index) else { return "" }
         return tiles[...index].joined(separator: " ")
+    }
+
+    /// The spoken label of the tile at `index`: the source, then the words
+    /// of the row up to the tile.
+    public func spokenLabel(through index: Int) -> String {
+        "\(source.spokenName): \(words(through: index))"
     }
 
     // MARK: - Matching

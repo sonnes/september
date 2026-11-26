@@ -17,17 +17,25 @@ import Foundation
 /// the baseline of the field. A later input with other text is typing. The
 /// text before the caret must also hold a letter.
 ///
-/// The rows of the stack come from two sources: the sentence history and the
-/// model. History rows show at once. Up to `historyLead` of them come first,
-/// then the model rows, and then the other history rows.
+/// The rows of the stack are in two columns, one for each source. The
+/// history column holds up to three sentences of the history, best score
+/// first, and shows them at once. The model column holds up to three rows of
+/// the model. A model row with the words of a history row does not show.
+///
+/// A row that shows keeps its place while it continues the typed text, so a
+/// row does not move under a dwell or a switch. A new row fills only an
+/// empty place. A place is `nil` while it is empty.
 ///
 /// The engine keeps the completions that the user picks. When the user
 /// submits the text, it tells the completer which picked words the text
 /// still holds.
 @MainActor
 public final class PredictionEngine: ObservableObject {
-    /// The rows of the stack, best first.
-    @Published public private(set) var stripes: [PredictionStripe] = []
+    /// The places of the history column, best first. A `nil` place is
+    /// empty. The list has no empty place at its end.
+    @Published public private(set) var historyRows: [PredictionStripe?] = []
+    /// The places of the model column, in the same form.
+    @Published public private(set) var modelRows: [PredictionStripe?] = []
     /// The completions of the word at the caret, best first.
     @Published public private(set) var words: [WordCompletion] = []
     /// The message that the stack shows in place of predictions.
@@ -64,9 +72,6 @@ public final class PredictionEngine: ObservableObject {
         static let screen = "predictions.screen"
     }
 
-    /// The most history rows that come before the model rows.
-    public static let historyLead = 2
-
     private let predictor: any SentencePredicting
     private let history: SentenceHistory?
     private let completer: any WordCompleting
@@ -86,7 +91,7 @@ public final class PredictionEngine: ObservableObject {
     private var requested: PredictionContext?
     private var predictions: [String] = []
     /// The history sentences that continue the typed text, best first.
-    private var historyRows: [String] = []
+    private var historyMatches: [String] = []
     private var request: Task<Void, Never>?
     /// Counts the requests, so a late answer to an old one is dropped.
     private var generation = 0
@@ -212,12 +217,15 @@ public final class PredictionEngine: ObservableObject {
         refreshWords()
 
         guard let context, sentencesEnabled, wantsSentences(context) else {
+            historyMatches = []
             historyRows = []
             stopAsking()
             restripe()
             return
         }
-        historyRows = history?.matches(for: context.typed, limit: SuggestionPrompt.count) ?? []
+        // More matches than places, so that a new match can fill a place
+        // that a kept row leaves.
+        historyMatches = history?.matches(for: context.typed, limit: SuggestionPrompt.count * 2) ?? []
         guard availability == .ready else {
             stopAsking()
             restripe()
@@ -231,6 +239,7 @@ public final class PredictionEngine: ObservableObject {
     private func stopAsking() {
         cancel()
         predictions = []
+        modelRows = []
         requested = nil
         trace = nil
     }
@@ -271,21 +280,19 @@ public final class PredictionEngine: ObservableObject {
         return nil
     }
 
-    /// Builds the rows from the history rows and the model rows, then sets
-    /// the notice. A row with the same words as an earlier row does not
-    /// show. The notice of Apple Intelligence does not hide history rows.
+    /// Builds the two columns, then sets the notice. A row with the same
+    /// words as an earlier row does not show. The notice of Apple
+    /// Intelligence does not hide history rows.
     private func restripe() {
         let typed = context?.typed ?? ""
-        let lead = historyRows.prefix(Self.historyLead)
-        let sources = lead + predictions + historyRows.dropFirst(Self.historyLead)
-        var rows: [PredictionStripe] = []
         var seen: Set<String> = []
-        for source in sources where rows.count < SuggestionPrompt.count {
-            let stripe = PredictionStripe(prediction: source, typed: typed)
-            guard seen.insert(stripe.tiles.joined(separator: " ").lowercased()).inserted else { continue }
-            rows.append(stripe)
-        }
-        stripes = rows
+        let history = Self.places(
+            kept: historyRows, candidates: historyMatches, source: .history, typed: typed, seen: &seen)
+        let model = Self.places(
+            kept: modelRows, candidates: predictions, source: .model, typed: typed, seen: &seen)
+        if history != historyRows { historyRows = history }
+        if model != modelRows { modelRows = model }
+        let rows = history.compactMap { $0 } + model.compactMap { $0 }
 
         let notice =
             isPrivate
@@ -296,6 +303,31 @@ public final class PredictionEngine: ObservableObject {
         } else {
             self.notice = notice
         }
+    }
+
+    /// The places of one column. Each kept row that still continues the typed
+    /// text stays in its place. Then each candidate fills the first empty
+    /// place. `seen` holds the words of the rows that show.
+    private static func places(
+        kept: [PredictionStripe?], candidates: [String], source: PredictionSource, typed: String,
+        seen: inout Set<String>
+    ) -> [PredictionStripe?] {
+        func shows(_ stripe: PredictionStripe) -> Bool {
+            stripe.matches && !stripe.tiles.isEmpty
+                && seen.insert(stripe.tiles.joined(separator: " ").lowercased()).inserted
+        }
+        var places: [PredictionStripe?] = (0..<SuggestionPrompt.count).map { index in
+            guard index < kept.count, let old = kept[index] else { return nil }
+            let stripe = PredictionStripe(prediction: old.prediction, typed: typed, source: source)
+            return shows(stripe) ? stripe : nil
+        }
+        for candidate in candidates {
+            guard let empty = places.firstIndex(where: { $0 == nil }) else { break }
+            let stripe = PredictionStripe(prediction: candidate, typed: typed, source: source)
+            if shows(stripe) { places[empty] = stripe }
+        }
+        while let last = places.last, last == nil { places.removeLast() }
+        return places
     }
 
     private func cancel() {
@@ -327,7 +359,7 @@ public final class PredictionEngine: ObservableObject {
             trace.sentences = sentences ?? []
             trace.duration = clock.now - start
             self.trace = trace
-            self.predictions = Array((sentences ?? []).prefix(SuggestionPrompt.count))
+            self.predictions = sentences ?? []
             self.restripe()
         }
     }

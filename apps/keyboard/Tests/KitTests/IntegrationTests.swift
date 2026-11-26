@@ -701,7 +701,7 @@ private func sessionTests() async {
         let parts = try makeSession()
         parts.history.record("See you soon.")
         try await userTypes("See y", in: parts)
-        expectEqual(parts.session.predictions.stripes.map(\.prediction), ["See you soon."])
+        expectEqual(parts.session.predictions.historyRows.map(\.?.prediction), ["See you soon."])
     }
 
     await asyncTest("Speak in Talk mode records the picked word") {

@@ -122,19 +122,28 @@ enum Snapshot {
 
     // MARK: - The keyboard
 
+    /// The text up to and with its last space.
+    private static func wordEnd(of text: String) -> String {
+        guard let space = text.lastIndex(of: " ") else { return text }
+        return String(text[...space])
+    }
+
     private static func keyboard(arguments: [String], permission: AccessibilityPermission) async throws -> AnyView {
         let defaults = UserDefaults(suiteName: "september-snapshot-\(UUID().uuidString)")!
         let database = try KeyboardDatabase(path: ":memory:")
         let voice = SampleVoice()
         let reader = SampleReader()
         let pasteboard = MemoryPasteboard()
+        let history = SentenceHistory(database: database, defaults: defaults)
+        for sentence in ["Are we still on for tonight?", "Are we still on for tonight?", "Are we still on for the weekend?"] {
+            history.record(sentence)
+        }
         let assembly = try KeyboardAssembly(
             sink: SilentSink(), database: database, pasteboard: pasteboard, reader: reader,
             speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
             write: SampleWrite(),
             predictions: PredictionEngine(
-                predictor: SamplePredictor(), delay: .zero, defaults: defaults,
-                history: SentenceHistory(database: database, defaults: defaults)),
+                predictor: SamplePredictor(), delay: .zero, defaults: defaults, history: history),
             defaults: defaults, privateTexts: NoPrivateTexts(),
             clipboardClock: { Date().addingTimeInterval(-40 * 60) }, scheduler: NoDelayScheduler())
         let session = assembly.session
@@ -145,7 +154,9 @@ enum Snapshot {
         let typed = value(of: "--typed", in: arguments)
         let spoken = value(of: "--spoken", in: arguments).flatMap(Int.init)
         // The sentence predictions show only after typing, so each field
-        // starts empty and the sample text comes after one settle.
+        // starts empty and the sample text comes after one settle. The model
+        // gets a request only at the end of a word, so a sample that ends
+        // inside a word comes after the text up to its last space.
         if arguments.contains("--talk") {
             controller.mode = .talk
             await session.settle()
@@ -164,11 +175,14 @@ enum Snapshot {
             session.writeKeyChanged(true, panel: .paper, front: nil)
             let line = typed ?? "Send the release notes before the we"
             await session.settle()
-            session.writeCaretMoved(EditorCaret(text: line, caret: (line as NSString).length, length: 0))
+            for sample in [Self.wordEnd(of: line), line] {
+                session.writeCaretMoved(EditorCaret(text: sample, caret: (sample as NSString).length, length: 0))
+                await session.settle()
+            }
         } else {
             session.appActivated(FrontApp(pid: 0, name: "Messages", bundleID: "com.apple.MobileSMS"))
             let text = typed ?? "Are we still on for t"
-            for sample in ["", text] {
+            for sample in ["", Self.wordEnd(of: text), text] {
                 session.focusChanged(
                     to: FocusedField(
                         appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false,
