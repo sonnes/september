@@ -9,6 +9,7 @@
 
 ### Keys
 
+- Typing aids, as on the Apple Accessibility Keyboard: a capital at the start of a sentence, a space after punctuation that goes away before the next mark, and smart quotes. Each has a switch in Settings, Typing.
 - Sticky repeat: when it is on in Settings, Typing, a tap on Delete, an arrow, or another key that repeats keeps it repeating. The next tap stops it.
 - The keys reach the app as from the Apple Accessibility Keyboard: an arrow and a navigation key have the Fn flag, a held key sends repeats, and an emoji goes out in one piece.
 

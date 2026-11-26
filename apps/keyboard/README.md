@@ -398,6 +398,14 @@ and each press reads them again:
   key acts only after the user holds it for the acceptance delay. If the user
   lets go before the delay, nothing happens. The keyboard reads `slowKey` and
   `slowKeyDelay` from `com.apple.universalaccess`.
+- Typing aids: in Type mode, `TypingAids` does what the Apple Accessibility
+  Keyboard does. Shift latches in an empty field and after the end of a
+  sentence, and then changes only letters. A space follows a period, a comma,
+  and the other marks, except in a number, an email address, or a URL. If
+  the next key is a mark, a closing bracket, or a digit, that space goes. A
+  picked word ends with such a space too. Straight quotes become smart
+  quotes. Each aid has a switch in Settings, Typing, and each is on by
+  default. A password field and private text get no aid.
 - Sticky repeat: if Sticky repeat is on (Settings, Typing), a tap on a key
   that repeats starts the repeat, and the repeat continues after the button
   goes up. The next tap on the same key stops the repeat. A tap on another

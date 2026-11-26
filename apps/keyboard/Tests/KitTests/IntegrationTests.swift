@@ -625,6 +625,20 @@ private func sessionTests() async {
         expect(parts.sink.posted.isEmpty, "Talk mode sends no key")
     }
 
+    await asyncTest("a comma after a picked word replaces the space of the word") {
+        let parts = try makeSession()
+        parts.controller.typingAids = TypingAids()
+        parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        parts.controller.focusChanged(to: field("I would like a cup ", caret: 19))
+        parts.sink.reset()
+        parts.controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "key-," }!)
+        let deletes = parts.sink.posted.filter { $0.virtualKey == VirtualKey.delete.rawValue && $0.isDown }
+        expectEqual(deletes.count, 1)
+        expectEqual(parts.sink.typed, [",", " "])
+    }
+
     await asyncTest("Return on the keys records the picked word") {
         let parts = try makeSession()
         parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
@@ -1101,6 +1115,22 @@ private func sessionTests() async {
         assembly.settings.returnSpeaksInTalk = false
         expectEqual(controller.style, .mono)
         expect(!controller.talk.returnSpeaks)
+    }
+
+    await asyncTest("the assembly keeps the typing aids in step with the settings") {
+        let defaults = freshDefaults()
+        let assembly = try KeyboardAssembly(
+            sink: RecordingSink(), database: try KeyboardDatabase(path: ":memory:"), pasteboard: MemoryPasteboard(),
+            reader: FakeFrontAppReader(),
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: FakeEngine(), elevenLabs: FakeEngine()),
+            write: FakeWrite(), predictions: PredictionEngine(predictor: FakePredictor(), defaults: defaults),
+            defaults: defaults, privateTexts: MemoryPrivateTexts())
+        let controller = assembly.session.controller
+        expectEqual(controller.typingAids, TypingAids())
+        assembly.settings.autoShift = false
+        assembly.settings.autoSpace = false
+        assembly.settings.smartQuotes = false
+        expectEqual(controller.typingAids, .off)
     }
 
     await asyncTest("Mine ranks its buttons again only when an app comes to the front") {

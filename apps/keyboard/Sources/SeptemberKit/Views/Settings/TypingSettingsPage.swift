@@ -11,6 +11,17 @@ public struct TypingSettingsPage: View {
     public var body: some View {
         Form {
             Section {
+                Toggle("Capital at the start of a sentence", isOn: $settings.autoShift)
+                Toggle("Space after punctuation", isOn: $settings.autoSpace)
+                Toggle("Smart quotes", isOn: $settings.smartQuotes)
+            } footer: {
+                Text(
+                    "Shift turns on in an empty field and after the end of a sentence. A space follows a period, a comma, and other marks, and goes away if the next key is a mark. Quotes curl to open and close. A password field gets none of these."
+                )
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Section {
                 Toggle("Sticky repeat", isOn: $settings.stickyRepeat)
             } footer: {
                 Text(

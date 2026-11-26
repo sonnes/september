@@ -88,7 +88,54 @@ public final class KeyboardController: ObservableObject {
     public func press(_ key: KeyDefinition) {
         accentChoices = []
         lastPress = (key.id, modifiers)
+        autoSpaceBefore = autoSpacePending
+        autoSpacePending = false
         apply(key, modifiers: &modifiers)
+        autoSpaceBefore = false
+        if let before = beforeAfterPress {
+            beforeAfterPress = nil
+            updateAutoShift(before: before)
+        }
+    }
+
+    /// The text before the caret after the typed text of a press, before the
+    /// field reports it.
+    private var beforeAfterPress: String?
+
+    /// The typing aids of the Apple Accessibility Keyboard. They act in Type
+    /// mode, and never in a password field or private text.
+    public var typingAids = TypingAids() {
+        didSet { updateAutoShift(before: aidedBefore) }
+    }
+    /// True when the last character in the field is a space that the
+    /// keyboard added, after a mark or a picked word.
+    private var autoSpacePending = false
+    /// `autoSpacePending` at the start of the current press.
+    private var autoSpaceBefore = false
+
+    /// The session typed a picked word and its space. Punctuation next
+    /// replaces that space.
+    public func wordInserted() {
+        autoSpacePending = true
+    }
+
+    /// The text before the caret, or `nil` when the aids must not act.
+    private var aidedBefore: String? {
+        guard mode == .type else { return nil }
+        switch input {
+        case .mirrored(let text, let caret, let selectionLength):
+            return InputMirror.split(text, caret: caret, selectionLength: selectionLength).before
+        case .local(let text):
+            return text
+        case .secure:
+            return nil
+        }
+    }
+
+    private func updateAutoShift(before: String?) {
+        let starts = typingAids.autoShift && before.map(typingAids.startsSentence(before:)) == true
+        guard starts != modifiers.autoShifted || starts else { return }
+        modifiers.setAutoShift(starts)
     }
 
     /// Types `key` again while the user holds it, with the modifiers of its
@@ -327,6 +374,7 @@ public final class KeyboardController: ObservableObject {
 
     private func refreshInput() {
         input = isFieldPrivate ? .secure : focusedField?.display ?? .local(text: echo)
+        updateAutoShift(before: aidedBefore)
     }
 
     // MARK: - Turning presses into keystrokes
@@ -336,13 +384,27 @@ public final class KeyboardController: ObservableObject {
 
         if chord.isEmpty {
             let text: String
-            if modifiers.active.contains(.shift), let secondary {
+            if modifiers.active.contains(.shift), !modifiers.autoShifted, let secondary {
                 text = secondary
+            } else if modifiers.autoShifted, secondary != nil {
+                text = base
             } else {
                 text = modifiers.apply(to: base)
             }
-            send(text: text)
-            append(text)
+            guard let before = aidedBefore else {
+                send(text: text)
+                append(text)
+                modifiers.consume()
+                return
+            }
+            let plan = typingAids.plan(typing: text, before: before, autoSpaceBefore: autoSpaceBefore)
+            deleteBackward(plan.deleteBefore)
+            for character in plan.text { send(text: String(character)) }
+            append(plan.text)
+            autoSpacePending = plan.addsSpace
+            modifiers.consume()
+            beforeAfterPress = String(before.dropLast(plan.deleteBefore)) + plan.text
+            return
         } else {
             // A chord (⌘C): send the base key with every active modifier, the
             // way a hardware keyboard would.

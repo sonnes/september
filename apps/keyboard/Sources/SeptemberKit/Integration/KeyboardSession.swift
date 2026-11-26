@@ -173,6 +173,7 @@ public final class KeyboardSession: ObservableObject {
         case .talk: controller.talk.deleteLast(completion.deleteCount)
         }
         type(completion.textToType)
+        if controller.mode == .type { controller.wordInserted() }
     }
 
     /// A press on a shortcut suggestion. It presses the chord in the app and

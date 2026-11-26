@@ -26,6 +26,8 @@ func makeController(
     let controller = KeyboardController(
         sink: sink, panels: try PanelStore.bundled(), accents: try AccentTable.bundled("en"), keyCodeMap: stubMap,
         privateTexts: privateTexts, talk: TalkSession(said: SaidList(database: memoryDatabase())))
+    // The typing aids add keys. Their own suite turns them on.
+    controller.typingAids = .off
     return (controller, sink)
 }
 
