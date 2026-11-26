@@ -28,25 +28,7 @@ public struct ModifierState: Sendable, Equatable {
 
     public var isCapsLockOn: Bool { locked.contains(.capsLock) }
 
-    /// True while Shift is latched by auto Shift, not by the user. Then
-    /// Shift changes only letters, as on the Apple Accessibility Keyboard.
-    public private(set) var autoShifted = false
-
-    /// Latches Shift for the start of a sentence, or removes a Shift that
-    /// auto Shift latched. A Shift of the user stays.
-    public mutating func setAutoShift(_ on: Bool) {
-        if on {
-            guard !active.contains(.shift) else { return }
-            latched.insert(.shift)
-            autoShifted = true
-        } else if autoShifted {
-            latched.remove(.shift)
-            autoShifted = false
-        }
-    }
-
     public mutating func tap(_ modifier: Modifiers) {
-        if modifier == .shift { autoShifted = false }
         if modifier == .capsLock {
             if locked.contains(.capsLock) {
                 locked.remove(.capsLock)
@@ -69,7 +51,6 @@ public struct ModifierState: Sendable, Equatable {
     /// Called after a non-modifier key: latched modifiers expire, locked stay.
     public mutating func consume() {
         latched = []
-        autoShifted = false
     }
 
     /// Case of a typed character under the current shift / caps lock state.

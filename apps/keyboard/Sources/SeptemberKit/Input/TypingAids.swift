@@ -2,13 +2,14 @@ import Foundation
 
 /// The typing aids of the Apple Accessibility Keyboard: a space after a
 /// mark, the removal of that space before the next mark, smart quotes, and
-/// Shift at the start of a sentence (`ACAPAssistiveTypingController`).
+/// a capital at the start of a sentence (`ACAPAssistiveTypingController`).
+/// The capital is the letter itself. Shift stays off.
 ///
 /// The rules are pure. The keyboard gives the text before the caret and the
 /// typed text, and gets a plan back.
 public struct TypingAids: Equatable, Sendable {
-    /// Shift latches at the start of a sentence.
-    public var autoShift = true
+    /// A letter at the start of a sentence becomes a capital.
+    public var autoCapital = true
     /// A space follows a mark, and goes away before the next mark.
     public var autoSpace = true
     /// Straight quotes become smart quotes.
@@ -19,7 +20,7 @@ public struct TypingAids: Equatable, Sendable {
     /// All aids off.
     public static var off: TypingAids {
         var aids = TypingAids()
-        aids.autoShift = false
+        aids.autoCapital = false
         aids.autoSpace = false
         aids.smartQuotes = false
         return aids
@@ -33,11 +34,15 @@ public struct TypingAids: Equatable, Sendable {
         public var text: String
         /// True when `text` ends with a space that the keyboard added.
         public var addsSpace: Bool
+        /// True when `text` is a capital that the aid made. The keyboard
+        /// types it as text, so no Shift event goes out.
+        public var isCapital: Bool
 
-        public init(deleteBefore: Int, text: String, addsSpace: Bool) {
+        public init(deleteBefore: Int, text: String, addsSpace: Bool, isCapital: Bool = false) {
             self.deleteBefore = deleteBefore
             self.text = text
             self.addsSpace = addsSpace
+            self.isCapital = isCapital
         }
     }
 
@@ -60,6 +65,13 @@ public struct TypingAids: Equatable, Sendable {
             before.removeLast()
         }
         var text = typed
+        var isCapital = false
+        if autoCapital, typed.count == 1, let letter = typed.first, letter.isLetter, letter.isLowercase,
+            startsSentence(before: before)
+        {
+            text = typed.uppercased()
+            isCapital = true
+        }
         if smartQuotes, typed == "\"" || typed == "'" {
             text = quote(typed == "\"", opens: opensQuote(after: before.last))
         }
@@ -70,7 +82,7 @@ public struct TypingAids: Equatable, Sendable {
             text += " "
             addsSpace = true
         }
-        return Plan(deleteBefore: deleteBefore, text: text, addsSpace: addsSpace)
+        return Plan(deleteBefore: deleteBefore, text: text, addsSpace: addsSpace, isCapital: isCapital)
     }
 
     /// True when the next letter starts a sentence: in an empty field, after a

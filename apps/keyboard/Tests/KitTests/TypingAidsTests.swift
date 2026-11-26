@@ -102,29 +102,38 @@ func typingAidsTests() {
         expectEqual(sink.typed, [",", " "])
     }
 
-    test("Shift latches in an empty field and after the end of a sentence, and goes when the text moves on") {
-        let (controller, _) = try makeAidedController()
-        controller.focusChanged(to: mirrored(""))
-        expect(controller.modifiers.active.contains(.shift), "empty field")
-        controller.focusChanged(to: mirrored("H"))
-        expect(!controller.modifiers.active.contains(.shift), "after a letter")
-        controller.focusChanged(to: mirrored("Hi. "))
-        expect(controller.modifiers.active.contains(.shift), "after the end of a sentence")
+    test("a letter at the start of a sentence becomes a capital, and other text stays as it is") {
+        expectEqual(aids.plan(typing: "h", before: "", autoSpaceBefore: false).text, "H")
+        expectEqual(aids.plan(typing: "o", before: "See you soon. ", autoSpaceBefore: false).text, "O")
+        expectEqual(aids.plan(typing: "o", before: "See you ", autoSpaceBefore: false).text, "o")
+        expectEqual(aids.plan(typing: "1", before: "", autoSpaceBefore: false).text, "1")
+        expectEqual(aids.plan(typing: "\u{00E9}", before: "", autoSpaceBefore: false).text, "\u{00C9}")
     }
 
-    test("a Shift that the user latched stays when the text moves on") {
-        let (controller, _) = try makeAidedController()
-        controller.focusChanged(to: mirrored("Hi"))
-        controller.press(key("shift-left"))
-        controller.focusChanged(to: mirrored("Hi "))
-        expect(controller.modifiers.active.contains(.shift))
-    }
-
-    test("with auto Shift off, Shift does not latch") {
-        let (controller, _) = try makeAidedController()
-        controller.typingAids.autoShift = false
-        controller.focusChanged(to: mirrored(""))
+    test("a capital at the start of a sentence goes out as the letter itself, and Shift stays off") {
+        let (controller, sink) = try makeAidedController()
+        controller.focusChanged(to: mirrored("See you soon. "))
+        expect(!controller.modifiers.active.contains(.shift), "no latch")
+        controller.press(key("key-o"))
+        expectEqual(sink.typed, ["O"])
+        expect(!sink.posted.contains { $0.virtualKey == 56 }, "no Shift key event")
         expect(!controller.modifiers.active.contains(.shift))
+    }
+
+    test("a mark at the start of a sentence stays the mark, not its shifted glyph") {
+        let (controller, sink) = try makeAidedController()
+        controller.focusChanged(to: mirrored(""))
+        controller.press(key("key-,"))
+        expectEqual(sink.typed.first, ",")
+    }
+
+    test("with the capital aid off, a letter at the start of a sentence stays small") {
+        let (controller, sink) = try makeAidedController()
+        controller.typingAids.autoCapital = false
+        controller.focusChanged(to: mirrored(""))
+        controller.press(key("key-a"))
+        expectEqual(sink.downs.map(\.key), [0], "the key of a")
+        expect(sink.typed.isEmpty)
     }
 
     test("a password field gets no typing aid") {
@@ -133,8 +142,9 @@ func typingAidsTests() {
             to: FocusedField(
                 appName: "Safari", role: "AXTextField", subrole: "AXSecureTextField", isEditable: true,
                 isSecure: true, text: nil, selection: NSRange(location: 0, length: 0)))
-        expect(!controller.modifiers.active.contains(.shift))
+        controller.press(key("key-a"))
         controller.press(key("key-."))
         expect(!sink.typed.contains(" "), "no space")
+        expect(!sink.typed.contains("A"), "no capital")
     }
 }
