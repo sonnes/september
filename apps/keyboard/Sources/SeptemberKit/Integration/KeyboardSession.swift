@@ -165,9 +165,26 @@ public final class KeyboardSession: ObservableObject {
 
     /// A press on a word completion. The engine keeps the word, so that macOS
     /// learns from it when the user submits the text.
+    /// Changes the text of the field through the input method, when it is
+    /// active in the app in front.
+    public var inserter: TextInserting?
+
+    /// A correction or an emoji first deletes the typed word. With an input
+    /// client, the word goes in with one edit, and no key goes out.
     public func pickWord(_ completion: WordCompletion) {
         predictions.wordPicked(completion)
+        if controller.mode == .type,
+            inserter?.replace(completion.replacedText, beforeCaretWith: completion.replacementText) == true
+        {
+            controller.wordInserted()
+            return
+        }
+        switch controller.mode {
+        case .type: controller.deleteBackward(completion.deleteCount)
+        case .talk: controller.talk.deleteLast(completion.deleteCount)
+        }
         type(completion.textToType)
+        if controller.mode == .type { controller.wordInserted() }
     }
 
     /// A press on a shortcut suggestion. It presses the chord in the app and

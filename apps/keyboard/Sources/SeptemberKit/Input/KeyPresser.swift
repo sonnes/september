@@ -56,6 +56,11 @@ public struct MainQueueScheduler: DelayScheduler {
 ///
 /// One press is active at a time. A new press ends the press before it.
 /// `AXPress` does not come here: an assistive press acts at once.
+///
+/// With sticky repeat on, a tap on a key that repeats starts the repeat, and
+/// the repeat goes on after the button goes up. The next tap stops it. A tap
+/// on the same key only stops it. A tap on another control stops it and
+/// acts. The Apple Accessibility Keyboard calls this sticky key repeat.
 @MainActor
 public final class KeyPresser {
     private let timing: () -> KeyTiming
@@ -63,20 +68,30 @@ public final class KeyPresser {
     private var active: Int?
     private var lastID = 0
     private var pending: (any ScheduledWork)?
+    private let stickyRepeat: () -> Bool
+    /// The key of the repeat that goes on after its button went up.
+    private var stickyKey: String??
 
     /// - Parameter timing: reads the settings. Each press reads them again,
     ///   so a change in System Settings applies to the next press.
     public init(
         timing: @escaping () -> KeyTiming = { KeyTiming.current() },
-        scheduler: any DelayScheduler = MainQueueScheduler()
+        scheduler: any DelayScheduler = MainQueueScheduler(),
+        stickyRepeat: @escaping () -> Bool = { false }
     ) {
         self.timing = timing
         self.scheduler = scheduler
+        self.stickyRepeat = stickyRepeat
     }
+
+    /// True while a sticky repeat goes on.
+    public var isStickyRepeating: Bool { stickyKey != nil }
 
     /// The button went down on a control.
     ///
     /// - Parameters:
+    ///   - key: the control, so that a second tap on it stops its sticky
+    ///     repeat. `nil` is a control with no identity.
     ///   - act: the first action of the press.
     ///   - again: each repeat.
     ///   - choices: shows the accents of a held letter.
@@ -84,15 +99,19 @@ public final class KeyPresser {
     @discardableResult
     public func down(
         _ hold: HoldBehavior,
+        key: String? = nil,
         act: @escaping @MainActor () -> Void,
         again: @escaping @MainActor () -> Void,
         choices: @escaping @MainActor ([String]) -> Void
     ) -> Int {
+        let stopped = stickyKey
         end()
         lastID += 1
         let id = lastID
+        if let stopped, stopped == key, key != nil { return id }
         active = id
         let timing = timing()
+        if case .repeats = hold, stickyRepeat() { stickyKey = .some(key) }
         let accept: @MainActor () -> Void = { [weak self] in
             act()
             self?.hold(hold, timing: timing, again: again, choices: choices)
@@ -107,7 +126,7 @@ public final class KeyPresser {
 
     /// The button of `press` went up. An old press does not end a newer one.
     public func up(_ press: Int) {
-        guard press == active else { return }
+        guard press == active, stickyKey == nil else { return }
         end()
     }
 
@@ -115,6 +134,7 @@ public final class KeyPresser {
         pending?.cancel()
         pending = nil
         active = nil
+        stickyKey = nil
     }
 
     private func hold(

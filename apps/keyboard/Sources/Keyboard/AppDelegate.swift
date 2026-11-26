@@ -53,7 +53,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         speech.start()
         history = SentenceHistory(database: database)
         debugModel = DebugPanelModel(records: RecordBrowser(database: database))
-        let predictions = PredictionEngine(history: history)
+        let predictions = PredictionEngine(
+            completer: CandidateCompleter(language: { SystemKeyboardLayout.currentLanguage() }),
+            history: history)
         write = WriteController(host: self)
         do {
             assembly = try KeyboardAssembly(
@@ -69,7 +71,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settingsWindow = SettingsWindowController(pages: makeSettingsPages())
         content = WindowContent(
             session: session, permission: permission, phrases: assembly.phrases,
-            presser: KeyPresser(timing: { KeyTiming.current() }),
+            presser: KeyPresser(
+                timing: { KeyTiming.current() },
+                stickyRepeat: { [keyboardSettings] in keyboardSettings.stickyRepeat }),
             write: { [weak self] in self?.showWrite() },
             arrange: { [weak self] in self?.arrangePanels() },
             settings: { [weak self] in self?.showSettings() })
@@ -151,6 +155,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             PredictionsSettingsPage(
                 engine: session.predictions, history: history))
         pages[.clipboard] = AnyView(ClipboardSettingsPage(history: session.clipboard))
+        if InputMethod.isAppBundle {
+            pages[.typing] = AnyView(
+                TypingSettingsPage(
+                    settings: keyboardSettings,
+                    inputMethod: .init(isEnabled: { InputMethod.isEnabled }, askToEnable: InputMethod.askToEnable)))
+        }
         if let store = session.userPanel {
             pages[.myPanel] = AnyView(MyPanelSettingsPage(store: store, usage: session.userPanelUsage))
         } else if let error = session.userPanelError {
@@ -197,6 +207,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.focusWatcher.refreshSoon()
         }
         focusWatcher.start()
+        // The input method reads and changes the field in one edit, where
+        // the app in front gives an input client.
+        let inserter = InputClientInserter(client: { InputClients.shared.frontClient })
+        inserter.afterInsert = { [weak self] _ in self?.focusWatcher.refreshSoon() }
+        session.inserter = inserter
+        InputMethod.selectSelf()
     }
 
     // MARK: - Write

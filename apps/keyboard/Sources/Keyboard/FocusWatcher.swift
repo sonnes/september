@@ -208,6 +208,16 @@ final class FocusWatcher {
         var settable: DarwinBoolean = false
         AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &settable)
 
+        // The input method gives the text first, as the Apple Accessibility
+        // Keyboard reads it. Accessibility is the second source.
+        let app = NSRunningApplication(processIdentifier: element.pid)
+        if !isSecure, let client = InputClients.shared.client(forBundleID: app?.bundleIdentifier),
+            let snapshot = FieldSnapshotReader.read(client)
+        {
+            return snapshot.focusedField(
+                appName: app?.localizedName, role: element.string(kAXRoleAttribute) ?? "unknown", subrole: subrole)
+        }
+
         let selection = element.range(kAXSelectedTextRangeAttribute)
         let read = isSecure ? (text: nil, selection: selection) : readText(element, selection: selection)
 

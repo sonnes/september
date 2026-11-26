@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Completions for the word at the caret, or the next words between words,
 /// at the top of the keys. The best match comes first, in the accent colour.
+/// A correction has an accent border, and an emoji replaces the typed word.
 /// Empty slots keep the row in place when there are no words.
 public struct WordCompletionRow: View {
     @ObservedObject private var engine: PredictionEngine
@@ -59,9 +60,11 @@ private struct WordButton: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Metrics.Predictions.wordCornerRadius, style: .continuous)
-                    .strokeBorder(Color(Tokens.strokeStandard), lineWidth: Metrics.Predictions.strokeWidth)
+                    .strokeBorder(
+                        Color(completion.kind == .correction ? Tokens.accent : Tokens.strokeStandard),
+                        lineWidth: Metrics.Predictions.strokeWidth)
             )
-            .pressable(label: completion.word, trigger: .down(.once), onPressing: { pressed = $0 }) {
+            .pressable(label: completion.spokenLabel, trigger: .down(.once), onPressing: { pressed = $0 }) {
                 onPick(completion)
             }
     }

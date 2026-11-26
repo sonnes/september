@@ -201,6 +201,10 @@ func settingsTalkTests() {
         let settings = KeyboardSettings(defaults: freshDefaults())
         expectEqual(settings.style, .rainbow)
         expectEqual(settings.returnSpeaksInTalk, true)
+        expectEqual(settings.stickyRepeat, false)
+        expectEqual(settings.autoShift, true)
+        expectEqual(settings.autoSpace, true)
+        expectEqual(settings.smartQuotes, true)
     }
 
     test("keyboard settings persist in the defaults") {
@@ -208,8 +212,14 @@ func settingsTalkTests() {
         let first = KeyboardSettings(defaults: defaults)
         first.style = .mono
         first.returnSpeaksInTalk = false
+        first.stickyRepeat = true
+        first.autoShift = false
+        first.autoSpace = false
+        first.smartQuotes = false
         let second = KeyboardSettings(defaults: defaults)
         expectEqual(second.style, .mono)
         expectEqual(second.returnSpeaksInTalk, false)
+        expectEqual(second.stickyRepeat, true)
+        expectEqual([second.autoShift, second.autoSpace, second.smartQuotes], [false, false, false])
     }
 }

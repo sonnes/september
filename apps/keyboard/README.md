@@ -129,10 +129,14 @@ shows only that line. The predictions and Speak still read the whole text.
 The clipboard buttons sit past the left edge of the keys, so the keyboard
 window has a clear space at the left of the keys.
 
-The word row shows the candidates of macOS, the words of the QuickType bar.
-The candidates use the words before the caret. In a word, they complete the
-word. At the start of the text, after a space, or after a mark, they give the
-next word. After a mark with no space, a press types a space before the word.
+The word row shows the candidates of macOS, the words and the emoji of the
+QuickType bar. The keyboard sends the paragraph of the caret and the language
+of the keyboard layout, as the Apple Accessibility Keyboard does. In a word, a
+candidate that starts with the typed letters completes the word. Another word
+is a correction, with an accent border, and an emoji replaces the word. A
+press on a correction or an emoji deletes the typed word first. At the start
+of the text, after a space, or after a mark, the candidates give the next
+word. After a mark with no space, a press types a space before the word.
 
 The keyboard asks for up to 20 words. Each button is as wide as its word, and
 the row shows the words that fit, best first. A word that does not fit is left
@@ -394,6 +398,19 @@ and each press reads them again:
   key acts only after the user holds it for the acceptance delay. If the user
   lets go before the delay, nothing happens. The keyboard reads `slowKey` and
   `slowKeyDelay` from `com.apple.universalaccess`.
+- Typing aids: in Type mode, `TypingAids` does what the Apple Accessibility
+  Keyboard does. Shift latches in an empty field and after the end of a
+  sentence, and then changes only letters. A space follows a period, a comma,
+  and the other marks, except in a number, an email address, or a URL. If
+  the next key is a mark, a closing bracket, or a digit, that space goes. A
+  picked word ends with such a space too. Straight quotes become smart
+  quotes. Each aid has a switch in Settings, Typing, and each is on by
+  default. A password field and private text get no aid.
+- Sticky repeat: if Sticky repeat is on (Settings, Typing), a tap on a key
+  that repeats starts the repeat, and the repeat continues after the button
+  goes up. The next tap on the same key stops the repeat. A tap on another
+  control stops the repeat and does its action. Sticky repeat is off by
+  default.
 - Sticky Keys: one tap on a modifier latches it for the next key, a second tap
   locks it, and a third tap releases it, as Sticky Keys of macOS does. A
   tapped modifier goes down at the OS at once, so a click or a key from the
@@ -621,11 +638,30 @@ field, and the Tree tab shows no value on the focused element.
 To show or hide the panel, use **Debug Panel** in the menu bar item. The
 keyboard centres in the space that is left, so the two windows do not overlap.
 
+## Input method
+
+The app is also a palette input method, as the Apple Accessibility Keyboard
+is. At its first start from `/Applications`, it copies itself to
+`~/Library/Input Methods`, opens the copy, and quits. To allow the input
+method, press **Turn On…** in Settings, Typing, and confirm in System
+Settings. The input method
+reads the focused field and puts a picked word in with one edit. Where an app
+gives no input client, the keyboard uses accessibility and keys. `make run`
+and `make dev` run the bare binary, which is no input method. See
+`docs/concepts/keyboard-input-method.md`.
+
 ## Accessibility permission
 
 Keyboard sends keystrokes with `CGEvent.post`, which macOS only allows to apps
 the user has trusted in **System Settings ▸ Privacy & Security ▸ Accessibility**.
 The app cannot be sandboxed for the same reason.
+
+`CGEventSink` posts each key to the session tap, with the fields that the
+Apple Accessibility Keyboard sets. The source of each event has the user data
+`Keystroke.sourceMarker`. Each key event has the keyboard type of the Mac. An
+arrow, a navigation key, Forward Delete, and an F-key have the Fn flag, as from
+a hardware keyboard. The repeats of a held key have the autorepeat field.
+Text that no key types goes out as one event pair for each character.
 
 macOS grants that trust to a *(bundle id, code signature)* pair. Signing ad-hoc
 mints a new signature on every build, so the permission is revoked each time you

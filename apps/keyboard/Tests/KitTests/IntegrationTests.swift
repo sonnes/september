@@ -604,6 +604,74 @@ private func sessionTests() async {
         expectEqual(parts.session.predictions.words.map(\.word), ["cup"])
     }
 
+    await asyncTest("a picked correction deletes the typed word, then types the new word") {
+        let parts = try makeSession()
+        parts.controller.focusChanged(to: field("I recieve", caret: 9))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        let deletes = parts.sink.posted.filter { $0.virtualKey == VirtualKey.delete.rawValue && $0.isDown }
+        expectEqual(deletes.count, 7)
+        expectEqual(parts.sink.typed, ["receive "])
+    }
+
+    await asyncTest("in Talk mode, a picked correction replaces the typed word in the bar") {
+        let parts = try makeSession()
+        parts.controller.mode = .talk
+        parts.controller.talk.type("I recieve")
+        await parts.session.settle()
+        guard let fix = parts.session.predictions.words.first else { return expect(false, "no word") }
+        parts.session.pickWord(fix)
+        expectEqual(parts.controller.talk.text, "I receive ")
+        expect(parts.sink.posted.isEmpty, "Talk mode sends no key")
+    }
+
+    await asyncTest("with an input client, a picked correction replaces the word in one edit and sends no key") {
+        let parts = try makeSession()
+        let client = MemoryInputClient("I recieve")
+        parts.session.inserter = InputClientInserter(client: { client })
+        parts.controller.focusChanged(to: field("I recieve", caret: 9))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        expectEqual(client.text, "I receive ")
+        expect(parts.sink.posted.isEmpty, "no key")
+        expect(parts.sink.typed.isEmpty, "no typed text")
+    }
+
+    await asyncTest("with an input client, a picked completion puts in the whole word") {
+        let parts = try makeSession()
+        let client = MemoryInputClient("I would like a cu")
+        parts.session.inserter = InputClientInserter(client: { client })
+        parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        expectEqual(client.text, "I would like a cup ")
+    }
+
+    await asyncTest("when the input client does not hold the typed word, the pick falls back to keys") {
+        let parts = try makeSession()
+        let client = MemoryInputClient("something else")
+        parts.session.inserter = InputClientInserter(client: { client })
+        parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        expectEqual(client.text, "something else")
+        expectEqual(parts.sink.typed, ["p "])
+    }
+
+    await asyncTest("a comma after a picked word replaces the space of the word") {
+        let parts = try makeSession()
+        parts.controller.typingAids = TypingAids()
+        parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        parts.controller.focusChanged(to: field("I would like a cup ", caret: 19))
+        parts.sink.reset()
+        parts.controller.press(KeyboardLayout.rows.flatMap(\.keys).first { $0.id == "key-," }!)
+        let deletes = parts.sink.posted.filter { $0.virtualKey == VirtualKey.delete.rawValue && $0.isDown }
+        expectEqual(deletes.count, 1)
+        expectEqual(parts.sink.typed, [",", " "])
+    }
+
     await asyncTest("Return on the keys records the picked word") {
         let parts = try makeSession()
         parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
@@ -1080,6 +1148,22 @@ private func sessionTests() async {
         assembly.settings.returnSpeaksInTalk = false
         expectEqual(controller.style, .mono)
         expect(!controller.talk.returnSpeaks)
+    }
+
+    await asyncTest("the assembly keeps the typing aids in step with the settings") {
+        let defaults = freshDefaults()
+        let assembly = try KeyboardAssembly(
+            sink: RecordingSink(), database: try KeyboardDatabase(path: ":memory:"), pasteboard: MemoryPasteboard(),
+            reader: FakeFrontAppReader(),
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: FakeEngine(), elevenLabs: FakeEngine()),
+            write: FakeWrite(), predictions: PredictionEngine(predictor: FakePredictor(), defaults: defaults),
+            defaults: defaults, privateTexts: MemoryPrivateTexts())
+        let controller = assembly.session.controller
+        expectEqual(controller.typingAids, TypingAids())
+        assembly.settings.autoShift = false
+        assembly.settings.autoSpace = false
+        assembly.settings.smartQuotes = false
+        expectEqual(controller.typingAids, .off)
     }
 
     await asyncTest("Mine ranks its buttons again only when an app comes to the front") {

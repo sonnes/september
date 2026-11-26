@@ -88,7 +88,54 @@ public final class KeyboardController: ObservableObject {
     public func press(_ key: KeyDefinition) {
         accentChoices = []
         lastPress = (key.id, modifiers)
+        autoSpaceBefore = autoSpacePending
+        autoSpacePending = false
         apply(key, modifiers: &modifiers)
+        autoSpaceBefore = false
+        if let before = beforeAfterPress {
+            beforeAfterPress = nil
+            updateAutoShift(before: before)
+        }
+    }
+
+    /// The text before the caret after the typed text of a press, before the
+    /// field reports it.
+    private var beforeAfterPress: String?
+
+    /// The typing aids of the Apple Accessibility Keyboard. They act in Type
+    /// mode, and never in a password field or private text.
+    public var typingAids = TypingAids() {
+        didSet { updateAutoShift(before: aidedBefore) }
+    }
+    /// True when the last character in the field is a space that the
+    /// keyboard added, after a mark or a picked word.
+    private var autoSpacePending = false
+    /// `autoSpacePending` at the start of the current press.
+    private var autoSpaceBefore = false
+
+    /// The session typed a picked word and its space. Punctuation next
+    /// replaces that space.
+    public func wordInserted() {
+        autoSpacePending = true
+    }
+
+    /// The text before the caret, or `nil` when the aids must not act.
+    private var aidedBefore: String? {
+        guard mode == .type else { return nil }
+        switch input {
+        case .mirrored(let text, let caret, let selectionLength):
+            return InputMirror.split(text, caret: caret, selectionLength: selectionLength).before
+        case .local(let text):
+            return text
+        case .secure:
+            return nil
+        }
+    }
+
+    private func updateAutoShift(before: String?) {
+        let starts = typingAids.autoShift && before.map(typingAids.startsSentence(before:)) == true
+        guard starts != modifiers.autoShifted || starts else { return }
+        modifiers.setAutoShift(starts)
     }
 
     /// Types `key` again while the user holds it, with the modifiers of its
@@ -96,8 +143,13 @@ public final class KeyboardController: ObservableObject {
     public func repeatPress(_ key: KeyDefinition) {
         guard let lastPress, lastPress.id == key.id else { return press(key) }
         var held = lastPress.modifiers
+        isRepeating = true
+        defer { isRepeating = false }
         apply(key, modifiers: &held)
     }
+
+    /// True while `repeatPress` applies a key, so its events are repeats.
+    private var isRepeating = false
 
     /// What `key` does while the user holds it. Call this before `press`,
     /// because a press uses up the latched modifiers.
@@ -179,7 +231,7 @@ public final class KeyboardController: ObservableObject {
         case .media(let media):
             sink.post(media: media)
         case .system(let system):
-            sink.post(
+            postKey(
                 Keystroke.events(
                     virtualKey: system.virtualKey, modifiers: system.modifiers, held: heldAtOS))
         case .scroll(let direction):
@@ -322,6 +374,7 @@ public final class KeyboardController: ObservableObject {
 
     private func refreshInput() {
         input = isFieldPrivate ? .secure : focusedField?.display ?? .local(text: echo)
+        updateAutoShift(before: aidedBefore)
     }
 
     // MARK: - Turning presses into keystrokes
@@ -331,13 +384,27 @@ public final class KeyboardController: ObservableObject {
 
         if chord.isEmpty {
             let text: String
-            if modifiers.active.contains(.shift), let secondary {
+            if modifiers.active.contains(.shift), !modifiers.autoShifted, let secondary {
                 text = secondary
+            } else if modifiers.autoShifted, secondary != nil {
+                text = base
             } else {
                 text = modifiers.apply(to: base)
             }
-            send(text: text)
-            append(text)
+            guard let before = aidedBefore else {
+                send(text: text)
+                append(text)
+                modifiers.consume()
+                return
+            }
+            let plan = typingAids.plan(typing: text, before: before, autoSpaceBefore: autoSpaceBefore)
+            deleteBackward(plan.deleteBefore)
+            for character in plan.text { send(text: String(character)) }
+            append(plan.text)
+            autoSpacePending = plan.addsSpace
+            modifiers.consume()
+            beforeAfterPress = String(before.dropLast(plan.deleteBefore)) + plan.text
+            return
         } else {
             // A chord (⌘C): send the base key with every active modifier, the
             // way a hardware keyboard would.
@@ -348,9 +415,27 @@ public final class KeyboardController: ObservableObject {
         modifiers.consume()
     }
 
+    /// Presses Delete `count` times with no modifier, such as before a
+    /// correction replaces the typed word.
+    public func deleteBackward(_ count: Int) {
+        for _ in 0..<max(0, count) { post(.delete, modifiers: []) }
+    }
+
+    /// Posts the events of one key. During a repeat, the events of the key
+    /// itself are repeats. The modifier keys around it are not.
+    private func postKey(_ events: [Keystroke]) {
+        guard isRepeating, let key = events.first(where: { event in !Modifiers.held.contains { $0.virtualKey == event.virtualKey } })
+        else { return sink.post(events) }
+        sink.post(events.map { event in
+            var event = event
+            event.isRepeat = event.virtualKey == key.virtualKey
+            return event
+        })
+    }
+
     private func send(text: String) {
         if let resolved = keyCodeMap.keystroke(for: text) {
-            sink.post(
+            postKey(
                 Keystroke.events(
                     virtualKey: resolved.virtualKey, modifiers: resolved.modifiers,
                     held: heldAtOS)
@@ -363,7 +448,7 @@ public final class KeyboardController: ObservableObject {
     /// Posts a named key. Without a chord, the echo follows what the key
     /// does to the text.
     private func post(_ virtual: VirtualKey, modifiers: Modifiers) {
-        sink.post(
+        postKey(
             Keystroke.events(virtualKey: virtual.rawValue, modifiers: modifiers, held: heldAtOS))
         guard !isMirroring, !isFieldPrivate, modifiers.subtracting(.shift).isEmpty else { return }
         switch virtual {
@@ -382,7 +467,7 @@ public final class KeyboardController: ObservableObject {
             sink.beep()
             return false
         }
-        sink.post(
+        postKey(
             Keystroke.events(
                 virtualKey: resolved.virtualKey,
                 modifiers: modifiers.union(resolved.modifiers),

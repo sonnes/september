@@ -218,12 +218,56 @@ private func wordTests() {
 
     test("the candidates become completions of the partial word, without repeats") {
         let words = CandidateCompleter.completions(
-            from: ["cu ", "cup ", "Cup ", "cut ", "🙂 ", "cat ", "cute ", "custom ", "current ",
-                "customer ", "cuddle ", "curious ", "curry ", "culture "],
+            from: ["cu ", "cup ", "Cup ", "cut ", "cute ", "custom ", "current ",
+                "customer ", "cuddle ", "curious ", "curry ", "culture "].map { WordCandidate($0) },
             for: PredictionContext(text: "Cu", caret: 2, mode: .type, said: []))
         expectEqual(
             words.map(\.word),
             ["Cup", "Cut", "Cute", "Custom", "Current", "Customer", "Cuddle", "Curious", "Curry", "Culture"])
+        expect(words.allSatisfy { $0.kind == .completion })
+    }
+
+    test("a candidate that does not start with the typed letters is a correction of the whole word") {
+        let words = CandidateCompleter.completions(
+            from: [WordCandidate("recieve"), WordCandidate("receive"), WordCandidate("relieve")],
+            for: PredictionContext(text: "I recieve", caret: 9, mode: .type, said: []))
+        expectEqual(words.map(\.word), ["receive", "relieve"])
+        expectEqual(words.first?.kind, .correction)
+        expectEqual(words.first?.deleteCount, 7, "the typed word goes")
+        expectEqual(words.first?.textToType, "receive ")
+    }
+
+    test("a correction says that it corrects the word, and a completion says only the word") {
+        expectEqual(WordCompletion(replacing: "recieve", with: "receive", isEmoji: false)?.spokenLabel, "Correct to receive")
+        expectEqual(WordCompletion(word: "cup", partial: "cu")?.spokenLabel, "cup")
+        expectEqual(WordCompletion(replacing: "pizza", with: "🍕", isEmoji: true)?.spokenLabel, "🍕")
+    }
+
+    test("an emoji candidate replaces the typed word with the emoji") {
+        let words = CandidateCompleter.completions(
+            from: [WordCandidate("pizza"), WordCandidate("pizzas"), WordCandidate("🍕", isEmoji: true)],
+            for: PredictionContext(text: "I love pizza", caret: 12, mode: .type, said: []))
+        expectEqual(words.map(\.word), ["pizzas", "🍕"])
+        let emoji = words.last
+        expectEqual(emoji?.kind, .emoji)
+        expectEqual(emoji?.deleteCount, 5)
+        expectEqual(emoji?.textToType, "🍕 ")
+    }
+
+    test("a completion keeps its letters, and a replacing word puts the whole word in the context") {
+        let context = PredictionContext(text: "I recieve", caret: 9, mode: .type, said: [])
+        let fix = CandidateCompleter.completions(from: [WordCandidate("receive")], for: context)[0]
+        expectEqual(context.completing(with: fix).text, "I receive ")
+        expectEqual(fix.deleteCount, 7)
+        expectEqual(WordCompletion(word: "cup", partial: "cu")?.deleteCount, 0)
+    }
+
+    test("the request sends the paragraph of the caret, with the caret inside it") {
+        let context = PredictionContext(
+            text: "Dear Sam,\nI love piz now\nBye", caret: 20, mode: .type, said: [])
+        let request = CandidateRequest(context: context)
+        expectEqual(request.text, "I love piz now")
+        expectEqual(request.caret, NSRange(location: 10, length: 0))
     }
 
     test("the word row gives each word its own width and leaves the rest empty") {
@@ -262,7 +306,7 @@ private func wordTests() {
 
     test("between words, the candidates become next words with the space they ask for") {
         let words = CandidateCompleter.completions(
-            from: [" I ", " I’m ", " 🙋 ", " I ", " we "],
+            from: [" I ", " I’m ", " I ", " we "].map { WordCandidate($0) },
             for: PredictionContext(text: "Hello,", caret: 6, mode: .type, said: []))
         expectEqual(words.map(\.textToType), [" I ", " I’m ", " we "])
     }
@@ -871,6 +915,15 @@ private func candidateTests() async {
         let found = await words("th")
         expect(found.count > 8, "\(found.count) words")
         expect(found.count <= CandidateCompleter.limit)
+    }
+
+    await asyncTest("the system candidates give an emoji and a correction, as the QuickType bar does") {
+        let pizza = await completer.completions(
+            for: PredictionContext(text: "I love pizza", caret: 12, mode: .type, said: []))
+        expect(pizza.contains { $0.kind == .emoji }, "no emoji: \(pizza.map(\.word))")
+        let typo = await completer.completions(
+            for: PredictionContext(text: "I recieve", caret: 9, mode: .type, said: []))
+        expect(typo.contains { $0.word == "receive" && $0.kind == .correction }, "\(typo.map(\.word))")
     }
 
     await asyncTest("the system candidates give the next word after a space") {

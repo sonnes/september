@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### Input method
+
+- The keyboard is also an input method, as the Apple Accessibility Keyboard is. It installs itself in ~/Library/Input Methods. To allow it, press Turn On… in Settings, Typing.
+- Where an app supports input methods, a picked word goes in with one edit, and the input bar reads the field through the input method.
+
+### Word row
+
+- The word row shows corrections and emoji, as the QuickType bar does. A correction has an accent border. A press on a correction or an emoji replaces the typed word.
+- The words use the whole paragraph around the caret, and the language of the keyboard layout.
+
+### Keys
+
+- Typing aids, as on the Apple Accessibility Keyboard: a capital at the start of a sentence, a space after punctuation that goes away before the next mark, and smart quotes. Each has a switch in Settings, Typing.
+- Sticky repeat: when it is on in Settings, Typing, a tap on Delete, an arrow, or another key that repeats keeps it repeating. The next tap stops it.
+- The keys reach the app as from the Apple Accessibility Keyboard: an arrow and a navigation key have the Fn flag, a held key sends repeats, and an emoji goes out in one piece.
+
 ## 0.7.0
 
 ### Write

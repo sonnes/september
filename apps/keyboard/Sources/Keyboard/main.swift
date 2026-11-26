@@ -5,6 +5,10 @@ MainActor.assumeIsolated { Snapshot.run(arguments: CommandLine.arguments) }
 // `--ax` prints the focused field (and optionally the tree) and exits.
 MainActor.assumeIsolated { AXDump.run(arguments: CommandLine.arguments) }
 
+// A copy outside ~/Library/Input Methods installs itself there and quits.
+if MainActor.assumeIsolated({ InputMethod.relocateIfNeeded() }) { exit(0) }
+MainActor.assumeIsolated { InputMethod.startServer() }
+
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate
