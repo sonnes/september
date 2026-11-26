@@ -2,6 +2,7 @@ pub mod apfel;
 pub mod audio;
 pub mod error;
 pub mod gaze;
+pub mod note_export;
 pub mod providers;
 pub mod proxy;
 pub mod repository;
@@ -51,6 +52,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             rpc::note_get,
             rpc::note_put,
             rpc::note_delete,
+            rpc::notes_export,
             rpc::phrase_list,
             rpc::phrase_put,
             rpc::phrase_delete,

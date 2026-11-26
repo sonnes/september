@@ -11,6 +11,7 @@ use crate::{
     apfel::{ApfelState, ApfelStatus},
     audio::{self, AudioDevice, VirtualMicrophoneStatus},
     gaze::GazeState,
+    note_export::{self, NoteExport},
     providers::{
         CreatedVoice, ElevenLabsQuota, Provider, ProviderKeys, ProviderStatus, Providers, Voice,
         NO_ELEVEN_LABS_KEY,
@@ -412,6 +413,29 @@ pub(crate) fn note_get(
 pub(crate) fn note_put(state: State<'_, BackendState>, request: Note) -> RpcResult<Note> {
     state.with_repo(|repository| repository.put_note(&request))?;
     Ok(request)
+}
+
+/// Writes each note as a Markdown file into `~/Documents/September`, the
+/// folder of the Write documents of September Keyboard. No file is written
+/// over, and only the text of the notes leaves the database.
+#[tauri::command(async)]
+pub(crate) fn notes_export(
+    app: AppHandle,
+    state: State<'_, BackendState>,
+) -> RpcResult<NoteExport> {
+    let folder = app
+        .path()
+        .document_dir()
+        .map_err(|error| error.to_string())?
+        .join("September");
+    let (spaces, notes) = state
+        .with_repo(|repository| Ok((repository.all_spaces()?, repository.list_notes(None)?)))?;
+    note_export::export_notes(&spaces, &notes, &folder).map_err(|error| {
+        format!(
+            "September could not write the notes to {}: {error}",
+            folder.display()
+        )
+    })
 }
 
 #[tauri::command(async)]

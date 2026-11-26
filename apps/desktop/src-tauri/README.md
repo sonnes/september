@@ -290,6 +290,26 @@ transaction, it deletes the settings of `settingKeys`, writes the settings of
 the backup, and replaces every row. If an ID repeats, a row refers to a space
 that is not in the backup, or a write fails, the current database stays.
 
+## Copy the notes to September Keyboard
+
+The `notes_export` command takes no request. It writes each note of every
+space as a Markdown file into `~/Documents/September`, the folder of the Write
+documents of September Keyboard. It returns `{ count, folder }`.
+
+`src/note_export.rs` holds the rules:
+
+- The file holds the `content` of the note and nothing else.
+- The name is `<space> - <note>.md`. A note without a space is `<note>.md`.
+  A note without a name takes its first six words, or `Untitled`.
+- A slash or a colon in a name becomes a hyphen. A leading dot is removed. A name
+  has 100 characters at most, as in `DocumentLibrary.title` of the keyboard.
+- The export never writes over a file. If a name is taken, the file gets the
+  next free number, such as `Ideas 2.md`.
+- The modification time of the file is the `updated_at` of the note.
+
+`Info.plist` gives `NSDocumentsFolderUsageDescription`, because macOS asks the
+user before an app writes into the Documents folder.
+
 ## Read the user name
 
 The `user_name` command takes no request. It returns the name that the

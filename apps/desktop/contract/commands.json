@@ -469,6 +469,13 @@
     },
     "result": true
   },
+  "notes_export": {
+    "args": null,
+    "result": {
+      "count": 2,
+      "folder": "/Users/ravi/Documents/September"
+    }
+  },
   "phrase_list": {
     "args": {
       "request": {
