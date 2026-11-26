@@ -515,6 +515,11 @@ impl Repository {
         )
     }
 
+    /// The spaces of every user, for the export of the notes.
+    pub fn all_spaces(&self) -> Result<Vec<Space>> {
+        query_rows(&self.connection, "ORDER BY id", [])
+    }
+
     pub fn get_space(&self, id: &str) -> Result<Option<Space>> {
         find_row(&self.connection, id)
     }
@@ -1180,6 +1185,27 @@ mod tests {
         assert!(repository.get_setting("setup").unwrap().is_some());
         repository.put_space(&space("space-1")).unwrap();
         assert_eq!(repository.list_spaces("user-1").unwrap().len(), 1);
+    }
+
+    #[test]
+    fn all_spaces_holds_the_spaces_of_every_user() {
+        let repository = Repository::open_in_memory().unwrap();
+        repository.put_space(&space("space-1")).unwrap();
+        repository
+            .put_space(&Space {
+                user_id: "user-2".to_owned(),
+                ..space("space-2")
+            })
+            .unwrap();
+
+        let ids: Vec<String> = repository
+            .all_spaces()
+            .unwrap()
+            .into_iter()
+            .map(|space| space.id)
+            .collect();
+
+        assert_eq!(ids, ["space-1", "space-2"]);
     }
 
     #[test]

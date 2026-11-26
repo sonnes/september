@@ -74,4 +74,23 @@ The About tab saves on each edit, the same way a note does.
 
 Read aloud uses the same voice settings as Talk. It reads the selected words when there is a selection. Otherwise, it reads the full note. It does not say the box of a checklist line. It does not create a message or change the Talk transcript.
 
+## Copy the notes to September Keyboard
+
+The desktop app can copy each note into the folder of the Write documents of
+September Keyboard, `~/Documents/September`. The key is Copy notes to
+September Keyboard, in Settings > Panel. One press copies every note of every
+space. The notes stay in the desktop app.
+
+Each note becomes one `.md` file with the Markdown of the note. The Write desk
+reads only the top of the folder, so the name of the space goes into the file
+name: `Family - Shopping.md`. A note without a space keeps its own name. The
+copy never writes over a file. A taken name gets a number, such as
+`Ideas 2.md`, so a second press makes a second copy.
+
+The Write desk shows one card for each file. The title of the card is the file
+name, and the date is the last change of the note. When the user saves a
+document in Write and its first heading differs from the file name, Write
+renames the file to that heading. Then the name of the space leaves the file
+name.
+
 Removing a space also removes its scoped notes, messages, Agent messages, and phrases in one repository operation.

@@ -397,6 +397,17 @@ a blob URL.
 `packages/core/rules/present/` owns the chunking, the tones, the font fit,
 and the caption timing. See `docs/concepts/note-present-export.md`.
 
+### Copy the notes to September Keyboard
+
+Settings > Panel has the key Copy notes to September Keyboard. One press
+copies each note as a Markdown file into `~/Documents/September`. September
+Keyboard shows the files of this folder in Write. The notes stay in the
+desktop app.
+
+The status line under the key gives the number of files and the folder. If
+the copy fails, an alert gives the cause. See
+[Space notes](../../docs/concepts/space-notes.md#copy-the-notes-to-september-keyboard).
+
 ### The note of the space
 
 The first row of the notes list is About. It opens the note of the space, which
@@ -874,7 +885,7 @@ section list beside the open section, ported from the web app.
 | Access        | `/settings/access`  | How you choose things, the text size, and the theme     |
 | AI Assistance | `/settings/writing` | Who writes, and what the model knows about you          |
 | Usage         | `/settings/usage`   | Service use, quota, recent calls, and CSV               |
-| Panel         | `/settings/panel`   | Float on top, for the panel                             |
+| Panel         | `/settings/panel`   | Float on top, and Copy notes to September Keyboard      |
 | Data          | `/settings/data`    | A portable backup download and restore                  |
 
 Listening still needs a transcription backend, and Account needs an account.

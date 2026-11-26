@@ -20,6 +20,12 @@ export const panelSetup = (on: boolean) => call("panel_setup", { request: { on }
 /** Whether the panel stays above other apps. Rust keeps the choice. */
 export const panelFloat = () => call("panel_float");
 
+/**
+ * Copies each note as a Markdown file into `~/Documents/September`, where
+ * September Keyboard shows it in Write. Answers the count and the folder.
+ */
+export const exportNotes = () => call("notes_export");
+
 export const setPanelFloat = (on: boolean) => call("panel_set_float", { request: { on } });
 
 /** The screen the user left last, or nothing. A failed read is nothing. */

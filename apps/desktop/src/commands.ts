@@ -70,6 +70,8 @@ export interface Commands {
   note_get: Request<{ id: string }, Note | null>;
   note_put: Request<Note, Note>;
   note_delete: Request<{ id: string }, boolean>;
+  /** Writes each note as a Markdown file into the folder of the Write documents. */
+  notes_export: Command<undefined, { count: number; folder: string }>;
   phrase_list: Request<{ space_id: string | null }, SavedPhrase[]>;
   phrase_put: Request<SavedPhrase, SavedPhrase>;
   phrase_delete: Request<{ id: string }, boolean>;

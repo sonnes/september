@@ -138,6 +138,7 @@ const EXAMPLES: { [N in Name]: Example<N> } = {
   note_get: { args: { request: { id: "n1" } }, result: note },
   note_put: { args: { request: note }, result: note },
   note_delete: { args: { request: { id: "n1" } }, result: true },
+  notes_export: { args: null, result: { count: 2, folder: "/Users/ravi/Documents/September" } },
   phrase_list: { args: { request: { space_id: "s1" } }, result: [phrase] },
   phrase_put: { args: { request: phrase }, result: phrase },
   phrase_delete: { args: { request: { id: "p1" } }, result: true },

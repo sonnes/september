@@ -222,6 +222,13 @@ fn the_requests_name_every_field() {
 #[test]
 fn the_answers_carry_the_names_the_webview_reads() {
     answers(
+        "notes_export",
+        crate::note_export::NoteExport {
+            count: 2,
+            folder: "/Users/ravi/Documents/September".into(),
+        },
+    );
+    answers(
         "speech_stream",
         StreamedAudio {
             from_cache: false,

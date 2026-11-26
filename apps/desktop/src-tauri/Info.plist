@@ -6,6 +6,8 @@
   <string>September uses the microphone to record samples of your voice when you make a cloned voice.</string>
   <key>NSAudioCaptureUsageDescription</key>
   <string>September sends spoken messages to calling apps such as FaceTime.</string>
+  <key>NSDocumentsFolderUsageDescription</key>
+  <string>September puts your notes in the September folder of Documents, where September Keyboard shows them in Write.</string>
   <key>NSCameraUsageDescription</key>
   <string>September uses the camera when you test the eye tracker. The video stays on this Mac and is not saved.</string>
 </dict>
