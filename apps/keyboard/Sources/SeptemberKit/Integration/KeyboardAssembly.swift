@@ -52,7 +52,7 @@ public struct KeyboardAssembly {
         subscriptions = [
             settings.$style.sink { [weak controller] in controller?.style = $0 },
             settings.$returnSpeaksInTalk.sink { [weak controller] in controller?.talk.returnSpeaks = $0 },
-            settings.$autoShift.sink { [weak controller] in controller?.typingAids.autoShift = $0 },
+            settings.$autoCapital.sink { [weak controller] in controller?.typingAids.autoCapital = $0 },
             settings.$autoSpace.sink { [weak controller] in controller?.typingAids.autoSpace = $0 },
             settings.$smartQuotes.sink { [weak controller] in controller?.typingAids.smartQuotes = $0 },
         ]

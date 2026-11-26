@@ -43,12 +43,12 @@ public struct TypingSettingsPage: View {
                 }
             }
             Section {
-                Toggle("Capital at the start of a sentence", isOn: $settings.autoShift)
+                Toggle("Capital at the start of a sentence", isOn: $settings.autoCapital)
                 Toggle("Space after punctuation", isOn: $settings.autoSpace)
                 Toggle("Smart quotes", isOn: $settings.smartQuotes)
             } footer: {
                 Text(
-                    "Shift turns on in an empty field and after the end of a sentence. A space follows a period, a comma, and other marks, and goes away if the next key is a mark. Quotes curl to open and close. A password field gets none of these."
+                    "A letter in an empty field or after the end of a sentence becomes a capital. Shift stays off. A space follows a period, a comma, and other marks, and goes away if the next key is a mark. Quotes curl to open and close. A password field gets none of these."
                 )
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)

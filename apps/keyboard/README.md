@@ -399,8 +399,9 @@ and each press reads them again:
   lets go before the delay, nothing happens. The keyboard reads `slowKey` and
   `slowKeyDelay` from `com.apple.universalaccess`.
 - Typing aids: in Type mode, `TypingAids` does what the Apple Accessibility
-  Keyboard does. Shift latches in an empty field and after the end of a
-  sentence, and then changes only letters. A space follows a period, a comma,
+  Keyboard does. A letter in an empty field or after the end of a sentence
+  becomes a capital. The keyboard types the capital itself, so Shift stays
+  off and no Shift event goes out. A space follows a period, a comma,
   and the other marks, except in a number, an email address, or a URL. If
   the next key is a mark, a closing bracket, or a digit, that space goes. A
   picked word ends with such a space too. Straight quotes become smart

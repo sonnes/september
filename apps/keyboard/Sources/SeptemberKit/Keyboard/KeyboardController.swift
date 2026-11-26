@@ -92,21 +92,11 @@ public final class KeyboardController: ObservableObject {
         autoSpacePending = false
         apply(key, modifiers: &modifiers)
         autoSpaceBefore = false
-        if let before = beforeAfterPress {
-            beforeAfterPress = nil
-            updateAutoShift(before: before)
-        }
     }
-
-    /// The text before the caret after the typed text of a press, before the
-    /// field reports it.
-    private var beforeAfterPress: String?
 
     /// The typing aids of the Apple Accessibility Keyboard. They act in Type
     /// mode, and never in a password field or private text.
-    public var typingAids = TypingAids() {
-        didSet { updateAutoShift(before: aidedBefore) }
-    }
+    public var typingAids = TypingAids()
     /// True when the last character in the field is a space that the
     /// keyboard added, after a mark or a picked word.
     private var autoSpacePending = false
@@ -132,11 +122,6 @@ public final class KeyboardController: ObservableObject {
         }
     }
 
-    private func updateAutoShift(before: String?) {
-        let starts = typingAids.autoShift && before.map(typingAids.startsSentence(before:)) == true
-        guard starts != modifiers.autoShifted || starts else { return }
-        modifiers.setAutoShift(starts)
-    }
 
     /// Types `key` again while the user holds it, with the modifiers of its
     /// first press.
@@ -374,7 +359,6 @@ public final class KeyboardController: ObservableObject {
 
     private func refreshInput() {
         input = isFieldPrivate ? .secure : focusedField?.display ?? .local(text: echo)
-        updateAutoShift(before: aidedBefore)
     }
 
     // MARK: - Turning presses into keystrokes
@@ -384,10 +368,8 @@ public final class KeyboardController: ObservableObject {
 
         if chord.isEmpty {
             let text: String
-            if modifiers.active.contains(.shift), !modifiers.autoShifted, let secondary {
+            if modifiers.active.contains(.shift), let secondary {
                 text = secondary
-            } else if modifiers.autoShifted, secondary != nil {
-                text = base
             } else {
                 text = modifiers.apply(to: base)
             }
@@ -399,11 +381,17 @@ public final class KeyboardController: ObservableObject {
             }
             let plan = typingAids.plan(typing: text, before: before, autoSpaceBefore: autoSpaceBefore)
             deleteBackward(plan.deleteBefore)
-            for character in plan.text { send(text: String(character)) }
+            for character in plan.text {
+                // A capital of the aid goes out as text, with no Shift event.
+                if plan.isCapital, character.isUppercase {
+                    sink.type(String(character))
+                } else {
+                    send(text: String(character))
+                }
+            }
             append(plan.text)
             autoSpacePending = plan.addsSpace
             modifiers.consume()
-            beforeAfterPress = String(before.dropLast(plan.deleteBefore)) + plan.text
             return
         } else {
             // A chord (⌘C): send the base key with every active modifier, the

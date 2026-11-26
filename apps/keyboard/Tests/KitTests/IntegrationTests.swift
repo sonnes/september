@@ -1160,7 +1160,7 @@ private func sessionTests() async {
             defaults: defaults, privateTexts: MemoryPrivateTexts())
         let controller = assembly.session.controller
         expectEqual(controller.typingAids, TypingAids())
-        assembly.settings.autoShift = false
+        assembly.settings.autoCapital = false
         assembly.settings.autoSpace = false
         assembly.settings.smartQuotes = false
         expectEqual(controller.typingAids, .off)

@@ -9,7 +9,7 @@ public final class KeyboardSettings: ObservableObject {
         static let style = "look.style"
         static let returnSpeaksInTalk = "talk.returnSpeaks"
         static let stickyRepeat = "typing.stickyRepeat"
-        static let autoShift = "typing.autoShift"
+        static let autoCapital = "typing.autoCapital"
         static let autoSpace = "typing.autoSpace"
         static let smartQuotes = "typing.smartQuotes"
     }
@@ -28,9 +28,9 @@ public final class KeyboardSettings: ObservableObject {
         didSet { defaults.set(stickyRepeat, forKey: Key.stickyRepeat) }
     }
 
-    /// Shift latches at the start of a sentence. On by default.
-    @Published public var autoShift: Bool {
-        didSet { defaults.set(autoShift, forKey: Key.autoShift) }
+    /// A letter at the start of a sentence becomes a capital. On by default.
+    @Published public var autoCapital: Bool {
+        didSet { defaults.set(autoCapital, forKey: Key.autoCapital) }
     }
     /// A space follows a mark, and goes away before the next mark. On by
     /// default.
@@ -49,7 +49,7 @@ public final class KeyboardSettings: ObservableObject {
         style = defaults.string(forKey: Key.style).flatMap { KeyboardStyle(rawValue: $0) } ?? .rainbow
         returnSpeaksInTalk = defaults.object(forKey: Key.returnSpeaksInTalk) as? Bool ?? true
         stickyRepeat = defaults.bool(forKey: Key.stickyRepeat)
-        autoShift = defaults.object(forKey: Key.autoShift) as? Bool ?? true
+        autoCapital = defaults.object(forKey: Key.autoCapital) as? Bool ?? true
         autoSpace = defaults.object(forKey: Key.autoSpace) as? Bool ?? true
         smartQuotes = defaults.object(forKey: Key.smartQuotes) as? Bool ?? true
     }
