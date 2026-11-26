@@ -642,8 +642,9 @@ keyboard centres in the space that is left, so the two windows do not overlap.
 
 The app is also a palette input method, as the Apple Accessibility Keyboard
 is. At its first start from `/Applications`, it copies itself to
-`~/Library/Input Methods`, opens the copy, and quits. macOS then asks the user
-one time, in System Settings, to allow the input method. The input method
+`~/Library/Input Methods`, opens the copy, and quits. To allow the input
+method, press **Turn On…** in Settings, Typing, and confirm in System
+Settings. The input method
 reads the focused field and puts a picked word in with one edit. Where an app
 gives no input client, the keyboard uses accessibility and keys. `make run`
 and `make dev` run the bare binary, which is no input method. See

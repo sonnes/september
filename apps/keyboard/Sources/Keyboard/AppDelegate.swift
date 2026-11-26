@@ -155,6 +155,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             PredictionsSettingsPage(
                 engine: session.predictions, history: history))
         pages[.clipboard] = AnyView(ClipboardSettingsPage(history: session.clipboard))
+        if InputMethod.isAppBundle {
+            pages[.typing] = AnyView(
+                TypingSettingsPage(
+                    settings: keyboardSettings,
+                    inputMethod: .init(isEnabled: { InputMethod.isEnabled }, askToEnable: InputMethod.askToEnable)))
+        }
         if let store = session.userPanel {
             pages[.myPanel] = AnyView(MyPanelSettingsPage(store: store, usage: session.userPanelUsage))
         } else if let error = session.userPanelError {

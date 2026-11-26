@@ -4,7 +4,7 @@
 
 ### Input method
 
-- The keyboard is also an input method, as the Apple Accessibility Keyboard is. It installs itself in ~/Library/Input Methods, and macOS asks you one time to allow it.
+- The keyboard is also an input method, as the Apple Accessibility Keyboard is. It installs itself in ~/Library/Input Methods. To allow it, press Turn On… in Settings, Typing.
 - Where an app supports input methods, a picked word goes in with one edit, and the input bar reads the field through the input method.
 
 ### Word row

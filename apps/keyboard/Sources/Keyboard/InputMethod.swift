@@ -73,22 +73,27 @@ enum InputMethod {
         return true
     }
 
-    /// Registers, enables, and selects the input source. The first enable
-    /// opens System Settings, where the user confirms it one time.
-    static func selectSelf(defaults: UserDefaults = .standard) {
+    /// Registers the input source, and selects it when the user has allowed
+    /// it. It never asks at launch.
+    static func selectSelf() {
         guard isAppBundle, isInstalledCopy else { return }
         TISRegisterInputSource(Bundle.main.bundleURL as CFURL)
-        guard let source = inputSource() else { return }
-        if !boolProperty(source, kTISPropertyInputSourceIsEnabled) {
-            let asked = "inputMethod.askedToEnable"
-            guard !defaults.bool(forKey: asked) else { return }
-            defaults.set(true, forKey: asked)
-            TISEnableInputSource(source)
-            return
-        }
-        if !boolProperty(source, kTISPropertyInputSourceIsSelected) {
-            TISSelectInputSource(source)
-        }
+        guard let source = inputSource(), boolProperty(source, kTISPropertyInputSourceIsEnabled),
+            !boolProperty(source, kTISPropertyInputSourceIsSelected)
+        else { return }
+        TISSelectInputSource(source)
+    }
+
+    /// True when the user has allowed the input method.
+    static var isEnabled: Bool {
+        inputSource().map { boolProperty($0, kTISPropertyInputSourceIsEnabled) } ?? false
+    }
+
+    /// Asks the user to allow the input method. macOS opens System Settings,
+    /// where the user confirms it. Settings, Typing calls this.
+    static func askToEnable() {
+        guard isAppBundle, isInstalledCopy, let source = inputSource() else { return }
+        TISEnableInputSource(source)
     }
 
     private static func inputSource() -> TISInputSource? {

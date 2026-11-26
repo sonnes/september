@@ -25,12 +25,13 @@ An input method runs only from `~/Library/Input Methods`.
    quits.
 4. The copy starts `IMKServer` with the `InputMethodConnectionName` of
    `Info.plist`.
-5. `InputMethod.selectSelf()` enables and selects the input source.
+5. `InputMethod.selectSelf()` selects the input source when the user has
+   allowed it. It never asks at launch.
 
-On macOS 27, `TISEnableInputSource` does not enable a third-party input method.
-It opens System Settings, and the user must confirm one time. The keyboard asks
-one time only (`inputMethod.askedToEnable`). After the confirmation, the
-keyboard selects the source at each start.
+The user allows the input method with **Turn On…** in Settings, Typing. On
+macOS 27, `TISEnableInputSource` does not enable a third-party input method.
+It opens System Settings, and the user must confirm one time. After the
+confirmation, the keyboard selects the source at each start.
 
 The copy keeps the signature of the bundle. Thus the Accessibility permission
 stays after the move and after an update with the same signing identity.
