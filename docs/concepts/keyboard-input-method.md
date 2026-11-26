@@ -19,7 +19,7 @@ An input method runs only from `~/Library/Input Methods`.
 
 1. The app starts from another folder, such as `/Applications`.
 2. `InputMethod.relocateIfNeeded()` copies the bundle to
-   `~/Library/Input Methods` if the version there is different. It stops the
+   `~/Library/Input Methods` if the executable there is different. It stops the
    running copies first.
 3. It registers the copy with `TISRegisterInputSource`, opens the copy, and
    quits.
