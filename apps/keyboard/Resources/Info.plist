@@ -24,6 +24,20 @@
 	<true/>
 	<key>NSAccessibilityUsageDescription</key>
 	<string>September Keyboard types into the app you are using, so it needs Accessibility access to send keystrokes.</string>
+	<key>InputMethodType</key>
+	<string>palette</string>
+	<key>InputMethodConnectionName</key>
+	<string>app.september.keyboard_Connection</string>
+	<key>InputMethodServerControllerClass</key>
+	<string>SeptemberInputController</string>
+	<key>TISInputSourceID</key>
+	<string>app.september.keyboard.inputmethod</string>
+	<key>tsInputMethodCharacterRepertoireKey</key>
+	<array>
+		<string>Latn</string>
+	</array>
+	<key>ComponentInvisibleInSystemUI</key>
+	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Ravi Atluri</string>
 </dict>

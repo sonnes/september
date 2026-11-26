@@ -47,6 +47,12 @@ it.
 
 ## Where the text comes from
 
+The input method of the keyboard is the first source. When macOS has given
+the field of the app in front to `InputController`, `FocusWatcher` reads the
+field through that client with `FieldSnapshotReader`. Accessibility is the
+second source, for an app with no input client and for a password field. See
+[the input method](keyboard-input-method.md).
+
 In a web or Electron editor, such as a contenteditable field, the focus can
 be on an element inside the editable area. When the focused element has no
 settable value, `FocusWatcher` reads its `AXEditableAncestor` instead.

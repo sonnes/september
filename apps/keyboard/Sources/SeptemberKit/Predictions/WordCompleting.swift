@@ -94,6 +94,17 @@ public struct WordCompletion: Equatable, Hashable, Sendable {
         }
     }
 
+    /// The typed text that a press replaces in one edit: the partial word,
+    /// or nothing for a next word.
+    public var replacedText: String {
+        kind == .next ? "" : partial
+    }
+
+    /// The text that replaces `replacedText`: the whole word and a space.
+    public var replacementText: String {
+        (spaceBefore ? " " : "") + word + " "
+    }
+
     /// The label that VoiceOver and Switch Control speak.
     public var spokenLabel: String {
         kind == .correction ? "Correct to \(word)" : word

@@ -625,6 +625,39 @@ private func sessionTests() async {
         expect(parts.sink.posted.isEmpty, "Talk mode sends no key")
     }
 
+    await asyncTest("with an input client, a picked correction replaces the word in one edit and sends no key") {
+        let parts = try makeSession()
+        let client = MemoryInputClient("I recieve")
+        parts.session.inserter = InputClientInserter(client: { client })
+        parts.controller.focusChanged(to: field("I recieve", caret: 9))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        expectEqual(client.text, "I receive ")
+        expect(parts.sink.posted.isEmpty, "no key")
+        expect(parts.sink.typed.isEmpty, "no typed text")
+    }
+
+    await asyncTest("with an input client, a picked completion puts in the whole word") {
+        let parts = try makeSession()
+        let client = MemoryInputClient("I would like a cu")
+        parts.session.inserter = InputClientInserter(client: { client })
+        parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        expectEqual(client.text, "I would like a cup ")
+    }
+
+    await asyncTest("when the input client does not hold the typed word, the pick falls back to keys") {
+        let parts = try makeSession()
+        let client = MemoryInputClient("something else")
+        parts.session.inserter = InputClientInserter(client: { client })
+        parts.controller.focusChanged(to: field("I would like a cu", caret: 17))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        expectEqual(client.text, "something else")
+        expectEqual(parts.sink.typed, ["p "])
+    }
+
     await asyncTest("a comma after a picked word replaces the space of the word") {
         let parts = try makeSession()
         parts.controller.typingAids = TypingAids()

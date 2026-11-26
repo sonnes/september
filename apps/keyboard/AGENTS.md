@@ -169,6 +169,10 @@ only what needs a running app — the panel, the event sink, the menu bar.
 
 ## Gotchas
 
+- The bundled app relocates itself to `~/Library/Input Methods` at start
+  (`InputMethod.relocateIfNeeded`) and quits the other running copies. Do not
+  open a test build while the user runs the keyboard: it stops their copy.
+  `make run` and `make dev` are no input method and never relocate.
 - Accessibility permission is bound to *(bundle id, code signature)*. Ad-hoc
   signing revokes it on every rebuild — create the `Keyboard Dev` certificate
   (README) before wondering why keys stopped working.

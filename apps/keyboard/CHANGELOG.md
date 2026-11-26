@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Input method
+
+- The keyboard is also an input method, as the Apple Accessibility Keyboard is. It installs itself in ~/Library/Input Methods, and macOS asks you one time to allow it.
+- Where an app supports input methods, a picked word goes in with one edit, and the input bar reads the field through the input method.
+
 ### Word row
 
 - The word row shows corrections and emoji, as the QuickType bar does. A correction has an accent border. A press on a correction or an emoji replaces the typed word.

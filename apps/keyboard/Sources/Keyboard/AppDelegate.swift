@@ -201,6 +201,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.focusWatcher.refreshSoon()
         }
         focusWatcher.start()
+        // The input method reads and changes the field in one edit, where
+        // the app in front gives an input client.
+        let inserter = InputClientInserter(client: { InputClients.shared.frontClient })
+        inserter.afterInsert = { [weak self] _ in self?.focusWatcher.refreshSoon() }
+        session.inserter = inserter
+        InputMethod.selectSelf()
     }
 
     // MARK: - Write

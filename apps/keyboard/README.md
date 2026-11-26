@@ -638,6 +638,17 @@ field, and the Tree tab shows no value on the focused element.
 To show or hide the panel, use **Debug Panel** in the menu bar item. The
 keyboard centres in the space that is left, so the two windows do not overlap.
 
+## Input method
+
+The app is also a palette input method, as the Apple Accessibility Keyboard
+is. At its first start from `/Applications`, it copies itself to
+`~/Library/Input Methods`, opens the copy, and quits. macOS then asks the user
+one time, in System Settings, to allow the input method. The input method
+reads the focused field and puts a picked word in with one edit. Where an app
+gives no input client, the keyboard uses accessibility and keys. `make run`
+and `make dev` run the bare binary, which is no input method. See
+`docs/concepts/keyboard-input-method.md`.
+
 ## Accessibility permission
 
 Keyboard sends keystrokes with `CGEvent.post`, which macOS only allows to apps
