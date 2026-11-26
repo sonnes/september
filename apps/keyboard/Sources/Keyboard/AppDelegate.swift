@@ -69,7 +69,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settingsWindow = SettingsWindowController(pages: makeSettingsPages())
         content = WindowContent(
             session: session, permission: permission, phrases: assembly.phrases,
-            presser: KeyPresser(timing: { KeyTiming.current() }),
+            presser: KeyPresser(
+                timing: { KeyTiming.current() },
+                stickyRepeat: { [keyboardSettings] in keyboardSettings.stickyRepeat }),
             write: { [weak self] in self?.showWrite() },
             arrange: { [weak self] in self?.arrangePanels() },
             settings: { [weak self] in self?.showSettings() })

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Keys
+
+- Sticky repeat: when it is on in Settings, Typing, a tap on Delete, an arrow, or another key that repeats keeps it repeating. The next tap stops it.
+- The keys reach the app as from the Apple Accessibility Keyboard: an arrow and a navigation key have the Fn flag, a held key sends repeats, and an emoji goes out in one piece.
+
 ## 0.7.0
 
 ### Write

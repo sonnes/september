@@ -5,6 +5,7 @@ import SeptemberKit
 func pressTests() {
     keyTimingTests()
     keyPresserTests()
+    stickyRepeatTests()
     heldKeyTests()
 }
 
@@ -149,6 +150,15 @@ private func heldKeyTests() {
         expectEqual(controller.modifiers.active, [], "the latched shift is used up")
     }
 
+    test("a repeat of a held key marks its events as repeats, and the first press does not") {
+        let (controller, sink) = try makeController()
+        let delete = layoutKey("delete")
+        controller.press(delete)
+        controller.repeatPress(delete)
+        let deletes = sink.posted.filter { $0.virtualKey == VirtualKey.delete.rawValue && $0.isDown }
+        expectEqual(deletes.map(\.isRepeat), [false, true])
+    }
+
     test("a press on an accent replaces the letter with the accent") {
         let (controller, sink) = try makeController()
         controller.press(layoutKey("key-e"))
@@ -198,9 +208,70 @@ private let quick = KeyTiming(holdDelay: 0.5, repeatInterval: 0.25, pressAndHold
 
 @MainActor
 @discardableResult
-private func down(_ presser: KeyPresser, _ hold: HoldBehavior, _ log: PressLog) -> Int {
+private func down(_ presser: KeyPresser, _ hold: HoldBehavior, _ log: PressLog, key: String? = nil) -> Int {
     presser.down(
-        hold, act: { log.acts += 1 }, again: { log.agains += 1 }, choices: { log.choices.append($0) })
+        hold, key: key, act: { log.acts += 1 }, again: { log.agains += 1 },
+        choices: { log.choices.append($0) })
+}
+
+@MainActor
+private func stickyRepeatTests() {
+    func makeSticky(_ on: Bool) -> (KeyPresser, FakeClock) {
+        let clock = FakeClock()
+        return (KeyPresser(timing: { quick }, scheduler: clock, stickyRepeat: { on }), clock)
+    }
+
+    test("with sticky repeat on, a tap on a key that repeats keeps it repeating after the button goes up") {
+        let (presser, clock) = makeSticky(true)
+        let log = PressLog()
+        presser.up(down(presser, .repeats, log))
+        clock.advance(to: 1.0)
+        expectEqual(log.acts, 1)
+        expectEqual(log.agains, 3, "repeats at 0.5, 0.75, and 1.0")
+        expect(presser.isStickyRepeating)
+    }
+
+    test("with sticky repeat on, the next tap on the same key stops the repeat and does not act") {
+        let (presser, clock) = makeSticky(true)
+        let log = PressLog()
+        presser.up(down(presser, .repeats, log, key: "delete"))
+        clock.advance(to: 0.75)
+        presser.up(down(presser, .repeats, log, key: "delete"))
+        clock.advance(to: 3)
+        expectEqual(log.acts, 1)
+        expectEqual(log.agains, 2)
+        expect(!presser.isStickyRepeating)
+    }
+
+    test("with sticky repeat on, a tap on another control stops the repeat and acts") {
+        let (presser, clock) = makeSticky(true)
+        let repeating = PressLog()
+        let other = PressLog()
+        presser.up(down(presser, .repeats, repeating, key: "delete"))
+        clock.advance(to: 0.5)
+        presser.up(down(presser, .once, other, key: "return"))
+        clock.advance(to: 3)
+        expectEqual(repeating.agains, 1)
+        expectEqual(other.acts, 1)
+        expect(!presser.isStickyRepeating)
+    }
+
+    test("with sticky repeat on, a key that acts once does not repeat") {
+        let (presser, clock) = makeSticky(true)
+        let log = PressLog()
+        presser.up(down(presser, .once, log))
+        clock.advance(to: 3)
+        expectEqual(log.agains, 0)
+        expect(!presser.isStickyRepeating)
+    }
+
+    test("with sticky repeat off, the repeat stops when the button goes up") {
+        let (presser, clock) = makeSticky(false)
+        let log = PressLog()
+        presser.up(down(presser, .repeats, log))
+        clock.advance(to: 3)
+        expectEqual(log.agains, 0)
+    }
 }
 
 @MainActor

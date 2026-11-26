@@ -96,8 +96,13 @@ public final class KeyboardController: ObservableObject {
     public func repeatPress(_ key: KeyDefinition) {
         guard let lastPress, lastPress.id == key.id else { return press(key) }
         var held = lastPress.modifiers
+        isRepeating = true
+        defer { isRepeating = false }
         apply(key, modifiers: &held)
     }
+
+    /// True while `repeatPress` applies a key, so its events are repeats.
+    private var isRepeating = false
 
     /// What `key` does while the user holds it. Call this before `press`,
     /// because a press uses up the latched modifiers.
@@ -179,7 +184,7 @@ public final class KeyboardController: ObservableObject {
         case .media(let media):
             sink.post(media: media)
         case .system(let system):
-            sink.post(
+            postKey(
                 Keystroke.events(
                     virtualKey: system.virtualKey, modifiers: system.modifiers, held: heldAtOS))
         case .scroll(let direction):
@@ -348,9 +353,21 @@ public final class KeyboardController: ObservableObject {
         modifiers.consume()
     }
 
+    /// Posts the events of one key. During a repeat, the events of the key
+    /// itself are repeats. The modifier keys around it are not.
+    private func postKey(_ events: [Keystroke]) {
+        guard isRepeating, let key = events.first(where: { event in !Modifiers.held.contains { $0.virtualKey == event.virtualKey } })
+        else { return sink.post(events) }
+        sink.post(events.map { event in
+            var event = event
+            event.isRepeat = event.virtualKey == key.virtualKey
+            return event
+        })
+    }
+
     private func send(text: String) {
         if let resolved = keyCodeMap.keystroke(for: text) {
-            sink.post(
+            postKey(
                 Keystroke.events(
                     virtualKey: resolved.virtualKey, modifiers: resolved.modifiers,
                     held: heldAtOS)
@@ -363,7 +380,7 @@ public final class KeyboardController: ObservableObject {
     /// Posts a named key. Without a chord, the echo follows what the key
     /// does to the text.
     private func post(_ virtual: VirtualKey, modifiers: Modifiers) {
-        sink.post(
+        postKey(
             Keystroke.events(virtualKey: virtual.rawValue, modifiers: modifiers, held: heldAtOS))
         guard !isMirroring, !isFieldPrivate, modifiers.subtracting(.shift).isEmpty else { return }
         switch virtual {
@@ -382,7 +399,7 @@ public final class KeyboardController: ObservableObject {
             sink.beep()
             return false
         }
-        sink.post(
+        postKey(
             Keystroke.events(
                 virtualKey: resolved.virtualKey,
                 modifiers: modifiers.union(resolved.modifiers),

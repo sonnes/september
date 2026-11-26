@@ -1,11 +1,21 @@
 import AppKit
+import Carbon
 import SeptemberKit
 
 /// Posts keystrokes as real events. The panel never takes focus, so whatever
 /// the user was working in is still frontmost and receives them.
+///
+/// The key events carry the fields that the Apple Accessibility Keyboard
+/// sets: the marker of the source, the keyboard type, the Fn flag of the
+/// navigation keys, and the autorepeat field. They go to the session tap.
 @MainActor
 final class CGEventSink: KeystrokeSink {
-    private let source = CGEventSource(stateID: .combinedSessionState)
+    private let source: CGEventSource? = {
+        let source = CGEventSource(stateID: .combinedSessionState)
+        source?.userData = Keystroke.sourceMarker
+        return source
+    }()
+    private let keyboardType = Int64(LMGetKbdType())
 
     /// Runs after keystrokes land, so the focus watcher can re-read the field
     /// they went into.
@@ -20,8 +30,12 @@ final class CGEventSink: KeystrokeSink {
                     keyDown: event.isDown
                 )
             else { continue }
-            cgEvent.flags = event.flags.eventFlags
-            cgEvent.post(tap: .cghidEventTap)
+            cgEvent.flags = event.eventFlags
+            cgEvent.setIntegerValueField(.keyboardEventKeyboardType, value: keyboardType)
+            if event.isRepeat {
+                cgEvent.setIntegerValueField(.keyboardEventAutorepeat, value: 1)
+            }
+            cgEvent.post(tap: .cgSessionEventTap)
         }
         afterPost?()
     }
@@ -130,16 +144,21 @@ final class CGEventSink: KeystrokeSink {
     }
 
     /// Characters the current layout cannot produce (emoji, saved phrases) are
-    /// posted as a unicode payload instead of a key code.
+    /// posted as a unicode payload instead of a key code: one event pair for
+    /// each character, as the Apple Accessibility Keyboard does.
     func type(_ text: String) {
-        guard !text.isEmpty else { return }
-        var utf16 = Array(text.utf16)
-        for isDown in [true, false] {
-            guard
-                let event = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: isDown)
-            else { continue }
-            event.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: &utf16)
-            event.post(tap: .cghidEventTap)
+        let chunks = Keystroke.unicodeChunks(of: text)
+        guard !chunks.isEmpty else { return }
+        for chunk in chunks {
+            var utf16 = Array(chunk.utf16)
+            for isDown in [true, false] {
+                guard
+                    let event = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: isDown)
+                else { continue }
+                event.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: &utf16)
+                event.setIntegerValueField(.keyboardEventKeyboardType, value: keyboardType)
+                event.post(tap: .cgSessionEventTap)
+            }
         }
         afterPost?()
     }

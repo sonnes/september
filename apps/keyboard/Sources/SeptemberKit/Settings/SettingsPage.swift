@@ -5,6 +5,7 @@ public enum SettingsPage: String, Sendable, Hashable, CaseIterable, Identifiable
     case predictions
     case clipboard
     case myPanel
+    case typing
     case look
     case accessibility
 
@@ -17,6 +18,7 @@ public enum SettingsPage: String, Sendable, Hashable, CaseIterable, Identifiable
         case .predictions: "Predictions"
         case .clipboard: "Clipboard"
         case .myPanel: "My Panel"
+        case .typing: "Typing"
         case .look: "Look"
         case .accessibility: "Accessibility"
         }
@@ -30,6 +32,7 @@ public enum SettingsPage: String, Sendable, Hashable, CaseIterable, Identifiable
         case .predictions: "sparkles"
         case .clipboard: "doc.on.clipboard"
         case .myPanel: "star.fill"
+        case .typing: "keyboard"
         case .look: "paintpalette.fill"
         case .accessibility: "accessibility"
         }
@@ -41,7 +44,7 @@ public enum SettingsPage: String, Sendable, Hashable, CaseIterable, Identifiable
         case .voice, .accessibility: Tokens.Settings.blueIcon
         case .speech: Tokens.Settings.purpleIcon
         case .predictions: Tokens.Settings.orangeIcon
-        case .clipboard: Tokens.Settings.tealIcon
+        case .clipboard, .typing: Tokens.Settings.tealIcon
         case .myPanel: Tokens.Settings.indigoIcon
         case .look: Tokens.Settings.pinkIcon
         }
@@ -68,7 +71,7 @@ public enum SettingsGroup: String, Sendable, Hashable, CaseIterable, Identifiabl
         switch self {
         case .speak: [.voice, .speech]
         case .type: [.predictions, .clipboard, .myPanel]
-        case .keyboard: [.look, .accessibility]
+        case .keyboard: [.typing, .look, .accessibility]
         }
     }
 }

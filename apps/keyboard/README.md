@@ -394,6 +394,11 @@ and each press reads them again:
   key acts only after the user holds it for the acceptance delay. If the user
   lets go before the delay, nothing happens. The keyboard reads `slowKey` and
   `slowKeyDelay` from `com.apple.universalaccess`.
+- Sticky repeat: if Sticky repeat is on (Settings, Typing), a tap on a key
+  that repeats starts the repeat, and the repeat continues after the button
+  goes up. The next tap on the same key stops the repeat. A tap on another
+  control stops the repeat and does its action. Sticky repeat is off by
+  default.
 - Sticky Keys: one tap on a modifier latches it for the next key, a second tap
   locks it, and a third tap releases it, as Sticky Keys of macOS does. A
   tapped modifier goes down at the OS at once, so a click or a key from the
@@ -626,6 +631,13 @@ keyboard centres in the space that is left, so the two windows do not overlap.
 Keyboard sends keystrokes with `CGEvent.post`, which macOS only allows to apps
 the user has trusted in **System Settings ▸ Privacy & Security ▸ Accessibility**.
 The app cannot be sandboxed for the same reason.
+
+`CGEventSink` posts each key to the session tap, with the fields that the
+Apple Accessibility Keyboard sets. The source of each event has the user data
+`Keystroke.sourceMarker`. Each key event has the keyboard type of the Mac. An
+arrow, a navigation key, Forward Delete, and an F-key have the Fn flag, as from
+a hardware keyboard. The repeats of a held key have the autorepeat field.
+Text that no key types goes out as one event pair for each character.
 
 macOS grants that trust to a *(bundle id, code signature)* pair. Signing ad-hoc
 mints a new signature on every build, so the permission is revoked each time you

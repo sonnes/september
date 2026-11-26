@@ -158,6 +158,26 @@ func keystrokeTests() {
         let events = Keystroke.events(virtualKey: 0, modifiers: [.capsLock, .shift])
         expectEqual(events.filter(\.isDown).map(\.virtualKey), [56, 0])
     }
+
+    test("an arrow, a navigation key, and an F-key carry the Fn flag, as from a hardware keyboard") {
+        for key in [VirtualKey.left, .up, .home, .pageDown, .forwardDelete, .f5] {
+            let flags = Keystroke(virtualKey: key.rawValue, flags: .shift, isDown: true).eventFlags
+            expect(flags.contains(.maskSecondaryFn), "\(key) gets Fn")
+            expect(flags.contains(.maskShift), "\(key) keeps Shift")
+        }
+    }
+
+    test("a letter, Return, and Delete carry no Fn flag") {
+        for code: UInt16 in [z, VirtualKey.return.rawValue, VirtualKey.delete.rawValue] {
+            let flags = Keystroke(virtualKey: code, flags: [], isDown: true).eventFlags
+            expect(!flags.contains(.maskSecondaryFn), "\(code) has no Fn")
+        }
+    }
+
+    test("text goes out as one chunk for each character, so an emoji stays whole") {
+        expectEqual(Keystroke.unicodeChunks(of: "a👍🏽é"), ["a", "👍🏽", "é"])
+        expectEqual(Keystroke.unicodeChunks(of: ""), [])
+    }
 }
 
 func modifierNameTests() {

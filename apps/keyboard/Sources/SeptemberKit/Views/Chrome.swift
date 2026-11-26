@@ -164,7 +164,7 @@ private struct Pressable: ViewModifier {
         guard let presser else { return action() }
         let action = action
         press = presser.down(
-            hold.behavior(), act: { action() }, again: hold.again ?? { action() },
+            hold.behavior(), key: label, act: { action() }, again: hold.again ?? { action() },
             choices: hold.choices ?? { _ in })
     }
 

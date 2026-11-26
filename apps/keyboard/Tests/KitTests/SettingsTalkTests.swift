@@ -201,6 +201,7 @@ func settingsTalkTests() {
         let settings = KeyboardSettings(defaults: freshDefaults())
         expectEqual(settings.style, .rainbow)
         expectEqual(settings.returnSpeaksInTalk, true)
+        expectEqual(settings.stickyRepeat, false)
     }
 
     test("keyboard settings persist in the defaults") {
@@ -208,8 +209,10 @@ func settingsTalkTests() {
         let first = KeyboardSettings(defaults: defaults)
         first.style = .mono
         first.returnSpeaksInTalk = false
+        first.stickyRepeat = true
         let second = KeyboardSettings(defaults: defaults)
         expectEqual(second.style, .mono)
         expectEqual(second.returnSpeaksInTalk, false)
+        expectEqual(second.stickyRepeat, true)
     }
 }
