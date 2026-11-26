@@ -9,7 +9,7 @@ func debugTests() async {
     debugModelTests()
 }
 
-private let cu = InputMirror.mirrored(text: "I would like a cu", caret: 17, selectionLength: 0)
+private let a = InputMirror.mirrored(text: "I would like a ", caret: 15, selectionLength: 0)
 
 @MainActor
 private func engine(_ predictor: FakePredictor) -> PredictionEngine {
@@ -19,24 +19,24 @@ private func engine(_ predictor: FakePredictor) -> PredictionEngine {
 @MainActor
 private func traceTests() async {
     await asyncTest("the trace holds the prompt, each answer, and the sentences that fit") {
-        let predictor = FakePredictor { _ in ["Coffee is fine.", "I would like a cup of tea."] }
+        let predictor = FakePredictor { _ in ["  ", "I would like a cup of tea."] }
         let engine = engine(predictor)
-        engine.userTypes(cu, said: ["Hello"])
+        engine.userTypes(a, said: ["Hello"])
         await engine.settle()
-        let context = PredictionContext(input: cu, mode: .type, said: ["Hello"])!
+        let context = PredictionContext(input: a, mode: .type, said: ["Hello"])!
         expectEqual(engine.context, context)
         expectEqual(engine.trace?.context, context)
         expectEqual(engine.trace?.prompt, SuggestionPrompt(context: context))
-        expectEqual(engine.trace?.answers, ["Coffee is fine.", "I would like a cup of tea."])
+        expectEqual(engine.trace?.answers, ["  ", "I would like a cup of tea."])
         expectEqual(engine.trace?.sentences, ["I would like a cup of tea."])
-        expectEqual(engine.trace?.dropped, ["Coffee is fine."])
+        expectEqual(engine.trace?.dropped, ["  "])
         expect(engine.trace?.duration != nil, "an answered request has a duration")
     }
 
     await asyncTest("a request that waits for the model has a trace with no answers yet") {
         let predictor = FakePredictor(holds: { _ in true }, answer: { _ in ["I would like a cup."] })
         let engine = engine(predictor)
-        engine.userTypes(cu)
+        engine.userTypes(a)
         await predictor.waitUntilHeld(1)
         expectEqual(engine.trace?.answers, [])
         expect(engine.trace?.duration == nil)
@@ -47,17 +47,17 @@ private func traceTests() async {
 
     await asyncTest("private text clears the context and the trace") {
         let engine = engine(FakePredictor { _ in ["I would like a cup."] })
-        engine.userTypes(cu)
+        engine.userTypes(a)
         await engine.settle()
         expect(engine.trace != nil)
-        engine.update(input: cu, mode: .type, said: [], isPrivate: true)
+        engine.update(input: a, mode: .type, said: [], isPrivate: true)
         expect(engine.context == nil)
         expect(engine.trace == nil)
     }
 
     await asyncTest("a password field clears the context and the trace") {
         let engine = engine(FakePredictor { _ in ["I would like a cup."] })
-        engine.userTypes(cu)
+        engine.userTypes(a)
         await engine.settle()
         engine.update(input: .secure, mode: .type, said: [])
         expect(engine.context == nil)

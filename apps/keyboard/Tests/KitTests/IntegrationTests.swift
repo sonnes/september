@@ -744,7 +744,7 @@ private func sessionTests() async {
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
         parts.reader.screens[whatsApp.pid] = screen
         parts.session.appActivated(whatsApp)
-        try await userTypes("Yes", in: parts)
+        try await userTypes("Yes ", in: parts)
         await passScreenDelay(parts)
         var last = await predictor.requests.last
         expect(last != nil && last?.screen == nil, "the switch is off")
@@ -757,7 +757,7 @@ private func sessionTests() async {
 
         parts.controller.mode = .talk
         await parts.session.settle()
-        parts.controller.talk.type("Hi")
+        parts.controller.talk.type("Hi ")
         await parts.session.settle()
         last = await predictor.requests.last
         expect(last?.screen == nil, "Talk mode sends no text from the screen")
@@ -769,13 +769,13 @@ private func sessionTests() async {
         let said = parts.controller.talk.said
         said.add("Yesterday", at: Date().addingTimeInterval(-24 * 3600))
         said.add("Good morning", at: Date())
-        try await userTypes("Hi", in: parts)
+        try await userTypes("Hi ", in: parts)
         var last = await predictor.requests.last
         expectEqual(last?.said, [])
 
         parts.controller.mode = .talk
         await parts.session.settle()
-        parts.controller.talk.type("Hi")
+        parts.controller.talk.type("Hi ")
         await parts.session.settle()
         last = await predictor.requests.last
         expectEqual(last?.said, ["Good morning"])
@@ -788,13 +788,13 @@ private func sessionTests() async {
         parts.reader.screens[whatsApp.pid] = ScreenContext(
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
         parts.session.appActivated(whatsApp)
-        try await userTypes("Yes", in: parts)
+        try await userTypes("Yes ", in: parts)
         await passScreenDelay(parts)
         var last = await predictor.requests.last
         expect(last?.screen != nil, "the read of WhatsApp lands")
 
         parts.session.appActivated(notes)
-        try await userTypes("Ye", in: parts)
+        try await userTypes("Ye ", in: parts)
         await passScreenDelay(parts)
         last = await predictor.requests.last
         expect(last != nil && last?.screen == nil, "a new app clears the screen")
@@ -802,7 +802,7 @@ private func sessionTests() async {
         parts.session.appActivated(whatsApp)
         parts.clock.advance(to: parts.clock.now + KeyboardSession.screenReadDelay)
         parts.session.appActivated(notes)
-        try await userTypes("Y", in: parts)
+        try await userTypes("Y ", in: parts)
         last = await predictor.requests.last
         expect(last != nil && last?.screen == nil, "the read of an app that left the front is dropped")
     }
@@ -888,7 +888,7 @@ private func sessionTests() async {
         parts.reader.screens[whatsApp.pid] = ScreenContext(
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
         parts.session.appActivated(whatsApp)
-        try await userTypes("Yes", in: parts)
+        try await userTypes("Yes ", in: parts)
         await passScreenDelay(parts)
         var last = await predictor.requests.last
         expect(last?.screen != nil, "the read of WhatsApp lands")
@@ -896,7 +896,7 @@ private func sessionTests() async {
         parts.session.focusChanged(to: focus("AXTextField", editable: true, secure: true))
         parts.session.focusMoved()
         await passScreenDelay(parts)
-        try await userTypes("Sure", in: parts)
+        try await userTypes("Sure ", in: parts)
         last = await predictor.requests.last
         expect(last != nil && last?.screen == nil, "the text on screen of the last field is gone")
     }

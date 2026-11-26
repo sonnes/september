@@ -152,6 +152,12 @@ field, the stack stays empty until the text of the field changes. The text
 before the caret must also hold a letter. An empty Talk bar shows no
 sentence predictions. The word row does not wait.
 
+Apple Intelligence gets a request only at the end of a word: when the text
+before the caret ends with a space, a mark, or a new line. The request waits
+300 ms after the last change, for a paste or a fast burst of keys. Inside a
+word, the history rows change at each letter, and a row of the model stays
+while it still continues the typed text. The model never gets a partial word.
+
 The stack has three rows. The rows come from the sentence history and from
 Apple Intelligence. History rows show at once. Up to two history rows come
 first, then the rows of the model, and then the other history rows. A row

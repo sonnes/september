@@ -53,20 +53,16 @@ enum FoundationModelsPredictor {
     static func predictions(for prompt: SuggestionPrompt) async throws -> [String] {
         // A new session for each request, so one request never sees another.
         let session = LanguageModelSession(instructions: prompt.instructions)
-        let response = try await session.respond(to: prompt.prompt, schema: try schema(for: prompt))
+        let response = try await session.respond(to: prompt.prompt, schema: try schema())
         return try response.content.value([String].self, forProperty: "predictions")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
     }
 
     /// Exactly `SuggestionPrompt.count` strings. A free-form prompt for that count
-    /// of lines often gives one line. Each string starts with the answer prefix.
-    /// The guide supports a literal and `.*` only, with no character classes.
-    /// The prefix holds only letters and apostrophes, so it needs no escape.
-    private static func schema(for prompt: SuggestionPrompt) throws -> GenerationSchema {
-        let guides: [GenerationGuide<String>] =
-            prompt.answerPrefix.isEmpty ? [] : [.pattern(try Regex(prompt.answerPrefix + ".*"))]
-        let row = DynamicGenerationSchema(type: String.self, guides: guides)
+    /// of lines often gives one line.
+    private static func schema() throws -> GenerationSchema {
+        let row = DynamicGenerationSchema(type: String.self)
         let answer = DynamicGenerationSchema(
             name: "Answer",
             properties: [

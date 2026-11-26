@@ -4,9 +4,12 @@ import Foundation
 /// Turns the input bar into sentence predictions and word completions.
 ///
 /// The controller calls `update(input:mode:said:)` on each change of the
-/// input bar. Word completions do not wait. Sentence predictions wait for
-/// `delay` after the last change. A new change cancels the old request. The
-/// old predictions stay, marked stale, until the new ones arrive.
+/// input bar. Word completions do not wait. The model gets a request only
+/// at the end of a word: when the text before the caret ends with a space, a
+/// mark, or a new line. The request waits for `delay` after the last change,
+/// for a paste or a fast burst of keys. A new change cancels the old request.
+/// The old predictions stay, marked stale, until the new ones arrive. Inside
+/// a word, a model row stays active while it continues the typed text.
 ///
 /// Sentence predictions show only after the user types. The first input
 /// after a focus move, a change of mode, or a change of the input kind is
@@ -223,7 +226,7 @@ public final class PredictionEngine: ObservableObject {
             return
         }
         restripe()
-        guard context != requested else { return }
+        guard context.endsWord, context != requested else { return }
         ask(context)
     }
 
@@ -318,21 +321,10 @@ public final class PredictionEngine: ObservableObject {
             }
             let clock = ContinuousClock()
             let start = clock.now
-            var asked = context
-            var answers = try? await predictor.predictions(for: context)
-            var sentences = answers?.compactMap(context.sentence(from:))
-            // The guardrail of the model can refuse a partial word that looks
-            // like a bad word, such as "cu". The full word passes.
-            if sentences == nil, !Task.isCancelled,
-                let best = self?.words.first, !best.partial.isEmpty, best.partial == context.partialWord
-            {
-                let retry = context.completing(with: best)
-                asked = retry
-                answers = try? await predictor.predictions(for: retry)
-                sentences = answers?.compactMap(retry.sentence(from:))
-            }
+            let answers = try? await predictor.predictions(for: context)
+            let sentences = answers?.compactMap(context.sentence(from:))
             guard let self, self.generation == generation else { return }
-            var trace = PredictionTrace(context: asked)
+            var trace = PredictionTrace(context: context)
             trace.answers = answers ?? []
             trace.sentences = sentences ?? []
             trace.duration = clock.now - start
