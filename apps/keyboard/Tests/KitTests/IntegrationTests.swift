@@ -258,13 +258,15 @@ private func placementTests() {
         expect(DetachedPanel.isShown(in: .type))
     }
 
-    test("arranging puts Phrases at the left of the keys, next to them") {
+    test("arranging puts Phrases at the far left, past System and My Panel") {
         let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .mine: panel, .phrases: panel]
         let frames = PanelPlacement.arrangedFrames(keys: keys, sizes: sizes, screen: screen)
         let phrases = try expectValue(frames[.phrases])
         let system = try expectValue(frames[.system])
-        expectEqual(phrases.maxX, keys.minX - Metrics.Detached.gap)
-        expect(system.maxX < phrases.minX, "System goes out from Phrases")
+        let mine = try expectValue(frames[.mine])
+        expectEqual(system.maxX, keys.minX - Metrics.Detached.gap)
+        expect(phrases.maxX < mine.minX, "Phrases goes out past My Panel")
+        expect(phrases.maxX < system.minX, "Phrases goes out past System")
         expectEqual(phrases.maxY, keys.maxY)
     }
 

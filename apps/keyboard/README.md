@@ -200,10 +200,9 @@ keyboard window and the panels never take focus. The panels show only in Type
 mode. `DetachedPanel.isShown(in:)` holds the rule.
 
 Arrange moves the panels back beside the keys, at the place where the keyboard
-is now. The menu bar item has the same command, Arrange Panels. Phrases,
-System, and My Panel go to the left of the keys, with Phrases nearest the
-keys. Text and
-Rectangle go to the right, with Text nearest the keys. If a panel does not fit on
+is now. The menu bar item has the same command, Arrange Panels. System,
+My Panel, and Phrases go to the left of the keys, with System nearest the keys
+and Phrases at the far left. Text and Rectangle go to the right, with Text nearest the keys. If a panel does not fit on
 its side, it goes to the other side. Each panel stays on the screen.
 `PanelPlacement.arrangedFrames` holds the rule.
 

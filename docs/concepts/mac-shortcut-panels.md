@@ -6,8 +6,8 @@ package: keyboard
 
 # Shortcut panels (macOS)
 
-Panels are on each side of the macOS keyboard. PHRASES, SYSTEM, and My Panel
-are on the left, with PHRASES nearest the keys. TEXT and RECTANGLE are on the
+Panels are on each side of the macOS keyboard. SYSTEM, My Panel, and PHRASES
+are on the left, with SYSTEM nearest the keys and PHRASES at the far left. TEXT and RECTANGLE are on the
 right. RECTANGLE shows only when the
 Rectangle window manager is installed (`DetachedPanel.shown(rectangleInstalled:)`).
 The panels show only in Type mode (`DetachedPanel.isShown(in:)`).
