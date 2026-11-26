@@ -39,6 +39,7 @@ struct WindowContent {
         case .system: view = AnyView(KeypadCard(panel: controller.panels.system))
         case .mine: view = AnyView(MyPanelCard(session: session))
         case .rectangle: view = AnyView(KeypadCard(panel: controller.panels.rectangle))
+        case .phrases: view = AnyView(PhrasesCard(session: session, panel: phrases))
         }
         return AnyView(view.environmentObject(controller).environment(\.keyPresser, presser))
     }

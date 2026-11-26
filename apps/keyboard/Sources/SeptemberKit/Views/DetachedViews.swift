@@ -114,6 +114,24 @@ public struct KeypadCard: View {
     }
 }
 
+/// The Phrases panel of Type mode in a window of its own. A press speaks the
+/// phrase through the session, and the text of the field does not change.
+public struct PhrasesCard: View {
+    private let session: KeyboardSession
+    private let panel: PanelDefinition
+
+    public init(session: KeyboardSession, panel: PanelDefinition) {
+        self.session = session
+        self.panel = panel
+    }
+
+    public var body: some View {
+        PanelCard {
+            PhrasesPanelView(panel: panel, speaks: true) { session.speakPhrase($0) }
+        }
+    }
+}
+
 /// My Panel in a window of its own. While Write is in front, a second tab
 /// holds the keys of Write.
 public struct MyPanelCard: View {

@@ -5,19 +5,20 @@ import SwiftUI
 public struct MainKeyboardView<Header: View>: View {
     @EnvironmentObject private var controller: KeyboardController
 
-    private let width: CGFloat
     private let header: Header
 
-    public init(width: CGFloat = Metrics.keyboardWidth, @ViewBuilder header: () -> Header) {
-        self.width = width
+    public init(@ViewBuilder header: () -> Header) {
         self.header = header()
     }
 
+    private var width: CGFloat { Metrics.keyboardWidth }
+    private var spacing: CGFloat { Metrics.rowSpacing }
+
     public var body: some View {
-        VStack(spacing: Metrics.rowSpacing) {
+        VStack(spacing: spacing) {
             header
                 .frame(width: width)
-            ForEach(KeyboardLayout.rows) { row in
+            ForEach(KeyboardLayout.rows(keySize: controller.keySize)) { row in
                 rowView(row)
             }
         }
@@ -29,10 +30,10 @@ public struct MainKeyboardView<Header: View>: View {
 
     @ViewBuilder
     private func rowView(_ row: KeyRow) -> some View {
-        let widths = KeyboardLayout.widths(for: row, totalWidth: width)
+        let widths = KeyboardLayout.widths(for: row, totalWidth: width, spacing: spacing)
         let tint = controller.style.tint(for: row.id)
 
-        HStack(spacing: Metrics.rowSpacing) {
+        HStack(spacing: spacing) {
             ForEach(Array(row.keys.enumerated()), id: \.element.id) { index, key in
                 KeyView(
                     key: key,
@@ -62,7 +63,7 @@ public struct MainKeyboardView<Header: View>: View {
 }
 
 extension MainKeyboardView where Header == EmptyView {
-    public init(width: CGFloat = Metrics.keyboardWidth) {
-        self.init(width: width) { EmptyView() }
+    public init() {
+        self.init { EmptyView() }
     }
 }

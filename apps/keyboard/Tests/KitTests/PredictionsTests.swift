@@ -10,6 +10,7 @@ func predictionsTests() async {
     promptTests()
     noticeTests()
     await engineTests()
+    await wordEndTests()
     await typingTests()
     await historyTests()
     await candidateTests()
@@ -169,13 +170,6 @@ private func wordTests() {
         expect(sentence("I would like", "  ") == nil)
     }
 
-    test("a completion of the partial word ends with a space") {
-        let context = PredictionContext(text: "I would like a cu", caret: 17, mode: .talk, said: ["Hi"])
-        let completed = context.completing(with: WordCompletion(word: "cup", partial: "cu")!)
-        expectEqual(completed.typed, "I would like a cup ")
-        expectEqual(completed.said, ["Hi"])
-    }
-
     test("a caret inside a word has no word to complete") {
         expectEqual(partial("hello", caret: 2), "")
     }
@@ -254,10 +248,9 @@ private func wordTests() {
         expectEqual(emoji?.textToType, "🍕 ")
     }
 
-    test("a completion keeps its letters, and a replacing word puts the whole word in the context") {
+    test("a completion keeps its letters, and a replacing word deletes the whole word") {
         let context = PredictionContext(text: "I recieve", caret: 9, mode: .type, said: [])
         let fix = CandidateCompleter.completions(from: [WordCandidate("receive")], for: context)[0]
-        expectEqual(context.completing(with: fix).text, "I receive ")
         expectEqual(fix.deleteCount, 7)
         expectEqual(WordCompletion(word: "cup", partial: "cu")?.deleteCount, 0)
     }
@@ -344,12 +337,6 @@ private func promptTests() {
         expect(prompt.typed.hasSuffix("last wor"))
         expect(prompt.typed.hasPrefix("word"))
     }
-
-    test("each answer must start with the partial word at the caret") {
-        expectEqual(SuggestionPrompt(context: context("I would like a cu")).answerPrefix, "cu")
-        expectEqual(SuggestionPrompt(context: context("I am going to the")).answerPrefix, "the")
-        expectEqual(SuggestionPrompt(context: context("Can we meet ")).answerPrefix, "")
-    }
 }
 
 @MainActor
@@ -385,6 +372,22 @@ private func makeHistory(_ sentences: [String] = []) throws -> SentenceHistory {
     return history
 }
 
+extension PredictionEngine {
+    /// The rows of both columns, history first, for a test that checks
+    /// only what shows.
+    var allRows: [PredictionStripe] { (historyRows + modelRows).compactMap { $0 } }
+}
+
+/// The uses of each sentence, by key.
+@MainActor
+private func uses(in database: KeyboardDatabase) throws -> [String: Int64] {
+    var uses: [String: Int64] = [:]
+    for row in try database.query("SELECT key, uses FROM sentence") {
+        if let key = row[0].text, let count = row[1].int { uses[key] = count }
+    }
+    return uses
+}
+
 private let tea: @Sendable (PredictionContext) -> [String] = { _ in
     ["I would like a cup of tea, please.", "I would like a cup of coffee now.", "I would like a custard tart.", "I would like a cushion."]
 }
@@ -404,14 +407,15 @@ extension PredictionEngine {
 @MainActor
 private func engineTests() async {
     let cu = InputMirror.mirrored(text: "I would like a cu", caret: 17, selectionLength: 0)
+    let a = InputMirror.mirrored(text: "I would like a ", caret: 15, selectionLength: 0)
 
     await asyncTest("the engine shows three predictions after the delay, best first") {
         let engine = makeEngine(FakePredictor(answer: tea))
-        engine.userTypes(cu)
-        expect(engine.stripes.isEmpty)
+        engine.userTypes(a)
+        expect(engine.allRows.isEmpty)
         await engine.settle()
-        expectEqual(engine.stripes.map(\.prediction), Array(tea(PredictionContext(text: "", caret: 0, mode: .type, said: [])).prefix(3)))
-        expectEqual(engine.stripes.first?.text(toTypeThrough: 2), "p of tea, ")
+        expectEqual(engine.allRows.map(\.prediction), Array(tea(PredictionContext(text: "", caret: 0, mode: .type, said: [])).prefix(3)))
+        expectEqual(engine.allRows.first?.text(toTypeThrough: 2), "cup of tea, ")
     }
 
     await asyncTest("word completions do not wait for the sentence delay") {
@@ -419,7 +423,7 @@ private func engineTests() async {
         engine.update(input: cu, mode: .type, said: [])
         await engine.settleWords()
         expectEqual(engine.words.map(\.word), ["cup"])
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
     }
 
     await asyncTest("while new words load, the old words that still complete the word stay") {
@@ -499,20 +503,21 @@ private func engineTests() async {
     await asyncTest("quick changes make one request, for the last text") {
         let predictor = FakePredictor(answer: tea)
         let engine = makeEngine(predictor)
-        engine.update(input: .local(text: "I"), mode: .type, said: [])
-        engine.update(input: .local(text: "I w"), mode: .type, said: [])
-        engine.update(input: .local(text: "I wo"), mode: .type, said: [])
+        engine.update(input: .local(text: ""), mode: .type, said: [])
+        engine.update(input: .local(text: "Hi. "), mode: .type, said: [])
+        engine.update(input: .local(text: "Hi. I am "), mode: .type, said: [])
+        engine.update(input: .local(text: "Hi. I am here."), mode: .type, said: [])
         await engine.settle()
         let requests = await predictor.requests
-        expectEqual(requests.map(\.typed), ["I wo"])
+        expectEqual(requests.map(\.typed), ["Hi. I am here."])
     }
 
     await asyncTest("the same input makes no new request") {
         let predictor = FakePredictor(answer: tea)
         let engine = makeEngine(predictor)
-        engine.userTypes(cu)
+        engine.userTypes(a)
         await engine.settle()
-        engine.update(input: cu, mode: .type, said: [])
+        engine.update(input: a, mode: .type, said: [])
         await engine.settle()
         let count = await predictor.requests.count
         expectEqual(count, 1)
@@ -520,39 +525,43 @@ private func engineTests() async {
 
     await asyncTest("a new input drops the answer of an old request") {
         let predictor = FakePredictor(
-            holds: { $0.typed == "old" },
-            answer: { ["\($0.typed) answer"] })
+            holds: { $0.typed == "old " },
+            answer: { [$0.typed + "answer"] })
         let engine = makeEngine(predictor)
-        engine.userTypes(.local(text: "old"))
+        engine.userTypes(.local(text: "old "))
         await predictor.waitUntilHeld(1)
-        engine.update(input: .local(text: "new"), mode: .type, said: [])
+        engine.update(input: .local(text: "new "), mode: .type, said: [])
         await engine.settle()
-        expectEqual(engine.stripes.map(\.prediction), ["new answer"])
+        expectEqual(engine.allRows.map(\.prediction), ["new answer"])
         await predictor.release()
         await predictor.waitUntilAnswered(2)
-        expectEqual(engine.stripes.map(\.prediction), ["new answer"])
+        expectEqual(engine.allRows.map(\.prediction), ["new answer"])
     }
 
-    await asyncTest("old predictions stay until the new ones arrive") {
-        let engine = makeEngine(FakePredictor(answer: tea))
-        engine.userTypes(cu)
+    await asyncTest("old model rows that still continue the field stay until the new ones arrive") {
+        let predictor = FakePredictor(holds: { $0.typed.hasSuffix("of ") }, answer: tea)
+        let engine = makeEngine(predictor)
+        engine.userTypes(a)
         await engine.settle()
-        let tee = InputMirror.mirrored(text: "I would like a cup of t", caret: 23, selectionLength: 0)
-        engine.update(input: tee, mode: .type, said: [])
-        expectEqual(engine.stripes.count, 3)
-        expect(engine.stripes[0].matches, "the tea row still continues the field")
-        expect(!engine.stripes[2].matches, "the custard row no longer continues the field")
+        let of = InputMirror.mirrored(text: "I would like a cup of ", caret: 22, selectionLength: 0)
+        engine.update(input: of, mode: .type, said: [])
+        await predictor.waitUntilHeld(1)
+        expectEqual(
+            engine.modelRows.map(\.?.prediction),
+            ["I would like a cup of tea, please.", "I would like a cup of coffee now."],
+            "the custard row no longer continues the field")
+        await predictor.release()
         await engine.settle()
     }
 
     await asyncTest("a password field shows no predictions and sends no request") {
         let predictor = FakePredictor(answer: tea)
         let engine = makeEngine(predictor)
-        engine.userTypes(cu)
+        engine.userTypes(a)
         await engine.settle()
         engine.update(input: .secure, mode: .type, said: [])
         await engine.settle()
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
         expect(engine.words.isEmpty)
         expectEqual(engine.notice, .passwordField)
         let count = await predictor.requests.count
@@ -563,7 +572,7 @@ private func engineTests() async {
         let engine = makeEngine(FakePredictor(answer: tea))
         engine.update(input: .mirrored(text: "hello", caret: 0, selectionLength: 5), mode: .type, said: [])
         await engine.settle()
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
         expect(engine.notice == nil)
     }
 
@@ -572,7 +581,7 @@ private func engineTests() async {
         let engine = makeEngine(predictor)
         engine.userTypes(cu)
         await engine.settle()
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
         expectEqual(engine.words.map(\.word), ["cup"])
         expectEqual(engine.notice, .appleIntelligence(.off))
         let count = await predictor.requests.count
@@ -586,7 +595,7 @@ private func engineTests() async {
         engine.wordsEnabled = false
         engine.userTypes(cu)
         await engine.settle()
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
         expect(engine.words.isEmpty)
         expect(engine.notice == nil)
         let count = await predictor.requests.count
@@ -595,10 +604,11 @@ private func engineTests() async {
 
     await asyncTest("turning sentences off clears the stack") {
         let engine = makeEngine(FakePredictor(answer: tea))
-        engine.userTypes(cu)
+        engine.userTypes(a)
         await engine.settle()
+        expect(!engine.allRows.isEmpty)
         engine.sentencesEnabled = false
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
     }
 
     await asyncTest("the screen switch is off until the user turns it on, and keeps its state") {
@@ -614,9 +624,9 @@ private func engineTests() async {
         let engine = makeEngine(predictor)
         let first = ScreenContext(appName: "WhatsApp", title: nil, field: nil, lines: ["Hi"])
         let second = ScreenContext(appName: "WhatsApp", title: nil, field: nil, lines: ["Hi", "Lunch?"])
-        engine.userTypes(cu, screen: first)
+        engine.userTypes(a, screen: first)
         await engine.settle()
-        engine.update(input: cu, mode: .type, said: [], screen: second)
+        engine.update(input: a, mode: .type, said: [], screen: second)
         await engine.settle()
         let requests = await predictor.requests
         expectEqual(requests.map(\.screen), [first, second])
@@ -632,51 +642,32 @@ private func engineTests() async {
 
     await asyncTest("a failed request clears the stack") {
         let predictor = FakePredictor { context in
-            if context.typed == "fail" { throw PredictionFailed() }
+            if context.typed == "Hi, fail " { throw PredictionFailed() }
             return ["fine"]
         }
         let engine = makeEngine(predictor)
-        engine.update(input: .local(text: ""), mode: .type, said: [])
+        engine.userTypes(.local(text: "Hi, "))
         await engine.settle()
-        engine.update(input: .local(text: "fail"), mode: .type, said: [])
+        expect(!engine.allRows.isEmpty)
+        engine.update(input: .local(text: "Hi, fail "), mode: .type, said: [])
         await engine.settle()
-        expect(engine.stripes.isEmpty)
-    }
-
-    await asyncTest("a failed request asks again with the best completion of the partial word") {
-        let predictor = FakePredictor { context in
-            if context.typed.hasSuffix("cu") { throw PredictionFailed() }
-            return ["of tea."]
-        }
-        let engine = makeEngine(predictor)
-        engine.userTypes(cu)
-        await engine.settle()
-        expectEqual(engine.stripes.map(\.prediction), ["I would like a cup of tea."])
-        expectEqual(engine.stripes.first?.text(toTypeThrough: 1), "p of ")
+        expect(engine.allRows.isEmpty)
     }
 
     await asyncTest("an answer that only continues the field becomes a full row") {
         let engine = makeEngine(FakePredictor { _ in ["cup of tea, please."] })
-        engine.userTypes(cu)
+        engine.userTypes(a)
         await engine.settle()
-        expectEqual(engine.stripes.map(\.prediction), ["I would like a cup of tea, please."])
-        expectEqual(engine.stripes.first?.text(toTypeThrough: 2), "p of tea, ")
-    }
-
-    await asyncTest("an answer that does not fit the field is dropped") {
-        let predictor = FakePredictor { _ in ["Coffee is fine.", "I would like a cup of tea."] }
-        let engine = makeEngine(predictor)
-        engine.userTypes(cu)
-        await engine.settle()
-        expectEqual(engine.stripes.map(\.prediction), ["I would like a cup of tea."])
+        expectEqual(engine.allRows.map(\.prediction), ["I would like a cup of tea, please."])
+        expectEqual(engine.allRows.first?.text(toTypeThrough: 2), "cup of tea, ")
     }
 
     await asyncTest("a new Said list makes a new request") {
         let predictor = FakePredictor(answer: tea)
         let engine = makeEngine(predictor)
-        engine.userTypes(.local(text: "Hi"), mode: .talk)
+        engine.userTypes(.local(text: "Hi "), mode: .talk)
         await engine.settle()
-        engine.update(input: .local(text: "Hi"), mode: .talk, said: ["Hello"])
+        engine.update(input: .local(text: "Hi "), mode: .talk, said: ["Hello"])
         await engine.settle()
         let requests = await predictor.requests
         expectEqual(requests.map(\.said), [[], ["Hello"]])
@@ -684,29 +675,71 @@ private func engineTests() async {
 }
 
 @MainActor
+private func wordEndTests() async {
+    let a = InputMirror.mirrored(text: "I would like a ", caret: 15, selectionLength: 0)
+
+    await asyncTest("letters inside a word send no request") {
+        let predictor = FakePredictor(answer: tea)
+        let engine = makeEngine(predictor)
+        for text in ["I would like a c", "I would like a cu", "I don'"] {
+            engine.userTypes(.local(text: text))
+            await engine.settle()
+        }
+        let count = await predictor.requests.count
+        expectEqual(count, 0)
+    }
+
+    await asyncTest("a space, a mark, or a new line sends one request after the delay") {
+        for text in ["I would like ", "Hello,", "See you soon.", "Hello\n"] {
+            let predictor = FakePredictor(answer: tea)
+            let engine = makeEngine(predictor)
+            engine.userTypes(.local(text: text))
+            var count = await predictor.requests.count
+            expectEqual(count, 0, "\(text.count) characters: the request waits for the delay")
+            await engine.settle()
+            count = await predictor.requests.count
+            expectEqual(count, 1, "\(text.count) characters")
+        }
+    }
+
+    await asyncTest("inside a word, a model row that still continues the typed text stays") {
+        let predictor = FakePredictor(answer: tea)
+        let engine = makeEngine(predictor)
+        engine.userTypes(a)
+        await engine.settle()
+        engine.update(input: .mirrored(text: "I would like a cu", caret: 17, selectionLength: 0), mode: .type, said: [])
+        await engine.settle()
+        expectEqual(engine.allRows.first?.prediction, "I would like a cup of tea, please.")
+        expectEqual(engine.allRows.first?.text(toTypeThrough: 2), "p of tea, ")
+        let count = await predictor.requests.count
+        expectEqual(count, 1)
+    }
+}
+
+@MainActor
 private func typingTests() async {
-    let cu = InputMirror.mirrored(text: "I would like a cu", caret: 17, selectionLength: 0)
-    let cup = InputMirror.mirrored(text: "I would like a cup", caret: 18, selectionLength: 0)
+    let cupSpace = InputMirror.mirrored(text: "I would like a cup ", caret: 19, selectionLength: 0)
+    let a = InputMirror.mirrored(text: "I would like a ", caret: 15, selectionLength: 0)
 
     await asyncTest("a field that gets the focus shows no sentence predictions until the user types") {
         let predictor = FakePredictor(answer: tea)
         let engine = makeEngine(predictor)
-        engine.update(input: cu, mode: .type, said: [])
+        engine.update(input: cupSpace, mode: .type, said: [])
         await engine.settle()
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
         var count = await predictor.requests.count
         expectEqual(count, 0)
 
-        engine.update(input: cup, mode: .type, said: [])
+        engine.update(input: a, mode: .type, said: [])
         await engine.settle()
-        expect(!engine.stripes.isEmpty)
+        expect(!engine.allRows.isEmpty)
         count = await predictor.requests.count
         expectEqual(count, 1)
     }
 
     await asyncTest("the word row does not wait for typing") {
         let engine = makeEngine(FakePredictor(answer: tea))
-        engine.update(input: cu, mode: .type, said: [])
+        engine.update(input: .mirrored(text: "I would like a cu", caret: 17, selectionLength: 0), mode: .type, said: [])
         await engine.settleWords()
         expectEqual(engine.words.map(\.word), ["cup"])
     }
@@ -714,12 +747,12 @@ private func typingTests() async {
     await asyncTest("a focus move clears the predictions until the user types again") {
         let predictor = FakePredictor(answer: tea)
         let engine = makeEngine(predictor)
-        engine.userTypes(cu)
+        engine.userTypes(a)
         await engine.settle()
         engine.focusMoved()
         engine.update(input: .mirrored(text: "Hello there", caret: 11, selectionLength: 0), mode: .type, said: [])
         await engine.settle()
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
         let count = await predictor.requests.count
         expectEqual(count, 1)
     }
@@ -728,9 +761,9 @@ private func typingTests() async {
         let predictor = FakePredictor(answer: tea)
         let engine = makeEngine(predictor)
         engine.update(input: .local(text: ""), mode: .type, said: [])
-        engine.update(input: cu, mode: .type, said: [])
+        engine.update(input: a, mode: .type, said: [])
         await engine.settle()
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
         let count = await predictor.requests.count
         expectEqual(count, 0)
     }
@@ -738,11 +771,11 @@ private func typingTests() async {
     await asyncTest("a change of mode is not typing") {
         let predictor = FakePredictor(answer: tea)
         let engine = makeEngine(predictor)
-        engine.userTypes(.local(text: "Hi"), mode: .talk)
+        engine.userTypes(.local(text: "Hi "), mode: .talk)
         await engine.settle()
-        engine.update(input: .local(text: "I would like a cu"), mode: .type, said: [])
+        engine.update(input: .local(text: "I would like a "), mode: .type, said: [])
         await engine.settle()
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
         let count = await predictor.requests.count
         expectEqual(count, 1)
     }
@@ -750,12 +783,12 @@ private func typingTests() async {
     await asyncTest("text with no letter before the caret shows no sentence predictions") {
         let predictor = FakePredictor(answer: tea)
         let engine = makeEngine(predictor)
-        engine.userTypes(cu)
+        engine.userTypes(a)
         await engine.settle()
         for text in ["", "  ", "42 "] {
             engine.update(input: .mirrored(text: text, caret: text.utf16.count, selectionLength: 0), mode: .type, said: [])
             await engine.settle()
-            expect(engine.stripes.isEmpty, "\(text.count) characters")
+            expect(engine.allRows.isEmpty, "\(text.count) characters")
         }
         let count = await predictor.requests.count
         expectEqual(count, 1)
@@ -766,7 +799,7 @@ private func typingTests() async {
         let engine = makeEngine(predictor)
         engine.update(input: .local(text: ""), mode: .talk, said: ["Hello"])
         await engine.settle()
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
         let count = await predictor.requests.count
         expectEqual(count, 0)
     }
@@ -784,41 +817,92 @@ private func historyTests() async {
     await asyncTest("history rows show at once, before the model answers") {
         let engine = makeEngine(FakePredictor(answer: tea), history: try makeHistory(["I would like a cupcake."]))
         engine.userTypes(cu)
-        expectEqual(engine.stripes.map(\.prediction), ["I would like a cupcake."])
-        expectEqual(engine.stripes.first?.text(toTypeThrough: 0), "pcake. ")
+        expectEqual(engine.allRows.map(\.prediction), ["I would like a cupcake."])
+        expectEqual(engine.allRows.first?.text(toTypeThrough: 0), "pcake. ")
     }
 
-    await asyncTest("up to two history rows come first, then the model rows, with no row twice") {
-        let engine = makeEngine(FakePredictor(answer: tea), history: try makeHistory(sent))
-        engine.userTypes(cu)
+    await asyncTest("up to three history rows and up to three model rows show") {
+        let bakery = FakePredictor { _ in
+            ["I would like a scone.", "I would like a bun.", "I would like a muffin.", "I would like a roll."]
+        }
+        let engine = makeEngine(bakery, history: try makeHistory(["I would like a curry."] + sent))
+        engine.userTypes(.local(text: "I would like a "))
         await engine.settle()
         expectEqual(
-            engine.stripes.map(\.prediction),
-            ["I would like a cup of tea, please.", "I would like a cushion.", "I would like a cup of coffee now."])
-    }
-
-    await asyncTest("history rows fill the rows that the model leaves empty") {
-        let engine = makeEngine(FakePredictor { _ in [] }, history: try makeHistory(sent))
-        engine.userTypes(cu)
-        await engine.settle()
-        expectEqual(
-            engine.stripes.map(\.prediction),
+            engine.historyRows.map(\.?.prediction),
             ["I would like a cup of tea, please.", "I would like a cushion.", "I would like a cupcake."])
+        expectEqual(engine.modelRows.count, 3)
+    }
+
+    await asyncTest("history rows are in score order, and a model row with the words of a history row does not show") {
+        let engine = makeEngine(FakePredictor(answer: tea), history: try makeHistory(sent))
+        engine.userTypes(.local(text: "I would like a "))
+        await engine.settle()
+        expectEqual(engine.historyRows.first??.prediction, "I would like a cup of tea, please.")
+        expectEqual(
+            engine.modelRows.map(\.?.prediction),
+            ["I would like a cup of coffee now.", "I would like a custard tart."],
+            "the tea row and the cushion row are history rows")
+    }
+
+    await asyncTest("each row has its source, and its spoken label starts with the source") {
+        let engine = makeEngine(FakePredictor(answer: tea), history: try makeHistory(["I would like a cupcake."]))
+        engine.userTypes(.local(text: "I would like a "))
+        await engine.settle()
+        let history = engine.historyRows.first ?? nil
+        let model = engine.modelRows.first ?? nil
+        expectEqual(history?.source, .history)
+        expectEqual(model?.source, .model)
+        expectEqual(history?.spokenLabel(through: 0), "Said before: cupcake.")
+        expectEqual(model?.spokenLabel(through: 1), "Suggested: cup of")
+    }
+
+    await asyncTest("a history row keeps its place while it continues the typed text, and a new row fills only an empty place") {
+        let history = try makeHistory(sent)
+        let engine = makeEngine(FakePredictor(), history: history)
+        engine.userTypes(.mirrored(text: "I would like a c", caret: 16, selectionLength: 0))
+        let first = ["I would like a cup of tea, please.", "I would like a cushion.", "I would like a cupcake."]
+        expectEqual(engine.historyRows.map(\.?.prediction), first)
+
+        for _ in 0..<4 { history.record("I would like a cup of coffee.") }
+        engine.update(input: cu, mode: .type, said: [])
+        expectEqual(engine.historyRows.map(\.?.prediction), first, "a better row waits for an empty place")
+
+        engine.update(input: .mirrored(text: "I would like a cup", caret: 18, selectionLength: 0), mode: .type, said: [])
+        expectEqual(
+            engine.historyRows.map(\.?.prediction),
+            ["I would like a cup of tea, please.", "I would like a cup of coffee.", "I would like a cupcake."],
+            "the cushion row leaves, and the coffee row takes its place")
+    }
+
+    await asyncTest("a model row keeps its place while it continues the typed text") {
+        let predictor = FakePredictor { context in
+            context.typed.hasSuffix("cup ")
+                ? ["I would like a cup of milk.", "I would like a cup of coffee now."] : tea(context)
+        }
+        let engine = makeEngine(predictor)
+        engine.userTypes(.local(text: "I would like a "))
+        await engine.settle()
+        engine.update(input: .local(text: "I would like a cup "), mode: .type, said: [])
+        await engine.settle()
+        expectEqual(
+            engine.modelRows.map(\.?.prediction),
+            ["I would like a cup of tea, please.", "I would like a cup of coffee now.", "I would like a cup of milk."])
     }
 
     await asyncTest("a model row that repeats a history sentence after earlier sentences shows one time") {
         let engine = makeEngine(
             FakePredictor { _ in ["Thanks. I would like a cupcake."] },
             history: try makeHistory(["I would like a cupcake."]))
-        engine.userTypes(.local(text: "Thanks. I would like a cu"))
+        engine.userTypes(.local(text: "Thanks. I would like a "))
         await engine.settle()
-        expectEqual(engine.stripes.count, 1)
+        expectEqual(engine.allRows.count, 1)
     }
 
     await asyncTest("history rows wait for typing, as model rows do") {
         let engine = makeEngine(FakePredictor(answer: tea), history: try makeHistory(sent))
         engine.update(input: cu, mode: .type, said: [])
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
     }
 
     await asyncTest("history rows show when Apple Intelligence is off, in the place of its notice") {
@@ -826,11 +910,26 @@ private func historyTests() async {
             FakePredictor(availability: .off, answer: tea), history: try makeHistory(["I would like a cupcake."]))
         engine.userTypes(cu)
         await engine.settle()
-        expectEqual(engine.stripes.map(\.prediction), ["I would like a cupcake."])
+        expectEqual(engine.allRows.map(\.prediction), ["I would like a cupcake."])
         expect(engine.notice == nil)
         engine.update(input: .mirrored(text: "Hello", caret: 5, selectionLength: 0), mode: .type, said: [])
         await engine.settle()
         expectEqual(engine.notice, .appleIntelligence(.off), "with no history row, the notice shows")
+    }
+
+    await asyncTest("a cleared or turned-off history shows no row of its old sentences") {
+        for turnsOff in [false, true] {
+            let history = try makeHistory(["See you soon."])
+            let engine = makeEngine(FakePredictor(answer: tea), history: history)
+            engine.userTypes(.mirrored(text: "See y", caret: 5, selectionLength: 0))
+            await engine.settle()
+            expectEqual(engine.historyRows.map(\.?.prediction), ["See you soon."])
+            if turnsOff { history.isEnabled = false } else { history.clear() }
+            expect(engine.historyRows.isEmpty, "the row goes at once")
+            engine.update(input: .mirrored(text: "See yo", caret: 6, selectionLength: 0), mode: .type, said: [])
+            await engine.settle()
+            expect(engine.historyRows.isEmpty, "the row does not come back while it continues the text")
+        }
     }
 
     await asyncTest("the sentence switch turns off the history rows") {
@@ -838,19 +937,49 @@ private func historyTests() async {
         engine.sentencesEnabled = false
         engine.userTypes(cu)
         await engine.settle()
-        expect(engine.stripes.isEmpty)
+        expect(engine.allRows.isEmpty)
     }
 
-    await asyncTest("submit keeps the sentences of the paragraph at the caret") {
+    await asyncTest("submit keeps each sentence of the whole field") {
         let history = try makeHistory()
         let engine = makeEngine(FakePredictor(answer: tea), history: history)
         let text = "Dear Sam.\nSee you soon. Bye now\nLater."
         engine.update(input: .mirrored(text: text, caret: 15, selectionLength: 0), mode: .type, said: [])
         engine.submit()
-        expectEqual(history.count, 2)
-        expectEqual(history.matches(for: "See"), ["See you soon."])
+        expectEqual(history.count, 4)
         expectEqual(history.matches(for: "Bye"), ["Bye now"])
-        expectEqual(history.matches(for: "Dear"), [])
+        expectEqual(history.matches(for: "Dear"), ["Dear Sam."])
+    }
+
+    await asyncTest("Return pressed two times in one field adds one use to each sentence") {
+        let database = try KeyboardDatabase(path: ":memory:")
+        let history = SentenceHistory(database: database, defaults: freshDefaults())
+        let engine = makeEngine(FakePredictor(answer: tea), history: history)
+        engine.update(input: .local(text: "Hi Sam. See you soon."), mode: .type, said: [])
+        engine.submit()
+        engine.update(input: .local(text: "Hi Sam. See you soon. Bye."), mode: .type, said: [])
+        engine.submit()
+        expectEqual(try uses(in: database), ["bye": 1, "hi sam": 1, "see you soon": 1])
+    }
+
+    await asyncTest("after a focus move or an empty field, the same sentence adds one more use") {
+        let database = try KeyboardDatabase(path: ":memory:")
+        let history = SentenceHistory(database: database, defaults: freshDefaults())
+        let engine = makeEngine(FakePredictor(answer: tea), history: history)
+        engine.update(input: .local(text: "See you soon."), mode: .type, said: [])
+        engine.submit()
+        engine.focusMoved()
+        engine.update(input: .local(text: "See you soon."), mode: .type, said: [])
+        engine.submit()
+        expectEqual(try uses(in: database), ["see you soon": 2])
+
+        engine.update(input: .local(text: ""), mode: .talk, said: [])
+        engine.update(input: .local(text: "See you soon."), mode: .talk, said: [])
+        engine.submit()
+        engine.update(input: .local(text: ""), mode: .talk, said: [])
+        engine.update(input: .local(text: "See you soon."), mode: .talk, said: [])
+        engine.submit()
+        expectEqual(try uses(in: database), ["see you soon": 4], "the Talk bar empties after each Speak")
     }
 
     await asyncTest("the Talk bar goes into the history when the user speaks it") {
@@ -884,14 +1013,14 @@ private func liveModelTests() async {
             predictor: AppleIntelligencePredictor(),
             defaults: freshDefaults())
         expectEqual(engine.availability, .ready)
-        for text in ["I would like a cu", "I would like a cup of t", "Can we me"] {
+        for text in ["I would like a ", "I would like a cup of ", "Can we "] {
             engine.update(
                 input: .mirrored(text: text, caret: text.utf16.count, selectionLength: 0),
                 mode: .talk, said: ["Hi, how are you?"])
             await engine.settle()
-            let rows = engine.stripes.map(\.prediction)
+            let rows = engine.allRows.map(\.prediction)
             expectEqual(rows.count, 3, "\(text): \(rows)")
-            expect(engine.stripes.first?.matches == true, "\(text): no row continues the field: \(rows)")
+            expect(engine.allRows.first?.matches == true, "\(text): no row continues the field: \(rows)")
         }
     }
 }

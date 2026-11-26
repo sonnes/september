@@ -1,6 +1,24 @@
 # Changelog
 
-## Unreleased
+## 0.8.0
+
+### Suggestions
+
+- The sentence suggestions show in two columns. The left column holds up to 3 sentences that you said before, in green with ↺. The right column holds up to 3 sentences from Apple Intelligence, in indigo with ✦.
+- A suggestion stays in its place while it still continues your text, so a row does not move under the pointer.
+- Apple Intelligence gets a request only at the end of a word: after a space, a punctuation mark, or a new line.
+- The history keeps each sentence of the field. "I'm fine." and "i’m fine!" are one sentence, and Return pressed more than one time in one field counts a sentence one time.
+- Clear Sentence History also removes the history rows that show.
+
+### Phrases
+
+- The Phrases panel also floats in Type mode, at the far left. A press speaks the phrase, and the text of the field does not change.
+
+### Key size
+
+- Settings, Look has a key size of 48, 64, or 88 points. The whole keyboard grows, and it never grows wider than the screen.
+- At 88 points the number row, the function row, and the panels fold away, and Delete moves to the end of the QWERTY row.
+
 
 ### Input method
 

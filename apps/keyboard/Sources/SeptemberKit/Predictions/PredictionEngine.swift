@@ -1,29 +1,41 @@
 import Combine
+import CryptoKit
 import Foundation
 
 /// Turns the input bar into sentence predictions and word completions.
 ///
 /// The controller calls `update(input:mode:said:)` on each change of the
-/// input bar. Word completions do not wait. Sentence predictions wait for
-/// `delay` after the last change. A new change cancels the old request. The
-/// old predictions stay, marked stale, until the new ones arrive.
+/// input bar. Word completions do not wait. The model gets a request only
+/// at the end of a word: when the text before the caret ends with a space, a
+/// mark, or a new line. The request waits for `delay` after the last change,
+/// for a paste or a fast burst of keys. A new change cancels the old request.
+/// The old predictions stay, marked stale, until the new ones arrive. Inside
+/// a word, a model row stays active while it continues the typed text.
 ///
 /// Sentence predictions show only after the user types. The first input
 /// after a focus move, a change of mode, or a change of the input kind is
 /// the baseline of the field. A later input with other text is typing. The
 /// text before the caret must also hold a letter.
 ///
-/// The rows of the stack come from two sources: the sentence history and the
-/// model. History rows show at once. Up to `historyLead` of them come first,
-/// then the model rows, and then the other history rows.
+/// The rows of the stack are in two columns, one for each source. The
+/// history column holds up to three sentences of the history, best score
+/// first, and shows them at once. The model column holds up to three rows of
+/// the model. A model row with the words of a history row does not show.
+///
+/// A row that shows keeps its place while it continues the typed text, so a
+/// row does not move under a dwell or a switch. A new row fills only an
+/// empty place. A place is `nil` while it is empty.
 ///
 /// The engine keeps the completions that the user picks. When the user
 /// submits the text, it tells the completer which picked words the text
 /// still holds.
 @MainActor
 public final class PredictionEngine: ObservableObject {
-    /// The rows of the stack, best first.
-    @Published public private(set) var stripes: [PredictionStripe] = []
+    /// The places of the history column, best first. A `nil` place is
+    /// empty. The list has no empty place at its end.
+    @Published public private(set) var historyRows: [PredictionStripe?] = []
+    /// The places of the model column, in the same form.
+    @Published public private(set) var modelRows: [PredictionStripe?] = []
     /// The completions of the word at the caret, best first.
     @Published public private(set) var words: [WordCompletion] = []
     /// The message that the stack shows in place of predictions.
@@ -60,9 +72,6 @@ public final class PredictionEngine: ObservableObject {
         static let screen = "predictions.screen"
     }
 
-    /// The most history rows that come before the model rows.
-    public static let historyLead = 2
-
     private let predictor: any SentencePredicting
     private let history: SentenceHistory?
     private let completer: any WordCompleting
@@ -82,7 +91,7 @@ public final class PredictionEngine: ObservableObject {
     private var requested: PredictionContext?
     private var predictions: [String] = []
     /// The history sentences that continue the typed text, best first.
-    private var historyRows: [String] = []
+    private var historyMatches: [String] = []
     private var request: Task<Void, Never>?
     /// Counts the requests, so a late answer to an old one is dropped.
     private var generation = 0
@@ -90,6 +99,12 @@ public final class PredictionEngine: ObservableObject {
     private var wordGeneration = 0
     /// The completions that the user picked since the last submit.
     private var picked: [WordCompletion] = []
+    /// The hashes of the sentence keys that the history counted for the
+    /// focused field. A sentence adds one use per field. The set empties
+    /// when the focus moves or the field becomes empty, as the Talk bar does
+    /// after Speak.
+    private var counted: Set<SHA256.Digest> = []
+    private var historyCleared: AnyCancellable?
 
     public init(
         predictor: any SentencePredicting = AppleIntelligencePredictor(),
@@ -107,6 +122,14 @@ public final class PredictionEngine: ObservableObject {
         sentencesEnabled = defaults.object(forKey: Keys.sentences) as? Bool ?? true
         wordsEnabled = defaults.object(forKey: Keys.words) as? Bool ?? true
         screenEnabled = defaults.bool(forKey: Keys.screen)
+        // A clear, or a switch that turns the history off, removes the rows
+        // of the history at once. A kept row would show a deleted sentence.
+        // `@Published` sends the new count before it stores it.
+        historyCleared = history?.$count.sink { [weak self, weak history] count in
+            guard let self, let history, count < history.count else { return }
+            self.historyRows = []
+            self.refresh()
+        }
     }
 
     /// Feeds the engine with the input bar. A password field, a selection,
@@ -120,6 +143,7 @@ public final class PredictionEngine: ObservableObject {
         let changed =
             input != self.input || mode != self.mode || context != self.context || isPrivate != self.isPrivate
         if changed || baseline == nil { noteTyping(input, mode: mode) }
+        if input.text.isEmpty { counted = [] }
         guard changed else { return }
         self.input = input
         self.mode = mode
@@ -158,9 +182,9 @@ public final class PredictionEngine: ObservableObject {
 
     /// The user submitted the text, with Return or with Speak in Talk mode.
     /// Each picked word that the text still holds is accepted. Each other
-    /// picked word is edited. The sentences of the paragraph at the caret go
-    /// into the history when `keepsSentences` is true. Private text and a
-    /// password field record nothing.
+    /// picked word is edited. The sentences of the whole field go into the
+    /// history when `keepsSentences` is true. Each sentence adds one use per
+    /// field. Private text and a password field record nothing.
     public func submit(keepsSentences: Bool = true) {
         defer { picked = [] }
         guard !isPrivate, input.holdsText else { return }
@@ -169,17 +193,7 @@ public final class PredictionEngine: ObservableObject {
             completer.record(
                 words.contains(completion.word.lowercased()) ? .accepted : .edited, to: completion)
         }
-        if keepsSentences { history?.record(Self.paragraph(at: input)) }
-    }
-
-    /// The line of the caret. A field with many lines, such as a note, gives
-    /// only the paragraph that the user wrote last.
-    private static func paragraph(at input: InputMirror) -> String {
-        guard case .mirrored(let text, let caret, let selectionLength) = input else { return input.text }
-        let parts = InputMirror.split(text, caret: caret, selectionLength: selectionLength)
-        let before = parts.before.split(separator: "\n", omittingEmptySubsequences: false).last ?? ""
-        let after = (parts.selected + parts.after).split(separator: "\n", omittingEmptySubsequences: false).first ?? ""
-        return String(before + after)
+        if keepsSentences { history?.record(input.text, counted: &counted) }
     }
 
     /// The focus moved to another field or app. The picked words cannot be
@@ -187,6 +201,7 @@ public final class PredictionEngine: ObservableObject {
     /// until the user types in the new field.
     public func focusMoved() {
         picked = []
+        counted = []
         baseline = nil
         hasTyped = false
         refresh()
@@ -211,25 +226,29 @@ public final class PredictionEngine: ObservableObject {
         refreshWords()
 
         guard let context, sentencesEnabled, wantsSentences(context) else {
+            historyMatches = []
             historyRows = []
             stopAsking()
             restripe()
             return
         }
-        historyRows = history?.matches(for: context.typed, limit: SuggestionPrompt.count) ?? []
+        // More matches than places, so that a new match can fill a place
+        // that a kept row leaves.
+        historyMatches = history?.matches(for: context.typed, limit: SuggestionPrompt.count * 2) ?? []
         guard availability == .ready else {
             stopAsking()
             restripe()
             return
         }
         restripe()
-        guard context != requested else { return }
+        guard context.endsWord, context != requested else { return }
         ask(context)
     }
 
     private func stopAsking() {
         cancel()
         predictions = []
+        modelRows = []
         requested = nil
         trace = nil
     }
@@ -270,21 +289,19 @@ public final class PredictionEngine: ObservableObject {
         return nil
     }
 
-    /// Builds the rows from the history rows and the model rows, then sets
-    /// the notice. A row with the same words as an earlier row does not
-    /// show. The notice of Apple Intelligence does not hide history rows.
+    /// Builds the two columns, then sets the notice. A row with the same
+    /// words as an earlier row does not show. The notice of Apple
+    /// Intelligence does not hide history rows.
     private func restripe() {
         let typed = context?.typed ?? ""
-        let lead = historyRows.prefix(Self.historyLead)
-        let sources = lead + predictions + historyRows.dropFirst(Self.historyLead)
-        var rows: [PredictionStripe] = []
         var seen: Set<String> = []
-        for source in sources where rows.count < SuggestionPrompt.count {
-            let stripe = PredictionStripe(prediction: source, typed: typed)
-            guard seen.insert(stripe.tiles.joined(separator: " ").lowercased()).inserted else { continue }
-            rows.append(stripe)
-        }
-        stripes = rows
+        let history = Self.places(
+            kept: historyRows, candidates: historyMatches, source: .history, typed: typed, seen: &seen)
+        let model = Self.places(
+            kept: modelRows, candidates: predictions, source: .model, typed: typed, seen: &seen)
+        if history != historyRows { historyRows = history }
+        if model != modelRows { modelRows = model }
+        let rows = history.compactMap { $0 } + model.compactMap { $0 }
 
         let notice =
             isPrivate
@@ -295,6 +312,31 @@ public final class PredictionEngine: ObservableObject {
         } else {
             self.notice = notice
         }
+    }
+
+    /// The places of one column. Each kept row that still continues the typed
+    /// text stays in its place. Then each candidate fills the first empty
+    /// place. `seen` holds the words of the rows that show.
+    private static func places(
+        kept: [PredictionStripe?], candidates: [String], source: PredictionSource, typed: String,
+        seen: inout Set<String>
+    ) -> [PredictionStripe?] {
+        func shows(_ stripe: PredictionStripe) -> Bool {
+            stripe.matches && !stripe.tiles.isEmpty
+                && seen.insert(stripe.tiles.joined(separator: " ").lowercased()).inserted
+        }
+        var places: [PredictionStripe?] = (0..<SuggestionPrompt.count).map { index in
+            guard index < kept.count, let old = kept[index] else { return nil }
+            let stripe = PredictionStripe(prediction: old.prediction, typed: typed, source: source)
+            return shows(stripe) ? stripe : nil
+        }
+        for candidate in candidates {
+            guard let empty = places.firstIndex(where: { $0 == nil }) else { break }
+            let stripe = PredictionStripe(prediction: candidate, typed: typed, source: source)
+            if shows(stripe) { places[empty] = stripe }
+        }
+        while let last = places.last, last == nil { places.removeLast() }
+        return places
     }
 
     private func cancel() {
@@ -318,26 +360,15 @@ public final class PredictionEngine: ObservableObject {
             }
             let clock = ContinuousClock()
             let start = clock.now
-            var asked = context
-            var answers = try? await predictor.predictions(for: context)
-            var sentences = answers?.compactMap(context.sentence(from:))
-            // The guardrail of the model can refuse a partial word that looks
-            // like a bad word, such as "cu". The full word passes.
-            if sentences == nil, !Task.isCancelled,
-                let best = self?.words.first, !best.partial.isEmpty, best.partial == context.partialWord
-            {
-                let retry = context.completing(with: best)
-                asked = retry
-                answers = try? await predictor.predictions(for: retry)
-                sentences = answers?.compactMap(retry.sentence(from:))
-            }
+            let answers = try? await predictor.predictions(for: context)
+            let sentences = answers?.compactMap(context.sentence(from:))
             guard let self, self.generation == generation else { return }
-            var trace = PredictionTrace(context: asked)
+            var trace = PredictionTrace(context: context)
             trace.answers = answers ?? []
             trace.sentences = sentences ?? []
             trace.duration = clock.now - start
             self.trace = trace
-            self.predictions = Array((sentences ?? []).prefix(SuggestionPrompt.count))
+            self.predictions = sentences ?? []
             self.restripe()
         }
     }

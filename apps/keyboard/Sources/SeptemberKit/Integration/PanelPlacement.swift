@@ -8,6 +8,9 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
     case mine
     /// The shortcuts of Rectangle, the window manager.
     case rectangle
+    /// The Phrases panel of Talk mode. In Type mode a press speaks the
+    /// phrase, and the text of the field does not change.
+    case phrases
 
     public var id: Self { self }
 
@@ -22,19 +25,20 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
     }
 
     /// The panels show only in Type mode. Talk mode holds Phrases in the
-    /// keyboard window.
-    public static func isShown(in mode: KeyboardMode) -> Bool {
-        mode == .type
+    /// keyboard window, so the Phrases panel of Type hides there too. At a
+    /// key size that folds away, the panels hide.
+    public static func isShown(in mode: KeyboardMode, keySize: KeySize = .regular) -> Bool {
+        mode == .type && !keySize.foldsAway
     }
 }
 
-/// Where the panels sit until the user drags them: System and My Panel
-/// at the left of the keys, and Text and Rectangle at the right, with their tops
+/// Where the panels sit until the user drags them: System, My Panel, and
+/// Phrases at the left of the keys, with Phrases at the far left, and Text and Rectangle at the right, with their tops
 /// in line with the top of the keys. Frames use the coordinates of AppKit, with
 /// the origin at the bottom left.
 public enum PanelPlacement {
     /// The panels at the left of the keys, from the keys out.
-    static let left: [DetachedPanel] = [.system, .mine]
+    static let left: [DetachedPanel] = [.system, .mine, .phrases]
     /// The panels at the right of the keys, from the keys out.
     static let right: [DetachedPanel] = [.text, .rectangle]
 
@@ -153,27 +157,36 @@ public struct KeyboardPosition {
         return saved
     }
 
+    /// The corner of a window of `size` at `origin`, moved by the least
+    /// distance so that the window is inside `screen`. A window that grows
+    /// with a larger key size keeps its corner and can reach past the edge.
+    public static func onScreen(_ origin: CGPoint, size: CGSize, in screen: CGRect) -> CGPoint {
+        PanelPlacement.onScreen(CGRect(origin: origin, size: size), screen).origin
+    }
+
+    // `scale` is the scale of the whole window, from the key size.
+
     /// The Type mode corner of a window at `origin` in `mode`.
-    public static func typeOrigin(of origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
-        CGPoint(x: origin.x + shift(mode), y: origin.y)
+    public static func typeOrigin(of origin: CGPoint, in mode: KeyboardMode, scale: CGFloat = 1) -> CGPoint {
+        CGPoint(x: origin.x + shift(mode) * scale, y: origin.y)
     }
 
     /// The corner of the window in `mode` for the Type mode corner `origin`.
-    public static func windowOrigin(_ origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
-        CGPoint(x: origin.x - shift(mode), y: origin.y)
+    public static func windowOrigin(_ origin: CGPoint, in mode: KeyboardMode, scale: CGFloat = 1) -> CGPoint {
+        CGPoint(x: origin.x - shift(mode) * scale, y: origin.y)
     }
 
     /// The bottom left corner of the keys card of a window at `origin` in
     /// `mode`. The window reaches past the keys card at the left, for the
     /// clipboard buttons.
-    public static func keysOrigin(ofWindow origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
-        let type = typeOrigin(of: origin, in: mode)
-        return CGPoint(x: type.x + cardInset(.type), y: type.y)
+    public static func keysOrigin(ofWindow origin: CGPoint, in mode: KeyboardMode, scale: CGFloat = 1) -> CGPoint {
+        let type = typeOrigin(of: origin, in: mode, scale: scale)
+        return CGPoint(x: type.x + cardInset(.type) * scale, y: type.y)
     }
 
     /// The corner of the Type mode window whose keys card is at `keys`.
-    public static func typeWindowOrigin(forKeys keys: CGPoint) -> CGPoint {
-        CGPoint(x: keys.x - cardInset(.type), y: keys.y)
+    public static func typeWindowOrigin(forKeys keys: CGPoint, scale: CGFloat = 1) -> CGPoint {
+        CGPoint(x: keys.x - cardInset(.type) * scale, y: keys.y)
     }
 
     /// The distance from the left edge of the window to the keys and the bar

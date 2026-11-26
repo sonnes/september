@@ -7,6 +7,12 @@ extension Metrics {
     public enum Predictions {
         /// The gap between the rows of the stack.
         public static let rowSpacing: CGFloat = 8
+        /// The gap between the history column and the model column.
+        public static let columnSpacing: CGFloat = 16
+        /// The width of one column: half of the keys.
+        public static let columnWidth: CGFloat = (keyboardWidth - columnSpacing) / 2
+        /// The gap between the icon of the source and the first tile.
+        public static let iconSpacing: CGFloat = 8
         /// The gap between the tiles of a row.
         public static let tileSpacing: CGFloat = 6
         public static let tileHeight: CGFloat = 44

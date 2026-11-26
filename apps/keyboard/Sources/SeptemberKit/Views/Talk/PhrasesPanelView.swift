@@ -4,10 +4,14 @@ import SwiftUI
 /// phrase into the Talk bar.
 public struct PhrasesPanelView: View {
     private let panel: PanelDefinition
+    private let speaks: Bool
     private let press: (PanelAction) -> Void
 
-    public init(panel: PanelDefinition, press: @escaping (PanelAction) -> Void) {
+    /// - Parameter speaks: True when a press speaks the phrase, as in the
+    ///   Phrases panel of Type mode. Then a button acts when it goes up.
+    public init(panel: PanelDefinition, speaks: Bool = false, press: @escaping (PanelAction) -> Void) {
         self.panel = panel
+        self.speaks = speaks
         self.press = press
     }
 
@@ -16,7 +20,7 @@ public struct PhrasesPanelView: View {
             SectionLabel(text: panel.title)
             KeypadGrid(rows: KeypadRow.rows(panel.buttons, columns: panel.columns), columns: panel.columns) {
                 button, width in
-                ShortcutButtonView(button: button, width: width) { press(button.action) }
+                ShortcutButtonView(button: button, width: width, speaks: speaks) { press(button.action) }
             }
         }
         .frame(width: Metrics.Keypad.width)

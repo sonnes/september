@@ -12,7 +12,9 @@ import Foundation
 ///   accepts both forms.
 /// - Type mode asks for written text, because the user writes into an app.
 /// - Guided generation gives the shape of the answer, so there is no JSON
-///   line. It also makes each answer start with `answerPrefix`.
+///   line.
+/// - The engine asks only at the end of a word, so the typed text never ends
+///   with a partial word.
 /// - In Type mode, the prompt can hold the app, the window, and the text near
 ///   the field (`ScreenContext`).
 public struct SuggestionPrompt: Equatable, Sendable {
@@ -28,13 +30,9 @@ public struct SuggestionPrompt: Equatable, Sendable {
     public let prompt: String
     /// The end of the text before the caret, as the model sees it.
     public let typed: String
-    /// The letters that each answer must start with: the partial word at the
-    /// caret. The model does not keep to the partial word without a guide.
-    public let answerPrefix: String
 
     public init(context: PredictionContext) {
         typed = Self.tail(of: context.typed)
-        answerPrefix = context.partialWord
         let isCompletion = !typed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let intro = Self.intro(context.mode)
         let screen = context.mode == .type ? context.screen : nil
@@ -125,13 +123,12 @@ public struct SuggestionPrompt: Equatable, Sendable {
 
         <context>
         - \(intro)
-        - The "current input" below is what they have typed so far. It may end with a partial word, phrase, or sentence
+        - The "current input" below is what they have typed so far. It may end with a phrase or a sentence
         - The "Me:" lines are the recent conversation history for context\(screenLine)
         </context>
 
         <rules>
         - Give only the words that come after the current input. Do NOT repeat the current input
-        - If the input ends with a partial word, begin with that whole word
         - Continue the sentence naturally in the same language as the typed input
         - \(length(mode))
         - Make the \(count) completions different from each other

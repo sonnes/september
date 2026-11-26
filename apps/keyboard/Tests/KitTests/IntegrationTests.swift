@@ -250,7 +250,24 @@ private func placementTests() {
     test("the Rectangle panel shows only when Rectangle is installed") {
         expect(DetachedPanel.shown(rectangleInstalled: true).contains(.rectangle))
         expect(!DetachedPanel.shown(rectangleInstalled: false).contains(.rectangle))
-        expectEqual(Set(DetachedPanel.shown(rectangleInstalled: false)), [.text, .system, .mine])
+        expectEqual(Set(DetachedPanel.shown(rectangleInstalled: false)), [.text, .system, .mine, .phrases])
+    }
+
+    test("Type mode shows the Phrases panel") {
+        expect(DetachedPanel.shown(rectangleInstalled: false).contains(.phrases))
+        expect(DetachedPanel.isShown(in: .type))
+    }
+
+    test("arranging puts Phrases at the far left, past System and My Panel") {
+        let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .mine: panel, .phrases: panel]
+        let frames = PanelPlacement.arrangedFrames(keys: keys, sizes: sizes, screen: screen)
+        let phrases = try expectValue(frames[.phrases])
+        let system = try expectValue(frames[.system])
+        let mine = try expectValue(frames[.mine])
+        expectEqual(system.maxX, keys.minX - Metrics.Detached.gap)
+        expect(phrases.maxX < mine.minX, "Phrases goes out past My Panel")
+        expect(phrases.maxX < system.minX, "Phrases goes out past System")
+        expectEqual(phrases.maxY, keys.maxY)
     }
 
     test("the shortcut panels show in Type mode and hide in Talk mode") {
@@ -322,10 +339,37 @@ private func placementTests() {
         }
     }
 
+    test("a keyboard window that grows past the screen moves back onto it") {
+        let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
+        let grown = CGSize(width: 1400, height: 500)
+        let origin = KeyboardPosition.onScreen(CGPoint(x: 215, y: 24), size: grown, in: screen)
+        expect(screen.contains(CGRect(origin: origin, size: grown)), "the window is on the screen")
+        let fits = CGPoint(x: 20, y: 24)
+        expectEqual(KeyboardPosition.onScreen(fits, size: grown, in: screen), fits, "a window that fits stays")
+    }
+
     test("the first window of the keyboard puts the keys at the place of the keys") {
         let keys = CGPoint(x: 400, y: 24)
         let window = KeyboardPosition.typeWindowOrigin(forKeys: keys)
         expectEqual(KeyboardPosition.keysOrigin(ofWindow: window, in: .type), keys)
+    }
+
+    test("in a scaled keyboard window the keys sit at the scaled inset, and a change of mode keeps them in place") {
+        let window = CGPoint(x: 100, y: 50)
+        let scale: CGFloat = 88.0 / 48
+        expectEqual(
+            KeyboardPosition.keysOrigin(ofWindow: window, in: .type, scale: scale).x,
+            window.x + KeyboardPosition.cardInset(.type) * scale)
+        let keys = CGPoint(x: 400, y: 24)
+        expectEqual(
+            KeyboardPosition.keysOrigin(
+                ofWindow: KeyboardPosition.typeWindowOrigin(forKeys: keys, scale: scale), in: .type, scale: scale),
+            keys)
+        let talk = KeyboardPosition.windowOrigin(window, in: .talk, scale: scale)
+        expectEqual(
+            KeyboardPosition.keysOrigin(ofWindow: talk, in: .talk, scale: scale),
+            KeyboardPosition.keysOrigin(ofWindow: window, in: .type, scale: scale))
+        expectEqual(KeyboardPosition.typeOrigin(of: talk, in: .talk, scale: scale), window)
     }
 }
 
@@ -701,7 +745,20 @@ private func sessionTests() async {
         let parts = try makeSession()
         parts.history.record("See you soon.")
         try await userTypes("See y", in: parts)
-        expectEqual(parts.session.predictions.stripes.map(\.prediction), ["See you soon."])
+        expectEqual(parts.session.predictions.historyRows.map(\.?.prediction), ["See you soon."])
+    }
+
+    await asyncTest("a press on a phrase in Type mode speaks it, and the text of the field does not change") {
+        let parts = try makeSession()
+        try await userTypes("I am on my way", in: parts)
+        let input = parts.controller.input
+        let thanks = try Phrases.bundled().buttons.first { $0.action == .text("Thanks") }
+        parts.session.speakPhrase(try expectValue(thanks).action)
+        await parts.session.settle()
+        expectEqual(parts.voice.spoken, ["Thanks"])
+        expectEqual(parts.sink.typed, [])
+        expectEqual(parts.controller.input, input)
+        expectEqual(parts.controller.mode, .type)
     }
 
     await asyncTest("Speak in Talk mode records the picked word") {
@@ -744,7 +801,7 @@ private func sessionTests() async {
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
         parts.reader.screens[whatsApp.pid] = screen
         parts.session.appActivated(whatsApp)
-        try await userTypes("Yes", in: parts)
+        try await userTypes("Yes ", in: parts)
         await passScreenDelay(parts)
         var last = await predictor.requests.last
         expect(last != nil && last?.screen == nil, "the switch is off")
@@ -757,7 +814,7 @@ private func sessionTests() async {
 
         parts.controller.mode = .talk
         await parts.session.settle()
-        parts.controller.talk.type("Hi")
+        parts.controller.talk.type("Hi ")
         await parts.session.settle()
         last = await predictor.requests.last
         expect(last?.screen == nil, "Talk mode sends no text from the screen")
@@ -769,13 +826,13 @@ private func sessionTests() async {
         let said = parts.controller.talk.said
         said.add("Yesterday", at: Date().addingTimeInterval(-24 * 3600))
         said.add("Good morning", at: Date())
-        try await userTypes("Hi", in: parts)
+        try await userTypes("Hi ", in: parts)
         var last = await predictor.requests.last
         expectEqual(last?.said, [])
 
         parts.controller.mode = .talk
         await parts.session.settle()
-        parts.controller.talk.type("Hi")
+        parts.controller.talk.type("Hi ")
         await parts.session.settle()
         last = await predictor.requests.last
         expectEqual(last?.said, ["Good morning"])
@@ -788,13 +845,13 @@ private func sessionTests() async {
         parts.reader.screens[whatsApp.pid] = ScreenContext(
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
         parts.session.appActivated(whatsApp)
-        try await userTypes("Yes", in: parts)
+        try await userTypes("Yes ", in: parts)
         await passScreenDelay(parts)
         var last = await predictor.requests.last
         expect(last?.screen != nil, "the read of WhatsApp lands")
 
         parts.session.appActivated(notes)
-        try await userTypes("Ye", in: parts)
+        try await userTypes("Ye ", in: parts)
         await passScreenDelay(parts)
         last = await predictor.requests.last
         expect(last != nil && last?.screen == nil, "a new app clears the screen")
@@ -802,7 +859,7 @@ private func sessionTests() async {
         parts.session.appActivated(whatsApp)
         parts.clock.advance(to: parts.clock.now + KeyboardSession.screenReadDelay)
         parts.session.appActivated(notes)
-        try await userTypes("Y", in: parts)
+        try await userTypes("Y ", in: parts)
         last = await predictor.requests.last
         expect(last != nil && last?.screen == nil, "the read of an app that left the front is dropped")
     }
@@ -888,7 +945,7 @@ private func sessionTests() async {
         parts.reader.screens[whatsApp.pid] = ScreenContext(
             bundleID: "net.whatsapp.WhatsApp", appName: "WhatsApp", title: nil, field: nil, lines: ["Lunch?"])
         parts.session.appActivated(whatsApp)
-        try await userTypes("Yes", in: parts)
+        try await userTypes("Yes ", in: parts)
         await passScreenDelay(parts)
         var last = await predictor.requests.last
         expect(last?.screen != nil, "the read of WhatsApp lands")
@@ -896,7 +953,7 @@ private func sessionTests() async {
         parts.session.focusChanged(to: focus("AXTextField", editable: true, secure: true))
         parts.session.focusMoved()
         await passScreenDelay(parts)
-        try await userTypes("Sure", in: parts)
+        try await userTypes("Sure ", in: parts)
         last = await predictor.requests.last
         expect(last != nil && last?.screen == nil, "the text on screen of the last field is gone")
     }
@@ -1088,6 +1145,19 @@ private func sessionTests() async {
         parts.session.writeCaretMoved(EditorCaret(text: "gar", caret: 3, length: 0))
         expectEqual(parts.session.writePanel, nil)
         expectEqual(parts.controller.input, .mirrored(text: "Hi", caret: 2, selectionLength: 0))
+    }
+
+    test("the keyboard takes the key size of the settings") {
+        let defaults = freshDefaults()
+        let assembly = try KeyboardAssembly(
+            sink: RecordingSink(), database: try KeyboardDatabase(path: ":memory:"),
+            pasteboard: MemoryPasteboard(), reader: FakeFrontAppReader(),
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: FakeEngine(), elevenLabs: FakeEngine()),
+            write: FakeWrite(), predictions: PredictionEngine(predictor: FakePredictor(), defaults: defaults),
+            defaults: defaults, privateTexts: MemoryPrivateTexts())
+        expectEqual(assembly.session.controller.keySize, .regular)
+        assembly.settings.keySize = .large
+        expectEqual(assembly.session.controller.keySize, .large)
     }
 
     await asyncTest("the assembly joins the keyboard to its sink, its database, its pasteboard, and Write") {

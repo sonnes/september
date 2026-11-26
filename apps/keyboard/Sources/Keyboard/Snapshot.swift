@@ -122,30 +122,46 @@ enum Snapshot {
 
     // MARK: - The keyboard
 
+    /// The text up to and with its last space.
+    private static func wordEnd(of text: String) -> String {
+        guard let space = text.lastIndex(of: " ") else { return text }
+        return String(text[...space])
+    }
+
     private static func keyboard(arguments: [String], permission: AccessibilityPermission) async throws -> AnyView {
         let defaults = UserDefaults(suiteName: "september-snapshot-\(UUID().uuidString)")!
         let database = try KeyboardDatabase(path: ":memory:")
         let voice = SampleVoice()
         let reader = SampleReader()
         let pasteboard = MemoryPasteboard()
+        let history = SentenceHistory(database: database, defaults: defaults)
+        for sentence in ["Are we still on for tonight?", "Are we still on for tonight?", "Are we still on for the weekend?"] {
+            history.record(sentence)
+        }
         let assembly = try KeyboardAssembly(
             sink: SilentSink(), database: database, pasteboard: pasteboard, reader: reader,
             speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: voice, elevenLabs: voice),
             write: SampleWrite(),
             predictions: PredictionEngine(
-                predictor: SamplePredictor(), delay: .zero, defaults: defaults,
-                history: SentenceHistory(database: database, defaults: defaults)),
+                predictor: SamplePredictor(), delay: .zero, defaults: defaults, history: history),
             defaults: defaults, privateTexts: NoPrivateTexts(),
             clipboardClock: { Date().addingTimeInterval(-40 * 60) }, scheduler: NoDelayScheduler())
         let session = assembly.session
         let controller = session.controller
         assembly.settings.style = arguments.contains("--mono") ? .mono : .rainbow
         let content = WindowContent(session: session, permission: permission, phrases: assembly.phrases)
+        // `--key-size 64` scales the keyboard window by that size. The
+        // snapshot has no screen, so the size is not made smaller to fit.
+        if let size = value(of: "--key-size", in: arguments).flatMap(Int.init).flatMap(KeySize.init) {
+            assembly.settings.keySize = size
+        }
 
         let typed = value(of: "--typed", in: arguments)
         let spoken = value(of: "--spoken", in: arguments).flatMap(Int.init)
         // The sentence predictions show only after typing, so each field
-        // starts empty and the sample text comes after one settle.
+        // starts empty and the sample text comes after one settle. The model
+        // gets a request only at the end of a word, so a sample that ends
+        // inside a word comes after the text up to its last space.
         if arguments.contains("--talk") {
             controller.mode = .talk
             await session.settle()
@@ -164,11 +180,14 @@ enum Snapshot {
             session.writeKeyChanged(true, panel: .paper, front: nil)
             let line = typed ?? "Send the release notes before the we"
             await session.settle()
-            session.writeCaretMoved(EditorCaret(text: line, caret: (line as NSString).length, length: 0))
+            for sample in [Self.wordEnd(of: line), line] {
+                session.writeCaretMoved(EditorCaret(text: sample, caret: (sample as NSString).length, length: 0))
+                await session.settle()
+            }
         } else {
             session.appActivated(FrontApp(pid: 0, name: "Messages", bundleID: "com.apple.MobileSMS"))
             let text = typed ?? "Are we still on for t"
-            for sample in ["", text] {
+            for sample in ["", Self.wordEnd(of: text), text] {
                 session.focusChanged(
                     to: FocusedField(
                         appName: "Messages", role: "AXTextArea", isEditable: true, isSecure: false,
@@ -206,21 +225,31 @@ enum Snapshot {
         return composite(content)
     }
 
-    /// The keyboard window and the panels where they sit by default.
+    /// The keyboard window and the panels where they sit by default. The
+    /// window scales by the key size.
     private static func composite(_ content: WindowContent) -> AnyView {
-        let keyboard = content.keyboard()
-        let keyboardSize = WindowContent.measure(keyboard)
-        let keysSize = WindowContent.measure(content.keysCard())
+        let controller = content.session.controller
+        let scale = controller.keySize.points / KeySize.regular.points
+        let drawn = content.keyboard()
+        let drawnSize = WindowContent.measure(drawn)
+        let keyboardSize = CGSize(width: drawnSize.width * scale, height: drawnSize.height * scale)
+        let keyboard = AnyView(
+            drawn.scaleEffect(scale, anchor: .topLeading)
+                .frame(width: keyboardSize.width, height: keyboardSize.height, alignment: .topLeading))
+        let keysCard = WindowContent.measure(content.keysCard())
+        let keysSize = CGSize(width: keysCard.width * scale, height: keysCard.height * scale)
         var views: [DetachedPanel: AnyView] = [:]
         var sizes: [DetachedPanel: CGSize] = [:]
-        for panel in DetachedPanel.allCases {
+        let shown = DetachedPanel.isShown(in: .type, keySize: controller.keySize)
+        for panel in DetachedPanel.allCases where shown {
             views[panel] = content.panel(panel)
             sizes[panel] = WindowContent.measure(views[panel]!)
         }
         // AppKit coordinates: the bottom left corner of the keys is at zero.
         let keys = CGRect(origin: .zero, size: keysSize)
         let frames = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
-        let keyboardFrame = CGRect(origin: KeyboardPosition.typeWindowOrigin(forKeys: keys.origin), size: keyboardSize)
+        let keyboardFrame = CGRect(
+            origin: KeyboardPosition.typeWindowOrigin(forKeys: keys.origin, scale: scale), size: keyboardSize)
         let all = frames.values.reduce(keyboardFrame) { $0.union($1) }
         let padding = Metrics.surfacePadding
 
@@ -230,7 +259,7 @@ enum Snapshot {
         return AnyView(
             ZStack(alignment: .topLeading) {
                 place(keyboard, keyboardFrame)
-                ForEach(DetachedPanel.allCases) { panel in
+                ForEach(DetachedPanel.allCases.filter { views[$0] != nil }) { panel in
                     place(views[panel]!, frames[panel]!)
                 }
             }

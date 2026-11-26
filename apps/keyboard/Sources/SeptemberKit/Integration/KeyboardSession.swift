@@ -345,6 +345,19 @@ public final class KeyboardSession: ObservableObject {
         update()
     }
 
+    /// A press on a phrase of the Phrases panel in Type mode. The voice
+    /// speaks the phrase, and the text of the field does not change. A
+    /// button with no text does nothing.
+    public func speakPhrase(_ action: PanelAction) {
+        guard case .text(let phrase) = action,
+            let text = SpeakText(input: .local(text: phrase), isPrivate: false)
+        else { return }
+        // The bar does not hold the phrase, so no word of the bar lights up.
+        speaking = nil
+        speaker.speak(text.text)
+        update()
+    }
+
     // MARK: - The app in front
 
     /// macOS brought an app to the front. The keyboard itself is not an app

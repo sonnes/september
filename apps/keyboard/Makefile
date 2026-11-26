@@ -159,6 +159,8 @@ snapshots:
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-rainbow.png"
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-mono.png" --mono
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-light.png" --light
+	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-keys-64.png" --light --key-size 64
+	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-keys-88.png" --light --key-size 88
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-talk.png" --talk
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-write.png" --write
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-mine.png" --mine

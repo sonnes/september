@@ -72,12 +72,12 @@ public struct PredictionContext: Equatable, Sendable {
         return !Self.isWordCharacter(last)
     }
 
-    /// The same context with the partial word at the caret replaced by a
-    /// completion of it and a space.
-    public func completing(with completion: WordCompletion) -> PredictionContext {
-        let before = String(typed.dropLast(completion.partial.count)) + completion.word + " "
-        return PredictionContext(
-            text: before + following, caret: before.utf16.count, mode: mode, said: said, screen: screen)
+    /// True when the text before the caret ends a word: it ends with a
+    /// space, a new line, or a mark other than an apostrophe. Only then does
+    /// the model get a request.
+    public var endsWord: Bool {
+        guard let last = typed.last else { return false }
+        return last.isWhitespace || (last.isPunctuation && !Self.isApostrophe(last))
     }
 
     /// The full sentence of an answer of the model, or `nil` when the answer

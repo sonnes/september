@@ -152,17 +152,33 @@ field, the stack stays empty until the text of the field changes. The text
 before the caret must also hold a letter. An empty Talk bar shows no
 sentence predictions. The word row does not wait.
 
-The stack has three rows. The rows come from the sentence history and from
-Apple Intelligence. History rows show at once. Up to two history rows come
-first, then the rows of the model, and then the other history rows. A row
-with the same words as an earlier row does not show. When Apple Intelligence
-is not ready, the history rows still show, and its notice shows only when no
-row matches.
+Apple Intelligence gets a request only at the end of a word: when the text
+before the caret ends with a space, a mark, or a new line. The request waits
+300 ms after the last change, for a paste or a fast burst of keys. Inside a
+word, the history rows change at each letter, and a row of the model stays
+while it still continues the typed text. The model never gets a partial word.
+
+The stack has two columns of up to three rows. The left column holds the
+sentences of the history, best score first, with a green fill and the icon ↺.
+They show at once. The right column holds the rows of Apple Intelligence,
+with an indigo fill and the icon ✦. A row never goes to the other column. The
+spoken label of a tile starts with "Said before" or "Suggested", so the
+source does not depend on colour only. A model row with the words of a
+history row does not show. A row that shows keeps its place while it still
+continues the typed text, so a row does not move under a dwell or a switch.
+A new row fills only an empty place. When the user clears the sentence
+history or turns it off, the history rows go at once. A row shows the most tiles that fit in
+its column. When Apple Intelligence is not ready, the history rows still
+show, and its notice shows only when no row matches.
 
 When you press Return on the keys, or Speak in Talk mode, the keyboard splits
-the paragraph at the caret into sentences. Each sentence goes into the history
+the whole field, or the Talk bar, at each new line and then into sentences.
+Each sentence goes into the history
 in `~/Library/Application Support/September Keyboard/keyboard.sqlite`. Only
-the user can read the file and its `-wal` and `-shm` files. A sentence that you send again gets one more use.
+the user can read the file and its `-wal` and `-shm` files. A sentence that you send again gets one more use, but only one use for each
+field: Return pressed again in the same email does not count its sentences
+again. A focus move or an empty field starts the count again. Case, curly
+quotes, end marks, and extra spaces do not make a new sentence.
 While you type, the history finds the sentences that start with the sentence
 at the caret. It ranks them by their uses, and a use loses half its weight in
 14 days. The history keeps 10,000 sentences at most, and removes the sentences
@@ -173,8 +189,10 @@ and clears it. When the history is off, it keeps no sentences. If the database
 does not open, the keyboard moves it to `keyboard.broken.sqlite` and starts an
 empty database.
 
-The Text, System, and Rectangle keypads and My Panel float in windows
-of their own. By default they sit beside the keys. To move the keyboard window or a
+The Phrases panel, the Text, System, and Rectangle keypads, and My Panel
+float in windows of their own. A press on a phrase in Type mode speaks the
+phrase, and the text of the field does not change. The panel never takes the
+focus. By default they sit beside the keys. To move the keyboard window or a
 panel, drag it by the grip at its top. A drag does not take focus from the app
 in front. The keyboard keeps the place of each window for the next launch. If
 a saved place is on no screen, the window goes back to its default place. The
@@ -182,9 +200,9 @@ keyboard window and the panels never take focus. The panels show only in Type
 mode. `DetachedPanel.isShown(in:)` holds the rule.
 
 Arrange moves the panels back beside the keys, at the place where the keyboard
-is now. The menu bar item has the same command, Arrange Panels. System and
-My Panel go to the left of the keys, with System nearest the keys. Text and
-Rectangle go to the right, with Text nearest the keys. If a panel does not fit on
+is now. The menu bar item has the same command, Arrange Panels. System,
+My Panel, and Phrases go to the left of the keys, with System nearest the keys
+and Phrases at the far left. Text and Rectangle go to the right, with Text nearest the keys. If a panel does not fit on
 its side, it goes to the other side. Each panel stays on the screen.
 `PanelPlacement.arrangedFrames` holds the rule.
 
@@ -360,6 +378,18 @@ up from row to row.
 - The bottom row has Control, Option, Command, Space, Command, fn, Control, and
   the arrows. It has no right Option key.
 
+### Key size
+
+The Look page of Settings sets the key size: 48, 64, or 88 points. The
+default is 48. The keyboard window draws at 48 points and scales as one unit
+by the key size over 48. The keys, the input bar, the prediction rows, the
+word row, and the mode buttons grow together. If the whole window does not fit
+the width of the screen, it takes the largest key size that fits
+(`KeySize.windowScale(fitting:baseWidth:)`). At 88 points the number row, the
+function row, and the floating panels fold away, and the Arrange button hides.
+Delete then takes the place of the backslash key at the end of the QWERTY row.
+At 64 points the floating panels keep their size at 48 points.
+
 Screenshot presses Shift-Command-4, and Lock Screen presses
 Control-Command-Q. These shortcuts of macOS match the key code, so the
 keyboard posts the ANSI key codes for 4 and Q on each layout. Both keys work
@@ -474,6 +504,7 @@ swift run Keyboard --snapshot out.png --mine     # My Panel with sample buttons
 swift run Keyboard --snapshot out.png --clipboard  # the clipboard history, open
 swift run Keyboard --snapshot out.png --mono     # mono variant
 swift run Keyboard --snapshot out.png --light    # light appearance
+swift run Keyboard --snapshot out.png --key-size 88  # the keyboard window at 64 or 88 points
 swift run Keyboard --snapshot out.png --gallery  # the component library
 swift run Keyboard --snapshot out.png --viewer   # the three tabs of the Debug panel
 ```
