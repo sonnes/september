@@ -337,6 +337,15 @@ private func placementTests() {
         }
     }
 
+    test("a keyboard window that grows past the screen moves back onto it") {
+        let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
+        let grown = CGSize(width: 1400, height: 500)
+        let origin = KeyboardPosition.onScreen(CGPoint(x: 215, y: 24), size: grown, in: screen)
+        expect(screen.contains(CGRect(origin: origin, size: grown)), "the window is on the screen")
+        let fits = CGPoint(x: 20, y: 24)
+        expectEqual(KeyboardPosition.onScreen(fits, size: grown, in: screen), fits, "a window that fits stays")
+    }
+
     test("the first window of the keyboard puts the keys at the place of the keys") {
         let keys = CGPoint(x: 400, y: 24)
         let window = KeyboardPosition.typeWindowOrigin(forKeys: keys)

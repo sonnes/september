@@ -364,10 +364,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// The key size changed on the Look page. The keyboard window takes the
-    /// new size, and the panels hide at a size that folds them away, or
-    /// move around the new keys.
+    /// new size and moves onto the screen if it grew past an edge. The
+    /// panels hide at a size that folds them away, or move around the new
+    /// keys.
     private func keySizeChanged() {
         refreshKeyboard()
+        if let keyboardPanel, let screen = (keyboardPanel.screen ?? FloatingPanel.activeScreen)?.visibleFrame {
+            keyboardPanel.setFrameOrigin(
+                KeyboardPosition.onScreen(keyboardPanel.frame.origin, size: keyboardPanel.frame.size, in: screen))
+        }
         guard keyboardPanel?.isVisible == true else { return }
         let shown = DetachedPanel.isShown(in: controller.mode, keySize: controller.keySize)
         for window in panels.values {

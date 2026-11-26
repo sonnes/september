@@ -157,6 +157,13 @@ public struct KeyboardPosition {
         return saved
     }
 
+    /// The corner of a window of `size` at `origin`, moved by the least
+    /// distance so that the window is inside `screen`. A window that grows
+    /// with a larger key size keeps its corner and can reach past the edge.
+    public static func onScreen(_ origin: CGPoint, size: CGSize, in screen: CGRect) -> CGPoint {
+        PanelPlacement.onScreen(CGRect(origin: origin, size: size), screen).origin
+    }
+
     /// The Type mode corner of a window at `origin` in `mode`.
     public static func typeOrigin(of origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
         CGPoint(x: origin.x + shift(mode), y: origin.y)
