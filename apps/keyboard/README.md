@@ -378,6 +378,16 @@ up from row to row.
 - The bottom row has Control, Option, Command, Space, Command, fn, Control, and
   the arrows. It has no right Option key.
 
+### Key size
+
+The Look page of Settings sets the key size: 48, 64, or 88 points. The
+default is 48. The height of a key, the gaps, the padding of the keys, and the
+labels scale with it. If the keys do not fit the width of the screen, they
+take the largest size that fits (`KeySize.points(fitting:baseWidth:)`). At 88
+points the number row, the function row, and the floating panels fold away,
+and the Arrange button hides. The input bar and the prediction stack keep
+their size.
+
 Screenshot presses Shift-Command-4, and Lock Screen presses
 Control-Command-Q. These shortcuts of macOS match the key code, so the
 keyboard posts the ANSI key codes for 4 and Q on each layout. Both keys work
@@ -492,6 +502,7 @@ swift run Keyboard --snapshot out.png --mine     # My Panel with sample buttons
 swift run Keyboard --snapshot out.png --clipboard  # the clipboard history, open
 swift run Keyboard --snapshot out.png --mono     # mono variant
 swift run Keyboard --snapshot out.png --light    # light appearance
+swift run Keyboard --snapshot out.png --key-size 88  # the keys at 64 or 88 points
 swift run Keyboard --snapshot out.png --gallery  # the component library
 swift run Keyboard --snapshot out.png --viewer   # the three tabs of the Debug panel
 ```

@@ -25,9 +25,10 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
     }
 
     /// The panels show only in Type mode. Talk mode holds Phrases in the
-    /// keyboard window, so the Phrases panel of Type hides there too.
-    public static func isShown(in mode: KeyboardMode) -> Bool {
-        mode == .type
+    /// keyboard window, so the Phrases panel of Type hides there too. At a
+    /// key size that folds away, the panels hide.
+    public static func isShown(in mode: KeyboardMode, keySize: KeySize = .regular) -> Bool {
+        mode == .type && !keySize.foldsAway
     }
 }
 

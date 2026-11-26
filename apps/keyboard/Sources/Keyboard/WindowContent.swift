@@ -15,6 +15,9 @@ struct WindowContent {
     var write: () -> Void = {}
     var arrange: () -> Void = {}
     var settings: () -> Void = {}
+    /// The height of a standard key: the key size of the settings, made
+    /// smaller when the keys do not fit the screen.
+    var keyPoints: CGFloat = Metrics.baseKeySize
 
     private var controller: KeyboardController { session.controller }
 
@@ -24,12 +27,13 @@ struct WindowContent {
                 session: session, phrases: phrases, write: write, arrange: arrange, settings: settings)
                 .environmentObject(controller)
                 .environmentObject(permission)
-                .environment(\.keyPresser, presser))
+                .environment(\.keyPresser, presser)
+                .environment(\.keyPoints, keyPoints))
     }
 
     /// The keys card of Type mode alone, to measure where the panels go.
     func keysCard() -> AnyView {
-        AnyView(TypeKeysCard(session: session).environmentObject(controller))
+        AnyView(TypeKeysCard(session: session).environmentObject(controller).environment(\.keyPoints, keyPoints))
     }
 
     func panel(_ panel: DetachedPanel) -> AnyView {

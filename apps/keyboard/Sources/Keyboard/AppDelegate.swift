@@ -95,6 +95,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 Task { @MainActor in self?.modeChanged(from: previous, to: mode) }
             }
             .store(in: &subscriptions)
+        controller.$keySize.dropFirst().removeDuplicates()
+            .sink { [weak self] _ in
+                // `@Published` sends the new size before it stores it.
+                Task { @MainActor in self?.keySizeChanged() }
+            }
+            .store(in: &subscriptions)
         // Private text in the field: the tree drops the value of the field.
         controller.$isFieldPrivate.dropFirst()
             .sink { [weak self] _ in Task { @MainActor in self?.debugModel.refreshTree() } }
@@ -287,7 +293,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             window.setContentSize(sizes[panel]!)
             window.setFrameAutosaveName(panel.frameName)
-            window.orderFront(nil)
+            if DetachedPanel.isShown(in: controller.mode, keySize: controller.keySize) { window.orderFront(nil) }
             panels[panel] = window
         }
 
@@ -320,8 +326,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// Builds the keyboard window and measures it, scaling down if the
-    /// display is too narrow for it.
+    /// display is too narrow for it. The keys first take the largest key
+    /// size up to the chosen one that fits the width of the screen.
     private func makeKeyboardRoot() -> (AnyView, CGSize) {
+        fitKeySize()
         let screen = content.keyboard()
         let intrinsic = WindowContent.measure(screen)
 
@@ -339,6 +347,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 .frame(width: size.width, height: size.height)
         )
         return (root, size)
+    }
+
+    /// Sets the key size of the views: the size of the settings, or the
+    /// largest size that fits the screen of the keyboard.
+    private func fitKeySize() {
+        var regular = content!
+        regular.keyPoints = Metrics.baseKeySize
+        let baseWidth = WindowContent.measure(regular.keysCard()).width
+        guard let screen = keyboardPanel?.screen ?? FloatingPanel.activeScreen else {
+            content.keyPoints = controller.keySize.points
+            return
+        }
+        let available = screen.visibleFrame.width - 2 * FloatingPanel.margin - reservedWidth
+        content.keyPoints = controller.keySize.points(fitting: available, baseWidth: baseWidth)
+    }
+
+    /// The key size changed on the Look page. The keyboard window takes the
+    /// new size, and the panels hide at a size that folds them away, or
+    /// move around the new keys.
+    private func keySizeChanged() {
+        refreshKeyboard()
+        guard keyboardPanel?.isVisible == true else { return }
+        let shown = DetachedPanel.isShown(in: controller.mode, keySize: controller.keySize)
+        for window in panels.values {
+            if shown { window.orderFront(nil) } else { window.orderOut(nil) }
+        }
+        if shown { arrangePanels() }
     }
 
     /// Rebuilds the keyboard window at its new size. The bottom left corner
@@ -362,7 +397,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         keyboardPanel.setFrameOrigin(KeyboardPosition.windowOrigin(typeOrigin, in: mode))
         guard keyboardPanel.isVisible else { return }
         for window in panels.values {
-            if DetachedPanel.isShown(in: mode) { window.orderFront(nil) } else { window.orderOut(nil) }
+            if DetachedPanel.isShown(in: mode, keySize: controller.keySize) {
+                window.orderFront(nil)
+            } else {
+                window.orderOut(nil)
+            }
         }
     }
 
@@ -484,7 +523,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleKeyboard(_ sender: NSMenuItem) {
         guard let keyboardPanel else { return }
-        let windows = [keyboardPanel] + (DetachedPanel.isShown(in: controller.mode) ? Array(panels.values) : [])
+        let windows = [keyboardPanel] + (DetachedPanel.isShown(in: controller.mode, keySize: controller.keySize) ? Array(panels.values) : [])
         if keyboardPanel.isVisible {
             windows.forEach { $0.orderOut(nil) }
         } else {

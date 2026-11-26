@@ -5,6 +5,7 @@ import SwiftUI
 /// window.
 public struct ModeButtons: View {
     private let mode: KeyboardMode
+    private let keySize: KeySize
     private let setMode: (KeyboardMode) -> Void
     private let write: () -> Void
     private let arrange: () -> Void
@@ -12,12 +13,14 @@ public struct ModeButtons: View {
 
     public init(
         mode: KeyboardMode,
+        keySize: KeySize = .regular,
         setMode: @escaping (KeyboardMode) -> Void,
         write: @escaping () -> Void,
         arrange: @escaping () -> Void,
         settings: @escaping () -> Void
     ) {
         self.mode = mode
+        self.keySize = keySize
         self.setMode = setMode
         self.write = write
         self.arrange = arrange
@@ -33,7 +36,7 @@ public struct ModeButtons: View {
                 setMode(.talk)
             }
             ModeButton(title: "Write", symbol: "pencil", isOn: false, label: "Open Write", action: write)
-            if DetachedPanel.isShown(in: mode) {
+            if DetachedPanel.isShown(in: mode, keySize: keySize) {
                 ModeButton(
                     title: "Arrange", symbol: "rectangle.3.group", isOn: false,
                     label: "Arrange the panels around the keyboard", action: arrange)

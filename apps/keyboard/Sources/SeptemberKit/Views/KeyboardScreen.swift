@@ -68,6 +68,7 @@ public struct KeyboardScreen: View {
                 SpeakButton(mode: session.speakMode, action: session.speakPressed)
                 ModeButtons(
                     mode: controller.mode,
+                    keySize: controller.keySize,
                     setMode: { controller.mode = $0 },
                     write: write,
                     arrange: arrange,

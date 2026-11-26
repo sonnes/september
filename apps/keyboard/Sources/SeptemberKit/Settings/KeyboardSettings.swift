@@ -12,6 +12,7 @@ public final class KeyboardSettings: ObservableObject {
         static let autoCapital = "typing.autoCapital"
         static let autoSpace = "typing.autoSpace"
         static let smartQuotes = "typing.smartQuotes"
+        static let keySize = "look.keySize"
     }
 
     @Published public var style: KeyboardStyle {
@@ -42,6 +43,11 @@ public final class KeyboardSettings: ObservableObject {
         didSet { defaults.set(smartQuotes, forKey: Key.smartQuotes) }
     }
 
+    /// The size of a key. 48 points by default.
+    @Published public var keySize: KeySize {
+        didSet { defaults.set(keySize.rawValue, forKey: Key.keySize) }
+    }
+
     private let defaults: UserDefaults
 
     public init(defaults: UserDefaults = .standard) {
@@ -52,5 +58,6 @@ public final class KeyboardSettings: ObservableObject {
         autoCapital = defaults.object(forKey: Key.autoCapital) as? Bool ?? true
         autoSpace = defaults.object(forKey: Key.autoSpace) as? Bool ?? true
         smartQuotes = defaults.object(forKey: Key.smartQuotes) as? Bool ?? true
+        keySize = KeySize(rawValue: defaults.integer(forKey: Key.keySize)) ?? .regular
     }
 }

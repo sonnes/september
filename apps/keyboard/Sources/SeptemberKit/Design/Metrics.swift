@@ -23,12 +23,24 @@ public enum Metrics {
     /// The dashes of the border of an empty slot in the word row.
     public static let emptySlotDash: [CGFloat] = [4, 3]
 
-    public static func size(for kind: KeyKind) -> CGSize {
-        switch kind {
-        case .standard, .dual: CGSize(width: 48, height: 48)
-        case .special: CGSize(width: 60, height: 48)
-        case .function: CGSize(width: 60, height: 32)
-        }
+    /// The height of a standard key at the regular key size. The sizes of
+    /// the keys, their gaps, and their labels scale by the chosen size over
+    /// this one.
+    public static let baseKeySize: CGFloat = KeySize.regular.points
+
+    /// The share of the regular size for a key of `points`.
+    public static func keyScale(_ points: CGFloat) -> CGFloat {
+        points / baseKeySize
+    }
+
+    public static func size(for kind: KeyKind, scale: CGFloat = 1) -> CGSize {
+        let size: CGSize =
+            switch kind {
+            case .standard, .dual: CGSize(width: 48, height: 48)
+            case .special: CGSize(width: 60, height: 48)
+            case .function: CGSize(width: 60, height: 32)
+            }
+        return CGSize(width: size.width * scale, height: size.height * scale)
     }
 
     /// A special key with a symbol for its label, such as ⌘, as large as a

@@ -1118,6 +1118,19 @@ private func sessionTests() async {
         expectEqual(parts.controller.input, .mirrored(text: "Hi", caret: 2, selectionLength: 0))
     }
 
+    test("the keyboard takes the key size of the settings") {
+        let defaults = freshDefaults()
+        let assembly = try KeyboardAssembly(
+            sink: RecordingSink(), database: try KeyboardDatabase(path: ":memory:"),
+            pasteboard: MemoryPasteboard(), reader: FakeFrontAppReader(),
+            speaker: Speaker(settings: VoiceSettingsStore(defaults: defaults), system: FakeEngine(), elevenLabs: FakeEngine()),
+            write: FakeWrite(), predictions: PredictionEngine(predictor: FakePredictor(), defaults: defaults),
+            defaults: defaults, privateTexts: MemoryPrivateTexts())
+        expectEqual(assembly.session.controller.keySize, .regular)
+        assembly.settings.keySize = .large
+        expectEqual(assembly.session.controller.keySize, .large)
+    }
+
     await asyncTest("the assembly joins the keyboard to its sink, its database, its pasteboard, and Write") {
         let defaults = freshDefaults()
         let database = try KeyboardDatabase(path: ":memory:")

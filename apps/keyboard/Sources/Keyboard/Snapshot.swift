@@ -149,7 +149,13 @@ enum Snapshot {
         let session = assembly.session
         let controller = session.controller
         assembly.settings.style = arguments.contains("--mono") ? .mono : .rainbow
-        let content = WindowContent(session: session, permission: permission, phrases: assembly.phrases)
+        var content = WindowContent(session: session, permission: permission, phrases: assembly.phrases)
+        // `--key-size 64` draws the keys at that size. The snapshot has no
+        // screen, so the size is not made smaller to fit.
+        if let size = value(of: "--key-size", in: arguments).flatMap(Int.init).flatMap(KeySize.init) {
+            assembly.settings.keySize = size
+            content.keyPoints = size.points
+        }
 
         let typed = value(of: "--typed", in: arguments)
         let spoken = value(of: "--spoken", in: arguments).flatMap(Int.init)
@@ -227,7 +233,8 @@ enum Snapshot {
         let keysSize = WindowContent.measure(content.keysCard())
         var views: [DetachedPanel: AnyView] = [:]
         var sizes: [DetachedPanel: CGSize] = [:]
-        for panel in DetachedPanel.allCases {
+        let shown = DetachedPanel.isShown(in: .type, keySize: content.session.controller.keySize)
+        for panel in DetachedPanel.allCases where shown {
             views[panel] = content.panel(panel)
             sizes[panel] = WindowContent.measure(views[panel]!)
         }
@@ -244,7 +251,7 @@ enum Snapshot {
         return AnyView(
             ZStack(alignment: .topLeading) {
                 place(keyboard, keyboardFrame)
-                ForEach(DetachedPanel.allCases) { panel in
+                ForEach(DetachedPanel.allCases.filter { views[$0] != nil }) { panel in
                     place(views[panel]!, frames[panel]!)
                 }
             }

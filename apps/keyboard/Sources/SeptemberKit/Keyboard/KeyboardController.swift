@@ -6,6 +6,8 @@ import Foundation
 @MainActor
 public final class KeyboardController: ObservableObject {
     @Published public var style: KeyboardStyle = .rainbow
+    /// The size of the keys, from the Look page.
+    @Published public var keySize: KeySize = .regular
     @Published public private(set) var modifiers = ModifierState() {
         didSet { syncSystemModifiers() }
     }

@@ -23,6 +23,13 @@ public enum KeyboardLayout {
         KeyRow(id: .bottom, keys: bottomRow),
     ]
 
+    /// The rows for a key size. At a size that folds away, the number row
+    /// and the function row go.
+    public static func rows(keySize: KeySize) -> [KeyRow] {
+        guard keySize.foldsAway else { return rows }
+        return rows.filter { $0.id != .number && $0.id != .function }
+    }
+
     /// Widths for one row on a grid of `units` columns. A key of weight `w`
     /// spans `w` columns and the gaps between them, so a key edge in one row
     /// lines up with the key edges in the other rows.
