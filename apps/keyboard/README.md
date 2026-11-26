@@ -385,7 +385,8 @@ default is 48. The height of a key, the gaps, the padding of the keys, and the
 labels scale with it. If the keys do not fit the width of the screen, they
 take the largest size that fits (`KeySize.points(fitting:baseWidth:)`). At 88
 points the number row, the function row, and the floating panels fold away,
-and the Arrange button hides. The input bar and the prediction stack keep
+and the Arrange button hides. Delete then takes the place of the backslash
+key at the end of the QWERTY row. The input bar and the prediction stack keep
 their size.
 
 Screenshot presses Shift-Command-4, and Lock Screen presses

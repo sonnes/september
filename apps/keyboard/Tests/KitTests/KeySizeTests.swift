@@ -32,6 +32,13 @@ func keySizeTests() {
         expectEqual(KeyboardLayout.rows(keySize: .large).map(\.id), KeyboardLayout.rows.map(\.id))
     }
 
+    test("each key size has a Delete key") {
+        for size in KeySize.allCases {
+            let keys = KeyboardLayout.rows(keySize: size).flatMap(\.keys)
+            expect(keys.contains { $0.action == .virtual(.delete) }, "\(size) has no Delete key")
+        }
+    }
+
     test("at 88 points the panels fold away") {
         expect(!DetachedPanel.isShown(in: .type, keySize: .extraLarge))
         expect(DetachedPanel.isShown(in: .type, keySize: .large))

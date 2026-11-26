@@ -24,10 +24,17 @@ public enum KeyboardLayout {
     ]
 
     /// The rows for a key size. At a size that folds away, the number row
-    /// and the function row go.
+    /// and the function row go. Delete then takes the place of the backslash
+    /// key at the end of the QWERTY row, so that the user can still erase.
     public static func rows(keySize: KeySize) -> [KeyRow] {
         guard keySize.foldsAway else { return rows }
-        return rows.filter { $0.id != .number && $0.id != .function }
+        return rows.compactMap { row in
+            switch row.id {
+            case .number, .function: nil
+            case .qwerty: KeyRow(id: .qwerty, keys: foldedQwertyRow)
+            default: row
+            }
+        }
     }
 
     /// Widths for one row on a grid of `units` columns. A key of weight `w`
@@ -73,11 +80,20 @@ public enum KeyboardLayout {
         ]
         var keys = pairs.map { dualKey(primary: $0.primary, secondary: $0.secondary) }
         keys += [
-            KeyDefinition(id: "delete", kind: .special, label: "⌫", weight: 2, action: .virtual(.delete)),
+            deleteKey(weight: 2),
             navigationKey("home", label: "home", .home),
         ]
         return keys
     }()
+
+    private static func deleteKey(weight: CGFloat) -> KeyDefinition {
+        KeyDefinition(id: "delete", kind: .special, label: "⌫", weight: weight, action: .virtual(.delete))
+    }
+
+    /// The QWERTY row with Delete in the place of the backslash key.
+    private static let foldedQwertyRow: [KeyDefinition] = qwertyRow.map {
+        $0.id == "key-\\" ? deleteKey(weight: $0.weight) : $0
+    }
 
     private static let qwertyRow: [KeyDefinition] =
         [
