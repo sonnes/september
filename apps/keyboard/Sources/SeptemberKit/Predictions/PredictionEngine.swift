@@ -1,4 +1,5 @@
 import Combine
+import CryptoKit
 import Foundation
 
 /// Turns the input bar into sentence predictions and word completions.
@@ -93,6 +94,11 @@ public final class PredictionEngine: ObservableObject {
     private var wordGeneration = 0
     /// The completions that the user picked since the last submit.
     private var picked: [WordCompletion] = []
+    /// The hashes of the sentence keys that the history counted for the
+    /// focused field. A sentence adds one use per field. The set empties
+    /// when the focus moves or the field becomes empty, as the Talk bar does
+    /// after Speak.
+    private var counted: Set<SHA256.Digest> = []
 
     public init(
         predictor: any SentencePredicting = AppleIntelligencePredictor(),
@@ -123,6 +129,7 @@ public final class PredictionEngine: ObservableObject {
         let changed =
             input != self.input || mode != self.mode || context != self.context || isPrivate != self.isPrivate
         if changed || baseline == nil { noteTyping(input, mode: mode) }
+        if input.text.isEmpty { counted = [] }
         guard changed else { return }
         self.input = input
         self.mode = mode
@@ -161,9 +168,9 @@ public final class PredictionEngine: ObservableObject {
 
     /// The user submitted the text, with Return or with Speak in Talk mode.
     /// Each picked word that the text still holds is accepted. Each other
-    /// picked word is edited. The sentences of the paragraph at the caret go
-    /// into the history when `keepsSentences` is true. Private text and a
-    /// password field record nothing.
+    /// picked word is edited. The sentences of the whole field go into the
+    /// history when `keepsSentences` is true. Each sentence adds one use per
+    /// field. Private text and a password field record nothing.
     public func submit(keepsSentences: Bool = true) {
         defer { picked = [] }
         guard !isPrivate, input.holdsText else { return }
@@ -172,17 +179,7 @@ public final class PredictionEngine: ObservableObject {
             completer.record(
                 words.contains(completion.word.lowercased()) ? .accepted : .edited, to: completion)
         }
-        if keepsSentences { history?.record(Self.paragraph(at: input)) }
-    }
-
-    /// The line of the caret. A field with many lines, such as a note, gives
-    /// only the paragraph that the user wrote last.
-    private static func paragraph(at input: InputMirror) -> String {
-        guard case .mirrored(let text, let caret, let selectionLength) = input else { return input.text }
-        let parts = InputMirror.split(text, caret: caret, selectionLength: selectionLength)
-        let before = parts.before.split(separator: "\n", omittingEmptySubsequences: false).last ?? ""
-        let after = (parts.selected + parts.after).split(separator: "\n", omittingEmptySubsequences: false).first ?? ""
-        return String(before + after)
+        if keepsSentences { history?.record(input.text, counted: &counted) }
     }
 
     /// The focus moved to another field or app. The picked words cannot be
@@ -190,6 +187,7 @@ public final class PredictionEngine: ObservableObject {
     /// until the user types in the new field.
     public func focusMoved() {
         picked = []
+        counted = []
         baseline = nil
         hasTyped = false
         refresh()

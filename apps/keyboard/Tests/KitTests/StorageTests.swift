@@ -237,6 +237,32 @@ private func sentenceHistoryTests() {
         expectEqual(history.matches(for: "i DON\u{2019}T want t"), ["I don't want tea."])
     }
 
+    test("one sentence with other case, quotes, end marks, and spaces gives one key") {
+        let history = try makeHistory()
+        history.record("I'm fine.")
+        history.record("i\u{2019}m  fine!")
+        history.record("\u{201C}I'm fine\u{201D}")
+        history.record("(I'm fine...)")
+        expectEqual(history.count, 1)
+        expectEqual(history.matches(for: "I'm"), ["(I'm fine...)"], "the row keeps the last form")
+    }
+
+    test("the key folds compatibility forms and three dots into one ellipsis") {
+        let history = try makeHistory()
+        history.record("Wait... what?")
+        history.record("Wait\u{2026} what?")
+        history.record("\u{FF37}ait... what?")
+        expectEqual(history.count, 1)
+    }
+
+    test("a sent text with two lines and no end mark gives two sentences") {
+        let history = try makeHistory()
+        history.record("Hello there\nSee you soon")
+        expectEqual(history.count, 2)
+        expectEqual(history.matches(for: "See"), ["See you soon"])
+        expectEqual(history.matches(for: "Hello"), ["Hello there"])
+    }
+
     test("a space after a word matches only the full word") {
         let history = try makeHistory()
         history.record("I would like tea. I wouldn't go.")
@@ -247,7 +273,8 @@ private func sentenceHistoryTests() {
         let history = try makeHistory()
         history.record("Yes please.")
         expectEqual(history.matches(for: "Yes please."), [])
-        expectEqual(history.matches(for: "yes please"), ["Yes please."])
+        expectEqual(history.matches(for: "yes please"), [], "the end mark is not part of the key")
+        expectEqual(history.matches(for: "yes pl"), ["Yes please."])
     }
 
     test("a sentence that the user sends again gets one more use and keeps its last form") {

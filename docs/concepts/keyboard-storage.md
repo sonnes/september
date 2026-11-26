@@ -94,24 +94,49 @@ CREATE TABLE sentence (
 CREATE INDEX sentence_last_at ON sentence(last_at);
 ```
 
-`record(_:)` splits a text into sentences with `NLTokenizer`. Each sentence
-that holds a letter and has 500 characters or fewer gets a row. If the key of
-the sentence is already in the table, its row gets one more use and the new
-form of the text. After each record, the table keeps the 10,000 rows with the
-newest `last_at`.
+`record(_:counted:)` splits a text at each new line first. Then it splits
+each line into sentences with `NLTokenizer`, because the tokenizer joins two
+lines that have no end mark. Each sentence that holds a letter and has 500
+characters or fewer gets a row. If the key of the sentence is already in the
+table, its row gets one more use and the new form of the text. After each
+record, the table keeps the 10,000 rows with the newest `last_at`.
+
+The key is the normalized form of the sentence:
+
+1. NFKC, then lowercase.
+2. Straight quotes, and one ellipsis for three or more dots.
+3. One space between words.
+4. No quotes or brackets at the start. No end marks (`. ! ? …`), quotes, or
+   brackets at the end.
+
+So "I'm fine." and "i’m fine!" are one row. The row keeps the last form that
+the user typed, with one space between words.
+
+`counted` is a set of SHA-256 hashes (CryptoKit) of keys. A sentence adds a
+use only when the hash of its key is not in the set. `PredictionEngine` keeps
+one set for the focused field, in memory only. The set empties when the focus
+moves and when the field becomes empty, as the Talk bar does after Speak. So
+Return pressed five times in one email counts each sentence one time. The set
+holds no text. A sentence that the user edits after a send is a new sentence,
+and the old form keeps its use.
 
 `matches(for:limit:)` takes the sentence that the user types at the end of the
-text. The key of this sentence keeps one space at its end, so "I would " does
-not find "I wouldn't". The query is a range on the unique index of `key`. The
-history ranks the rows by their uses, and each use loses half its weight in 14
-days. A sentence that the field already holds in full is not a match.
+text. The key of this sentence keeps its end and one space there, so
+"I would " does not find "I wouldn't". The query is a range on the unique
+index of `key`. The history ranks the rows by their uses, and each use loses
+half its weight in 14 days. A sentence that the field already holds in full is
+not a match.
+
+An older row with a key of the old form gets no migration. It ages out with
+the half-life, and the limit of 10,000 rows removes it.
 
 The switch is in `UserDefaults`, key `history.sentences`, and it is on by
 default. When the user turns it off, the history removes every row and keeps
 no new ones.
 
-`PredictionEngine.submit(keepsSentences:)` is the only caller of `record(_:)`.
-See [keyboard-session.md](keyboard-session.md).
+`PredictionEngine.submit(keepsSentences:)` is the only caller that records.
+It sends the whole field in Type mode and the bar in Talk mode. See
+[keyboard-session.md](keyboard-session.md).
 
 ## The Text Log
 

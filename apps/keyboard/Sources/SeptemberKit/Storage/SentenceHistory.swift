@@ -1,4 +1,5 @@
 import Combine
+import CryptoKit
 import Foundation
 import NaturalLanguage
 
@@ -51,13 +52,22 @@ public final class SentenceHistory: ObservableObject {
         refreshCount()
     }
 
-    /// Splits a submitted text into sentences and keeps each sentence that
-    /// holds a letter.
+    /// Splits a submitted text into lines, then each line into sentences,
+    /// and keeps each sentence that holds a letter.
     public func record(_ text: String) {
+        var counted: Set<SHA256.Digest> = []
+        record(text, counted: &counted)
+    }
+
+    /// Keeps each sentence of `text` whose key has no hash in `counted`, and
+    /// adds the hash of each kept key to `counted`. The set holds no text.
+    public func record(_ text: String, counted: inout Set<SHA256.Digest>) {
         guard isEnabled else { return }
-        let sentences = Self.sentences(in: text)
+        let sentences = text.split(whereSeparator: \.isNewline)
+            .flatMap { Self.sentences(in: String($0)) }
             .map(Self.collapsed)
             .filter { $0.contains(where: \.isLetter) && $0.count <= Self.maxCharacters }
+            .filter { counted.insert(SHA256.hash(data: Data(Self.key($0).utf8))).inserted }
         guard !sentences.isEmpty else { return }
         let at = now().timeIntervalSince1970
         try? database.transaction {
@@ -136,13 +146,33 @@ public final class SentenceHistory: ObservableObject {
         text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
-    /// The form of a sentence that the search compares: lowercased, one
-    /// space between words, and a straight apostrophe. A fragment keeps one
-    /// space at its end, so that "I would " does not find "I wouldn't".
+    /// The characters that the key removes at the start of a sentence, and
+    /// at its end with the end marks.
+    private static let enclosing = Set("'\"()[]{}")
+    private static let endMarks = Set(".!?\u{2026}")
+
+    /// The form of a sentence that the search compares: NFKC, lowercased,
+    /// straight quotes, one ellipsis for three dots, and one space between
+    /// words. The quotes and brackets at the start go. A sentence also loses
+    /// its end marks and the quotes and brackets at its end. A fragment
+    /// keeps its end and one space there, so that "I would " does not find
+    /// "I wouldn't".
     private static func key(_ text: String, trimsEnd: Bool = true) -> String {
-        let words = collapsed(text.lowercased().replacingOccurrences(of: "\u{2019}", with: "'"))
-        let endsWithSpace = !trimsEnd && !words.isEmpty && text.last?.isWhitespace == true
-        return endsWithSpace ? words + " " : words
+        var form = text.precomposedStringWithCompatibilityMapping.lowercased()
+        for (curly, straight) in [("\u{2018}", "'"), ("\u{2019}", "'"), ("\u{201C}", "\""), ("\u{201D}", "\"")] {
+            form = form.replacingOccurrences(of: curly, with: straight)
+        }
+        form = form.replacingOccurrences(of: #"\.{3,}"#, with: "\u{2026}", options: .regularExpression)
+        var words = Substring(collapsed(form))
+        words = words.drop { enclosing.contains($0) || $0 == " " }
+        if trimsEnd {
+            while let last = words.last, enclosing.contains(last) || endMarks.contains(last) || last == " " {
+                words = words.dropLast()
+            }
+            return String(words)
+        }
+        let endsWithSpace = !words.isEmpty && text.last?.isWhitespace == true
+        return endsWithSpace ? words + " " : String(words)
     }
 
     private func refreshCount() {

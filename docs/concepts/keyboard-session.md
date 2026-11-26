@@ -229,8 +229,9 @@ Private text and a password field record nothing.
 
 ## Sentence History
 
-The same submit also adds the sentences of the paragraph at the caret to the
-`SentenceHistory`. With the Write window in front, the session calls
+The same submit also adds the sentences of the whole field, or of the Talk
+bar, to the `SentenceHistory`. Each sentence adds one use per field. `focusMoved()`
+starts the count again. With the Write window in front, the session calls
 `submit(keepsSentences: false)`, because Write keeps its text in its
 documents. While the user types, the engine adds the history sentences that
 continue the sentence at the caret to the rows of the stack. See

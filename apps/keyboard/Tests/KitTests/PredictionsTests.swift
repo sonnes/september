@@ -372,6 +372,16 @@ private func makeHistory(_ sentences: [String] = []) throws -> SentenceHistory {
     return history
 }
 
+/// The uses of each sentence, by key.
+@MainActor
+private func uses(in database: KeyboardDatabase) throws -> [String: Int64] {
+    var uses: [String: Int64] = [:]
+    for row in try database.query("SELECT key, uses FROM sentence") {
+        if let key = row[0].text, let count = row[1].int { uses[key] = count }
+    }
+    return uses
+}
+
 private let tea: @Sendable (PredictionContext) -> [String] = { _ in
     ["I would like a cup of tea, please.", "I would like a cup of coffee now.", "I would like a custard tart.", "I would like a cushion."]
 }
@@ -854,16 +864,46 @@ private func historyTests() async {
         expect(engine.stripes.isEmpty)
     }
 
-    await asyncTest("submit keeps the sentences of the paragraph at the caret") {
+    await asyncTest("submit keeps each sentence of the whole field") {
         let history = try makeHistory()
         let engine = makeEngine(FakePredictor(answer: tea), history: history)
         let text = "Dear Sam.\nSee you soon. Bye now\nLater."
         engine.update(input: .mirrored(text: text, caret: 15, selectionLength: 0), mode: .type, said: [])
         engine.submit()
-        expectEqual(history.count, 2)
-        expectEqual(history.matches(for: "See"), ["See you soon."])
+        expectEqual(history.count, 4)
         expectEqual(history.matches(for: "Bye"), ["Bye now"])
-        expectEqual(history.matches(for: "Dear"), [])
+        expectEqual(history.matches(for: "Dear"), ["Dear Sam."])
+    }
+
+    await asyncTest("Return pressed two times in one field adds one use to each sentence") {
+        let database = try KeyboardDatabase(path: ":memory:")
+        let history = SentenceHistory(database: database, defaults: freshDefaults())
+        let engine = makeEngine(FakePredictor(answer: tea), history: history)
+        engine.update(input: .local(text: "Hi Sam. See you soon."), mode: .type, said: [])
+        engine.submit()
+        engine.update(input: .local(text: "Hi Sam. See you soon. Bye."), mode: .type, said: [])
+        engine.submit()
+        expectEqual(try uses(in: database), ["bye": 1, "hi sam": 1, "see you soon": 1])
+    }
+
+    await asyncTest("after a focus move or an empty field, the same sentence adds one more use") {
+        let database = try KeyboardDatabase(path: ":memory:")
+        let history = SentenceHistory(database: database, defaults: freshDefaults())
+        let engine = makeEngine(FakePredictor(answer: tea), history: history)
+        engine.update(input: .local(text: "See you soon."), mode: .type, said: [])
+        engine.submit()
+        engine.focusMoved()
+        engine.update(input: .local(text: "See you soon."), mode: .type, said: [])
+        engine.submit()
+        expectEqual(try uses(in: database), ["see you soon": 2])
+
+        engine.update(input: .local(text: ""), mode: .talk, said: [])
+        engine.update(input: .local(text: "See you soon."), mode: .talk, said: [])
+        engine.submit()
+        engine.update(input: .local(text: ""), mode: .talk, said: [])
+        engine.update(input: .local(text: "See you soon."), mode: .talk, said: [])
+        engine.submit()
+        expectEqual(try uses(in: database), ["see you soon": 4], "the Talk bar empties after each Speak")
     }
 
     await asyncTest("the Talk bar goes into the history when the user speaks it") {
