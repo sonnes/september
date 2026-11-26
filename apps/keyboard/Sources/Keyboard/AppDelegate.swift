@@ -53,7 +53,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         speech.start()
         history = SentenceHistory(database: database)
         debugModel = DebugPanelModel(records: RecordBrowser(database: database))
-        let predictions = PredictionEngine(history: history)
+        let predictions = PredictionEngine(
+            completer: CandidateCompleter(language: { SystemKeyboardLayout.currentLanguage() }),
+            history: history)
         write = WriteController(host: self)
         do {
             assembly = try KeyboardAssembly(

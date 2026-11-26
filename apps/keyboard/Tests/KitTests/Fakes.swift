@@ -86,6 +86,9 @@ final class FakeCompleter: WordCompleting {
 
     func completions(for context: PredictionContext) async -> [WordCompletion] {
         if holds { await withCheckedContinuation { held.append($0) } }
+        if context.partialWord == "recieve" {
+            return WordCompletion(replacing: "recieve", with: "receive", isEmoji: false).map { [$0] } ?? []
+        }
         return WordCompletion(word: "cup", partial: context.partialWord).map { [$0] } ?? []
     }
 

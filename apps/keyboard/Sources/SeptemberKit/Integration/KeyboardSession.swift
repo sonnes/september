@@ -165,8 +165,13 @@ public final class KeyboardSession: ObservableObject {
 
     /// A press on a word completion. The engine keeps the word, so that macOS
     /// learns from it when the user submits the text.
+    /// A correction or an emoji first deletes the typed word.
     public func pickWord(_ completion: WordCompletion) {
         predictions.wordPicked(completion)
+        switch controller.mode {
+        case .type: controller.deleteBackward(completion.deleteCount)
+        case .talk: controller.talk.deleteLast(completion.deleteCount)
+        }
         type(completion.textToType)
     }
 

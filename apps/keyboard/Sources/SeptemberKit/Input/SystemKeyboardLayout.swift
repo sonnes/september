@@ -24,6 +24,18 @@ public enum SystemKeyboardLayout {
         probe(TISCopyCurrentKeyboardLayoutInputSource())
     }
 
+    /// The first language of the selected keyboard layout, such as "en",
+    /// for the spell checker. The Apple Accessibility Keyboard sets the
+    /// language of its candidates the same way.
+    public static func currentLanguage() -> String? {
+        guard
+            let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
+            let raw = TISGetInputSourceProperty(source, kTISPropertyInputSourceLanguages)
+        else { return nil }
+        let languages = Unmanaged<CFArray>.fromOpaque(raw).takeUnretainedValue() as? [String]
+        return languages?.first
+    }
+
     /// Fires whenever the user switches input source; the caller rebuilds.
     public static let inputSourceChanged = Notification.Name(
         kTISNotifySelectedKeyboardInputSourceChanged as String

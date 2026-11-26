@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Word row
+
+- The word row shows corrections and emoji, as the QuickType bar does. A correction has an accent border. A press on a correction or an emoji replaces the typed word.
+- The words use the whole paragraph around the caret, and the language of the keyboard layout.
+
 ### Keys
 
 - Sticky repeat: when it is on in Settings, Typing, a tap on Delete, an arrow, or another key that repeats keeps it repeating. The next tap stops it.

@@ -82,6 +82,12 @@ public final class TalkSession: ObservableObject {
         text = String(text.dropLast()) + typed
     }
 
+    /// Removes the last `count` characters of the bar, such as a typed word
+    /// that a correction replaces.
+    public func deleteLast(_ count: Int) {
+        text = String(text.dropLast(count))
+    }
+
     public func clear() {
         text = ""
         speaking = nil

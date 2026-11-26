@@ -604,6 +604,27 @@ private func sessionTests() async {
         expectEqual(parts.session.predictions.words.map(\.word), ["cup"])
     }
 
+    await asyncTest("a picked correction deletes the typed word, then types the new word") {
+        let parts = try makeSession()
+        parts.controller.focusChanged(to: field("I recieve", caret: 9))
+        await parts.session.settle()
+        parts.session.pickWord(parts.session.predictions.words[0])
+        let deletes = parts.sink.posted.filter { $0.virtualKey == VirtualKey.delete.rawValue && $0.isDown }
+        expectEqual(deletes.count, 7)
+        expectEqual(parts.sink.typed, ["receive "])
+    }
+
+    await asyncTest("in Talk mode, a picked correction replaces the typed word in the bar") {
+        let parts = try makeSession()
+        parts.controller.mode = .talk
+        parts.controller.talk.type("I recieve")
+        await parts.session.settle()
+        guard let fix = parts.session.predictions.words.first else { return expect(false, "no word") }
+        parts.session.pickWord(fix)
+        expectEqual(parts.controller.talk.text, "I receive ")
+        expect(parts.sink.posted.isEmpty, "Talk mode sends no key")
+    }
+
     await asyncTest("Return on the keys records the picked word") {
         let parts = try makeSession()
         parts.controller.focusChanged(to: field("I would like a cu", caret: 17))

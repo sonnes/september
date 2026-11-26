@@ -353,6 +353,12 @@ public final class KeyboardController: ObservableObject {
         modifiers.consume()
     }
 
+    /// Presses Delete `count` times with no modifier, such as before a
+    /// correction replaces the typed word.
+    public func deleteBackward(_ count: Int) {
+        for _ in 0..<max(0, count) { post(.delete, modifiers: []) }
+    }
+
     /// Posts the events of one key. During a repeat, the events of the key
     /// itself are repeats. The modifier keys around it are not.
     private func postKey(_ events: [Keystroke]) {

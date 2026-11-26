@@ -129,10 +129,14 @@ shows only that line. The predictions and Speak still read the whole text.
 The clipboard buttons sit past the left edge of the keys, so the keyboard
 window has a clear space at the left of the keys.
 
-The word row shows the candidates of macOS, the words of the QuickType bar.
-The candidates use the words before the caret. In a word, they complete the
-word. At the start of the text, after a space, or after a mark, they give the
-next word. After a mark with no space, a press types a space before the word.
+The word row shows the candidates of macOS, the words and the emoji of the
+QuickType bar. The keyboard sends the paragraph of the caret and the language
+of the keyboard layout, as the Apple Accessibility Keyboard does. In a word, a
+candidate that starts with the typed letters completes the word. Another word
+is a correction, with an accent border, and an emoji replaces the word. A
+press on a correction or an emoji deletes the typed word first. At the start
+of the text, after a space, or after a mark, the candidates give the next
+word. After a mark with no space, a press types a space before the word.
 
 The keyboard asks for up to 20 words. Each button is as wide as its word, and
 the row shows the words that fit, best first. A word that does not fit is left
