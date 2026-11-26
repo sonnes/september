@@ -265,12 +265,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let keysSize = WindowContent.measure(content.keysCard())
         let visible = FloatingPanel.activeScreen?.visibleFrame ?? .zero
         let screens = NSScreen.screens.map(\.visibleFrame)
+        // The keys centre with the panels, unless the key size folds the
+        // panels away.
+        let centred = controller.keySize.foldsAway ? [:] : sizes
         // The place where the user dragged the keyboard, if it is on a screen.
         let origin = KeyboardPosition.origin(
             saved: keyboardPosition.saved, size: size, screens: screens,
             fallback: KeyboardPosition.typeWindowOrigin(
                 forKeys: PanelPlacement.keysOrigin(
-                    keysSize: keysSize, panels: sizes, in: visible, rightInset: reservedWidth,
+                    keysSize: keysSize, panels: centred, in: visible, rightInset: reservedWidth,
                     margin: FloatingPanel.margin)))
         keyboard.setFrameOrigin(origin)
         keyboard.orderFront(nil)
