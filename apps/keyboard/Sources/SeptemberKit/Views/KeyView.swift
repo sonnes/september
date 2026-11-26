@@ -1,11 +1,5 @@
 import SwiftUI
 
-extension EnvironmentValues {
-    /// The height of a standard key, in points: the key size of the
-    /// settings, made smaller when the keys do not fit the screen.
-    @Entry public var keyPoints: CGFloat = Metrics.baseKeySize
-}
-
 /// A single key. One view covers every kind from the component library —
 /// they differ only in fill, label treatment and size.
 public struct KeyView: View {
@@ -17,9 +11,6 @@ public struct KeyView: View {
     private let press: () -> Void
 
     @State private var isPressed = false
-    @Environment(\.keyPoints) private var keyPoints
-
-    private var scale: CGFloat { Metrics.keyScale(keyPoints) }
 
     public init(
         key: KeyDefinition,
@@ -40,8 +31,8 @@ public struct KeyView: View {
     public var body: some View {
         label
             .frame(
-                width: width ?? Metrics.size(for: key.kind, scale: scale).width,
-                height: Metrics.size(for: key.kind, scale: scale).height
+                width: width ?? Metrics.size(for: key.kind).width,
+                height: Metrics.size(for: key.kind).height
             )
             .keyChrome(fill: fill, stroke: stroke)
             .pressable(label: face.accessibilityLabel, isSelected: isActive, trigger: key.actsOnRelease ? .up : .down(hold)) {
@@ -73,21 +64,21 @@ public struct KeyView: View {
             // The label that shift types is in the tint, and the other is dim.
             VStack(spacing: Metrics.dualLabelGap) {
                 Text(key.secondaryLabel ?? "")
-                    .font(Typography.keySecondaryLabel(scale: scale))
+                    .font(Typography.keySecondaryLabel)
                     .foregroundStyle(Color(face.isShifted ? tint : Tokens.dualSecondary))
                 Text(key.label)
-                    .font(Typography.keyLabel(.dual, scale: scale))
+                    .font(Typography.keyLabel(.dual))
                     .foregroundStyle(Color(face.isShifted ? Tokens.dualSecondary : tint))
             }
         case .standard:
-            glyph(font: Typography.keyLabel(.standard, scale: scale))
+            glyph(font: Typography.keyLabel(.standard))
                 .foregroundStyle(Color(tint))
         case .special:
             // A one-character label is a symbol, such as ⌘ or ⇧.
-            glyph(font: key.label.count == 1 ? Typography.keySymbol(scale: scale) : Typography.keyLabel(.special, scale: scale))
+            glyph(font: key.label.count == 1 ? Typography.keySymbol : Typography.keyLabel(.special))
                 .foregroundStyle(Color(isActive ? Tokens.accent : tint))
         case .function:
-            glyph(font: Typography.keyLabel(.function, scale: scale))
+            glyph(font: Typography.keyLabel(.function))
                 .foregroundStyle(Color(tint))
         }
     }

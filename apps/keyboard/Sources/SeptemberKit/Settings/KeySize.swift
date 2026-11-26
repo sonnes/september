@@ -22,4 +22,11 @@ public enum KeySize: Int, CaseIterable, Sendable {
         let fits = (KeySize.regular.points * available / baseWidth).rounded(.down)
         return min(points, fits)
     }
+
+    /// The scale of the whole keyboard window on a screen: the key size of
+    /// `points(fitting:baseWidth:)` over the regular size. The window draws
+    /// at the regular size, and `baseWidth` is its width there.
+    public func windowScale(fitting available: CGFloat, baseWidth: CGFloat) -> CGFloat {
+        points(fitting: available, baseWidth: baseWidth) / KeySize.regular.points
+    }
 }

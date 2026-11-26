@@ -1,11 +1,9 @@
 import SwiftUI
 
 /// The QWERTY block: the rows of `KeyboardLayout` across the keyboard width,
-/// under an optional header such as the word completions. The width, the
-/// gaps, and the padding scale with the key size.
+/// under an optional header such as the word completions.
 public struct MainKeyboardView<Header: View>: View {
     @EnvironmentObject private var controller: KeyboardController
-    @Environment(\.keyPoints) private var keyPoints
 
     private let header: Header
 
@@ -13,9 +11,8 @@ public struct MainKeyboardView<Header: View>: View {
         self.header = header()
     }
 
-    private var scale: CGFloat { Metrics.keyScale(keyPoints) }
-    private var width: CGFloat { Metrics.keyboardWidth * scale }
-    private var spacing: CGFloat { Metrics.rowSpacing * scale }
+    private var width: CGFloat { Metrics.keyboardWidth }
+    private var spacing: CGFloat { Metrics.rowSpacing }
 
     public var body: some View {
         VStack(spacing: spacing) {
@@ -25,7 +22,7 @@ public struct MainKeyboardView<Header: View>: View {
                 rowView(row)
             }
         }
-        .padding(Metrics.Keyboard.padding * scale)
+        .padding(Metrics.Keyboard.padding)
         .panelSurface(cornerRadius: Metrics.keyboardCornerRadius)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Keyboard")

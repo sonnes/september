@@ -7,6 +7,9 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var keyboardPanel: FloatingPanel?
     private var panels: [DetachedPanel: FloatingPanel] = [:]
+    /// The scale of the keyboard window, from the key size and the width of
+    /// the screen. The window draws at the regular key size.
+    private var windowScale: CGFloat = 1
     private var debugPanel: FloatingPanel?
     private var statusItem: NSStatusItem?
     private var keyboardItem: NSMenuItem?
@@ -262,7 +265,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             NSWorkspace.shared.urlForApplication(withBundleIdentifier: DetachedPanel.rectangleBundleID) != nil
         let shown = DetachedPanel.shown(rectangleInstalled: rectangleInstalled)
         let sizes = Dictionary(uniqueKeysWithValues: shown.map { ($0, panelSize($0)) })
-        let keysSize = WindowContent.measure(content.keysCard())
+        let keysSize = keysCardSize()
         let visible = FloatingPanel.activeScreen?.visibleFrame ?? .zero
         let screens = NSScreen.screens.map(\.visibleFrame)
         // The keys centre with the panels, unless the key size folds the
@@ -274,7 +277,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             fallback: KeyboardPosition.typeWindowOrigin(
                 forKeys: PanelPlacement.keysOrigin(
                     keysSize: keysSize, panels: centred, in: visible, rightInset: reservedWidth,
-                    margin: FloatingPanel.margin)))
+                    margin: FloatingPanel.margin),
+                scale: windowScale))
         keyboard.setFrameOrigin(origin)
         keyboard.orderFront(nil)
         observers.append(
@@ -284,7 +288,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 MainActor.assumeIsolated { self?.keyboardMoved() }
             })
 
-        let keys = CGRect(origin: KeyboardPosition.keysOrigin(ofWindow: origin, in: .type), size: keysSize)
+        let keys = CGRect(
+            origin: KeyboardPosition.keysOrigin(ofWindow: origin, in: .type, scale: windowScale), size: keysSize)
         let defaults = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
         for panel in shown {
             let window = FloatingPanel(root: content.panel(panel), contentSize: sizes[panel]!, placement: .free)
@@ -308,8 +313,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func arrangePanels() {
         guard let keyboard = keyboardPanel else { return }
         let keys = CGRect(
-            origin: KeyboardPosition.keysOrigin(ofWindow: keyboard.frame.origin, in: controller.mode),
-            size: WindowContent.measure(content.keysCard()))
+            origin: KeyboardPosition.keysOrigin(ofWindow: keyboard.frame.origin, in: controller.mode, scale: windowScale),
+            size: keysCardSize())
         let screen = (keyboard.screen ?? FloatingPanel.activeScreen)?.visibleFrame ?? keys
         let sizes = panels.mapValues(\.frame.size)
         for (panel, frame) in PanelPlacement.arrangedFrames(keys: keys, sizes: sizes, screen: screen) {
@@ -321,49 +326,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// its Type mode window.
     private func keyboardMoved() {
         guard let keyboardPanel else { return }
-        keyboardPosition.saved = KeyboardPosition.typeOrigin(of: keyboardPanel.frame.origin, in: controller.mode)
+        keyboardPosition.saved = KeyboardPosition.typeOrigin(
+            of: keyboardPanel.frame.origin, in: controller.mode, scale: windowScale)
     }
 
     private func panelSize(_ panel: DetachedPanel) -> CGSize {
         WindowContent.measure(content.panel(panel))
     }
 
-    /// Builds the keyboard window and measures it, scaling down if the
-    /// display is too narrow for it. The keys first take the largest key
-    /// size up to the chosen one that fits the width of the screen.
+    /// The size of the keys card on the screen, in the scaled window.
+    private func keysCardSize() -> CGSize {
+        let size = WindowContent.measure(content.keysCard())
+        return CGSize(width: size.width * windowScale, height: size.height * windowScale)
+    }
+
+    /// Builds the keyboard window and measures it. The window draws at the
+    /// regular key size and scales by the key size of the settings, or by
+    /// the largest key size at which the whole window fits the width of the
+    /// screen.
     private func makeKeyboardRoot() -> (AnyView, CGSize) {
-        fitKeySize()
         let screen = content.keyboard()
         let intrinsic = WindowContent.measure(screen)
 
-        var scale: CGFloat = 1
+        windowScale = controller.keySize.points / KeySize.regular.points
         // The screen of the keyboard, or before it shows, the screen that
         // holds the pointer.
-        if let screen = keyboardPanel?.screen ?? FloatingPanel.activeScreen, intrinsic.width > 0 {
+        if let screen = keyboardPanel?.screen ?? FloatingPanel.activeScreen {
             let available = screen.visibleFrame.width - 2 * FloatingPanel.margin - reservedWidth
-            scale = min(1, available / intrinsic.width)
+            windowScale = controller.keySize.windowScale(fitting: available, baseWidth: intrinsic.width)
         }
-        let size = CGSize(width: intrinsic.width * scale, height: intrinsic.height * scale)
+        let size = CGSize(width: intrinsic.width * windowScale, height: intrinsic.height * windowScale)
         let root = AnyView(
             screen
-                .scaleEffect(scale, anchor: .topLeading)
-                .frame(width: size.width, height: size.height)
+                .scaleEffect(windowScale, anchor: .topLeading)
+                .frame(width: size.width, height: size.height, alignment: .topLeading)
         )
         return (root, size)
-    }
-
-    /// Sets the key size of the views: the size of the settings, or the
-    /// largest size that fits the screen of the keyboard.
-    private func fitKeySize() {
-        var regular = content!
-        regular.keyPoints = Metrics.baseKeySize
-        let baseWidth = WindowContent.measure(regular.keysCard()).width
-        guard let screen = keyboardPanel?.screen ?? FloatingPanel.activeScreen else {
-            content.keyPoints = controller.keySize.points
-            return
-        }
-        let available = screen.visibleFrame.width - 2 * FloatingPanel.margin - reservedWidth
-        content.keyPoints = controller.keySize.points(fitting: available, baseWidth: baseWidth)
     }
 
     /// The key size changed on the Look page. The keyboard window takes the
@@ -400,9 +398,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// hides the shortcut panels. The keys stay where they are on the screen.
     private func modeChanged(from previous: KeyboardMode, to mode: KeyboardMode) {
         guard let keyboardPanel else { return }
-        let typeOrigin = KeyboardPosition.typeOrigin(of: keyboardPanel.frame.origin, in: previous)
+        let typeOrigin = KeyboardPosition.typeOrigin(of: keyboardPanel.frame.origin, in: previous, scale: windowScale)
         refreshKeyboard()
-        keyboardPanel.setFrameOrigin(KeyboardPosition.windowOrigin(typeOrigin, in: mode))
+        keyboardPanel.setFrameOrigin(KeyboardPosition.windowOrigin(typeOrigin, in: mode, scale: windowScale))
         guard keyboardPanel.isVisible else { return }
         for window in panels.values {
             if DetachedPanel.isShown(in: mode, keySize: controller.keySize) {

@@ -29,14 +29,9 @@ public enum Typography {
     public static let debugChip = Font.system(size: 10, weight: .semibold)
     public static let debugMeta = Font.system(size: 10)
 
-    /// The label of a key. `scale` is the share of the regular key size.
-    public static func keyLabel(_ kind: KeyKind, scale: CGFloat = 1) -> Font {
-        .system(size: Metrics.labelSize(for: kind) * scale, weight: kind == .function ? .medium : .regular)
+    public static func keyLabel(_ kind: KeyKind) -> Font {
+        .system(size: Metrics.labelSize(for: kind), weight: kind == .function ? .medium : .regular)
     }
-    public static func keySecondaryLabel(scale: CGFloat = 1) -> Font {
-        .system(size: Metrics.dualSecondaryLabelSize * scale)
-    }
-    public static func keySymbol(scale: CGFloat = 1) -> Font {
-        .system(size: Metrics.symbolLabelSize * scale)
-    }
+    public static let keySecondaryLabel = Font.system(size: Metrics.dualSecondaryLabelSize)
+    public static let keySymbol = Font.system(size: Metrics.symbolLabelSize)
 }

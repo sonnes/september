@@ -24,6 +24,18 @@ func keySizeTests() {
         expectEqual(KeySize.regular.points(fitting: 900, baseWidth: 1000), 43)
     }
 
+    test("the keyboard window scales by the key size over 48 points") {
+        expectEqual(KeySize.regular.windowScale(fitting: 3000, baseWidth: 1000), 1)
+        expectEqual(KeySize.large.windowScale(fitting: 3000, baseWidth: 1000), 64.0 / 48)
+        expectEqual(KeySize.extraLarge.windowScale(fitting: 3000, baseWidth: 1000), 88.0 / 48)
+    }
+
+    test("the whole keyboard window scales to the largest key size that fits the screen") {
+        // The whole window is 1000 wide at 48 points, so 1500 fits 72 points.
+        expectEqual(KeySize.extraLarge.windowScale(fitting: 1500, baseWidth: 1000), 72.0 / 48)
+        expectEqual(KeySize.regular.windowScale(fitting: 900, baseWidth: 1000), 43.0 / 48)
+    }
+
     test("at 88 points the number row and the function row fold away") {
         let folded = KeyboardLayout.rows(keySize: .extraLarge).map(\.id)
         expect(!folded.contains(.number))

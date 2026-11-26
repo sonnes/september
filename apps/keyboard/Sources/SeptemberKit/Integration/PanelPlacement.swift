@@ -164,27 +164,29 @@ public struct KeyboardPosition {
         PanelPlacement.onScreen(CGRect(origin: origin, size: size), screen).origin
     }
 
+    // `scale` is the scale of the whole window, from the key size.
+
     /// The Type mode corner of a window at `origin` in `mode`.
-    public static func typeOrigin(of origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
-        CGPoint(x: origin.x + shift(mode), y: origin.y)
+    public static func typeOrigin(of origin: CGPoint, in mode: KeyboardMode, scale: CGFloat = 1) -> CGPoint {
+        CGPoint(x: origin.x + shift(mode) * scale, y: origin.y)
     }
 
     /// The corner of the window in `mode` for the Type mode corner `origin`.
-    public static func windowOrigin(_ origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
-        CGPoint(x: origin.x - shift(mode), y: origin.y)
+    public static func windowOrigin(_ origin: CGPoint, in mode: KeyboardMode, scale: CGFloat = 1) -> CGPoint {
+        CGPoint(x: origin.x - shift(mode) * scale, y: origin.y)
     }
 
     /// The bottom left corner of the keys card of a window at `origin` in
     /// `mode`. The window reaches past the keys card at the left, for the
     /// clipboard buttons.
-    public static func keysOrigin(ofWindow origin: CGPoint, in mode: KeyboardMode) -> CGPoint {
-        let type = typeOrigin(of: origin, in: mode)
-        return CGPoint(x: type.x + cardInset(.type), y: type.y)
+    public static func keysOrigin(ofWindow origin: CGPoint, in mode: KeyboardMode, scale: CGFloat = 1) -> CGPoint {
+        let type = typeOrigin(of: origin, in: mode, scale: scale)
+        return CGPoint(x: type.x + cardInset(.type) * scale, y: type.y)
     }
 
     /// The corner of the Type mode window whose keys card is at `keys`.
-    public static func typeWindowOrigin(forKeys keys: CGPoint) -> CGPoint {
-        CGPoint(x: keys.x - cardInset(.type), y: keys.y)
+    public static func typeWindowOrigin(forKeys keys: CGPoint, scale: CGFloat = 1) -> CGPoint {
+        CGPoint(x: keys.x - cardInset(.type) * scale, y: keys.y)
     }
 
     /// The distance from the left edge of the window to the keys and the bar

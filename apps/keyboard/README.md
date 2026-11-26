@@ -382,13 +382,14 @@ up from row to row.
 ### Key size
 
 The Look page of Settings sets the key size: 48, 64, or 88 points. The
-default is 48. The height of a key, the gaps, the padding of the keys, and the
-labels scale with it. If the keys do not fit the width of the screen, they
-take the largest size that fits (`KeySize.points(fitting:baseWidth:)`). At 88
-points the number row, the function row, and the floating panels fold away,
-and the Arrange button hides. Delete then takes the place of the backslash
-key at the end of the QWERTY row. The input bar and the prediction stack keep
-their size.
+default is 48. The keyboard window draws at 48 points and scales as one unit
+by the key size over 48. The keys, the input bar, the prediction rows, the
+word row, and the mode buttons grow together. If the whole window does not fit
+the width of the screen, it takes the largest key size that fits
+(`KeySize.windowScale(fitting:baseWidth:)`). At 88 points the number row, the
+function row, and the floating panels fold away, and the Arrange button hides.
+Delete then takes the place of the backslash key at the end of the QWERTY row.
+At 64 points the floating panels keep their size at 48 points.
 
 Screenshot presses Shift-Command-4, and Lock Screen presses
 Control-Command-Q. These shortcuts of macOS match the key code, so the
@@ -504,7 +505,7 @@ swift run Keyboard --snapshot out.png --mine     # My Panel with sample buttons
 swift run Keyboard --snapshot out.png --clipboard  # the clipboard history, open
 swift run Keyboard --snapshot out.png --mono     # mono variant
 swift run Keyboard --snapshot out.png --light    # light appearance
-swift run Keyboard --snapshot out.png --key-size 88  # the keys at 64 or 88 points
+swift run Keyboard --snapshot out.png --key-size 88  # the keyboard window at 64 or 88 points
 swift run Keyboard --snapshot out.png --gallery  # the component library
 swift run Keyboard --snapshot out.png --viewer   # the three tabs of the Debug panel
 ```

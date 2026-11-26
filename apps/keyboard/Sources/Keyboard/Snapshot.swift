@@ -149,12 +149,11 @@ enum Snapshot {
         let session = assembly.session
         let controller = session.controller
         assembly.settings.style = arguments.contains("--mono") ? .mono : .rainbow
-        var content = WindowContent(session: session, permission: permission, phrases: assembly.phrases)
-        // `--key-size 64` draws the keys at that size. The snapshot has no
-        // screen, so the size is not made smaller to fit.
+        let content = WindowContent(session: session, permission: permission, phrases: assembly.phrases)
+        // `--key-size 64` scales the keyboard window by that size. The
+        // snapshot has no screen, so the size is not made smaller to fit.
         if let size = value(of: "--key-size", in: arguments).flatMap(Int.init).flatMap(KeySize.init) {
             assembly.settings.keySize = size
-            content.keyPoints = size.points
         }
 
         let typed = value(of: "--typed", in: arguments)
@@ -226,14 +225,22 @@ enum Snapshot {
         return composite(content)
     }
 
-    /// The keyboard window and the panels where they sit by default.
+    /// The keyboard window and the panels where they sit by default. The
+    /// window scales by the key size.
     private static func composite(_ content: WindowContent) -> AnyView {
-        let keyboard = content.keyboard()
-        let keyboardSize = WindowContent.measure(keyboard)
-        let keysSize = WindowContent.measure(content.keysCard())
+        let controller = content.session.controller
+        let scale = controller.keySize.points / KeySize.regular.points
+        let drawn = content.keyboard()
+        let drawnSize = WindowContent.measure(drawn)
+        let keyboardSize = CGSize(width: drawnSize.width * scale, height: drawnSize.height * scale)
+        let keyboard = AnyView(
+            drawn.scaleEffect(scale, anchor: .topLeading)
+                .frame(width: keyboardSize.width, height: keyboardSize.height, alignment: .topLeading))
+        let keysCard = WindowContent.measure(content.keysCard())
+        let keysSize = CGSize(width: keysCard.width * scale, height: keysCard.height * scale)
         var views: [DetachedPanel: AnyView] = [:]
         var sizes: [DetachedPanel: CGSize] = [:]
-        let shown = DetachedPanel.isShown(in: .type, keySize: content.session.controller.keySize)
+        let shown = DetachedPanel.isShown(in: .type, keySize: controller.keySize)
         for panel in DetachedPanel.allCases where shown {
             views[panel] = content.panel(panel)
             sizes[panel] = WindowContent.measure(views[panel]!)
@@ -241,7 +248,8 @@ enum Snapshot {
         // AppKit coordinates: the bottom left corner of the keys is at zero.
         let keys = CGRect(origin: .zero, size: keysSize)
         let frames = PanelPlacement.defaultFrames(keys: keys, sizes: sizes)
-        let keyboardFrame = CGRect(origin: KeyboardPosition.typeWindowOrigin(forKeys: keys.origin), size: keyboardSize)
+        let keyboardFrame = CGRect(
+            origin: KeyboardPosition.typeWindowOrigin(forKeys: keys.origin, scale: scale), size: keyboardSize)
         let all = frames.values.reduce(keyboardFrame) { $0.union($1) }
         let padding = Metrics.surfacePadding
 

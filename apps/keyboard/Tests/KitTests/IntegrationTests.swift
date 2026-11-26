@@ -351,6 +351,24 @@ private func placementTests() {
         let window = KeyboardPosition.typeWindowOrigin(forKeys: keys)
         expectEqual(KeyboardPosition.keysOrigin(ofWindow: window, in: .type), keys)
     }
+
+    test("in a scaled keyboard window the keys sit at the scaled inset, and a change of mode keeps them in place") {
+        let window = CGPoint(x: 100, y: 50)
+        let scale: CGFloat = 88.0 / 48
+        expectEqual(
+            KeyboardPosition.keysOrigin(ofWindow: window, in: .type, scale: scale).x,
+            window.x + KeyboardPosition.cardInset(.type) * scale)
+        let keys = CGPoint(x: 400, y: 24)
+        expectEqual(
+            KeyboardPosition.keysOrigin(
+                ofWindow: KeyboardPosition.typeWindowOrigin(forKeys: keys, scale: scale), in: .type, scale: scale),
+            keys)
+        let talk = KeyboardPosition.windowOrigin(window, in: .talk, scale: scale)
+        expectEqual(
+            KeyboardPosition.keysOrigin(ofWindow: talk, in: .talk, scale: scale),
+            KeyboardPosition.keysOrigin(ofWindow: window, in: .type, scale: scale))
+        expectEqual(KeyboardPosition.typeOrigin(of: talk, in: .talk, scale: scale), window)
+    }
 }
 
 // MARK: - The session
