@@ -6,10 +6,16 @@ package: keyboard
 
 # Shortcut panels (macOS)
 
-Panels are on each side of the macOS keyboard. SYSTEM and My Panel are on the
-left. TEXT and RECTANGLE are on the right. RECTANGLE shows only when the
+Panels are on each side of the macOS keyboard. PHRASES, SYSTEM, and My Panel
+are on the left, with PHRASES nearest the keys. TEXT and RECTANGLE are on the
+right. RECTANGLE shows only when the
 Rectangle window manager is installed (`DetachedPanel.shown(rectangleInstalled:)`).
 The panels show only in Type mode (`DetachedPanel.isShown(in:)`).
+The PHRASES panel of Type mode holds the buttons of the Phrases panel of
+Talk mode. A press in Type speaks the phrase through
+`KeyboardSession.speakPhrase(_:)` and `SpeakText`, and the text of the field
+does not change. A phrase button acts when it goes up, so the user can slide
+off to cancel. In Talk mode, the same buttons put the phrase in the bar.
 Cut, Copy, and Paste are buttons at the left of the input bar, so no keypad
 has them. While Write is in front, My Panel has a Write tab with the keys of
 the paper or of the desk. Each panel is a grid of buttons in a JSON file that
@@ -70,9 +76,9 @@ Z"), so a button never has to repeat itself in JSON.
 ```
 Sources/SeptemberKit/Resources/Panels/
 ├── text.json              # right of the keys
-├── system.json            # left of the keys, nearest
+├── system.json            # left of the keys, after PHRASES
 ├── rectangle.json         # right of TEXT, the shortcuts of Rectangle
-├── phrases.json           # the Phrases panel of Talk mode
+├── phrases.json           # the Phrases panel of Talk mode, and PHRASES in Type
 ├── write.json             # the Write tab on the paper
 └── write-documents.json   # the Write tab on the desk
 ```

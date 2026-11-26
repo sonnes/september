@@ -250,7 +250,22 @@ private func placementTests() {
     test("the Rectangle panel shows only when Rectangle is installed") {
         expect(DetachedPanel.shown(rectangleInstalled: true).contains(.rectangle))
         expect(!DetachedPanel.shown(rectangleInstalled: false).contains(.rectangle))
-        expectEqual(Set(DetachedPanel.shown(rectangleInstalled: false)), [.text, .system, .mine])
+        expectEqual(Set(DetachedPanel.shown(rectangleInstalled: false)), [.text, .system, .mine, .phrases])
+    }
+
+    test("Type mode shows the Phrases panel") {
+        expect(DetachedPanel.shown(rectangleInstalled: false).contains(.phrases))
+        expect(DetachedPanel.isShown(in: .type))
+    }
+
+    test("arranging puts Phrases at the left of the keys, next to them") {
+        let sizes: [DetachedPanel: CGSize] = [.text: panel, .system: panel, .mine: panel, .phrases: panel]
+        let frames = PanelPlacement.arrangedFrames(keys: keys, sizes: sizes, screen: screen)
+        let phrases = try expectValue(frames[.phrases])
+        let system = try expectValue(frames[.system])
+        expectEqual(phrases.maxX, keys.minX - Metrics.Detached.gap)
+        expect(system.maxX < phrases.minX, "System goes out from Phrases")
+        expectEqual(phrases.maxY, keys.maxY)
     }
 
     test("the shortcut panels show in Type mode and hide in Talk mode") {
@@ -702,6 +717,19 @@ private func sessionTests() async {
         parts.history.record("See you soon.")
         try await userTypes("See y", in: parts)
         expectEqual(parts.session.predictions.historyRows.map(\.?.prediction), ["See you soon."])
+    }
+
+    await asyncTest("a press on a phrase in Type mode speaks it, and the text of the field does not change") {
+        let parts = try makeSession()
+        try await userTypes("I am on my way", in: parts)
+        let input = parts.controller.input
+        let thanks = try Phrases.bundled().buttons.first { $0.action == .text("Thanks") }
+        parts.session.speakPhrase(try expectValue(thanks).action)
+        await parts.session.settle()
+        expectEqual(parts.voice.spoken, ["Thanks"])
+        expectEqual(parts.sink.typed, [])
+        expectEqual(parts.controller.input, input)
+        expectEqual(parts.controller.mode, .type)
     }
 
     await asyncTest("Speak in Talk mode records the picked word") {

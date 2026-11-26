@@ -10,6 +10,7 @@ public struct ShortcutButtonView: View {
     private let button: PanelButton
     private let width: CGFloat
     private let showsIcon: Bool
+    private let speaks: Bool
     private let press: () -> Void
 
     @State private var isPressed = false
@@ -19,11 +20,13 @@ public struct ShortcutButtonView: View {
         button: PanelButton,
         width: CGFloat = Metrics.Keypad.buttonWidth,
         showsIcon: Bool = false,
+        speaks: Bool = false,
         press: @escaping () -> Void
     ) {
         self.button = button
         self.width = width
         self.showsIcon = showsIcon
+        self.speaks = speaks
         self.press = press
     }
 
@@ -36,7 +39,9 @@ public struct ShortcutButtonView: View {
             .onHover { isHovered = $0 }
             .pressable(
                 label: button.accessibilityLabel,
-                trigger: .down(KeyHold(behavior: { [action = button.action] in action.holdBehavior }))
+                // A button that speaks acts when the button goes up, so the
+                // user can slide off to cancel.
+                trigger: speaks ? .up : .down(KeyHold(behavior: { [action = button.action] in action.holdBehavior }))
             ) { isPressed = $0 } action: {
                 press()
             }

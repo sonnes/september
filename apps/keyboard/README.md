@@ -188,8 +188,10 @@ and clears it. When the history is off, it keeps no sentences. If the database
 does not open, the keyboard moves it to `keyboard.broken.sqlite` and starts an
 empty database.
 
-The Text, System, and Rectangle keypads and My Panel float in windows
-of their own. By default they sit beside the keys. To move the keyboard window or a
+The Phrases panel, the Text, System, and Rectangle keypads, and My Panel
+float in windows of their own. A press on a phrase in Type mode speaks the
+phrase, and the text of the field does not change. The panel never takes the
+focus. By default they sit beside the keys. To move the keyboard window or a
 panel, drag it by the grip at its top. A drag does not take focus from the app
 in front. The keyboard keeps the place of each window for the next launch. If
 a saved place is on no screen, the window goes back to its default place. The
@@ -197,8 +199,9 @@ keyboard window and the panels never take focus. The panels show only in Type
 mode. `DetachedPanel.isShown(in:)` holds the rule.
 
 Arrange moves the panels back beside the keys, at the place where the keyboard
-is now. The menu bar item has the same command, Arrange Panels. System and
-My Panel go to the left of the keys, with System nearest the keys. Text and
+is now. The menu bar item has the same command, Arrange Panels. Phrases,
+System, and My Panel go to the left of the keys, with Phrases nearest the
+keys. Text and
 Rectangle go to the right, with Text nearest the keys. If a panel does not fit on
 its side, it goes to the other side. Each panel stays on the screen.
 `PanelPlacement.arrangedFrames` holds the rule.

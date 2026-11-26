@@ -8,6 +8,9 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
     case mine
     /// The shortcuts of Rectangle, the window manager.
     case rectangle
+    /// The Phrases panel of Talk mode. In Type mode a press speaks the
+    /// phrase, and the text of the field does not change.
+    case phrases
 
     public var id: Self { self }
 
@@ -22,19 +25,19 @@ public enum DetachedPanel: String, Sendable, CaseIterable, Identifiable {
     }
 
     /// The panels show only in Type mode. Talk mode holds Phrases in the
-    /// keyboard window.
+    /// keyboard window, so the Phrases panel of Type hides there too.
     public static func isShown(in mode: KeyboardMode) -> Bool {
         mode == .type
     }
 }
 
-/// Where the panels sit until the user drags them: System and My Panel
-/// at the left of the keys, and Text and Rectangle at the right, with their tops
+/// Where the panels sit until the user drags them: Phrases, System, and My
+/// Panel at the left of the keys, and Text and Rectangle at the right, with their tops
 /// in line with the top of the keys. Frames use the coordinates of AppKit, with
 /// the origin at the bottom left.
 public enum PanelPlacement {
     /// The panels at the left of the keys, from the keys out.
-    static let left: [DetachedPanel] = [.system, .mine]
+    static let left: [DetachedPanel] = [.phrases, .system, .mine]
     /// The panels at the right of the keys, from the keys out.
     static let right: [DetachedPanel] = [.text, .rectangle]
 
