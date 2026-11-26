@@ -166,7 +166,8 @@ spoken label of a tile starts with "Said before" or "Suggested", so the
 source does not depend on colour only. A model row with the words of a
 history row does not show. A row that shows keeps its place while it still
 continues the typed text, so a row does not move under a dwell or a switch.
-A new row fills only an empty place. A row shows the most tiles that fit in
+A new row fills only an empty place. When the user clears the sentence
+history or turns it off, the history rows go at once. A row shows the most tiles that fit in
 its column. When Apple Intelligence is not ready, the history rows still
 show, and its notice shows only when no row matches.
 

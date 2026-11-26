@@ -104,6 +104,7 @@ public final class PredictionEngine: ObservableObject {
     /// when the focus moves or the field becomes empty, as the Talk bar does
     /// after Speak.
     private var counted: Set<SHA256.Digest> = []
+    private var historyCleared: AnyCancellable?
 
     public init(
         predictor: any SentencePredicting = AppleIntelligencePredictor(),
@@ -121,6 +122,14 @@ public final class PredictionEngine: ObservableObject {
         sentencesEnabled = defaults.object(forKey: Keys.sentences) as? Bool ?? true
         wordsEnabled = defaults.object(forKey: Keys.words) as? Bool ?? true
         screenEnabled = defaults.bool(forKey: Keys.screen)
+        // A clear, or a switch that turns the history off, removes the rows
+        // of the history at once. A kept row would show a deleted sentence.
+        // `@Published` sends the new count before it stores it.
+        historyCleared = history?.$count.sink { [weak self, weak history] count in
+            guard let self, let history, count < history.count else { return }
+            self.historyRows = []
+            self.refresh()
+        }
     }
 
     /// Feeds the engine with the input bar. A password field, a selection,

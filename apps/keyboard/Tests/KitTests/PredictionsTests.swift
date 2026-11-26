@@ -917,6 +917,21 @@ private func historyTests() async {
         expectEqual(engine.notice, .appleIntelligence(.off), "with no history row, the notice shows")
     }
 
+    await asyncTest("a cleared or turned-off history shows no row of its old sentences") {
+        for turnsOff in [false, true] {
+            let history = try makeHistory(["See you soon."])
+            let engine = makeEngine(FakePredictor(answer: tea), history: history)
+            engine.userTypes(.mirrored(text: "See y", caret: 5, selectionLength: 0))
+            await engine.settle()
+            expectEqual(engine.historyRows.map(\.?.prediction), ["See you soon."])
+            if turnsOff { history.isEnabled = false } else { history.clear() }
+            expect(engine.historyRows.isEmpty, "the row goes at once")
+            engine.update(input: .mirrored(text: "See yo", caret: 6, selectionLength: 0), mode: .type, said: [])
+            await engine.settle()
+            expect(engine.historyRows.isEmpty, "the row does not come back while it continues the text")
+        }
+    }
+
     await asyncTest("the sentence switch turns off the history rows") {
         let engine = makeEngine(FakePredictor(answer: tea), history: try makeHistory(sent))
         engine.sentencesEnabled = false
