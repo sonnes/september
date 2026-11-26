@@ -48,7 +48,7 @@ enum InputMethod {
         let target = folder.appending(path: Bundle.main.bundleURL.lastPathComponent)
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            if version(of: target) != version(of: Bundle.main.bundleURL) {
+            if !isSameBuild(target, Bundle.main.bundleURL) {
                 stopRunningCopies()
                 if FileManager.default.fileExists(atPath: target.path) {
                     try FileManager.default.removeItem(at: target)
@@ -107,8 +107,12 @@ enum InputMethod {
         return CFBooleanGetValue(Unmanaged<CFBoolean>.fromOpaque(raw).takeUnretainedValue())
     }
 
-    private static func version(of bundle: URL) -> String? {
-        Bundle(url: bundle)?.infoDictionary?["CFBundleVersion"] as? String
+    /// True when the two bundles hold the same executable. Development
+    /// builds keep one version number, so the version alone cannot tell.
+    private static func isSameBuild(_ first: URL, _ second: URL) -> Bool {
+        let executable = "Contents/MacOS/" + (Bundle.main.infoDictionary?["CFBundleExecutable"] as? String ?? "Keyboard")
+        return FileManager.default.contentsEqual(
+            atPath: first.appending(path: executable).path, andPath: second.appending(path: executable).path)
     }
 
     /// Stops the running copies of the keyboard other than this process, so
