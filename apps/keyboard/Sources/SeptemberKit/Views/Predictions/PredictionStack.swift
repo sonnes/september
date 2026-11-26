@@ -37,8 +37,8 @@ public struct PredictionStack: View {
                 PredictionNoticeView(notice: notice, onOpenSystemSettings: onOpenSystemSettings)
             } else {
                 HStack(alignment: .bottom, spacing: Metrics.Predictions.columnSpacing) {
-                    column(engine.historyRows, alignment: .trailing)
-                    column(engine.modelRows, alignment: .leading)
+                    column(engine.historyRows)
+                    column(engine.modelRows)
                 }
             }
         }
@@ -47,8 +47,9 @@ public struct PredictionStack: View {
             alignment: .bottomLeading)
     }
 
-    private func column(_ rows: [PredictionStripe?], alignment: HorizontalAlignment) -> some View {
-        VStack(alignment: alignment, spacing: Metrics.Predictions.rowSpacing) {
+    /// Each column starts at its left edge, so the icons of its rows line up.
+    private func column(_ rows: [PredictionStripe?]) -> some View {
+        VStack(alignment: .leading, spacing: Metrics.Predictions.rowSpacing) {
             // The best place is last, next to the input bar.
             ForEach((0..<SuggestionPrompt.count).reversed(), id: \.self) { index in
                 if index < rows.count, let stripe = rows[index] {
@@ -58,7 +59,7 @@ public struct PredictionStack: View {
                 }
             }
         }
-        .frame(width: Metrics.Predictions.columnWidth, alignment: Alignment(horizontal: alignment, vertical: .bottom))
+        .frame(width: Metrics.Predictions.columnWidth, alignment: .bottomLeading)
         .accessibilityElement(children: .contain)
     }
 }
